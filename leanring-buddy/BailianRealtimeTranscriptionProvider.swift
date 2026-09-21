@@ -31,7 +31,10 @@ final class BailianRealtimeTranscriptionProvider: BuddyTranscriptionProvider {
 
     var unavailableExplanation: String? {
         guard !isConfigured else { return nil }
-        return "Bailian transcription is not configured. Add BailianAPIKey and BailianWorkspaceBaseURL to BailianSecrets.plist."
+
+        let transcriptionRoleStatus = ModelConfigurationStore.snapshot().status(of: .transcription)
+        let unavailableReason = transcriptionRoleStatus.unavailableExplanation ?? "未配置"
+        return "语音转文字不可用：\(unavailableReason)。请在菜单栏图标的齿轮里打开模型设置。"
     }
 
     /// Single long-lived URLSession shared across every streaming session.
@@ -47,18 +50,67 @@ final class BailianRealtimeTranscriptionProvider: BuddyTranscriptionProvider {
         onFinalTranscriptReady: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) async throws -> any BuddyStreamingTranscriptionSession {
-        guard let workspaceBaseURL = BailianConfiguration.workspaceBaseURL,
-              let apiKey = BailianConfiguration.apiKey else {
+        try await startStreamingSession(
+            keyterms: keyterms,
+            resolvedTranscriptionRole: nil,
+            onTranscriptUpdate: onTranscriptUpdate,
+            onFinalTranscriptReady: onFinalTranscriptReady,
+            onError: onError
+        )
+    }
+
+    /// - Parameter resolvedTranscriptionRole: Connect using this role instead of the
+    ///   saved configuration. The settings window's connection test uses it to try a
+    ///   provider the user has typed in but not yet saved; `nil` — what the
+    ///   recording pipeline passes — means "use whatever is configured".
+    ///
+    ///   The role is resolved once and handed to the session as plain values. The
+    ///   session deliberately never reads the configuration itself: a single
+    ///   `startStreamingSession` would then resolve the host once for the URL and
+    ///   once for the model name, and a save landing between those two reads would
+    ///   open a socket whose address and model disagree. It also means a recording
+    ///   already under way keeps the configuration it started with, which is
+    ///   correct — switching providers mid-utterance would send the rest of the
+    ///   audio to a host that never received the beginning of it.
+    func startStreamingSession(
+        keyterms: [String],
+        resolvedTranscriptionRole: ResolvedModelRole?,
+        onTranscriptUpdate: @escaping (String) -> Void,
+        onFinalTranscriptReady: @escaping (String) -> Void,
+        onError: @escaping (Error) -> Void
+    ) async throws -> any BuddyStreamingTranscriptionSession {
+        let resolvedRole: ResolvedModelRole
+        if let resolvedTranscriptionRole {
+            resolvedRole = resolvedTranscriptionRole
+        } else {
+            let transcriptionRoleStatus = ModelConfigurationStore.snapshot().status(of: .transcription)
+            guard let configuredRole = transcriptionRoleStatus.resolvedRole else {
+                throw BailianRealtimeTranscriptionProviderError(
+                    message: unavailableExplanation ?? "语音转文字不可用。"
+                )
+            }
+            resolvedRole = configuredRole
+        }
+
+        guard let websocketURL = resolvedRole.websocketURL else {
             throw BailianRealtimeTranscriptionProviderError(
-                message: unavailableExplanation ?? "Bailian transcription is not configured."
+                message: "语音转文字的 URL 拼不出来：\(resolvedRole.baseURL)\(resolvedRole.requestPath)（请检查 URL 里有没有空格或多余字符）"
             )
         }
 
+        // Snapshot the recognition settings alongside the role, for the same
+        // reason: one recording must speak one configuration, not half of the
+        // old one and half of a save that landed mid-utterance.
+        let appSettings = AppSettingsStore.snapshot()
+
         let streamingSession = BailianRealtimeTranscriptionSession(
-            workspaceBaseURL: workspaceBaseURL,
-            apiKey: apiKey,
+            websocketURL: websocketURL,
+            apiKey: resolvedRole.apiKey,
             urlSession: sharedWebSocketURLSession,
             keyterms: keyterms,
+            transcriptionLanguageCode: appSettings.transcriptionLanguage.languageCodeForRequest,
+            usesServerVAD: appSettings.usesAutomaticSpeechSegmentation,
+            finalTranscriptGracePeriodSeconds: appSettings.finalTranscriptGracePeriodSeconds,
             onTranscriptUpdate: onTranscriptUpdate,
             onFinalTranscriptReady: onFinalTranscriptReady,
             onError: onError
@@ -135,12 +187,25 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
     /// hang the push-to-talk session forever with no audio ever being sent.
     private static let sessionUpdateConfirmationTimeoutSeconds = 3.0
 
-    /// How long to wait for the final transcript after committing. If the server
-    /// is slow, whatever interim text we already have is good enough — the user
-    /// is waiting on the response, and a partial transcript beats a hang.
-    private static let finalTranscriptGracePeriodSeconds = 1.4
+    /// How long to wait for the final transcript after the turn ends before
+    /// falling back to the best interim text. Set from the app settings
+    /// (听 → 松键后等最终结果); was hardcoded to 1.4 seconds.
+    let finalTranscriptGracePeriodSeconds: TimeInterval
 
-    let finalTranscriptFallbackDelaySeconds: TimeInterval = 2.8
+    /// The dictation manager waits this much longer than the session's own grace
+    /// period before giving up entirely, so the two stay a fixed margin apart
+    /// however the user tunes the grace period.
+    var finalTranscriptFallbackDelaySeconds: TimeInterval {
+        finalTranscriptGracePeriodSeconds + 1.4
+    }
+
+    /// Language hint sent in `session.update`, or `nil` to omit the field and let
+    /// the service auto-detect. Officially optional ("语种标识，可选").
+    private let transcriptionLanguageCode: String?
+
+    /// Server-side voice activity detection. Off (the default) is the manual
+    /// commit mode this pipeline was built around.
+    private let usesServerVAD: Bool
 
     // MARK: - Dependencies
 
@@ -179,19 +244,30 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
     private var sessionUpdateTimeoutWorkItem: DispatchWorkItem?
     private var finalTranscriptDeadlineWorkItem: DispatchWorkItem?
 
+    /// - Parameters:
+    ///   - websocketURL: Fully formed `wss://` URL, including the `model` query
+    ///     parameter. Built by the provider from the current configuration so this
+    ///     session never has to consult global state — see `startStreamingSession`.
+    ///   - apiKey: Bearer token for the handshake.
     init(
-        workspaceBaseURL: String,
+        websocketURL: URL,
         apiKey: String,
         urlSession: URLSession,
         keyterms: [String],
+        transcriptionLanguageCode: String?,
+        usesServerVAD: Bool,
+        finalTranscriptGracePeriodSeconds: TimeInterval,
         onTranscriptUpdate: @escaping (String) -> Void,
         onFinalTranscriptReady: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) {
         self.apiKey = apiKey
-        self.websocketURL = Self.makeWebsocketURL(workspaceBaseURL: workspaceBaseURL)
+        self.websocketURL = websocketURL
         self.urlSession = urlSession
         self.keyterms = keyterms
+        self.transcriptionLanguageCode = transcriptionLanguageCode
+        self.usesServerVAD = usesServerVAD
+        self.finalTranscriptGracePeriodSeconds = finalTranscriptGracePeriodSeconds
         self.onTranscriptUpdate = onTranscriptUpdate
         self.onFinalTranscriptReady = onFinalTranscriptReady
         self.onError = onError
@@ -270,11 +346,15 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
 
             // Flush and commit from inside the same stateQueue block so both land
             // on sendQueue in order: all audio first, then the commit that ends it.
+            // In server-VAD mode the commit is never sent — the service commits
+            // turns itself, and the official sample only commits when VAD is off.
             self.flushPendingAudio()
-            self.sendJSONMessage([
-                "event_id": Self.makeEventIdentifier(),
-                "type": "input_audio_buffer.commit"
-            ])
+            if !self.usesServerVAD {
+                self.sendJSONMessage([
+                    "event_id": Self.makeEventIdentifier(),
+                    "type": "input_audio_buffer.commit"
+                ])
+            }
 
             self.scheduleFinalTranscriptDeadline()
         }
@@ -408,17 +488,27 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
         stateQueue.async {
             guard !self.hasDeliveredFinalTranscript else { return }
 
-            // The server sends `completed` for the committed turn. Deliver it
-            // straight away rather than waiting out the fallback deadline.
-            let transcriptToDeliver = finalTranscriptText.isEmpty
-                ? self.bestAvailableTranscriptText()
-                : finalTranscriptText
-
-            if !transcriptToDeliver.isEmpty {
-                self.onTranscriptUpdate(transcriptToDeliver)
+            if !finalTranscriptText.isEmpty {
+                self.latestTranscriptText = finalTranscriptText
             }
 
-            self.deliverFinalTranscript(transcriptToDeliver)
+            // Manual mode: `completed` only arrives after the explicit commit, so
+            // it always marks the end of the turn — deliver straight away rather
+            // than waiting out the fallback deadline. Server-VAD mode: the service
+            // commits whenever the user pauses, so `completed` can arrive while
+            // the key is still held mid-utterance — there it only refreshes the
+            // running transcript, and delivery waits for key-up.
+            if !self.usesServerVAD || self.hasRequestedFinalTranscript {
+                let transcriptToDeliver = finalTranscriptText.isEmpty
+                    ? self.bestAvailableTranscriptText()
+                    : finalTranscriptText
+
+                if !transcriptToDeliver.isEmpty {
+                    self.onTranscriptUpdate(transcriptToDeliver)
+                }
+
+                self.deliverFinalTranscript(transcriptToDeliver)
+            }
         }
     }
 
@@ -429,6 +519,23 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
             guard !self.hasSentSessionUpdate, !self.isCancelled else { return }
             self.hasSentSessionUpdate = true
 
+            // Officially optional ("语种标识，可选"): naming a language gives
+            // noticeably better accuracy than auto-detection, and omitting it is
+            // the documented way to ask for auto-detection (中英混合).
+            var transcriptionConfiguration: [String: Any] = [:]
+            if let transcriptionLanguageCode = self.transcriptionLanguageCode {
+                transcriptionConfiguration["language"] = transcriptionLanguageCode
+            }
+
+            // Turn detection has exactly two documented shapes. Manual (the
+            // default): `turn_detection: null`, key-up sends the commit. Server
+            // VAD: the official sample sends
+            // `{"type":"server_vad","threshold":0.2,"silence_duration_ms":800}`
+            // and never sends a commit — the service ends the turn on silence.
+            let turnDetectionConfiguration: Any = self.usesServerVAD
+                ? ["type": "server_vad", "threshold": 0.2, "silence_duration_ms": 800]
+                : NSNull()
+
             self.sendJSONMessage([
                 "event_id": Self.makeEventIdentifier(),
                 "type": "session.update",
@@ -436,12 +543,8 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
                     "modalities": ["text"],
                     "input_audio_format": "pcm",
                     "sample_rate": Int(Self.targetSampleRate),
-                    // The app's users speak Mandarin; naming the language gives
-                    // noticeably better accuracy than leaving it to auto-detect.
-                    "input_audio_transcription": ["language": "zh"],
-                    // Manual mode: no server-side voice activity detection. The
-                    // user's key release is what ends a turn.
-                    "turn_detection": NSNull()
+                    "input_audio_transcription": transcriptionConfiguration,
+                    "turn_detection": turnDetectionConfiguration
                 ]
             ])
 
@@ -486,7 +589,7 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
         finalTranscriptDeadlineWorkItem = deadlineWorkItem
 
         DispatchQueue.main.asyncAfter(
-            deadline: .now() + Self.finalTranscriptGracePeriodSeconds,
+            deadline: .now() + finalTranscriptGracePeriodSeconds,
             execute: deadlineWorkItem
         )
     }
@@ -571,29 +674,6 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
 
     private static func makeEventIdentifier() -> String {
         "event_\(UUID().uuidString)"
-    }
-
-    private static func makeWebsocketURL(workspaceBaseURL: String) -> URL {
-        // The workspace base URL is stored as https://; websockets need wss://.
-        let websocketBaseURL = workspaceBaseURL
-            .replacingOccurrences(of: "https://", with: "wss://")
-            .replacingOccurrences(of: "http://", with: "ws://")
-
-        let trimmedBaseURL = websocketBaseURL.hasSuffix("/")
-            ? String(websocketBaseURL.dropLast())
-            : websocketBaseURL
-
-        var websocketURLComponents = URLComponents(
-            string: trimmedBaseURL + BailianConfiguration.Paths.realtimeWebSocket
-        )!
-
-        // The route is shared with realtime TTS; the model query parameter is what
-        // dispatches the connection to the ASR model.
-        websocketURLComponents.queryItems = [
-            URLQueryItem(name: "model", value: BailianConfiguration.Models.realtimeTranscription)
-        ]
-
-        return websocketURLComponents.url!
     }
 
     /// Safety net for the case where the owner drops this session without calling

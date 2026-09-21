@@ -2,42 +2,80 @@
 //  BailianConfiguration.swift
 //  leanring-buddy
 //
-//  Single source of truth for every Alibaba Bailian (阿里云百炼) request the app
-//  makes: the workspace endpoint, the API key, and the model IDs.
+//  Where the app finds the models it uses, and what the Alibaba Bailian
+//  (阿里云百炼) defaults are.
+//
+//  The user's live configuration lives in `ModelConfiguration.json` and is read
+//  through `ModelConfigurationStore` — the three `resolved…` properties below are
+//  the only way the rest of the app should reach it. Nothing here caches: each
+//  access resolves against the current configuration, so a change saved in the
+//  settings window takes effect on the next request rather than the next launch.
+//
+//  What remains of the Bailian-specific constants is the *seed* — the values used
+//  to build a starting configuration for a user who has never opened the
+//  settings window, plus the shared model IDs that seed refers to.
 //
 
 import Foundation
 
-/// Central configuration for the app's Alibaba Bailian calls.
+/// Resolved, ready-to-use settings for one role, and the Bailian defaults the
+/// app ships with.
 ///
-/// Why a workspace endpoint instead of the public DashScope one: this account is
-/// provisioned on a workspace-scoped MaaS domain (`ws-<id>.<region>.maas.aliyuncs.com`)
-/// rather than `dashscope.aliyuncs.com`. Every route — chat completions, TTS, and
-/// the realtime websocket — hangs off that same host, so the base URL is read from
-/// the gitignored secrets plist instead of being hardcoded per client.
-enum BailianConfiguration {
+/// Nonisolated so that everything built on it — the store, the connection tester,
+/// the three clients — can reach it from whatever context it already runs in,
+/// instead of being dragged onto the main actor to read a constant.
+nonisolated enum BailianConfiguration {
+
+    // MARK: - Roles
+
+    /// 👂 Speech-to-text.
+    static var resolvedTranscription: ResolvedModelRole? {
+        ModelConfigurationStore.snapshot().resolvedRole(.transcription)
+    }
+
+    /// 🧠 Vision chat.
+    static var resolvedVision: ResolvedModelRole? {
+        ModelConfigurationStore.snapshot().resolvedRole(.vision)
+    }
+
+    /// 👄 Text-to-speech.
+    static var resolvedSpeech: ResolvedModelRole? {
+        ModelConfigurationStore.snapshot().resolvedRole(.speech)
+    }
+
+    /// True when speech recognition has a usable provider.
+    ///
+    /// Used by the transcription provider to report a clear configuration error
+    /// instead of failing later with an opaque websocket failure. Vision and
+    /// speech report their own status through `snapshot().status(of:)`, which
+    /// carries the reason something isn't usable rather than just a flag.
+    static var isConfigured: Bool {
+        resolvedTranscription != nil
+    }
+
+    // MARK: - Legacy secrets (seed only)
 
     /// Workspace-scoped base URL, e.g. `https://ws-xxxx.cn-beijing.maas.aliyuncs.com`.
-    /// Read from the gitignored `BailianSecrets.plist` so the account-specific host
-    /// name never lands in version control.
-    static var workspaceBaseURL: String? {
+    ///
+    /// Read from the gitignored `BailianSecrets.plist`. Only consulted when
+    /// building the starting configuration — once the user has saved a
+    /// configuration, the settings window is the source of truth and this plist
+    /// is no longer in the request path at all.
+    static var legacyWorkspaceBaseURL: String? {
         AppBundleConfiguration.stringValue(forKey: "BailianWorkspaceBaseURL")
     }
 
-    /// The Bailian API key. Lives in the gitignored `BailianSecrets.plist`.
-    static var apiKey: String? {
+    /// The Bailian API key, from the gitignored `BailianSecrets.plist`.
+    /// Consulted only when seeding, same as `legacyWorkspaceBaseURL`.
+    static var legacyAPIKey: String? {
         AppBundleConfiguration.stringValue(forKey: "BailianAPIKey")
     }
 
-    /// True when both the endpoint and the key were found in the bundle.
-    /// Used by the clients to report a clear configuration error instead of
-    /// failing later with an opaque HTTP error.
-    static var isConfigured: Bool {
-        workspaceBaseURL != nil && apiKey != nil
-    }
+    // MARK: - Default model IDs
 
-    /// Model IDs, kept here so the model picker in the panel and the clients that
-    /// actually call the API can never drift out of sync.
+    /// Model IDs this app ships with, used to seed a new configuration and to
+    /// offer suggestions in the settings window. They are defaults, not
+    /// restrictions — the settings window accepts any model name the user types.
     enum Models {
         /// Vision-language model used to answer questions about the user's screenshots.
         enum VisionChat {
@@ -58,12 +96,12 @@ enum BailianConfiguration {
         ///
         /// Qwen-Audio-TTS is a different model family from Qwen-TTS
         /// (`qwen3-tts-flash`) and is served from a different endpoint — see
-        /// `Paths.dashScopeSpeechSynthesizer`. Its voice names and request body
+        /// `APIProviderFlavor.requestPath(for:)`. Its voice names and request body
         /// are not interchangeable with Qwen-TTS.
         static let textToSpeech = "qwen-audio-3.1-tts-flash"
     }
 
-    /// Voice used for spoken replies.
+    /// Default voice for spoken replies.
     ///
     /// This is a **cloned** voice from the Bailian voice-enrollment service
     /// (赵今麦's cloned voice). Cloned voice IDs carry the driving model's name
@@ -76,6 +114,8 @@ enum BailianConfiguration {
     /// (叶清禾, 亲切温柔). Stock names are model-family specific too: the
     /// Qwen-TTS names (`Cherry`, `Serena`, …) are rejected by this model with
     /// `Engine error [411]`.
+    ///
+    /// Editable per provider in the settings window.
     static let textToSpeechVoice = "qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060"
 
     /// Output format and sample rate for synthesized audio. These belong to the
@@ -84,23 +124,4 @@ enum BailianConfiguration {
     /// in exactly this format.
     static let textToSpeechFormat = "wav"
     static let textToSpeechSampleRate = 24000
-
-    /// Paths, relative to the workspace base URL.
-    enum Paths {
-        /// OpenAI-compatible chat completions. Standard SSE, so the response can be
-        /// parsed with the same shape as any OpenAI streaming response.
-        static let openAICompatibleChatCompletions = "/compatible-mode/v1/chat/completions"
-
-        /// Qwen-Audio-TTS / CosyVoice speech synthesis.
-        ///
-        /// Alibaba documents these endpoints as non-interchangeable: a
-        /// Qwen-Audio-TTS model posted to the multimodal-generation route fails
-        /// with `InvalidParameter: url error, please check url`, and a Qwen-TTS
-        /// model posted here fails the same way.
-        static let dashScopeSpeechSynthesizer = "/api/v1/services/audio/tts/SpeechSynthesizer"
-
-        /// Realtime websocket route, shared by streaming ASR and streaming TTS.
-        /// Requests are dispatched by the `model` query parameter.
-        static let realtimeWebSocket = "/api-ws/v1/realtime"
-    }
 }

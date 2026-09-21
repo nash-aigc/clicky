@@ -14,28 +14,69 @@ import Foundation
 
 class BailianVisionChatAPI {
     private static let tlsWarmupLock = NSLock()
-    private static var hasStartedTLSWarmup = false
+    /// Hosts whose TLS connection has already been warmed in this process.
+    ///
+    /// Keyed by host rather than a single "already warmed up" flag: the TLS session
+    /// ticket is host-scoped, so switching the vision model to a provider on a
+    /// different host leaves that host cold — and the first request after a switch
+    /// carries the largest payload the app ever sends (a full-screen screenshot),
+    /// which is exactly when a cold handshake fails.
+    private static var warmedUpHosts: Set<String> = []
 
-    private let chatCompletionsURL: URL
-    private let apiKey: String
-    var model: String
+    /// Ceiling on generated tokens, shared by the streaming and non-streaming
+    /// paths. Read per request from the app settings (模型 → 回答长度上限) so a
+    /// save takes effect on the next question without rebuilding anything.
+    ///
+    /// The stored value is clamped by `AppSettings.clamped()` to 32768, and that
+    /// clamp is not arbitrary. One value serves every provider, so it has to be
+    /// one they all accept — and their ceilings are far apart. Measured
+    /// 2026-09-21: DeepSeek accepts up to 393216, while Bailian rejects anything
+    /// above 32768 with `InternalError.Algo.InvalidParameter: Range of max_tokens
+    /// should be [1, 32768]`. Bailian's ceiling is therefore what caps this, and
+    /// raising it to DeepSeek's would break the vision role the moment the user
+    /// switched the brain back to Bailian.
+    ///
+    /// Nowhere near what an answer needs, deliberately. Reasoning models bill
+    /// their chain of thought against this budget, and an exhausted budget
+    /// returns HTTP 200 with an empty answer rather than an error — so the
+    /// ceiling is sized to leave thinking room, not to cap the reply.
+    private static var maxCompletionTokens: Int {
+        AppSettingsStore.snapshot().visionMaxCompletionTokens
+    }
+
+    /// Extra top-level body fields that keep a reasoning model from spending its
+    /// budget on a chain of thought, sent whenever the user has left thinking off
+    /// for this provider (which is the default — see
+    /// `ProviderProfile.allowsVisionReasoning`).
+    ///
+    /// Measured 2026-09-21 with the app's real payload (a 1280x827 JPEG screenshot
+    /// plus the 4923-character system prompt): `deepseek-flash` answers "屏幕右上角
+    /// 有什么？" with 664-868 reasoning tokens before the first word of the answer,
+    /// which is 3.4s of a 4.5s request — the answer itself is 0.3s. Clicky's
+    /// questions are perception questions answered out loud, so that thinking is
+    /// time the user spends watching a spinner and cannot hear.
+    ///
+    /// `thinking` is the field to use, and that was measured rather than assumed:
+    /// of the plausible switches only this one and `reasoning_effort: "none"` turn
+    /// thinking off, while `enable_thinking: false` (629 reasoning tokens still) and
+    /// `chat_template_kwargs.thinking: false` (378 still) are accepted and silently
+    /// do nothing. Bailian accepts this field too and ignores it — HTTP 200 with no
+    /// change in output, on a model with no reasoning frames to suppress — which is
+    /// what lets one user-facing setting cover whichever provider serves 🧠.
+    private static func reasoningSuppressionBodyFields(
+        for resolvedVisionRole: ResolvedModelRole
+    ) -> [String: Any] {
+        guard !resolvedVisionRole.allowsVisionReasoning else { return [:] }
+        return ["thinking": ["type": "disabled"]]
+    }
+
     private let session: URLSession
 
-    /// - Parameters:
-    ///   - workspaceBaseURL: Workspace-scoped MaaS base URL, e.g.
-    ///     `https://ws-xxxx.cn-beijing.maas.aliyuncs.com`.
-    ///   - apiKey: Bearer token for every request.
-    ///   - model: Qwen vision-language model ID.
-    init(workspaceBaseURL: String, apiKey: String, model: String) {
-        let baseURL = workspaceBaseURL.hasSuffix("/")
-            ? String(workspaceBaseURL.dropLast())
-            : workspaceBaseURL
-        self.chatCompletionsURL = URL(
-            string: baseURL + BailianConfiguration.Paths.openAICompatibleChatCompletions
-        )!
-        self.apiKey = apiKey
-        self.model = model
-
+    /// The endpoint, key and model are resolved per request from the user's model
+    /// configuration rather than captured here, so changing the vision provider in
+    /// the settings window takes effect on the very next question instead of on
+    /// the next launch.
+    init() {
         // Use .default instead of .ephemeral so TLS session tickets are cached.
         // Ephemeral sessions do a full TLS handshake on every request, which causes
         // transient -1200 (errSSLPeerHandshakeFail) errors with large image payloads.
@@ -51,15 +92,53 @@ class BailianVisionChatAPI {
         // Fire a lightweight HEAD request in the background to pre-establish the TLS
         // connection. This caches the TLS session ticket so the first real API call
         // (which carries a large image payload) doesn't need a cold TLS handshake.
-        warmUpTLSConnectionIfNeeded()
+        // Done at construction so the handshake overlaps with app startup; requests
+        // warm their own host again if the user switches providers later.
+        if let resolvedVisionRole = BailianConfiguration.resolvedVision {
+            warmUpTLSConnectionIfNeeded(for: resolvedVisionRole)
+        }
     }
 
-    private func makeAPIRequest() -> URLRequest {
+    /// The vision role as configured right now, or a thrown error naming exactly
+    /// what is missing.
+    ///
+    /// The reason is carried through verbatim from the configuration status rather
+    /// than collapsed into "not configured", so the user is told whether to fill in
+    /// a model name, an API key or a URL.
+    private func resolveVisionRole() throws -> ResolvedModelRole {
+        let visionRoleStatus = ModelConfigurationStore.snapshot().status(of: .vision)
+        guard let resolvedVisionRole = visionRoleStatus.resolvedRole else {
+            let unavailableExplanation = visionRoleStatus.unavailableExplanation ?? "未配置"
+            throw NSError(
+                domain: "BailianVisionChatAPI",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "视觉模型不可用：\(unavailableExplanation)。请在菜单栏图标的齿轮里打开模型设置。"]
+            )
+        }
+        return resolvedVisionRole
+    }
+
+    private func makeAPIRequest(for resolvedVisionRole: ResolvedModelRole) throws -> URLRequest {
+        // A hand-typed URL with a stray space in it cannot be turned into a URL at
+        // all. Reported as a configuration error rather than force-unwrapped: this
+        // runs on the main actor, so a crash here takes the whole app down.
+        guard let chatCompletionsURL = resolvedVisionRole.requestURL else {
+            throw NSError(
+                domain: "BailianVisionChatAPI",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "视觉模型的 URL 拼不出来：\(resolvedVisionRole.baseURL)\(resolvedVisionRole.requestPath)，请检查设置里 \(resolvedVisionRole.providerDisplayName) 的 URL。"]
+            )
+        }
+
+        warmUpTLSConnectionIfNeeded(for: resolvedVisionRole)
+
         var request = URLRequest(url: chatCompletionsURL)
         request.httpMethod = "POST"
         request.timeoutInterval = 120
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(resolvedVisionRole.apiKey)", forHTTPHeaderField: "Authorization")
         return request
     }
 
@@ -79,20 +158,26 @@ class BailianVisionChatAPI {
         return "image/jpeg"
     }
 
-    /// Sends a no-op HEAD request to the API host to establish and cache a TLS session.
+    /// Sends a no-op HEAD request to the provider's host to establish and cache a
+    /// TLS session, at most once per host per process.
     /// Failures are silently ignored — this is purely an optimization.
-    private func warmUpTLSConnectionIfNeeded() {
+    private func warmUpTLSConnectionIfNeeded(for resolvedVisionRole: ResolvedModelRole) {
+        guard let requestURL = resolvedVisionRole.requestURL,
+              let requestHost = requestURL.host else {
+            return
+        }
+
         Self.tlsWarmupLock.lock()
-        let shouldStartTLSWarmup = !Self.hasStartedTLSWarmup
+        let shouldStartTLSWarmup = !Self.warmedUpHosts.contains(requestHost)
         if shouldStartTLSWarmup {
-            Self.hasStartedTLSWarmup = true
+            Self.warmedUpHosts.insert(requestHost)
         }
         Self.tlsWarmupLock.unlock()
 
         guard shouldStartTLSWarmup else { return }
 
         guard var warmupURLComponents = URLComponents(
-            url: chatCompletionsURL,
+            url: requestURL,
             resolvingAgainstBaseURL: false
         ) else {
             return
@@ -121,21 +206,66 @@ class BailianVisionChatAPI {
     /// prompt becomes the first message. Each screenshot is sent as an `image_url`
     /// data URI followed by a text block carrying its label — the label is what tells
     /// the model which screen is the cursor's ("primary focus") when several are sent.
+    ///
+    /// `conversationSummary` rides as a second system message rather than being
+    /// appended to the first. It describes older turns, not instructions, and a
+    /// summary that has drifted into the instruction prompt would be read as
+    /// something the user asked for.
     private func buildMessages(
         images: [(data: Data, label: String)],
         systemPrompt: String,
-        conversationHistory: [(userPlaceholder: String, assistantResponse: String)],
+        conversationHistory: [ConversationHistoryEntry],
+        conversationSummary: String,
         userPrompt: String
     ) -> [[String: Any]] {
         var messages: [[String: Any]] = [
             ["role": "system", "content": systemPrompt]
         ]
 
-        for (userPlaceholder, assistantResponse) in conversationHistory {
-            messages.append(["role": "user", "content": userPlaceholder])
-            messages.append(["role": "assistant", "content": assistantResponse])
+        if !conversationSummary.isEmpty {
+            messages.append([
+                "role": "system",
+                "content": "summary of earlier turns in this conversation that are no longer shown in full:\n\(conversationSummary)"
+            ])
         }
 
+        for entry in conversationHistory {
+            // A past turn is replayed with its own screenshots when 「历史里带截图」
+            // is on, and as plain text when it is off — which is also what a turn
+            // restored from disk looks like, since screenshots are never persisted.
+            if entry.userScreenshots.isEmpty {
+                messages.append(["role": "user", "content": entry.userTranscript])
+            } else {
+                messages.append([
+                    "role": "user",
+                    "content": imageAndTextBlocks(
+                        images: entry.userScreenshots.map { (data: $0.imageData, label: $0.label) },
+                        userPrompt: entry.userTranscript
+                    )
+                ])
+            }
+            messages.append(["role": "assistant", "content": entry.assistantResponse])
+        }
+
+        messages.append([
+            "role": "user",
+            "content": imageAndTextBlocks(images: images, userPrompt: userPrompt)
+        ])
+
+        return messages
+    }
+
+    /// The content blocks for one user turn: every screenshot as an `image_url`
+    /// data URI with its label, then the text of what the user said.
+    ///
+    /// Shared by the current turn and by replayed history turns so a screenshot in
+    /// the history is sent in exactly the same shape as the one taken now — the
+    /// model sees no difference between the picture it was asked about and the
+    /// picture it answered about.
+    private func imageAndTextBlocks(
+        images: [(data: Data, label: String)],
+        userPrompt: String
+    ) -> [[String: Any]] {
         var contentBlocks: [[String: Any]] = []
         for image in images {
             let mediaType = detectImageMediaType(for: image.data)
@@ -154,9 +284,7 @@ class BailianVisionChatAPI {
             "type": "text",
             "text": userPrompt
         ])
-        messages.append(["role": "user", "content": contentBlocks])
-
-        return messages
+        return contentBlocks
     }
 
     /// Send a vision request with streaming.
@@ -165,30 +293,37 @@ class BailianVisionChatAPI {
     func analyzeImageStreaming(
         images: [(data: Data, label: String)],
         systemPrompt: String,
-        conversationHistory: [(userPlaceholder: String, assistantResponse: String)] = [],
+        conversationHistory: [ConversationHistoryEntry] = [],
+        conversationSummary: String = "",
         userPrompt: String,
         onTextChunk: @MainActor @Sendable (String) -> Void
     ) async throws -> (text: String, duration: TimeInterval) {
         let startTime = Date()
 
-        var request = makeAPIRequest()
+        let resolvedVisionRole = try resolveVisionRole()
+        var request = try makeAPIRequest(for: resolvedVisionRole)
 
-        let body: [String: Any] = [
-            "model": model,
-            "max_tokens": 1024,
+        var body: [String: Any] = [
+            "model": resolvedVisionRole.modelID,
+            // See `maxCompletionTokens`: too low a ceiling returns HTTP 200 with an
+            // empty answer rather than an error, so an empty answer is treated as a
+            // failure below instead of passing silently.
+            "max_tokens": Self.maxCompletionTokens,
             "stream": true,
             "messages": buildMessages(
                 images: images,
                 systemPrompt: systemPrompt,
                 conversationHistory: conversationHistory,
+                conversationSummary: conversationSummary,
                 userPrompt: userPrompt
             )
         ]
+        body.merge(Self.reasoningSuppressionBodyFields(for: resolvedVisionRole)) { _, newValue in newValue }
 
         let bodyData = try JSONSerialization.data(withJSONObject: body)
         request.httpBody = bodyData
         let payloadMB = Double(bodyData.count) / 1_048_576.0
-        print("🌐 Bailian streaming request: \(String(format: "%.1f", payloadMB))MB, \(images.count) image(s), model=\(model)")
+        print("🌐 Bailian streaming request: \(String(format: "%.1f", payloadMB))MB, \(images.count) image(s), model=\(resolvedVisionRole.modelID) @ \(resolvedVisionRole.providerDisplayName)")
 
         // Use bytes streaming for SSE (Server-Sent Events)
         let (byteStream, response) = try await session.bytes(for: request)
@@ -253,6 +388,18 @@ class BailianVisionChatAPI {
             await onTextChunk(currentAccumulatedText)
         }
 
+        // An empty answer arrives as a perfectly successful HTTP 200, and the only
+        // thing the user would see is the cursor flashing with nothing spoken — the
+        // hardest kind of failure to diagnose. Reported as an error instead.
+        guard !accumulatedResponseText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw NSError(
+                domain: "BailianVisionChatAPI",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "模型（\(resolvedVisionRole.modelID)）返回了空回答。常见原因：推理内容吃光了 max_tokens，或这个模型不支持图片输入。"]
+            )
+        }
+
         let duration = Date().timeIntervalSince(startTime)
         return (text: accumulatedResponseText, duration: duration)
     }
@@ -262,28 +409,33 @@ class BailianVisionChatAPI {
     func analyzeImage(
         images: [(data: Data, label: String)],
         systemPrompt: String,
-        conversationHistory: [(userPlaceholder: String, assistantResponse: String)] = [],
+        conversationHistory: [ConversationHistoryEntry] = [],
+        conversationSummary: String = "",
         userPrompt: String
     ) async throws -> (text: String, duration: TimeInterval) {
         let startTime = Date()
 
-        var request = makeAPIRequest()
+        let resolvedVisionRole = try resolveVisionRole()
+        var request = try makeAPIRequest(for: resolvedVisionRole)
 
-        let body: [String: Any] = [
-            "model": model,
-            "max_tokens": 256,
+        var body: [String: Any] = [
+            "model": resolvedVisionRole.modelID,
+            // Same constant and same reasoning as the streaming path above.
+            "max_tokens": Self.maxCompletionTokens,
             "messages": buildMessages(
                 images: images,
                 systemPrompt: systemPrompt,
                 conversationHistory: conversationHistory,
+                conversationSummary: conversationSummary,
                 userPrompt: userPrompt
             )
         ]
+        body.merge(Self.reasoningSuppressionBodyFields(for: resolvedVisionRole)) { _, newValue in newValue }
 
         let bodyData = try JSONSerialization.data(withJSONObject: body)
         request.httpBody = bodyData
         let payloadMB = Double(bodyData.count) / 1_048_576.0
-        print("🌐 Bailian request: \(String(format: "%.1f", payloadMB))MB, \(images.count) image(s), model=\(model)")
+        print("🌐 Bailian request: \(String(format: "%.1f", payloadMB))MB, \(images.count) image(s), model=\(resolvedVisionRole.modelID) @ \(resolvedVisionRole.providerDisplayName)")
 
         let (data, response) = try await session.data(for: request)
 
@@ -307,6 +459,18 @@ class BailianVisionChatAPI {
                 domain: "BailianVisionChatAPI",
                 code: -1,
                 userInfo: [NSLocalizedDescriptionKey: "Invalid response format: \(responseString)"]
+            )
+        }
+
+        // Same empty-answer guard as the streaming path: an exhausted token budget
+        // and an unsupported image input both come back as a 200 with no text, and
+        // silently showing nothing looks identical to the app being broken.
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw NSError(
+                domain: "BailianVisionChatAPI",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey:
+                    "模型（\(resolvedVisionRole.modelID)）返回了空回答。常见原因：推理内容吃光了 max_tokens，或这个模型不支持图片输入。"]
             )
         }
 

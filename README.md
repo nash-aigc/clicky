@@ -91,6 +91,12 @@ In Xcode:
 
 The app will appear in your menu bar (not the dock). Click the icon to open the panel, grant the permissions it asks for, and you're good.
 
+### 4. Choose your models (optional)
+
+Click the **gear icon** in the menu bar panel to open 模型设置. It shows the three models Clicky uses — 👂 speech-to-text, 🧠 vision, 👄 text-to-speech — and lets you change which provider serves each one, along with its URL, API key and model name. Anything OpenAI-compatible works for 🧠, including DeepSeek; 👂 and 👄 need a provider that offers streaming speech recognition and synthesis, which today means Bailian. There's a **测试连接** button that tells you whether each one actually works before you rely on it, and **保存** takes effect immediately — no restart.
+
+The plist from step 2 still works: it seeds the first-run configuration, so a fresh install with a valid `BailianSecrets.plist` needs no setup at all. Once you've saved anything in the settings window, that window becomes the source of truth.
+
 ### Permissions the app needs
 
 - **Microphone** — for push-to-talk voice capture
@@ -102,7 +108,9 @@ The app will appear in your menu bar (not the dock). Click the icon to open the 
 
 If you want the full technical breakdown, read `CLAUDE.md`. But here's the short version:
 
-**Menu bar app** (no dock icon) with two `NSPanel` windows — one for the control panel dropdown, one for the full-screen transparent cursor overlay. Push-to-talk streams audio over a websocket to Bailian's realtime ASR, sends the transcript + screenshot to Qwen VL via streaming SSE, and plays the response through Bailian TTS. The model can embed `[POINT:x,y:label:screenN]` tags in its responses to make the cursor fly to specific UI elements across multiple monitors. All requests go straight to your own Bailian workspace endpoint — no proxy in between.
+**Menu bar app** (no dock icon) with two `NSPanel` windows — one for the control panel dropdown, one for the full-screen transparent cursor overlay. Push-to-talk streams audio over a websocket to a realtime ASR model, sends the transcript + screenshot to a vision model via streaming SSE, and plays the response through a TTS model. The model can embed `[POINT:x,y:label:screenN]` tags in its responses to make the cursor fly to specific UI elements across multiple monitors. Every request goes straight to the provider you configured — no proxy in between.
+
+All three models are configurable in the settings window (gear icon in the panel), and the configuration is read fresh on every request, so changing a model takes effect on your next question.
 
 ## Project structure
 
@@ -110,9 +118,12 @@ If you want the full technical breakdown, read `CLAUDE.md`. But here's the short
 leanring-buddy/          # Swift source (yes, the typo stays)
   CompanionManager.swift    # Central state machine
   CompanionPanelView.swift  # Menu bar panel UI
-  BailianVisionChatAPI.swift      # Qwen VL streaming client
+  ModelSettingsView.swift   # Model settings form
+  ModelConfiguration.swift  # Provider/role data model
+  ModelConfigurationStore.swift  # Reads + writes the saved configuration
+  BailianVisionChatAPI.swift      # Vision streaming client
   BailianTTSClient.swift          # Text-to-speech playback
-  BailianConfiguration.swift      # API key + endpoint lookup
+  BailianConfiguration.swift      # Model resolution + defaults
   BailianRealtime*.swift          # Real-time transcription
   OverlayWindow.swift       # Blue cursor overlay
   BuddyDictation*.swift     # Push-to-talk pipeline

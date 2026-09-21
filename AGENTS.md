@@ -14,33 +14,88 @@ This fork talks to Alibaba Cloud Bailian (Model Studio) directly. The upstream C
 - **App Type**: Menu bar-only (`LSUIElement=true`), no dock icon or main window
 - **Framework**: SwiftUI (macOS native) with AppKit bridging for menu bar panel and cursor overlay
 - **Pattern**: MVVM with `@StateObject` / `@Published` state management
-- **AI Chat**: Qwen VL (`qwen3-vl-plus` default, `qwen3-vl-flash` optional) via the workspace-scoped Bailian MaaS endpoint with SSE streaming
-- **Speech-to-Text**: Bailian real-time streaming (`qwen3-asr-flash-realtime` model) over websocket, with OpenAI and Apple Speech as fallbacks
-- **Text-to-Speech**: Bailian (`qwen-audio-3.1-tts-flash` model, cloned voice 赵今麦 via voice-enrollment) via the Qwen-Audio-TTS `SpeechSynthesizer` endpoint
+- **AI Chat**: any vision model the user configures (default Qwen VL `qwen3-vl-plus` on Bailian), with SSE streaming
+- **Speech-to-Text**: Bailian real-time streaming (`qwen3-asr-flash-realtime` by default) over websocket, with OpenAI and Apple Speech as fallbacks
+- **Text-to-Speech**: Bailian Qwen-Audio-TTS (`qwen-audio-3.1-tts-flash` by default, cloned voice 赵今麦 via voice-enrollment) via the `SpeechSynthesizer` endpoint
+- **Model Configuration**: all three models above are user-configurable — see [Model Configuration](#model-configuration). Provider/model choices are made in the settings window, not in code.
+- **Settings**: one window, seven pages — 通用 / 模型 / 对话与记忆 / 听（识别）/ 说（播报）/ 看与截图 / 快捷键 — see [Settings](#settings). 27 of the 30 settings live in `AppSettings.json`; the other three are the model roles.
 - **Screen Capture**: ScreenCaptureKit (macOS 14.2+), multi-monitor support
 - **Voice Input**: Push-to-talk via `AVAudioEngine` + pluggable transcription-provider layer. System-wide keyboard shortcut via listen-only CGEvent tap.
 - **Element Pointing**: The model embeds `[POINT:x,y:label:screenN]` tags in responses, where `x` and `y` are on a **normalized 0–1000 grid**, not screenshot pixels. The overlay converts them to pixels, maps them to the correct monitor, and animates the blue cursor along a bezier arc to the target.
 - **Concurrency**: `@MainActor` isolation, async/await throughout
 - **Analytics**: None. The upstream PostHog integration was removed — it reported to the original author's account, uploaded the user's raw transcripts, the model's raw responses and the user's email address, and did synchronous disk writes on the main thread on every message.
 
-### Bailian Configuration
+### Model Configuration
 
-Every request goes straight to the user's Bailian workspace endpoint. There is no proxy.
+Every request goes straight to whichever provider the user configured. There is no proxy.
+
+The app needs three models, called **roles**:
+
+| Role | What it does | Default |
+|------|--------------|---------|
+| 👂 `transcription` | Speech-to-text | `qwen3-asr-flash-realtime` over websocket |
+| 🧠 `vision` | Looks at the screenshot and answers | `qwen3-vl-plus` |
+| 👄 `speech` | Reads the answer aloud | `qwen-audio-3.1-tts-flash` + cloned 赵今麦 voice |
+
+Which provider serves each role, and that provider's URL, API key and model names, are the user's to set. The settings window (gear icon in the menu bar panel) is the supported way to change them; it writes:
 
 | Setting | Where it comes from | Purpose |
 |---------|---------------------|---------|
-| `BailianAPIKey` | `BailianSecrets.plist` (gitignored) | Bearer token for every Bailian route |
-| `BailianWorkspaceBaseURL` | `BailianSecrets.plist` (gitignored) | Workspace-scoped MaaS host, e.g. `https://ws-….maas.aliyuncs.com` |
+| everything | `~/Library/Application Support/Clicky/ModelConfiguration.json` (0600) | Source of truth |
+| `BailianAPIKey` | `BailianSecrets.plist` (gitignored) | Seed only — read once, when no `ModelConfiguration.json` exists yet |
+| `BailianWorkspaceBaseURL` | `BailianSecrets.plist` (gitignored) | Seed only, same as above |
 
-| Route | Upstream | Purpose |
-|-------|----------|---------|
-| `POST {base}/compatible-mode/v1/chat/completions` | OpenAI-compatible mode | Qwen VL vision + streaming chat |
-| `POST {base}/api/v1/services/audio/tts/SpeechSynthesizer` | DashScope native | Qwen-Audio-TTS audio (returns a 24h WAV URL) |
-| `WSS {base}/api-ws/v1/realtime?model=qwen3-asr-flash-realtime` | OpenAI Realtime-style protocol | Streaming ASR |
+The JSON files live outside the repo so they survive a clean checkout and never need a `.gitignore` entry. They are **not** watched for changes: editing one by hand takes effect after a restart. `AppSettings.json` is the same idea for the 27 settings the [Settings](#settings) page writes, and `ConversationHistory.json` is the conversation itself — written only when 「重启后保留对话」 is on, and deleted when it is turned off.
 
-`BailianConfiguration.swift` reads those two settings through `AppBundleConfiguration`, which checks (in order) the bundle Info dictionary, `Info.plist`, a bundled `BailianSecrets.plist`, then `~/Library/Application Support/Clicky/BailianSecrets.plist`. The last path exists so the key is still found even if Xcode doesn't copy the loose plist into the bundle.
+Request paths are a property of the provider's protocol, not something the user types:
+
+| Route | Protocol | Serves |
+|-------|----------|--------|
+| `POST {base}/compatible-mode/v1/chat/completions` | Bailian | 🧠 |
+| `POST {base}/api/v1/services/audio/tts/SpeechSynthesizer` | Bailian | 👄 (returns a 24h WAV URL) |
+| `WSS {base}/api-ws/v1/realtime?model=…` | Bailian | 👂 |
+| `POST {base}/chat/completions` | DeepSeek | 🧠 only — DeepSeek has no ASR or TTS |
+
+`ProviderProfile.effectiveFlavor` is the single source of path truth; the three clients ask it rather than hardcoding endpoints. DeepSeek is OpenAI-shaped but its chat route has **no `/v1` prefix**, which is why the protocol — not the base URL — decides the path.
+
+**The reasoning pass is switched off by default, and it was most of the latency.** Measured 2026-09-21 with the app's real payload (1280×827 JPEG + the 4923-character system prompt), asked "屏幕右上角有什么？": `deepseek-flash` emitted **664–868 reasoning tokens before the first word of the answer**, so of a 4.5 s request 3.4 s was thinking, 0.5 s was upload, and 0.3 s was the answer. Clicky's questions are perception questions answered out loud — that thinking is time the user spends watching a spinner and cannot hear. `BailianVisionChatAPI.reasoningSuppressionBodyFields(for:)` now sends `thinking: {"type": "disabled"}`, which returns the first token in **817 ms median over four rounds** (vs 4298 ms) and still emitted a well-formed `[POINT:x,y:label]` on the 0–1000 grid **4 times out of 4**.
+
+**That suppression is the user's setting, not a DeepSeek special case.** Each provider card in the settings window carries a 「推理」 switch writing `ProviderProfile.visionReasoningEnabled`, and the field is sent whenever the provider's `allowsVisionReasoning` is false — which is the default, so a user who never opens the settings window gets the fast path and a user who wants a reasoning model can ask for it. Two details are deliberate. The stored property is `Bool?` **so an existing configuration file still decodes** — the synthesized `Codable` throws on a missing key, so a plain `Bool` added now would make every file written before this setting existed fail to load; `nil` reads as off in the accessor, and the toggle writes an explicit `true`/`false` so a file records the choice once it has been made. And the field is only ever *sent* when it is on the suppression side: Bailian accepts `thinking` and ignores it (HTTP 200, no change in output, on a model with no reasoning frames to suppress), which is what lets one user-facing switch cover whichever provider serves 🧠, but there is no reason to spend the bytes otherwise. Of the candidate switches only `thinking:{type:disabled}` and `reasoning_effort:"none"` actually work — **`enable_thinking:false` (629 reasoning tokens still) and `chat_template_kwargs.thinking:false` (378 still) look plausible and do nothing**, which is why the constant is documented rather than guessed at. `ResolvedModelRole.allowsVisionReasoning` carries the decision to the request body the way `requestPath` already carries the protocol to the route.
+
+**The second cost is TTS, and it is linear in the answer's length.** Measured 2026-09-21 on `qwen-audio-3.1-tts-flash` + the cloned voice: synthesis plus download runs ~19 ms per character plus ~450 ms fixed — 10 characters 0.72 s, 90 characters 1.98 s, 250 characters 5.85 s, 600 characters 9.43 s. Because `maximumCharactersPerChunk` is 500, a normal spoken answer is a *single* chunk, so the user waits for the whole thing before hearing anything. Unlike the reasoning pass there is no switch to flip here; the levers are shorter answers (the system prompt already asks for one or two sentences) and, for long ones, starting synthesis on the first sentence while the rest still streams.
+
+**Only `deepseek-flash` can serve 🧠 on DeepSeek.** Measured 2026-09-21: the endpoint exposes exactly two models, and `deepseek-v4-pro` rejects the screenshot outright ("Unsupported Image") while `deepseek-flash` answers it — including emitting `[POINT:…]` tags on the normalized grid, which is the part that could not be assumed. `deepseek-flash` is therefore what the DeepSeek provider pre-fills as its 🧠 model. It is also a reasoning model — see the reasoning-suppression paragraph above for how that is handled, and why the `max_tokens` budget still has to stay generous: reasoning tokens are spent before any content is emitted, and a small budget returns HTTP 200 with an empty `content` — a silent failure the vision client now turns into a thrown error rather than "nothing happened".
+
+**`BailianVisionChatAPI.maxCompletionTokens` is capped by Bailian, not DeepSeek.** One constant serves every provider, so it has to be legal on all of them, and their ceilings are an order of magnitude apart. Measured 2026-09-21 by probing each service: DeepSeek accepts `[1, 393216]` and Bailian rejects above `[1, 32768]` with `InternalError.Algo.InvalidParameter`. 32768 is therefore the largest value that is legal everywhere, and that is what the constant holds — raising it toward DeepSeek's ceiling would break 🧠 the moment the user switched back to Bailian. Both were re-verified at 32768 with a real 1.2 MB screenshot and the app's own 4923-character prompt, and both still answer and still emit `[POINT:…]`. (The separate small `max_tokens` values in `ElementLocationDetector` and `ModelConnectionTester` are unrelated paths and deliberately tiny.)
+
+`ModelConfigurationStore` holds the configuration behind an `NSLock` and is deliberately `nonisolated` (see the Concurrency note below); `BailianConfiguration` is now only a façade over it (`resolvedTranscription` / `resolvedVision` / `resolvedSpeech`) plus the seed constants. All three clients read the configuration **per request**, so a save is live: nothing needs rebuilding, and a change mid-utterance can't split one request across two providers.
 
 The `worker/` directory is kept for reference but is **not built or called** by the app.
+
+### Settings
+
+One window, opened from the gear in the menu bar panel or from 「更换…」 on the panel's model row. It has a 178pt sidebar and seven pages, in this order:
+
+| Page | Holds | Stored in |
+|------|-------|-----------|
+| 通用 | 开机自启动、启动时自动打开面板、回答时显示文字、回答文字多留一会儿、说话时实时显示识别文字、光标闲置后自动隐藏 | `AppSettings.json` |
+| 模型 | the three roles and their providers | `ModelConfiguration.json` |
+| 对话与记忆 | 记住最近多少轮对话、重启后保留对话、历史自动压缩、历史里带截图、回答长度、补充指令 — plus 清空对话记忆, an action rather than a setting | `AppSettings.json` |
+| 听（识别） | 识别语言、热词（专有名词偏置）、松键后等最终结果、静音自动断句（免按键连续对话） | `AppSettings.json` |
+| 说（播报） | 语速、播报音量、新提问立刻打断播报、长回答分段合成 | `AppSettings.json` |
+| 看与截图 | 截图清晰度、截图压缩质量、多显示器发送策略、回答里的位置自动飞过去指、单次回答字数上限 | `AppSettings.json` |
+| 快捷键 | 按住说话快捷键、松开立即发送 | `AppSettings.json` |
+
+Every row is wired to real behaviour — the sidebar's per-page number is the count of live settings on that page, so a page that grew a decorative row would have to lie about its own size. The three model roles are the only settings outside `AppSettings.json`.
+
+Four settings need a subsystem rather than a flag, because a setting that saves but does nothing is worse than no setting:
+
+- **「重启后保留对话」 / 「历史自动压缩」 / 「历史里带截图」** — the memory pipeline. `CompanionManager` replays the last N exchanges as real conversation turns (each with its own screenshots when 「历史里带截图」 is on), compresses the ones that age out into a running summary, and skips all of it when the persistence setting is off. The summary is sent as a **second system message**, not appended to the system prompt — a drifted summary must not read as an instruction the user gave.
+- **「松开立即发送」 off** — confirmation mode. The transcript is held and shown next to the cursor instead of being sent, and a *tap* of the shortcut (under 0.6 s — see `confirmationTapMaximumDurationSeconds`) sends it. The tap rule is phrased in press duration rather than in what was said, because at release the recognition service has not yet returned this press's final transcript, so "did they say something this time" is not a question the release event can answer. An empty transcript never sends and never clears, which is what lets a user whose first attempt was not heard hold the key again without losing what they said.
+- **「回答时显示文字」 / 「说话时实时显示识别文字」** — one bubble in the overlay showing whichever of the streaming answer or the live transcript is current. An empty string is the single gate the overlay keys off, so "show nothing" and "nothing to show" are the same state. The bubble is also what confirmation mode reads back from.
+- **「回答文字多留一会儿」** — how long the answer bubble outlives the voice reading it. The reading time is not the user's to set: `scheduleAnswerBubbleClear(lingerSeconds:)` polls `bailianTTSClient.isPlaying`, which is true until the *last* chunk is done, and only then starts the user's linger. Clearing at `speakText` return instead — which is what the app did — showed the answer for the second or two the first chunk took to synthesize and removed it at exactly the moment the user began listening, because `speakText` returns when playback *starts*. Two consequences are deliberate: the streamed text is replaced by `spokenText` at that point, since the raw stream still carries the `[POINT:…]` tag and it would now sit on screen for seconds; and every path that takes the bubble over goes through `clearAnswerBubble()`, because a clear left pending from the previous answer would otherwise fire mid-stream and take the next one's opening words. `scheduleTransientHideIfNeeded` waits for the bubble too — the bubble is drawn *by* the cursor, so fading out during the linger would take the text with it.
+
+`AppSettingsStore` and `ConversationHistoryStore` both follow `ModelConfigurationStore`'s shape exactly — `nonisolated`, `NSLock`-guarded cache, atomic write followed by `setAttributes([.posixPermissions: 0o600])` — because `.atomic` writes land as 0644 and every one of these files holds something the user would not want world-readable. Both live outside the repo, and both post a notification on change so the running app picks the change up without a restart.
 
 ### Key Architecture Decisions
 
@@ -60,7 +115,15 @@ The `worker/` directory is kept for reference but is **not built or called** by 
 
 **TTS endpoint families are not interchangeable**: Bailian serves speech synthesis from two different routes and picking the wrong pairing fails with a misleading `InvalidParameter: url error, please check url` rather than anything that names the mismatch. Qwen-Audio-TTS / CosyVoice models (`qwen-audio-3.1-tts-flash`) live on `/api/v1/services/audio/tts/SpeechSynthesizer` and take `input.{text, voice, format, sample_rate}`; Qwen-TTS models (`qwen3-tts-flash`) live on `/api/v1/services/aigc/multimodal-generation/generation` and take `input.{text, voice, language_type}`. Voice names are model-family specific too — the Qwen-TTS name `Cherry` is rejected by Qwen-Audio-TTS with `[cosyvoice:]Engine error [411]`, whose correct voices are `yuxiaoyun_v3.1`, `yeqinghe_v3.1` and friends. Model, voice, body fields and path therefore have to move together. Alibaba's own list (`bl model code --model …`) is the way to tell which family a model belongs to: it emits the `tts_v2` websocket sample for Qwen-Audio-TTS and the HTTP sample for Qwen-TTS.
 
-**A 403 on TTS speaks the apology, not the answer**: `speakCreditsErrorFallback()` reads a fixed Chinese apology through `NSSpeechSynthesizer` whenever the vision call or the TTS call throws, so a billing-side failure (`AllocationQuota.FreeTierOnly` — free quota exhausted with "use free tier only" still on in the Alibaba console) presents to the user as the companion repeating "抱歉，我这边出了点问题" no matter what they ask. The vision model is unaffected and answers correctly, which makes it look like a model problem when it is an account problem. Check the account before touching the pipeline.
+**A 403 on TTS speaks the apology, not the answer**: `speakCreditsErrorFallback(failure:)` reads a fixed Chinese apology through `NSSpeechSynthesizer` whenever the vision call or the TTS call throws, so a billing-side failure (`AllocationQuota.FreeTierOnly` — free quota exhausted with "use free tier only" still on in the Alibaba console) presents to the user as the companion repeating "抱歉，我这边出了点问题" no matter what they ask. The vision model is unaffected and answers correctly, which makes it look like a model problem when it is an account problem. The apology is kept — the user is waiting for audio — but the same error is now also recorded in `CompanionManager.lastErrorMessage` and shown verbatim in the panel, so the actual cause is never hidden behind the apology alone. Check the account before touching the pipeline.
+
+**Model configuration reads are per-request, never frozen at launch**: all three clients (`BailianVisionChatAPI`, `BailianTTSClient`, `BailianRealtimeTranscriptionProvider`) resolve their role from `ModelConfigurationStore` inside the request they are about to send, rather than capturing a URL/key/model in an initializer. This is what makes saving in the settings window take effect immediately, with no client rebuild and no "changed it but nothing happened" trap. Two consequences are deliberate: `BailianTTSClient.speakText` snapshots the role **once** at the top and reuses it for every chunk, so one answer can never be half-read in one provider's voice and half in another's; and a transcription session receives its `websocketURL` and `apiKey` as plain values, so a save landing mid-recording cannot produce a socket whose host and model disagree.
+
+**The configuration layer is `nonisolated` on purpose**: the target builds with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and `SWIFT_VERSION = 5.0`, so an unannotated type is main-actor-isolated. Everything in the configuration path — `ModelConfiguration`'s value types, `BailianConfiguration`, `AppBundleConfiguration`, `ModelConfigurationStore` — is therefore marked `nonisolated`: the value types have no shared mutable state, the store guards its one cache with an `NSLock`, and marking them keeps a configuration read from having to hop actors. Without the annotation the compiler flags the store's use of these types, since `nonisolated` on the store alone does not extend to the types it touches.
+
+**The settings window must call `NSApp.activate()`**: this is an `LSUIElement` app, so it is never the active application on its own. Without activating first, the window appears but never becomes key — and a non-key window's text fields silently swallow every keystroke, which looks exactly like a broken form. The controller also needs both a strong reference (held by `CompanionManager`) and `isReleasedWhenClosed = false`; either one alone gives a crash on close or a vanished window.
+
+**Deleting a provider never hands its roles to another provider**: `ModelSettingsViewModel.removeProvider(withID:)` unassigns the roles it served and leaves them unassigned. Silently reassigning would start sending the user's screenshots to a company they did not choose. The confirmation dialog names exactly which roles will stop working before the deletion happens.
 
 **Transient Cursor Mode**: When "Show Clicky" is off, pressing the hotkey fades in the cursor overlay for the duration of the interaction (recording → response → TTS → optional pointing), then fades it out automatically after 1 second of inactivity.
 
@@ -69,18 +132,18 @@ The `worker/` directory is kept for reference but is **not built or called** by 
 | File | Lines | Purpose |
 |------|-------|---------|
 | `leanring_buddyApp.swift` | ~89 | Menu bar app entry point. Uses `@NSApplicationDelegateAdaptor` with `CompanionAppDelegate` which creates `MenuBarPanelManager` and starts `CompanionManager`. No main window — the app lives entirely in the status bar. |
-| `CompanionManager.swift` | ~1084 | Central state machine. Owns dictation, shortcut monitoring, screen capture, the Qwen vision chat API, Bailian TTS, and overlay management. Tracks voice state (idle/listening/processing/responding), conversation history, model selection, and cursor visibility. Coordinates the full push-to-talk → screenshot → Qwen → TTS → pointing pipeline. |
+| `CompanionManager.swift` | ~1576 | Central state machine. Owns dictation, shortcut monitoring, screen capture, the vision chat API, TTS, and overlay management. Tracks voice state (idle/listening/processing/responding), conversation history, cursor visibility, and the last error message shown in the panel. Owns the settings window and re-renders the panel when either configuration changes. Coordinates the full push-to-talk → screenshot → vision → TTS → pointing pipeline, and owns 对话与记忆's memory: replaying past turns, compressing old ones, and holding a transcript back when 快捷键 → 「松开立即发送」 is off. |
 | `MenuBarPanelManager.swift` | ~243 | NSStatusItem + custom NSPanel lifecycle. Creates the menu bar icon, manages the floating companion panel (show/hide/position), installs click-outside-to-dismiss monitor. |
-| `CompanionPanelView.swift` | ~767 | SwiftUI panel content for the menu bar dropdown. Shows companion status, push-to-talk instructions, model picker (Plus/Flash), permissions UI, DM feedback button, and quit button. Dark aesthetic using `DS` design system. |
-| `OverlayWindow.swift` | ~881 | Full-screen transparent overlay hosting the blue cursor, response text, waveform, and spinner. Handles cursor animation, element pointing with bezier arcs, multi-monitor coordinate mapping, and fade-out transitions. |
-| `CompanionResponseOverlay.swift` | ~217 | SwiftUI view for the response text bubble and waveform displayed next to the cursor in the overlay. |
+| `CompanionPanelView.swift` | ~842 | SwiftUI panel content for the menu bar dropdown. Shows companion status, push-to-talk instructions, a read-only vision-model summary with 「更换…」, a gear that opens the settings window, the last error verbatim, permissions UI, DM feedback button, and quit button. Dark aesthetic using `DS` design system. |
+| `OverlayWindow.swift` | ~946 | Full-screen transparent overlay hosting the blue cursor, response text, waveform, and spinner. Handles cursor animation, element pointing with bezier arcs, multi-monitor coordinate mapping, and fade-out transitions. Also hosts the conversation bubble, which shows whichever of the streaming answer or the live transcript is current. |
+| `CompanionResponseOverlay.swift` | ~217 | Dead code — nothing instantiates `CompanionResponseOverlayManager`; the bubble described above is what actually renders answers and transcripts. Kept only because removing it is out of scope. |
 | `CompanionScreenCaptureUtility.swift` | ~132 | Multi-monitor screenshot capture using ScreenCaptureKit. Returns labeled image data for each connected display. |
-| `BuddyDictationManager.swift` | ~868 | Push-to-talk voice pipeline. Handles microphone capture via `AVAudioEngine`, provider-aware permission checks, keyboard/button dictation sessions, transcript finalization, shortcut parsing, contextual keyterms, and live audio-level reporting for waveform feedback. |
+| `BuddyDictationManager.swift` | ~889 | Push-to-talk voice pipeline. Handles microphone capture via `AVAudioEngine`, provider-aware permission checks, keyboard/button dictation sessions, transcript finalization, shortcut parsing, contextual keyterms, and live audio-level reporting for waveform feedback. Re-resolves its transcription provider at the start of a recording if the current one is unconfigured, so fixing the 👂 role in the settings window does not require a restart. |
 | `BuddyTranscriptionProvider.swift` | ~82 | Protocol surface and provider factory for voice transcription backends. Resolves provider based on `VoiceTranscriptionProvider` in Info.plist — Bailian, AssemblyAI, OpenAI, or Apple Speech. |
-| `BailianRealtimeTranscriptionProvider.swift` | ~602 | Streaming transcription provider. Opens a Bailian v3 realtime websocket, sends a `session.update`, streams base64 PCM16 audio in 100ms chunks, and delivers interim + final transcripts on key-up. Shares a single URLSession across all sessions. |
-| `BailianConfiguration.swift` | ~86 | Reads `BailianAPIKey` / `BailianWorkspaceBaseURL` through `AppBundleConfiguration`, and declares the selectable vision-chat model IDs. |
-| `BailianVisionChatAPI.swift` | ~316 | Qwen VL vision chat client with streaming (SSE) and non-streaming modes. Parses `delta.content` for text and `delta.reasoning_content` for thinking, tolerates the trailing usage-only frame whose `choices` array is empty, and detects image MIME types. |
-| `BailianTTSClient.swift` | ~325 | Bailian TTS client. Splits text into sentence-aligned chunks, requests audio from the Qwen-Audio-TTS `SpeechSynthesizer` endpoint, and plays back via `AVAudioPlayer`. Exposes `isPlaying` for transient cursor scheduling. |
+| `BailianRealtimeTranscriptionProvider.swift` | ~637 | Streaming transcription provider. Opens a realtime websocket at the URL its resolved role supplies, sends a `session.update`, streams base64 PCM16 audio in 100ms chunks, and delivers interim + final transcripts on key-up. Shares a single URLSession across all sessions. |
+| `BailianConfiguration.swift` | ~127 | Façade over the stored configuration: `resolvedTranscription` / `resolvedVision` / `resolvedSpeech` resolve the three roles fresh on every access. Also holds the seed constants (`Models.*`, the cloned `textToSpeechVoice`) and the legacy plist readers used only when no configuration file exists yet. |
+| `BailianVisionChatAPI.swift` | ~388 | Vision chat client with streaming (SSE) and non-streaming modes, resolving its provider per request. Parses `delta.content` for text and `delta.reasoning_content` for thinking, tolerates the trailing usage-only frame whose `choices` array is empty, and detects image MIME types. |
+| `BailianTTSClient.swift` | ~377 | TTS client, resolving its provider per request. Splits text into sentence-aligned chunks, requests audio from the configured endpoint, and plays back via `AVAudioPlayer`. Exposes `isPlaying` for transient cursor scheduling. |
 | `AssemblyAIStreamingTranscriptionProvider.swift` | ~478 | Unused fallback streaming provider kept from upstream. Fetches temp tokens from the retired Worker, opens an AssemblyAI v3 websocket, streams PCM16 audio. |
 | `OpenAIAudioTranscriptionProvider.swift` | ~317 | Upload-based transcription provider. Buffers push-to-talk audio locally, uploads as WAV on release, returns finalized transcript. |
 | `AppleSpeechTranscriptionProvider.swift` | ~147 | Local fallback transcription provider backed by Apple's Speech framework. |
@@ -90,7 +153,18 @@ The `worker/` directory is kept for reference but is **not built or called** by 
 | `ElementLocationDetector.swift` | ~335 | Detects UI element locations in screenshots for cursor pointing. |
 | `DesignSystem.swift` | ~880 | Design system tokens — colors, corner radii, shared styles. All UI references `DS.Colors`, `DS.CornerRadius`, etc. |
 | `WindowPositionManager.swift` | ~262 | Window placement logic, Screen Recording permission flow, and accessibility permission helpers. |
-| `AppBundleConfiguration.swift` | ~85 | Runtime configuration reader. Checks the bundle Info dictionary, `Info.plist`, a bundled `BailianSecrets.plist`, then the Application Support copy. |
+| `AppBundleConfiguration.swift` | ~88 | Runtime configuration reader. Checks the bundle Info dictionary, `Info.plist`, a bundled `BailianSecrets.plist`, then the Application Support copy. Now only used to seed a first-run configuration. |
+| `ModelConfiguration.swift` | ~440 | Pure data + resolution, no I/O. `ModelRole` (👂/🧠/👄), `APIProviderFlavor` (owns request paths and preset model IDs), `ProviderProfile`, `ModelConfiguration`, `ResolvedModelRole`, and `RoleConfigurationStatus` — the last of which carries *why* a role is unusable, not just that it is. |
+| `ModelConfigurationStore.swift` | ~271 | Reads/writes `ModelConfiguration.json` (atomic write, then `0600`), caches it behind an `NSLock`, seeds a first-run configuration from the legacy plist, and posts `.clickyModelConfigurationChanged` on save. Seeding is in memory only — nothing is written until the user presses 保存. |
+| `ModelConnectionTester.swift` | ~242 | One minimal request per role (chat without an image, two characters of TTS, a real websocket handshake) run against a *draft* configuration, so the user learns whether a provider works before committing to it. Reports the service's own error text. |
+| `ModelSettingsViewModel.swift` | ~277 | `@MainActor` state for the settings window: the draft configuration, dirty tracking, role assignment, and save/test actions. All provider bindings resolve by id rather than array index. |
+| `AppSettings.swift` | ~309 | Pure data, no I/O: every user-facing setting that is not a model choice, plus `AnswerLengthStyle`, `TranscriptionLanguage` and `clamped()`. The 27 stored properties are the 27 rows the settings pages show — the sidebar's per-page counts are derived from the same set. |
+| `AppSettingsStore.swift` | ~155 | Reads/writes `AppSettings.json` (atomic write, then `0600`), caches it behind an `NSLock`, and posts `.clickyAppSettingsChanged` on save. Same `nonisolated` + `NSLock` shape as `ModelConfigurationStore`, and the reason that shape exists: the project builds with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, so an isolation mistake in a store would be silent. |
+| `GeneralSettingsView.swift` | ~876 | The six non-模型 settings pages (通用 / 对话与记忆 / 听 / 说 / 看 / 快捷键) and the components they share — `SettingsRow`, `SettingsCard`, `SettingsSwitch`, `SettingsSlider`, `SettingsStepper`, the two pickers. All 27 settings are here; none of them is decorative. |
+| `GeneralSettingsViewModel.swift` | ~194 | `@MainActor` draft-and-save state for those pages, mirroring `ModelSettingsViewModel`. Also owns 清空对话记忆, which is deliberately *not* routed through the draft — deleting a file should not depend on the user also pressing 保存. |
+| `ConversationHistoryStore.swift` | ~207 | Reads/writes `ConversationHistory.json` (atomic write, then `0600`) and posts `.clickyConversationHistoryCleared`. The only place the user's own words reach the disk, which is why the setting that enables it defaults to off and why turning it off deletes the file rather than only stopping future writes. Screenshots are held in memory and excluded from `CodingKeys`, so a restart drops them as the setting's description promises. |
+| `SettingsWindowController.swift` | ~321 | `NSWindowController` hosting all seven pages: a 178pt sidebar plus the selected page, with `ModelSettingsView` swapped in for 模型. Calls `NSApp.activate()` before showing — see the key decisions. |
+| `ModelSettingsView.swift` | ~602 | The 模型 page: 「当前使用」 (one row per role) and 「服务商」 (credentials only), with the test/save bar pinned outside the scroll view. Rendered inside the settings window's content area, so it draws no window chrome of its own. |
 | `worker/src/index.ts` | ~142 | Retired Cloudflare Worker proxy, kept for reference only. |
 
 ## Build & Run
@@ -105,24 +179,31 @@ open leanring-buddy.xcodeproj
 # deprecated onChange warning in OverlayWindow.swift. Do NOT attempt to fix these.
 ```
 
-**Do NOT run `xcodebuild` from the terminal** — it invalidates TCC (Transparency, Consent, and Control) permissions and the app will need to re-request screen recording, accessibility, etc.
+**Terminal `xcodebuild` is safe only while the target is certificate-signed** — see [Code signing](#code-signing). Under ad-hoc signing it resets TCC (Screen Recording / Accessibility / Microphone), because that signature's identity is the binary hash, so a rebuild looks like an entirely new app. The target is certificate-signed today, so `xcodebuild … build` works and is a faster way to get a compile error than opening Xcode. If the target is ever switched back to ad-hoc, go back to building from the Xcode GUI.
 
 ### Code signing
 
-The app target is set to **ad-hoc signing** (`CODE_SIGN_STYLE = Manual`, `CODE_SIGN_IDENTITY = "-"`, `DEVELOPMENT_TEAM = ""`) so it builds on a machine with no Apple Developer certificate.
+The app target is **certificate-signed**: `CODE_SIGN_STYLE = Automatic`, `CODE_SIGN_IDENTITY = "Apple Development"`, `DEVELOPMENT_TEAM = 8WS2Z3JL4F`, against an Apple ID added in Xcode → Settings → Accounts. This is the configuration that stopped macOS re-asking for Screen Recording / Accessibility / Microphone after every rebuild, and it is what makes terminal `xcodebuild` safe here.
 
-Upstream shipped the app target pinned to `DEVELOPMENT_TEAM = 2UDAY4J48G`, which is the original author's team. On any other machine that fails before compiling with:
+The stability comes from the designated requirement being **certificate**-based rather than hash-based:
+
+```
+designated => identifier "com.yourcompany.leanring-buddy" and anchor apple generic
+              and certificate leaf[subject.CN] = "Apple Development: … (WR9S5P4Y38)"
+```
+
+An ad-hoc signature's requirement is instead `cdhash H"…"` — bound to the binary — so every rebuild is a brand-new app to TCC and all three permissions reset. That was the cause of the repeated permission prompts.
+
+Upstream shipped the app target pinned to `DEVELOPMENT_TEAM = 2UDAY4J48G`, the original author's team. On any other machine that fails before compiling with:
 
 ```
 error: No signing certificate "Mac Development" found: No "Mac Development"
 signing certificate matching team ID "..." with a private key was found.
 ```
 
-Do not "fix" this by setting a team ID that isn't installed — with no certificate in the keychain, automatic signing fails for any team. Ad-hoc works because the app is not sandboxed and every entitlement it declares (`network.client`, `device.camera`, `device.audio-input`, the ScreenCaptureKit mach-lookup exception) is one that needs no provisioning profile.
+Do not "fix" that by setting a team ID that isn't installed — with no certificate in the keychain, automatic signing fails for any team. **Ad-hoc** (`CODE_SIGN_STYLE = Manual`, `CODE_SIGN_IDENTITY = "-"`, `DEVELOPMENT_TEAM = ""`) is the fallback for a machine with no Apple ID at all: it compiles, because the app is not sandboxed and every entitlement it declares (`network.client`, `device.camera`, `device.audio-input`, the ScreenCaptureKit mach-lookup exception) needs no provisioning profile — but it costs stable TCC permissions, and it is the only reason terminal builds would be off-limits.
 
-Consequence to expect: an ad-hoc signature has no stable identity, so macOS keys TCC permissions off the binary hash and may re-ask for Screen Recording / Accessibility / Microphone after a rebuild. To get stable permissions, sign in with an Apple ID in Xcode → Settings → Accounts and switch the target back to automatic signing with that team.
-
-## Bailian Secrets
+## Secrets and First-Run Setup
 
 `leanring-buddy/BailianSecrets.plist` is gitignored and holds two keys:
 
@@ -143,9 +224,13 @@ chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
 
 `AppBundleConfiguration` falls back to that path automatically, so it works whether or not Xcode copies the in-repo plist into the bundle.
 
+That plist is now a **first-run seed only**. The first time the app starts with no `ModelConfiguration.json` present, these two values become the URL and API key of an 「阿里云百炼」 card, and all three roles are pointed at it. From then on the settings window owns the configuration and the plist is never read again — so an existing user who upgrades needs to change nothing, and a user who edits the plist afterwards will see no effect until they delete the JSON file.
+
+The recommended way to configure the app is the **gear icon in the menu bar panel**, which opens the settings window on 通用. It writes `~/Library/Application Support/Clicky/ModelConfiguration.json` and `~/Library/Application Support/Clicky/AppSettings.json`, both with `0600` permissions, and both take effect immediately — no restart, no rebuild.
+
 ## Cloudflare Worker (retired)
 
-`worker/` is kept for reference. It is **not built and not called** — the app talks to Bailian directly.
+`worker/` is kept for reference. It is **not built and not called** — the app talks to the configured provider directly.
 
 ## Code Style & Conventions
 
@@ -182,7 +267,7 @@ IMPORTANT: Follow these naming rules strictly. Clarity is the top priority.
 - Do not add docstrings, comments, or type annotations to code you did not change
 - Do not try to fix the known non-blocking warnings (Swift 6 concurrency, deprecated onChange)
 - Do not rename the project directory or scheme (the "leanring" typo is intentional/legacy)
-- Do not run `xcodebuild` from the terminal — it invalidates TCC permissions
+- Do not run terminal `xcodebuild` while the target is ad-hoc signed — it resets TCC permissions. It is safe while the target is certificate-signed (see [Code signing](#code-signing)); check before assuming.
 
 ## Git Workflow
 

@@ -92,10 +92,16 @@ enum BuddyPushToTalkShortcut {
         case keyUp
     }
 
-    static let currentShortcutOption: ShortcutOption = .controlOption
+    /// The push-to-talk keybinding in effect. Read from the app settings on
+    /// every access rather than cached: the settings window can change it while
+    /// the app runs, and the event-tap matching and the panel's tooltip must
+    /// never disagree about which keys start and end a recording.
+    static var currentShortcutOption: ShortcutOption {
+        AppSettingsStore.snapshot().pushToTalkShortcutOption
+    }
     static let pushToTalkKeyCode: UInt16 = 49 // Space
-    static let pushToTalkDisplayText = currentShortcutOption.displayText
-    static let pushToTalkTooltipText = "push to talk (\(pushToTalkDisplayText))"
+    static var pushToTalkDisplayText: String { currentShortcutOption.displayText }
+    static var pushToTalkTooltipText: String { "push to talk (\(pushToTalkDisplayText))" }
 
     static func shortcutTransition(
         for event: NSEvent,
@@ -262,7 +268,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         return AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined
     }
 
-    private let transcriptionProvider: any BuddyTranscriptionProvider
+    /// The transcription backend in use.
+    ///
+    /// Not `let`: the provider is chosen once at init from whichever backend was
+    /// configured *at that moment*, so a user who had no speech-recognition
+    /// credentials at launch falls back to Apple Speech — and would then stay on
+    /// Apple Speech forever, no matter what they typed into the model settings
+    /// window, until the app was restarted. `startRecognitionSession` re-resolves
+    /// it when the current one is unusable.
+    private var transcriptionProvider: any BuddyTranscriptionProvider
     private let audioEngine = AVAudioEngine()
     private var activeTranscriptionSession: (any BuddyStreamingTranscriptionSession)?
     private var activeStartSource: BuddyDictationStartSource?
@@ -515,6 +529,19 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         activeTranscriptionSession?.cancel()
         activeTranscriptionSession = nil
 
+        // The provider was picked at init from what was configured then. If it is
+        // still unusable, re-resolve now — this is the path that makes a model
+        // configured in the settings window take effect on the next push-to-talk
+        // instead of on the next launch.
+        if !transcriptionProvider.isConfigured {
+            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
+            if reResolvedProvider.isConfigured {
+                print("🎙️ BuddyDictationManager: switching transcription provider \(transcriptionProvider.displayName) → \(reResolvedProvider.displayName)")
+                transcriptionProvider = reResolvedProvider
+                transcriptionProviderDisplayName = reResolvedProvider.displayName
+            }
+        }
+
         print("🎙️ BuddyDictationManager: opening transcription provider \(transcriptionProvider.displayName)")
 
         let activeTranscriptionSession = try await transcriptionProvider.startStreamingSession(
@@ -666,7 +693,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             "localhost"
         ]
 
-        let combinedKeyterms = baseKeyterms + contextualKeyterms
+        // Keyterms the user added in the settings window (听 → 热词), one per
+        // line. They join the built-in list rather than replacing it: the base
+        // terms describe the app itself, which the user did not opt out of.
+        let extraKeyterms = AppSettingsStore.snapshot()
+            .extraTranscriptionKeyterms
+            .split(whereSeparator: \.isNewline)
+            .map(String.init)
+
+        let combinedKeyterms = baseKeyterms + extraKeyterms + contextualKeyterms
         var uniqueNormalizedKeyterms = Set<String>()
         var orderedKeyterms: [String] = []
 

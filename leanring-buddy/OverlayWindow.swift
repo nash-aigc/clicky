@@ -78,6 +78,17 @@ struct SizePreferenceKey: PreferenceKey {
     }
 }
 
+/// Size of the answer / live-transcript bubble. A key of its own because that
+/// bubble wraps to several lines while the welcome and onboarding bubbles are
+/// single-line, and sharing one measurement between them would make each one
+/// reposition itself to the other's width.
+struct ConversationBubbleSizePreferenceKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        value = nextValue()
+    }
+}
+
 struct NavigationBubbleSizePreferenceKey: PreferenceKey {
     static var defaultValue: CGSize = .zero
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
@@ -127,6 +138,7 @@ struct BlueCursorView: View {
     @State private var welcomeText: String = ""
     @State private var showWelcome: Bool = true
     @State private var bubbleSize: CGSize = .zero
+    @State private var conversationBubbleSize: CGSize = .zero
     @State private var bubbleOpacity: Double = 1.0
     @State private var cursorOpacity: Double = 0.0
 
@@ -141,6 +153,19 @@ struct BlueCursorView: View {
 
     /// Speech bubble text shown when pointing at a detected element.
     @State private var navigationBubbleText: String = ""
+
+    /// What the conversation bubble beside the cursor should say right now.
+    ///
+    /// The answer wins over the live transcript: they belong to different phases
+    /// of an interaction and cannot both be current, but if a late partial
+    /// transcript ever arrives after the answer started, showing the answer is
+    /// the only reading that is not stale.
+    private var conversationBubbleText: String {
+        if !companionManager.streamingAnswerText.isEmpty {
+            return companionManager.streamingAnswerText
+        }
+        return companionManager.liveTranscriptText
+    }
     @State private var navigationBubbleOpacity: Double = 0.0
     @State private var navigationBubbleSize: CGSize = .zero
 
@@ -255,6 +280,46 @@ struct BlueCursorView: View {
                     .animation(.easeOut(duration: 0.4), value: companionManager.onboardingPromptOpacity)
                     .onPreferenceChange(SizePreferenceKey.self) { newSize in
                         bubbleSize = newSize
+                    }
+            }
+
+            // Conversation bubble — the model's answer as it streams, or what the
+            // user is saying while they speak. Both arrive from CompanionManager
+            // already gated by 通用 → 「回答时显示文字」 / 「实时显示识别文字」, so an
+            // empty string here means "the user turned this off" and this view
+            // never has to ask. Sits under the navigation bubble: when the buddy
+            // has flown somewhere to point, the pointer's own words matter more.
+            if isCursorOnThisScreen
+                && buddyNavigationMode != .pointingAtTarget
+                && !conversationBubbleText.isEmpty {
+                Text(conversationBubbleText)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white)
+                    // Wraps instead of `.fixedSize()`: an answer runs to a couple of
+                    // sentences, and one unwrapped line would stretch across the
+                    // whole screen.
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: 280, alignment: .leading)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(DS.Colors.overlayCursorBlue)
+                            .shadow(color: DS.Colors.overlayCursorBlue.opacity(0.5), radius: 6, x: 0, y: 0)
+                    )
+                    .overlay(
+                        GeometryReader { geo in
+                            Color.clear
+                                .preference(key: ConversationBubbleSizePreferenceKey.self, value: geo.size)
+                        }
+                    )
+                    .position(
+                        x: cursorPosition.x + 10 + (conversationBubbleSize.width / 2),
+                        y: cursorPosition.y + 18 + (conversationBubbleSize.height / 2)
+                    )
+                    .animation(.spring(response: 0.2, dampingFraction: 0.6, blendDuration: 0), value: cursorPosition)
+                    .onPreferenceChange(ConversationBubbleSizePreferenceKey.self) { newSize in
+                        conversationBubbleSize = newSize
                     }
             }
 

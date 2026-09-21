@@ -25,11 +25,19 @@ struct CompanionPanelView: View {
                 .padding(.top, 16)
                 .padding(.horizontal, 16)
 
+            if companionManager.lastErrorMessage != nil {
+                Spacer()
+                    .frame(height: 12)
+
+                failureNoticeSection
+                    .padding(.horizontal, 16)
+            }
+
             if companionManager.hasCompletedOnboarding && companionManager.allPermissionsGranted {
                 Spacer()
                     .frame(height: 12)
 
-                modelPickerRow
+                visionModelSummaryRow
                     .padding(.horizontal, 16)
             }
 
@@ -102,6 +110,27 @@ struct CompanionPanelView: View {
             Text(statusText)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(DS.Colors.textTertiary)
+
+            // The gear lives in the header, not next to the model summary below,
+            // because the summary only renders once onboarding is done and all
+            // permissions are granted. Settings has to be reachable before that —
+            // otherwise a missing transcription provider can't be fixed from here
+            // at all.
+            Button(action: {
+                companionManager.openSettings()
+            }) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                    )
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .help("模型设置")
 
             Button(action: {
                 NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
@@ -596,55 +625,101 @@ struct CompanionPanelView: View {
         .padding(.vertical, 4)
     }
 
-    // MARK: - Model Picker
+    // MARK: - Vision Model Summary
 
-    private var modelPickerRow: some View {
-        HStack {
-            Text("Model")
+    /// A read-only readout of which model is answering questions right now.
+    ///
+    /// This replaced a Plus/Flash toggle. Those two buttons wrote `qwen3-vl-plus`
+    /// or `qwen3-vl-flash` into the configuration, which stops being true the
+    /// moment the vision role is served by anything else — and a control that
+    /// writes a model name its own provider doesn't host is a control that lies.
+    /// Choosing a model now happens in the settings window, where the provider
+    /// holding it is visible.
+    private var visionModelSummaryRow: some View {
+        let visionRoleStatus = companionManager.visionRoleStatus
+
+        return HStack(spacing: 8) {
+            Text("🧠")
+                .font(.system(size: 12))
+
+            Text("视觉模型")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(DS.Colors.textSecondary)
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            HStack(spacing: 0) {
-                modelOptionButton(
-                    label: "Plus",
-                    modelID: BailianConfiguration.Models.VisionChat.plus
-                )
-                modelOptionButton(
-                    label: "Flash",
-                    modelID: BailianConfiguration.Models.VisionChat.flash
-                )
+            if let resolvedVisionRole = visionRoleStatus.resolvedRole {
+                Text(resolvedVisionRole.modelID)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help("由「\(resolvedVisionRole.providerDisplayName)」提供")
+            } else {
+                Text("未配置")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(DS.Colors.destructiveText)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(DS.Colors.borderSubtle, lineWidth: 0.5)
-            )
+
+            Button(action: {
+                companionManager.openSettings(initialPage: .model)
+            }) {
+                Text("更换…")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(DS.Colors.textPrimary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                    )
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
         }
         .padding(.vertical, 4)
     }
 
-    private func modelOptionButton(label: String, modelID: String) -> some View {
-        let isSelected = companionManager.selectedModel == modelID
-        return Button(action: {
-            companionManager.setSelectedModel(modelID)
-        }) {
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(isSelected ? DS.Colors.textPrimary : DS.Colors.textTertiary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .fill(isSelected ? Color.white.opacity(0.1) : Color.clear)
-                )
+    // MARK: - Failure Notice
+
+    /// Shows the last failure verbatim.
+    ///
+    /// The companion speaks a fixed apology ("抱歉，我这边出了点问题") whenever a
+    /// request fails, which tells the user nothing about why. Everything from an
+    /// exhausted free tier to a rejected key to a malformed URL arrives through
+    /// this same apology, so the actual text is surfaced here, unedited and
+    /// selectable — the wording is what identifies the fix.
+    @ViewBuilder
+    private var failureNoticeSection: some View {
+        if let lastErrorMessage = companionManager.lastErrorMessage {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DS.Colors.destructiveText)
+
+                    Text("刚才出错了")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(DS.Colors.destructiveText)
+                }
+
+                Text(lastErrorMessage)
+                    .font(.system(size: 10))
+                    .foregroundColor(DS.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(DS.Colors.destructive.opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .stroke(DS.Colors.destructive.opacity(0.35), lineWidth: 0.5)
+            )
         }
-        .buttonStyle(.plain)
-        .pointerCursor()
     }
 
     // MARK: - DM Farza Button

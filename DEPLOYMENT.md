@@ -20,14 +20,17 @@ PostHog ──→ 上游作者的分析账号（上传你的语音转写、模�
 ### 现在的架构（本仓库）
 
 ```
-Clicky ──→ 阿里云百炼（工作空间专属端点，直连，无代理）
-              ├─→ qwen3-asr-flash-realtime    （👂 实时语音转文字，websocket）
-              ├─→ qwen3-vl-plus / flash       （🧠 看屏幕截图回答问题，SSE 流式）
-              └─→ qwen-audio-3.1-tts-flash    （👄 朗读回答，音色=赵今麦克隆音色）
+Clicky ──→ 你在「模型设置」里指定的服务商（直连，无代理）
+              ├─→ 👂 实时语音转文字（websocket）   默认 百炼 qwen3-asr-flash-realtime
+              ├─→ 🧠 看屏幕截图回答问题（SSE 流式） 默认 百炼 qwen3-vl-plus
+              └─→ 👄 朗读回答                      默认 百炼 qwen-audio-3.1-tts-flash
+                                                   （音色=赵今麦克隆音色）
 分析上报：无（PostHog 已彻底移除）
 ```
 
-API 密钥放在 **gitignore 的 `BailianSecrets.plist`** 里，不进代码、不进仓库。
+配置存在 `~/Library/Application Support/Clicky/ModelConfiguration.json`（权限 600，在仓库之外）。
+`BailianSecrets.plist` 仍然有效，但只在**第一次启动、还没有上面那个 JSON 时**用来播种初始配置。
+密钥不进代码、不进仓库。
 
 ### 它的工作原理（用户常问）
 
@@ -36,8 +39,8 @@ API 密钥放在 **gitignore 的 `BailianSecrets.plist`** 里，不进代码、�
    ⚠️ **是整个屏幕，不是你选中的内容**。app 根本不知道你"选中"了什么，
    它拿到的是：① 你说的话（转写文本）② 全屏幕截图。你"选中了问题"这个动作
    本身不会被感知，起作用的是你**说出来的**那句话。
-3. 转写文本 + 截图（base64）+ 最近 10 轮对话历史，发给 `qwen3-vl-plus`，
-   以 OpenAI 兼容格式 SSE 流式返回回答。
+3. 转写文本 + 截图（base64）+ 最近 10 轮对话历史，发给**当前配置的视觉模型**
+   （默认 `qwen3-vl-plus`），以 OpenAI 兼容格式 SSE 流式返回回答。
 4. 回答里的 `[POINT:x,y:标签]` 标签被解析成屏幕坐标（0–1000 归一化网格），
    蓝色小三角沿贝塞尔曲线飞过去指。
 5. 去掉坐标标签后的纯文本切成句对齐分块，逐块发给 TTS 合成 WAV，`AVAudioPlayer` 播放。
@@ -54,7 +57,8 @@ API 密钥放在 **gitignore 的 `BailianSecrets.plist`** 里，不进代码、�
 | 看屏幕回答 | Anthropic Claude | `qwen3-vl-plus`（可选 flash）OpenAI 兼容 SSE | `BailianVisionChatAPI.swift`（新） |
 | 朗读 | ElevenLabs | `qwen-audio-3.1-tts-flash`，音色=赵今麦克隆音色（voice-enrollment 复刻，想换回官方音色改 `BailianConfiguration.textToSpeechVoice` 为 `yuxiaoyun_v3.1` 等） | `BailianTTSClient.swift`（新） |
 | 分析上报 | PostHog（传转写/回答/邮箱） | **无** | `ClickyAnalytics.swift` 已删 |
-| 密钥 | 硬编码 / Worker 环境变量 | gitignored `BailianSecrets.plist` | `BailianConfiguration.swift`（新）、`AppBundleConfiguration.swift`（扩展） |
+| 密钥 | 硬编码 / Worker 环境变量 | gitignored `BailianSecrets.plist`（首次播种用） | `BailianConfiguration.swift`（新）、`AppBundleConfiguration.swift`（扩展） |
+| 模型可配置 | 三个模型全部写死在代码里，换模型要改代码重编译 | 设置窗口里填 URL / API Key / 模型名，**保存后立即生效** | `ModelSettingsView.swift`、`ModelConfiguration.swift`、`ModelConfigurationStore.swift`（均为新增） |
 
 删除的文件：`ClaudeAPI.swift`、`ElevenLabsTTSClient.swift`、`ClickyAnalytics.swift`。
 `worker/` 目录保留仅作参考，**不再被编译和调用**。
@@ -90,6 +94,59 @@ chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
 
 端点和密钥在百炼控制台「模型服务 → API-KEY」和工作空间管理页拿。
 注意是**工作空间专属端点**（`ws-….maas.aliyuncs.com`），不是公共 `dashscope.aliyuncs.com`。
+
+### 换模型怎么换（推荐用设置窗口）
+
+点菜单栏面板右上角的**齿轮** → 打开「Clicky 模型设置」独立窗口。里面按三角色列出当前在用的模型：
+
+```
+当前使用
+  👂 听   [服务商 ▾]  [模型名        ]
+  🧠 想   [服务商 ▾]  [模型名        ]
+  👄 说   [服务商 ▾]  [模型名        ]
+     音色 [音色名                      ]
+
+服务商
+  阿里云百炼  承担：👂 👄   URL / API Key   推理 [开关]
+  DeepSeek    承担：🧠      URL / API Key   推理 [开关]
+```
+
+- **一个服务商一套 URL + API Key**，模型名按「服务商 × 角色」分别记住，来回切不用重填。
+- 每张服务商卡上有一个 **「推理」开关**（默认**关**）：打开就是「让模型先推理再回答」，
+  每次大约多等 3.4 秒，难题可能答得更准；关掉就是直接回答。只影响 🧠 想。
+  详细实测见第 6 节。
+- 底部 **测试连接** 会逐角色发一个最小请求，把服务端返回的**原始报错**显示出来
+  （`AllocationQuota.FreeTierOnly`、`InvalidApiKey`、`Model not exist` 之类），
+  所以「到底哪里不对」不用猜。
+- 路径由协议决定，不用手填 endpoint：百炼走 `/compatible-mode/v1/chat/completions`，
+  **DeepSeek 走 `https://api.deepseek.com` + `/chat/completions`（没有 `/v1`）**。
+  DeepSeek 没有 ASR / TTS，所以只能承担 🧠。
+- **保存后立即生效**，不用重启。正在朗读的那一句会念完，下一句才换。
+- 删掉一个正在承担角色的服务商时，会弹确认框写明「删除后 X 角色将不可用」，
+  并且**不会**把角色偷偷转给另一家（那等于把你的屏幕截图发给别人）。
+
+配置文件 `~/Library/Application Support/Clicky/ModelConfiguration.json` 是纯 JSON，
+手改也行，但要**重启 app 才生效**（不做文件监听）。
+
+### 本机现在的初始配置（已写好，开箱即用）
+
+本机的 `ModelConfiguration.json` 已经生成好了，三个角色是这么分的：
+
+| 角色 | 服务商 | 模型 |
+|---|---|---|
+| 👂 听 | 阿里云百炼 | `qwen3-asr-flash-realtime` |
+| 🧠 想 | **DeepSeek** | `deepseek-flash` |
+| 👄 说 | 阿里云百炼 | `qwen-audio-3.1-tts-flash` + 赵今麦克隆音色 |
+
+也就是说：**看屏幕回答问题走 DeepSeek，听和说仍然走百炼**（DeepSeek 没有语音转写和
+语音合成，这两件事它做不了，硬要它做只能报错）。想改回百炼看图，打开设置窗口把 🧠 的
+服务商换回「阿里云百炼」即可 —— 百炼卡上已经预填好 `qwen3-vl-plus`，不用重新输。
+
+三个角色**都实测过**（用的是配置文件里存的那把 key，不是另找的）：视觉带图 200 并能输出
+`[POINT:坐标:标签]`、TTS 200 并返回音频、ASR websocket 握手 101。所以配置本身没有问题，
+出问题时先查账号额度，再看是不是模型名填错了。
+
+DeepSeek 的 key 在设置窗口的 DeepSeek 卡里，想换直接改；百炼的 key 不必动。
 
 ---
 
@@ -145,10 +202,13 @@ chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
      {"code":"AllocationQuota.FreeTierOnly",
       "message":"Free quota exhausted... disable the \"use free tier only\" mode"}
   ```
-  而 `speakCreditsErrorFallback()` 的设计是：TTS 失败就用系统语音念固定道歉——
+  而 `speakCreditsErrorFallback(failure:)` 的设计是：TTS 失败就用系统语音念固定道歉——
   于是每次都"道歉"。**账号问题伪装成了模型问题。**
 - **解决**：二选一（控制台操作）——给账户充值，或关掉"仅使用免费额度"模式；
   本机最终选择了换到**免费额度独立的**新模型 `qwen-audio-3.1-tts-flash`（见 ⑤）。
+- **现在**：道歉语音保留（用户在等声音，静默更糟），但同一段报错同时会存进
+  `CompanionManager.lastErrorMessage`，在菜单栏面板上用红字**原文**显示出来。
+  再加上设置窗口里的「测试连接」，以后这类问题不用再靠 curl 猜。
 - **排查方法**：同一个 key 用 curl 直连两个端点对比——视觉 200、TTS 403，
   一分钟定位是哪条链路、什么错误。
 
@@ -166,9 +226,10 @@ chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
   后者的音色是 `yuxiaoyun_v3.1`、`yeqinghe_v3.1` 这类带 `_v3.1` 后缀的名字。
 - **请求体字段也不同**：Qwen-TTS 用 `input.{text, voice, language_type}`；
   Qwen-Audio-TTS 用 `input.{text, voice, format, sample_rate}`（没有 language_type）。
-- **解决**：模型、音色、字段、路径**四件套一起换**，全部集中在
-  `BailianConfiguration.swift` 一处。实测 400/900/1500 字符均 200，
-  下载到有效 WAV（24kHz 单声道）。
+- **解决**：模型、音色、字段、路径**四件套一起换**。现在这四样在设置窗口里是同一个
+  服务商卡片下的联动项，而且设置窗口的「测试连接」会用**和正式请求一样的请求体**
+  合成两个字，所以音色配错族当场就会报 411，不用等真回答时才发现没声音。
+  实测 400/900/1500 字符均 200，下载到有效 WAV（24kHz 单声道）。
 - **教训**：百炼的"语音合成"不是一个端点，是**两族**。判断一个模型属于哪族，
   用 `bl model code --model 模型名 --sdk dashscope`：输出 websocket `tts_v2`
   样例的是 Qwen-Audio-TTS 族，输出 HTTP multimodal 样例的是 Qwen-TTS 族。
@@ -259,13 +320,17 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST \
 6) 端到端验证：菜单栏图标 → 按住 ctrl+option 说一句中文 → 松开
    应看到：实时转写 → 蓝色光标旁出文字气泡 → 朗读（当前为赵今麦克隆音色）→
    问"某某按钮在哪"会看到蓝三角飞过去指。
+
+7) 换模型：面板右上角齿轮 → 「Clicky 模型设置」→ 填 URL / API Key / 模型名
+   → 「测试连接」确认三路都 ✅ → 「保存」（立即生效，不用重启）。
+   第 2 步放的 plist 只负责第一次启动时的初始值。
 ```
 
 ### 部署时最可能遇到的坑（按命中概率排序）
 
 | # | 坑 | 识别特征 | 解法 |
 |---|---|---|---|
-| A | TTS 403 `AllocationQuota.FreeTierOnly` | 语音永远念同一句道歉 | 控制台充值，或关"仅使用免费额度"；或确认模型免费额度未用完 |
+| A | TTS 403 `AllocationQuota.FreeTierOnly` | 语音永远念同一句道歉 | 控制台充值，或关"仅使用免费额度"；或确认模型免费额度未用完。**现在面板会把这句原始报错用红字显示出来**，不用再猜 |
 | B | 权限反复弹 | 每次重建都要授权 | 用证书签名（Automatic + 团队），别用 ad-hoc |
 | C | TTS 400 `url error` | 换了模型名就报 | 端点族配错了，见第 3 节 ⑤ |
 | D | TTS `Engine error [411]` | 音色名跨族 | 换本族音色名（`yuxiaoyun_v3.1` 等） |
@@ -273,6 +338,13 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST \
 | F | 光标指不到位、不报错 | 指到 ~78% 处 | 走 0–1000 归一化换算，别当像素用 |
 | G | 快速连按几次后 ASR 失联 `Socket is not connected` | 用几次就哑 | 确认共享 URLSession 的写法没被改掉 |
 | H | 终端跑 `xcodebuild` 后权限全重置 | 授权又来一遍 | 永远用 Xcode GUI 构建，别在终端跑 xcodebuild |
+| I | 设置窗口打得开、但输入框打不进字 | 光标在闪，敲键盘没反应 | 是 `LSUIElement` 应用没激活导致的（非 key window 会吞掉按键）。`presentWindow()` 里必须调 `NSApp.activate()`，见 `ModelSettingsWindowController.swift` |
+| J | 换了模型，提问没反应（连道歉都没有） | 光标闪一下就没下文 | 推理模型把 `max_tokens` 吃在 reasoning 上，HTTP 200 但 `content` 为空。已把上限提到 **32768**，且空回答会显式抛错显示在面板上 |
+| N | **问一句要等好几秒才出声** | 面板一直转圈 | 两段耗时叠加：**推理（约 3.4 秒）+ TTS 合成（约 2 秒）**。推理默认已关（首字从 4.3 秒降到 0.8 秒），设置窗口里每个服务商卡上的「推理」开关自己也控制得住；TTS 是按字数线性增长、没有开关，答案越长等越久。详见第 6 节 |
+| O | 想关推理，试了 `enable_thinking:false` 没用 | 首字还是 3.8 秒 | 这个参数在 `deepseek-flash` 上**不生效**（实测仍有 629 个 reasoning token），`chat_template_kwargs.thinking:false` 也不生效（378 个）。**只有 `thinking:{"type":"disabled"}` 和 `reasoning_effort:"none"` 真正关得掉**（0 个）。代码里用的是前者，由设置窗口的「推理」开关驱动 |
+| M | 想调大 `max_tokens`，但不知道上限 | 设大了某一家就报 400 | 两家的上限差一个数量级：**DeepSeek `[1, 393216]`，百炼只有 `[1, 32768]`**。代码里是**共用一个常量**，所以只能取交集，**32768 就是天花板**。按 DeepSeek 的上限去设，换回百炼立刻 400 |
+| K | 设置窗口里填好了，但语音转文字还是不走 | 重启才生效 | 已知问题，已修：`BuddyDictationManager` 每次开始录音前会重解析一次 provider |
+| L | 把 🧠 换成 DeepSeek 后，提问报「图片不支持」 | DeepSeek 返回 Unsupported Image | DeepSeek 这个端点上**只有 `deepseek-flash` 能看图**，`deepseek-v4-pro` 是纯文本模型。用 `deepseek-flash` |
 
 ---
 
@@ -285,3 +357,94 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST \
 | `qwen-audio-3.1-tts-flash` | 说 | 1 元/万字符（RPS 限 3） |
 
 日常问几句话，一个月通常在几毛到几块钱量级。
+
+---
+
+## 6. 为什么问一句要等这么久（逐环节实测）
+
+> 2026-09-21 实测。app 自己**没有任何日志**（stdout 是 `/dev/null`），所以这里是拿
+> **和 app 完全一样的请求体**（1280×827 JPEG 截图 + 那个 4923 字符的系统提示词）
+> 逐段打表量出来的，不是估的。
+
+### 修之前的实测拆解
+
+| 环节 | 耗时 | 说明 |
+|---|---|---|
+| TLS 握手 | 47ms | 可以忽略 |
+| 截图（ScreenCaptureKit 缩放到 1280 宽 JPEG q0.8） | —— | **不是整屏原图**，约 294KB，base64 后 392KB |
+| 上传 + 等服务端开工 | 476ms | 0.39MB 请求体 |
+| **推理（首字节 → 第一个正文字）** | **3664ms** | ← **罪魁祸首**，664 个 reasoning token |
+| 正文流式输出 | 342ms | 真正的回答只有这么点时间 |
+| 视觉小计 | **4482ms** | |
+| TTS 合成首段 | **2026ms** | 90 字 |
+| 下载 WAV | 137ms | |
+| **合计** | **约 6.6 秒** | 到听见声音为止 |
+
+**面板为什么一直转圈**：`voiceState` 要等 TTS 真的开始播放才从 `.processing` 变
+`.responding`，而 TTS 又排在整个视觉回答**之后**。所以这 6.6 秒全程都是转圈。
+而且 `onTextChunk` 是空的（`No streaming text display`）——**回答的文字从不显示**，
+用户只能听。这也是「感觉它没回我」的来源之一。
+
+### 结论：DeepSeek Flash 慢，是因为它在"想"
+
+`deepseek-flash` 是**推理模型**（百炼官方模型目录里它的 capability 就标着 `Reasoning`）。
+问「屏幕右上角有什么？」这种纯感知问题，它也要先烧 664–868 个 reasoning token。
+你想的「1 秒内出结果」对**非推理模型**成立，对推理模型不成立。
+
+### 修法：把推理关掉（已改，在 `BailianVisionChatAPI.swift`，开关在设置窗口）
+
+同一条问题、同一张截图，各开关实测：
+
+| 参数 | 首字 | 总计 | reasoning token |
+|---|---|---|---|
+| 不加参数（原状） | 4298ms | 4668ms | 868 |
+| `enable_thinking:false` | 3814ms | 4184ms | 629 ❌ 没用 |
+| `chat_template_kwargs.thinking:false` | 2579ms | 3052ms | 378 ❌ 没用 |
+| `reasoning_effort:"minimal"` | 1410ms | 1841ms | 112 |
+| **`thinking:{"type":"disabled"}`** | **934ms** | **1377ms** | **0** ✅ |
+| **`reasoning_effort:"none"`** | **980ms** | **1539ms** | **0** ✅ |
+
+选了 `thinking:{"type":"disabled"}`。
+
+**开关归用户**：设置窗口里**每张服务商卡片**都有一个「推理」开关
+（`ProviderProfile.visionReasoningEnabled`），**默认关**——不开设置窗口的人直接就是快的那条路。
+打开就是「让模型先推理再回答」，每次大约多等 3.4 秒。开关**按服务商存**，所以百炼和 DeepSeek
+各记各的，来回切不用重设。保存后立即生效，下一次提问就换。
+
+一个实现细节值得记着：这个字段存成 **`Bool?`（可选）**，因为 Swift 自动合成的 `Codable`
+**遇到缺字段会直接抛错**——加一个非可选的 `Bool`，所有旧配置文件立刻全部读不出来。
+`nil` 表示"从没设过"，读出来当"关"。开关一旦被点过就写明确的 `true`/`false`，
+免得将来改了默认值、旧文件跟着偷偷变。
+
+**关掉推理会不会变笨？** 连测 4 轮不同区域的问题，4/4 都给出了格式正确的
+`[POINT:x,y:标签]`，坐标都在 0–1000 网格内：
+
+```
+右上角  [POINT:960,10:time in menu bar]   底部  [POINT:450,995:Dock栏]
+左上角  [POINT:20,15:苹果菜单]             中间  [POINT:500,50:终端标签页]
+首字延迟中位 817ms · 总耗时中位 1120ms
+```
+
+**修之后**：视觉 4482ms → **约 1120ms**，端到端 6.6 秒 → **约 3.1 秒**。
+
+### 剩下的那 2 秒是 TTS，没有开关
+
+TTS 合成耗时**按字数线性增长**（约 19ms/字 + 450ms 固定）：
+
+| 答案长度 | 合成 | 音频时长 |
+|---|---|---|
+| 10 字 | 657ms | 1.6s |
+| 90 字（典型） | 1756ms | 18.4s |
+| 250 字 | 4615ms | 54.7s |
+| 600 字 | 8948ms | 101.8s |
+
+因为 `maximumCharactersPerChunk = 500`，常见回答都是**一整块**，所以要整段合成完才出声。
+想再快只能：让回答更短（系统提示词已经要求「一两句话」），或者对长回答改成
+**第一句先合成先播、剩下的边流边合成**（目前没做）。
+
+### 换成百炼看图的对照
+
+同一个请求打给百炼（非推理模型）：`qwen3-vl-plus` 首字 663ms / 总计 2016ms，
+`qwen3-vl-flash` 首字 475ms / 总计 1305ms，都是 0 个 reasoning 帧。
+所以要极致速度，把 🧠 换回百炼 `qwen3-vl-flash` 也是一条路。
+

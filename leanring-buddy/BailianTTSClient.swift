@@ -30,10 +30,16 @@ struct BailianTTSClientError: LocalizedError {
     }
 }
 
+/// One reply's playback parameters, snapshotted in `speakText` and handed to
+/// every chunk, so a settings save landing mid-answer can't split one reply
+/// across two speeds or volumes.
+private struct SpeechPlaybackConfiguration {
+    let rate: Float
+    let volume: Float
+}
+
 @MainActor
 final class BailianTTSClient {
-    private let speechSynthesizerURL: URL
-    private let apiKey: String
     private let session: URLSession
 
     /// The player for the chunk currently being spoken. Kept as a property so the
@@ -52,15 +58,11 @@ final class BailianTTSClient {
     /// when the interaction is over, so it must not flicker false mid-answer.
     private var isSpeakingChunkSequence = false
 
-    init(workspaceBaseURL: String, apiKey: String) {
-        let trimmedBaseURL = workspaceBaseURL.hasSuffix("/")
-            ? String(workspaceBaseURL.dropLast())
-            : workspaceBaseURL
-        self.speechSynthesizerURL = URL(
-            string: trimmedBaseURL + BailianConfiguration.Paths.dashScopeSpeechSynthesizer
-        )!
-        self.apiKey = apiKey
-
+    /// The endpoint, key, model and voice are resolved per `speakText` call from
+    /// the user's model configuration rather than captured here, so changing the
+    /// speech provider in the settings window takes effect on the next reply
+    /// instead of on the next launch.
+    init() {
         let configuration = URLSessionConfiguration.default
         // Synthesis of a full-length chunk plus the download of the resulting WAV
         // can take a while for long answers; give it room rather than failing
@@ -69,6 +71,19 @@ final class BailianTTSClient {
         configuration.timeoutIntervalForResource = 180
         configuration.waitsForConnectivity = true
         self.session = URLSession(configuration: configuration)
+    }
+
+    /// The speech role as configured right now, or a thrown error naming exactly
+    /// what is missing.
+    private func resolveSpeechRole() throws -> ResolvedModelRole {
+        let speechRoleStatus = ModelConfigurationStore.snapshot().status(of: .speech)
+        guard let resolvedSpeechRole = speechRoleStatus.resolvedRole else {
+            let unavailableExplanation = speechRoleStatus.unavailableExplanation ?? "未配置"
+            throw BailianTTSClientError(
+                message: "朗读模型不可用：\(unavailableExplanation)。请在菜单栏图标的齿轮里打开模型设置。"
+            )
+        }
+        return resolvedSpeechRole
     }
 
     /// Synthesizes `text` and begins playing it.
@@ -80,14 +95,39 @@ final class BailianTTSClient {
     func speakText(_ text: String) async throws {
         stopPlayback()
 
-        let speakableChunks = Self.splitIntoSpeakableChunks(text)
+        // Resolved once here and passed to every chunk below. Resolving per chunk
+        // would let a save in the settings window land between chunk 1 and chunk 2,
+        // so a single reply would be spoken half in one provider's voice and half
+        // in another's — and `isPlaying` would be tracking two providers at once.
+        let resolvedSpeechRole = try resolveSpeechRole()
+
+        // The playback settings are snapshotted alongside the role for the same
+        // reason: every chunk of one reply should play at one speed and volume.
+        let appSettings = AppSettingsStore.snapshot()
+        let playbackConfiguration = SpeechPlaybackConfiguration(
+            rate: Float(appSettings.speechPlaybackRate),
+            volume: Float(appSettings.speechPlaybackVolumePercent) / 100
+        )
+
+        let speakableChunks = Self.splitIntoSpeakableChunks(
+            text,
+            maximumCharactersPerChunk: appSettings.maximumSpeechChunkCharacters
+        )
         guard let firstChunk = speakableChunks.first else { return }
 
-        let firstChunkAudioData = try await requestAudioData(for: firstChunk)
+        let firstChunkAudioData = try await requestAudioData(
+            for: firstChunk,
+            resolvedSpeechRole: resolvedSpeechRole
+        )
         try Task.checkCancellation()
 
         isSpeakingChunkSequence = true
-        playAudioData(firstChunkAudioData, chunkIndex: 1, chunkCount: speakableChunks.count)
+        playAudioData(
+            firstChunkAudioData,
+            chunkIndex: 1,
+            chunkCount: speakableChunks.count,
+            playbackConfiguration: playbackConfiguration
+        )
 
         let remainingChunks = Array(speakableChunks.dropFirst())
         guard !remainingChunks.isEmpty else { return }
@@ -97,12 +137,16 @@ final class BailianTTSClient {
                 guard let self, !Task.isCancelled else { return }
 
                 do {
-                    let audioData = try await self.requestAudioData(for: chunk)
+                    let audioData = try await self.requestAudioData(
+                        for: chunk,
+                        resolvedSpeechRole: resolvedSpeechRole
+                    )
                     guard !Task.isCancelled else { return }
                     await self.playAndWaitUntilFinished(
                         audioData,
                         chunkIndex: offset + 2,
-                        chunkCount: speakableChunks.count
+                        chunkCount: speakableChunks.count,
+                        playbackConfiguration: playbackConfiguration
                     )
                 } catch {
                     // Partial audio already played is still useful; stop rather
@@ -133,23 +177,47 @@ final class BailianTTSClient {
     // MARK: - Synthesis
 
     /// Requests the finished WAV for one chunk and returns its bytes.
-    private func requestAudioData(for textChunk: String) async throws -> Data {
+    ///
+    /// Takes the resolved role rather than reading it here, so every chunk of one
+    /// reply is synthesized by the same provider — see `speakText`.
+    private func requestAudioData(
+        for textChunk: String,
+        resolvedSpeechRole: ResolvedModelRole
+    ) async throws -> Data {
+        // A hand-typed URL with a stray space in it cannot be turned into a URL at
+        // all. Reported as a configuration error rather than force-unwrapped: this
+        // runs on the main actor, so a crash here takes the whole app down.
+        guard let speechSynthesizerURL = resolvedSpeechRole.requestURL else {
+            throw BailianTTSClientError(
+                message: "朗读模型的 URL 拼不出来：\(resolvedSpeechRole.baseURL)\(resolvedSpeechRole.requestPath)，请检查设置里 \(resolvedSpeechRole.providerDisplayName) 的 URL。"
+            )
+        }
+
         var request = URLRequest(url: speechSynthesizerURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(resolvedSpeechRole.apiKey)", forHTTPHeaderField: "Authorization")
 
         // Exactly the fields the official Qwen-Audio-TTS parameter table lists.
         // Notably there is no `language_type` here — that field belongs to
         // Qwen-TTS, and this model infers the language from the text.
+        var speechInput: [String: Any] = [
+            "text": textChunk,
+            "format": BailianConfiguration.textToSpeechFormat,
+            "sample_rate": BailianConfiguration.textToSpeechSampleRate
+        ]
+        // Voice names are model-family specific, so this is sent only when the user
+        // has one configured for this provider. Omitting it lets the service report
+        // a missing field, which is honest; substituting another provider's default
+        // voice would instead surface as `Engine error [411]` naming nothing useful.
+        if let speechVoiceID = resolvedSpeechRole.speechVoiceID,
+           !speechVoiceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            speechInput["voice"] = speechVoiceID
+        }
+
         let body: [String: Any] = [
-            "model": BailianConfiguration.Models.textToSpeech,
-            "input": [
-                "text": textChunk,
-                "voice": BailianConfiguration.textToSpeechVoice,
-                "format": BailianConfiguration.textToSpeechFormat,
-                "sample_rate": BailianConfiguration.textToSpeechSampleRate
-            ]
+            "model": resolvedSpeechRole.modelID,
+            "input": speechInput
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -209,9 +277,19 @@ final class BailianTTSClient {
 
     // MARK: - Playback
 
-    private func playAudioData(_ audioData: Data, chunkIndex: Int, chunkCount: Int) {
+    private func playAudioData(
+        _ audioData: Data,
+        chunkIndex: Int,
+        chunkCount: Int,
+        playbackConfiguration: SpeechPlaybackConfiguration
+    ) {
         do {
             let player = try AVAudioPlayer(data: audioData)
+            // `enableRate` must be set before the player starts; `rate` below 1.0
+            // or above 1.0 has no effect without it. Volume is independent.
+            player.enableRate = true
+            player.rate = playbackConfiguration.rate
+            player.volume = playbackConfiguration.volume
             self.audioPlayer = player
             player.play()
             print("🔊 Bailian TTS: playing chunk \(chunkIndex)/\(chunkCount) (\(audioData.count / 1024)KB)")
@@ -220,8 +298,18 @@ final class BailianTTSClient {
         }
     }
 
-    private func playAndWaitUntilFinished(_ audioData: Data, chunkIndex: Int, chunkCount: Int) async {
-        playAudioData(audioData, chunkIndex: chunkIndex, chunkCount: chunkCount)
+    private func playAndWaitUntilFinished(
+        _ audioData: Data,
+        chunkIndex: Int,
+        chunkCount: Int,
+        playbackConfiguration: SpeechPlaybackConfiguration
+    ) async {
+        playAudioData(
+            audioData,
+            chunkIndex: chunkIndex,
+            chunkCount: chunkCount,
+            playbackConfiguration: playbackConfiguration
+        )
 
         // Poll rather than use AVAudioPlayerDelegate so this stays a plain
         // MainActor class — playback state is checked a few times a second,
@@ -234,18 +322,17 @@ final class BailianTTSClient {
 
     // MARK: - Chunking
 
-    /// Maximum characters per synthesis request.
-    ///
-    /// The official parameter table for Qwen-TTS caps `input.text` at 600
-    /// characters, and the system prompt explicitly invites long, detailed
-    /// answers — so replies routinely exceed one request. Split with headroom
-    /// below the documented limit rather than discovering the ceiling as a
-    /// failed request that leaves the user with no audio at all.
-    private static let maximumCharactersPerChunk = 500
-
     /// Splits reply text into chunks that each fit one synthesis request,
     /// preferring to break between sentences so playback doesn't pause mid-thought.
-    static func splitIntoSpeakableChunks(_ text: String) -> [String] {
+    ///
+    /// - Parameter maximumCharactersPerChunk: The per-request character budget.
+    ///   Comes from the app settings (说 → 长回答分段合成). The documented service
+    ///   cap for `input.text` is 600 characters and the store clamps to that, so
+    ///   an oversized value can never reach the request.
+    static func splitIntoSpeakableChunks(
+        _ text: String,
+        maximumCharactersPerChunk: Int
+    ) -> [String] {
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return [] }
         guard trimmedText.count > maximumCharactersPerChunk else { return [trimmedText] }
@@ -261,7 +348,12 @@ final class BailianTTSClient {
                     chunks.append(currentChunk)
                     currentChunk = ""
                 }
-                chunks.append(contentsOf: splitLongSentence(sentence))
+                chunks.append(
+                    contentsOf: splitLongSentence(
+                        sentence,
+                        maximumCharactersPerChunk: maximumCharactersPerChunk
+                    )
+                )
                 continue
             }
 
@@ -307,7 +399,10 @@ final class BailianTTSClient {
 
     /// Breaks a single over-long sentence at natural pauses, falling back to a
     /// hard cut when there is no punctuation to break on.
-    private static func splitLongSentence(_ sentence: String) -> [String] {
+    private static func splitLongSentence(
+        _ sentence: String,
+        maximumCharactersPerChunk: Int
+    ) -> [String] {
         var chunks: [String] = []
         var currentChunk = ""
         let softBreakCharacters: Set<Character> = ["，", "、", ",", " ", "：", ":"]

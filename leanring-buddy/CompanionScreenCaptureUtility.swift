@@ -24,10 +24,22 @@ struct CompanionScreenCapture {
 @MainActor
 enum CompanionScreenCaptureUtility {
 
-    /// Captures all connected displays as JPEG data, labeling each with
-    /// whether the user's cursor is on that screen. This gives the AI
-    /// full context across multiple monitors.
-    static func captureAllScreensAsJPEG() async throws -> [CompanionScreenCapture] {
+    /// Captures displays as JPEG data, labeling each with whether the user's
+    /// cursor is on that screen. By default every connected display is captured
+    /// so the AI has full context across multiple monitors.
+    ///
+    /// - Parameters:
+    ///   - maximumDimension: Longest edge of the captured image in pixels, or
+    ///     `nil` to capture at each display's native size.
+    ///   - compressionQuality: JPEG compression factor (0–1).
+    ///   - capturesAllDisplays: When false, only the display the cursor is on is
+    ///     captured — a multi-monitor setup then sends one image instead of one
+    ///     per screen.
+    static func captureAllScreensAsJPEG(
+        maximumDimension: Int? = 1280,
+        compressionQuality: Double = 0.8,
+        capturesAllDisplays: Bool = true
+    ) async throws -> [CompanionScreenCapture] {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
 
         guard !content.displays.isEmpty else {
@@ -58,13 +70,19 @@ enum CompanionScreenCaptureUtility {
         }
 
         // Sort displays so the cursor screen is always first
-        let sortedDisplays = content.displays.sorted { displayA, displayB in
+        var sortedDisplays = content.displays.sorted { displayA, displayB in
             let frameA = nsScreenByDisplayID[displayA.displayID]?.frame ?? displayA.frame
             let frameB = nsScreenByDisplayID[displayB.displayID]?.frame ?? displayB.frame
             let aContainsCursor = frameA.contains(mouseLocation)
             let bContainsCursor = frameB.contains(mouseLocation)
             if aContainsCursor != bContainsCursor { return aContainsCursor }
             return false
+        }
+
+        // 仅光标所在屏 mode: the cursor screen is guaranteed first after the sort,
+        // so keeping just it is a filter, not a search.
+        if !capturesAllDisplays {
+            sortedDisplays = sortedDisplays.prefix(1).map { $0 }
         }
 
         var capturedScreens: [CompanionScreenCapture] = []
@@ -81,14 +99,20 @@ enum CompanionScreenCaptureUtility {
             let filter = SCContentFilter(display: display, excludingWindows: ownAppWindows)
 
             let configuration = SCStreamConfiguration()
-            let maxDimension = 1280
-            let aspectRatio = CGFloat(display.width) / CGFloat(display.height)
-            if display.width >= display.height {
-                configuration.width = maxDimension
-                configuration.height = Int(CGFloat(maxDimension) / aspectRatio)
+            if let maximumDimension {
+                let aspectRatio = CGFloat(display.width) / CGFloat(display.height)
+                if display.width >= display.height {
+                    configuration.width = maximumDimension
+                    configuration.height = Int(CGFloat(maximumDimension) / aspectRatio)
+                } else {
+                    configuration.height = maximumDimension
+                    configuration.width = Int(CGFloat(maximumDimension) * aspectRatio)
+                }
             } else {
-                configuration.height = maxDimension
-                configuration.width = Int(CGFloat(maxDimension) * aspectRatio)
+                // 原图 mode: no rescaling at all, the capture is the display's
+                // own pixel size.
+                configuration.width = display.width
+                configuration.height = display.height
             }
 
             let cgImage = try await SCScreenshotManager.captureImage(
@@ -97,7 +121,10 @@ enum CompanionScreenCaptureUtility {
             )
 
             guard let jpegData = NSBitmapImageRep(cgImage: cgImage)
-                    .representation(using: .jpeg, properties: [.compressionFactor: 0.8]) else {
+                    .representation(
+                        using: .jpeg,
+                        properties: [.compressionFactor: compressionQuality]
+                    ) else {
                 continue
             }
 

@@ -772,7 +772,12 @@ private class PointerCursorNSView: NSView {
     }
 }
 
-private struct PointerCursorView: NSViewRepresentable {
+/// Puts a pointing-hand cursor over whatever it is attached to.
+///
+/// Internal rather than private so the settings window's own controls (in
+/// `GeneralSettingsView`) can use it too — every interactive element in this app
+/// is required to show a pointer cursor on hover.
+struct PointerCursorView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         return PointerCursorNSView()
     }

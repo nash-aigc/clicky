@@ -7,7 +7,10 @@
 
 import Foundation
 
-enum AppBundleConfiguration {
+/// Nonisolated because every function here is a pure read of the bundle and of
+/// two files on disk — there is no state to protect, and the configuration layer
+/// that consumes it (`ModelConfigurationStore`) is itself nonisolated.
+nonisolated enum AppBundleConfiguration {
     /// Name of the gitignored plist that holds secrets (API keys) kept out of
     /// version control. It lives alongside the other sources and is copied into
     /// the app bundle automatically, so it can be read the same way as Info.plist.

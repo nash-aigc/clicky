@@ -41,30 +41,61 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
 
         menuBarPanelManager = MenuBarPanelManager(companionManager: companionManager)
         companionManager.start()
-        // Auto-open the panel if the user still needs to do something:
-        // either they haven't onboarded yet, or permissions were revoked.
-        if !companionManager.hasCompletedOnboarding || !companionManager.allPermissionsGranted {
+
+        // 通用 → 启动: whether the app registers itself as a login item is now a
+        // user setting (it used to be forced on). Applied here and re-applied on
+        // every settings save below, so toggling it in the settings window takes
+        // effect without a relaunch.
+        let appSettings = AppSettingsStore.snapshot()
+        applyLoginItemSetting(launchesAtLogin: appSettings.launchesAtLogin)
+
+        // Auto-open the panel if the user still needs to do something: either
+        // they haven't onboarded yet, permissions were revoked — or they turned
+        // on 「启动时自动打开面板」.
+        if !companionManager.hasCompletedOnboarding
+            || !companionManager.allPermissionsGranted
+            || appSettings.opensPanelOnLaunch {
             menuBarPanelManager?.showPanelOnLaunch()
         }
-        registerAsLoginItemIfNeeded()
-        // startSparkleUpdater()
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appSettingsChanged),
+            name: .clickyAppSettingsChanged,
+            object: nil
+        )
+    }
+
+    @objc private func appSettingsChanged() {
+        applyLoginItemSetting(launchesAtLogin: AppSettingsStore.snapshot().launchesAtLogin)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         companionManager.stop()
     }
 
-    /// Registers the app as a login item so it launches automatically on
-    /// startup. Uses SMAppService which shows the app in System Settings >
-    /// General > Login Items, letting the user toggle it off if they want.
-    private func registerAsLoginItemIfNeeded() {
+    /// Makes the macOS login-item registration match `launchesAtLogin`.
+    ///
+    /// Uses SMAppService, which also shows the app in System Settings > General >
+    /// Login Items — so the user can always see (and override) what this wrote.
+    private func applyLoginItemSetting(launchesAtLogin: Bool) {
         let loginItemService = SMAppService.mainApp
-        if loginItemService.status != .enabled {
+
+        if launchesAtLogin {
+            guard loginItemService.status != .enabled else { return }
             do {
                 try loginItemService.register()
                 print("🎯 Clicky: Registered as login item")
             } catch {
                 print("⚠️ Clicky: Failed to register as login item: \(error)")
+            }
+        } else {
+            guard loginItemService.status == .enabled else { return }
+            do {
+                try loginItemService.unregister()
+                print("🎯 Clicky: Unregistered as login item (turned off in settings)")
+            } catch {
+                print("⚠️ Clicky: Failed to unregister as login item: \(error)")
             }
         }
     }

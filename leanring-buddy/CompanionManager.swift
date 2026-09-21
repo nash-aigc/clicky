@@ -67,27 +67,34 @@ final class CompanionManager: ObservableObject {
     // Response text is now displayed inline on the cursor overlay via
     // streamingResponseText, so no separate response overlay manager is needed.
 
-    /// Alibaba Bailian clients. The app talks to Bailian directly — there is no
-    /// proxy in between, so the API key lives in the gitignored
-    /// `BailianSecrets.plist` inside the app bundle instead of on a server.
-    private lazy var visionChatAPI: BailianVisionChatAPI = {
-        return BailianVisionChatAPI(
-            workspaceBaseURL: BailianConfiguration.workspaceBaseURL ?? "",
-            apiKey: BailianConfiguration.apiKey ?? "",
-            model: selectedModel
-        )
-    }()
+    /// Clients for the configured models. Both are constructed without arguments
+    /// and resolve the endpoint, key and model from the user's model
+    /// configuration on every request, so a change saved in the settings window
+    /// takes effect on the next question rather than on the next launch.
+    private lazy var visionChatAPI = BailianVisionChatAPI()
 
-    private lazy var bailianTTSClient: BailianTTSClient = {
-        return BailianTTSClient(
-            workspaceBaseURL: BailianConfiguration.workspaceBaseURL ?? "",
-            apiKey: BailianConfiguration.apiKey ?? ""
-        )
-    }()
+    private lazy var bailianTTSClient = BailianTTSClient()
 
-    /// Conversation history so the companion remembers prior exchanges within a
-    /// session. Each entry is the user's transcript and the assistant's response.
-    private var conversationHistory: [(userTranscript: String, assistantResponse: String)] = []
+    /// Conversation history so the companion remembers prior exchanges. Each entry
+    /// is the user's transcript, the assistant's response, and — when
+    /// 「历史里带截图」 is on — the screenshots the answer was based on.
+    ///
+    /// Kept in memory always; written to disk only while 「重启后保留对话」 is on.
+    private var conversationHistory: [ConversationHistoryEntry] = []
+
+    /// What older turns have been compressed into.
+    ///
+    /// Non-empty only once 「历史自动压缩」 has folded an exchange that aged out of
+    /// the window. Sent as its own system message, so the model keeps the gist of
+    /// a conversation the user has scrolled past the limit of.
+    private var compressedHistorySummary: String = ""
+
+    /// The compression request that is in flight, if any.
+    ///
+    /// Held so `stop()` can cancel it, and so a second compression cannot start
+    /// while one is running — two summaries folding the same exchange would
+    /// produce a summary of a summary.
+    private var historyCompressionTask: Task<Void, Never>?
 
     /// The currently running AI response task, if any. Cancelled when the user
     /// speaks again so a new response can begin immediately.
@@ -102,6 +109,22 @@ final class CompanionManager: ObservableObject {
     /// speaks again before the delay elapses.
     private var transientHideTask: Task<Void, Never>?
 
+    /// A transcript waiting for the user to confirm it, when
+    /// 快捷键 → 「松开立即发送」 is off.
+    ///
+    /// Nothing is sent while this holds a value; the text sits in the cursor
+    /// bubble so it can be read before it becomes a question. A second tap of the
+    /// shortcut sends it, and simply speaking again replaces it.
+    private var pendingConfirmationTranscript: String?
+
+    /// When the shortcut went down, so a release can tell a tap from a hold.
+    private var shortcutPressBeganAt: Date?
+
+    /// Set once a press has sent the pending transcript, so the tail end of that
+    /// same press — the dictation session still delivering its final result —
+    /// cannot send it twice.
+    private var didSendPendingConfirmationThisPress = false
+
     /// True when all three required permissions (accessibility, screen recording,
     /// microphone) are granted. Used by the panel to show a single "all good" state.
     var allPermissionsGranted: Bool {
@@ -112,22 +135,55 @@ final class CompanionManager: ObservableObject {
     /// Used by the panel to show accurate status text ("Active" vs "Ready").
     @Published private(set) var isOverlayVisible: Bool = false
 
-    /// The vision-language model used for voice responses. Persisted to
-    /// UserDefaults. The storage key keeps its old name so an existing install's
-    /// saved preference is replaced by a Bailian model ID rather than silently
-    /// ignored — `setSelectedModel` validates against the Bailian model list.
-    @Published var selectedModel: String = {
-        let storedModel = UserDefaults.standard.string(forKey: "selectedClaudeModel")
-        return BailianConfiguration.Models.VisionChat.allModelIDs.contains(storedModel ?? "")
-            ? storedModel!
-            : BailianConfiguration.Models.VisionChat.defaultModelID
-    }()
-
-    func setSelectedModel(_ model: String) {
-        selectedModel = model
-        UserDefaults.standard.set(model, forKey: "selectedClaudeModel")
-        visionChatAPI.model = model
+    /// The vision role as currently configured, for the menu bar panel to display.
+    ///
+    /// Exposed as a status rather than as a model name so the panel can show the
+    /// specific reason a role is unusable ("DeepSeek 的 URL 或 API Key 还没填")
+    /// instead of a generic "not configured".
+    ///
+    /// The model choice used to live here as an `@Published var` validated against
+    /// a fixed list of two Bailian model IDs. That list silently replaced any model
+    /// name it did not recognise with the default — which is exactly what a custom
+    /// model is — so ownership of the choice now sits in the settings window.
+    var visionRoleStatus: RoleConfigurationStatus {
+        ModelConfigurationStore.snapshot().status(of: .vision)
     }
+
+    /// The most recent failure worth telling the user about, or nil.
+    ///
+    /// Shown as a line of text in the panel. The companion apologises out loud when
+    /// a request fails, but a spoken apology is indistinguishable from the model
+    /// failing to answer — it hid an exhausted-quota 403 behind "抱歉，我这边出了点
+    /// 问题" for a long time. The panel shows the API's own words instead.
+    @Published private(set) var lastErrorMessage: String?
+
+    /// The answer as it streams in, shown in a bubble beside the cursor.
+    ///
+    /// Stays empty when 通用 → 「回答时显示文字」 is off, so the overlay renders the
+    /// bubble purely on "is there text" and needs no knowledge of the setting —
+    /// which is what keeps the setting to one gate, in the pipeline that fills this.
+    @Published private(set) var streamingAnswerText: String = ""
+
+    /// Clears the answer bubble once the voice has stopped and the user's linger
+    /// has elapsed. Cancelled whenever a new answer takes the bubble over.
+    private var answerBubbleClearTask: Task<Void, Never>?
+
+    /// What the user is saying right now, shown in a bubble beside the cursor.
+    ///
+    /// Empty when 通用 → 「说话时实时显示识别文字」 is off, or when the transcript is
+    /// hidden because the panel is in transient mode. Same one-gate reasoning as
+    /// `streamingAnswerText`.
+    @Published private(set) var liveTranscriptText: String = ""
+
+    /// The settings window, held strongly.
+    ///
+    /// `MenuBarPanelManager` holds its panel the same way and for the same reason:
+    /// a window controller released while its window is still on screen takes the
+    /// window down with it.
+    private var settingsWindowController: SettingsWindowController?
+    private var modelConfigurationChangedObserver: NSObjectProtocol?
+    private var conversationHistoryClearedObserver: NSObjectProtocol?
+    private var appSettingsChangedObserver: NSObjectProtocol?
 
     /// User preference for whether the Clicky cursor should be shown.
     /// When toggled off, the overlay is hidden and push-to-talk is disabled.
@@ -187,9 +243,77 @@ final class CompanionManager: ObservableObject {
         bindVoiceStateObservation()
         bindAudioPowerLevel()
         bindShortcutTransitions()
+
+        // Restore the conversation before anything can be asked, so the first
+        // question of a launch is answered with the memory of the last one.
+        if AppSettingsStore.snapshot().persistsConversationHistory {
+            let storedHistory = ConversationHistoryStore.snapshot()
+            conversationHistory = storedHistory.entries
+            compressedHistorySummary = storedHistory.summary
+            print("💬 Clicky: restored \(conversationHistory.count) exchanges from disk")
+        }
         // Eagerly touch the Bailian vision client so its TLS warmup handshake
         // completes well before the onboarding demo fires at ~40s into the video.
+        // The warmup targets whatever host is configured at launch; the client
+        // warms a newly chosen provider's host on the first request after a switch.
         _ = visionChatAPI
+
+        // The panel reads the configuration through computed properties, so there
+        // is nothing cached to invalidate when it changes — it only needs a signal
+        // to re-render. A stale error is cleared at the same time, because the user
+        // has just been given the chance to fix whatever caused it.
+        modelConfigurationChangedObserver = NotificationCenter.default.addObserver(
+            forName: .clickyModelConfigurationChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // `queue: .main` already guarantees this runs on the main thread, which
+            // is what `MainActor` is — but the closure is `@Sendable`, so the
+            // compiler can't see that guarantee and would flag the mutation. Stating
+            // the assumption keeps the hop-free version instead of adding a `Task`
+            // that would reorder it against the rest of the notification delivery.
+            MainActor.assumeIsolated {
+                self?.lastErrorMessage = nil
+                self?.objectWillChange.send()
+            }
+        }
+
+        // 「清空对话记忆」 on the 对话与记忆 page deletes the file through the store,
+        // which cannot reach this object. Without this the next save would write
+        // the history the user just deleted straight back to disk.
+        conversationHistoryClearedObserver = NotificationCenter.default.addObserver(
+            forName: .clickyConversationHistoryCleared,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.conversationHistory = []
+                self?.compressedHistorySummary = ""
+                self?.historyCompressionTask?.cancel()
+                self?.historyCompressionTask = nil
+                print("💬 Clicky: conversation memory cleared")
+            }
+        }
+
+        // Turning 「重启后保留对话」 off has to delete what is already on disk, not
+        // just stop future writes — the user is saying they do not want their
+        // conversation kept, and a file left behind would make that untrue. Turning
+        // it on writes the conversation in memory immediately, so the setting is
+        // true from the moment it is saved rather than from the next question.
+        appSettingsChangedObserver = NotificationCenter.default.addObserver(
+            forName: .clickyAppSettingsChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if AppSettingsStore.snapshot().persistsConversationHistory {
+                    self.persistConversationHistory()
+                } else {
+                    ConversationHistoryStore.clear()
+                }
+            }
+        }
 
         // If the user already completed onboarding AND all permissions are
         // still granted, show the cursor overlay immediately. If permissions
@@ -199,6 +323,47 @@ final class CompanionManager: ObservableObject {
             overlayWindowManager.hasShownOverlayBefore = true
             overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
             isOverlayVisible = true
+        }
+    }
+
+    // MARK: - Settings
+
+    /// Opens the settings window, creating it on first use.
+    ///
+    /// The panel is dismissed first because it floats above normal windows and
+    /// would otherwise sit on top of the settings form, hiding it. The window is
+    /// then opened on the next run loop turn rather than immediately, so the
+    /// panel's `orderOut` has taken effect before the settings window tries to
+    /// become key.
+    ///
+    /// Clicking inside the settings window cannot re-dismiss the panel: the
+    /// panel's outside-click monitor is a global `NSEvent` monitor, which only
+    /// ever receives events destined for other applications.
+    ///
+    /// - Parameter initialPage: The page to open on. Omitted, the window reopens
+    ///   on whichever page it was last showing — right for the gear icon, wrong
+    ///   for the panel's 「更换…」, which passes `.model` because that is what it
+    ///   promises.
+    func openSettings(initialPage: SettingsPage? = nil) {
+        NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
+
+        DispatchQueue.main.async {
+            if self.settingsWindowController == nil {
+                self.settingsWindowController = SettingsWindowController()
+            }
+            self.settingsWindowController?.presentWindow(initialPage: initialPage)
+        }
+    }
+
+    deinit {
+        if let modelConfigurationChangedObserver {
+            NotificationCenter.default.removeObserver(modelConfigurationChangedObserver)
+        }
+        if let conversationHistoryClearedObserver {
+            NotificationCenter.default.removeObserver(conversationHistoryClearedObserver)
+        }
+        if let appSettingsChangedObserver {
+            NotificationCenter.default.removeObserver(appSettingsChangedObserver)
         }
     }
 
@@ -466,6 +631,11 @@ final class CompanionManager: ObservableObject {
             // Don't register push-to-talk while the onboarding video is playing
             guard !showOnboardingVideo else { return }
 
+            // Recorded so the release can tell a tap (send what's waiting) from a
+            // hold (say something new). See `handleFinalTranscript`.
+            shortcutPressBeganAt = Date()
+            didSendPendingConfirmationThisPress = false
+
             // Cancel any pending transient hide so the overlay stays visible
             transientHideTask?.cancel()
             transientHideTask = nil
@@ -482,7 +652,18 @@ final class CompanionManager: ObservableObject {
 
             // Cancel any in-progress response and TTS from a previous utterance
             currentResponseTask?.cancel()
-            bailianTTSClient.stopPlayback()
+
+            // Whether a new question cuts off the answer being read aloud. Off, the
+            // previous reply plays to the end — which is what someone wants when
+            // they stepped away from the screen and are only listening.
+            if AppSettingsStore.snapshot().interruptsPlaybackOnNewQuestion {
+                bailianTTSClient.stopPlayback()
+            }
+
+            // A new question owns the bubble from here on: the previous answer's
+            // text goes, and its pending clear (which would otherwise fire
+            // mid-stream and wipe this answer's opening words) goes with it.
+            clearAnswerBubble()
             clearDetectedElementLocation()
 
             // Dismiss the onboarding prompt if it's showing
@@ -499,15 +680,27 @@ final class CompanionManager: ObservableObject {
 
             pendingKeyboardShortcutStartTask?.cancel()
             pendingKeyboardShortcutStartTask = Task {
+                // Read once per recording, for the same reason the response
+                // pipeline snapshots: one utterance should be governed by one
+                // configuration.
+                let appSettings = AppSettingsStore.snapshot()
+                let showsLiveTranscript = appSettings.showsLiveTranscript
+                let sendsImmediately = appSettings.sendsTranscriptImmediatelyOnRelease
+
                 await buddyDictationManager.startPushToTalkFromKeyboardShortcut(
                     currentDraftText: "",
-                    updateDraftText: { _ in
-                        // Partial transcripts are hidden (waveform-only UI)
+                    updateDraftText: { [weak self] partialTranscript in
+                        // The waveform is the default UI; the words are optional.
+                        // Leaving this empty is what keeps the overlay waveform-only,
+                        // which is why the setting needs no other support.
+                        guard showsLiveTranscript else { return }
+                        self?.liveTranscriptText = partialTranscript
                     },
                     submitDraftText: { [weak self] finalTranscript in
-                        self?.lastTranscript = finalTranscript
-                        print("🗣️ Companion received transcript: \(finalTranscript)")
-                        self?.sendTranscriptToVisionChatWithScreenshot(transcript: finalTranscript)
+                        self?.handleFinalTranscript(
+                            finalTranscript,
+                            sendsImmediately: sendsImmediately
+                        )
                     }
                 )
             }
@@ -519,9 +712,85 @@ final class CompanionManager: ObservableObject {
             pendingKeyboardShortcutStartTask?.cancel()
             pendingKeyboardShortcutStartTask = nil
             buddyDictationManager.stopPushToTalkFromKeyboardShortcut()
+
+            // A tap sends whatever is waiting for confirmation. The rule is stated
+            // in terms of how long the key was held rather than in terms of what was
+            // said, because the final transcript of this very press has not arrived
+            // yet — the recognition service is still being given its grace period —
+            // so "did they say anything this time" is not a question the release
+            // event can answer. A hold says nothing about it either way, which is
+            // what keeps a hold that captured no speech from destroying the pending
+            // text: only a *new* transcript replaces it.
+            let pressDuration = shortcutPressBeganAt.map { Date().timeIntervalSince($0) } ?? .greatestFiniteMagnitude
+            if let pendingTranscript = pendingConfirmationTranscript,
+               !didSendPendingConfirmationThisPress,
+               pressDuration < Self.confirmationTapMaximumDurationSeconds {
+                pendingConfirmationTranscript = nil
+                didSendPendingConfirmationThisPress = true
+                liveTranscriptText = ""
+                lastTranscript = pendingTranscript
+                print("🗣️ Companion sending confirmed transcript: \(pendingTranscript)")
+                sendTranscriptToVisionChatWithScreenshot(transcript: pendingTranscript)
+            } else if pendingConfirmationTranscript == nil {
+                // Cleared here as well as in `handleFinalTranscript`: a tap that
+                // produced no speech never reaches the submit callback, and a stale
+                // transcript hovering next to the cursor is worse than none at all.
+                liveTranscriptText = ""
+            }
         case .none:
             break
         }
+    }
+
+    /// How long the shortcut may be held and still count as a tap.
+    ///
+    /// 0.6 s is long enough that an ordinary tap is never mistaken for speech and
+    /// short enough that a deliberate hold to dictate is never mistaken for a tap.
+    /// A press that lasted longer than this is the user starting a new question, so
+    /// whatever was waiting for confirmation stays waiting.
+    private static let confirmationTapMaximumDurationSeconds: TimeInterval = 0.6
+
+    /// Decides what a finished transcript means, which depends on 快捷键 →
+    /// 「松开立即发送」.
+    ///
+    /// With it on, the transcript is the question and goes straight out — the
+    /// behaviour of every version before the setting existed. With it off, the
+    /// transcript is *offered*: it waits next to the cursor as text so the user can
+    /// read what was heard before committing to it, and a tap on the shortcut sends
+    /// it (see the `.released` case).
+    ///
+    /// An empty transcript never sends anything and never clears anything. That is
+    /// the whole reason a press that captured no speech is harmless: it leaves the
+    /// pending question exactly where it was, so a user whose first attempt was not
+    /// heard can hold the key again and try again without losing what they said.
+    private func handleFinalTranscript(
+        _ finalTranscript: String,
+        sendsImmediately: Bool
+    ) {
+        let trimmedTranscript = finalTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedTranscript.isEmpty else {
+            // Nothing was heard. With confirmation on, anything already waiting
+            // stays waiting; with it off there is nothing to do either way.
+            return
+        }
+
+        if sendsImmediately {
+            pendingConfirmationTranscript = nil
+            liveTranscriptText = ""
+            lastTranscript = trimmedTranscript
+            print("🗣️ Companion sending transcript: \(trimmedTranscript)")
+            sendTranscriptToVisionChatWithScreenshot(transcript: trimmedTranscript)
+            return
+        }
+
+        // Waiting for confirmation. The text is shown next to the cursor rather
+        // than sent, so this is the one place `liveTranscriptText` is set from the
+        // setting-independent path — the bubble is the confirmation, and hiding it
+        // would leave the user with no way to read back what was heard.
+        pendingConfirmationTranscript = trimmedTranscript
+        liveTranscriptText = trimmedTranscript
+        print("🗣️ Companion holding transcript for confirmation: \(trimmedTranscript)")
     }
 
     // MARK: - Companion Prompt
@@ -566,6 +835,29 @@ final class CompanionManager: ObservableObject {
 
     // MARK: - AI Response Pipeline
 
+    /// The system prompt for one reply: the fixed companion prompt above, plus the
+    /// two pieces the user controls in 对话与记忆.
+    ///
+    /// The length line is appended as an explicit *override* rather than spliced
+    /// into the base text. The base prompt already carries its own length rule
+    /// ("default to one or two sentences… go all out if asked"), so a second,
+    /// differently-worded instruction sitting wherever it happened to land would
+    /// read as a contradiction the model has to arbitrate. Saying which one wins is
+    /// what makes the setting do anything at all — and it is why the default value
+    /// of the setting is the same one-or-two-sentences behaviour as before.
+    private static func companionSystemPrompt(for settings: AppSettings) -> String {
+        var systemPrompt = companionVoiceResponseSystemPrompt
+        systemPrompt += "\n\nlength for this conversation — this overrides the length guidance above: \(settings.answerLengthStyle.promptSentence)"
+
+        let extraInstructions = settings.extraSystemPromptInstructions
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !extraInstructions.isEmpty {
+            systemPrompt += "\n\nthe user also asked for these, and they come first:\n\(extraInstructions)"
+        }
+
+        return systemPrompt
+    }
+
     /// Captures a screenshot, sends it along with the transcript to the Bailian
     /// vision model, and plays the response aloud via Bailian TTS. The cursor
     /// stays in the spinner/processing state until TTS audio begins playing.
@@ -576,12 +868,25 @@ final class CompanionManager: ObservableObject {
         bailianTTSClient.stopPlayback()
 
         currentResponseTask = Task {
+            // One snapshot for the whole interaction. Re-reading the settings
+            // mid-reply would let a save land between the screenshot and the
+            // request — or between chunk 1 and chunk 2 of the answer text — and
+            // produce one reply built from two different configurations.
+            let appSettings = AppSettingsStore.snapshot()
+
             // Stay in processing (spinner) state — no streaming text displayed
             voiceState = .processing
+            clearAnswerBubble()
 
             do {
                 // Capture all connected screens so the AI has full context
-                let screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG()
+                let screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG(
+                    maximumDimension: appSettings.screenshotMaxDimension == 0
+                        ? nil
+                        : appSettings.screenshotMaxDimension,
+                    compressionQuality: appSettings.screenshotCompressionQuality,
+                    capturesAllDisplays: appSettings.capturesAllDisplays
+                )
 
                 guard !Task.isCancelled else { return }
 
@@ -594,17 +899,25 @@ final class CompanionManager: ObservableObject {
                 }
 
                 // Pass conversation history so the model remembers prior exchanges
-                let historyForAPI = conversationHistory.map { entry in
-                    (userPlaceholder: entry.userTranscript, assistantResponse: entry.assistantResponse)
-                }
+                let historyForAPI = conversationHistory
+
+                let showsResponseText = appSettings.showsResponseText
 
                 let (fullResponseText, _) = try await visionChatAPI.analyzeImageStreaming(
                     images: labeledImages,
-                    systemPrompt: Self.companionVoiceResponseSystemPrompt,
+                    systemPrompt: Self.companionSystemPrompt(for: appSettings),
                     conversationHistory: historyForAPI,
+                    conversationSummary: compressedHistorySummary,
                     userPrompt: transcript,
-                    onTextChunk: { _ in
-                        // No streaming text display — spinner stays until TTS plays
+                    onTextChunk: { [weak self] accumulatedText in
+                        // The vision client hands over the whole accumulated answer,
+                        // not just the new piece. Assigning it (rather than appending)
+                        // is what keeps the bubble from duplicating text, and it also
+                        // means the [POINT:…] tag is visible while it streams and then
+                        // disappears when the reply is parsed and read aloud.
+                        // Delivered on the main actor, so no hop is needed here.
+                        guard showsResponseText else { return }
+                        self?.streamingAnswerText = accumulatedText
                     }
                 )
 
@@ -618,8 +931,17 @@ final class CompanionManager: ObservableObject {
                 // Switch to idle BEFORE setting the location so the triangle
                 // becomes visible and can fly to the target. Without this, the
                 // spinner hides the triangle and the flight animation is invisible.
-                let hasPointCoordinate = parseResult.coordinate != nil
-                if hasPointCoordinate {
+                //
+                // Turning pointing off drops the coordinate rather than asking the
+                // model not to produce one: the prompt still asks for the tag, so the
+                // reply is unchanged and the setting is reversible mid-conversation.
+                // Editing the prompt to remove the pointing section instead would
+                // change the prefix of every request.
+                let pointCoordinateToPointAt = appSettings.pointsAtReferencedElements
+                    ? parseResult.coordinate
+                    : nil
+
+                if pointCoordinateToPointAt != nil {
                     voiceState = .idle
                 }
 
@@ -633,7 +955,7 @@ final class CompanionManager: ObservableObject {
                     return screenCaptures.first(where: { $0.isCursorScreen })
                 }()
 
-                if let pointCoordinate = parseResult.coordinate,
+                if let pointCoordinate = pointCoordinateToPointAt,
                    let targetScreenCapture {
                     // The model reports normalized 0-1000 coordinates, so convert
                     // to the screenshot's pixel space (top-left origin, e.g.
@@ -676,36 +998,65 @@ final class CompanionManager: ObservableObject {
                 }
 
                 // Save this exchange to conversation history (with the point tag
-                // stripped so it doesn't confuse future context)
-                conversationHistory.append((
-                    userTranscript: transcript,
-                    assistantResponse: spokenText
-                ))
+                // stripped so it doesn't confuse future context) — and with the
+                // screenshots it was answered against when the user asked for
+                // history to carry them.
+                let historyScreenshots: [ConversationHistoryScreenshot] = appSettings.includesScreenshotsInHistory
+                    ? screenCaptures.map {
+                        ConversationHistoryScreenshot(imageData: $0.imageData, label: $0.label)
+                    }
+                    : []
 
-                // Keep only the last 10 exchanges to avoid unbounded context growth
-                if conversationHistory.count > 10 {
-                    conversationHistory.removeFirst(conversationHistory.count - 10)
-                }
+                conversationHistory.append(
+                    ConversationHistoryEntry(
+                        userTranscript: transcript,
+                        assistantResponse: spokenText,
+                        userScreenshots: historyScreenshots
+                    )
+                )
 
-                print("🧠 Conversation history: \(conversationHistory.count) exchanges")
+                trimConversationHistory(toRounds: appSettings.rememberedConversationRounds)
+                persistConversationHistoryIfEnabled()
+
+                print("🧠 Conversation history: \(conversationHistory.count) exchanges (limit \(appSettings.rememberedConversationRounds))")
 
                 // Play the response via TTS. Keep the spinner (processing state)
                 // until the audio actually starts playing, then switch to responding.
                 if !spokenText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    // Swap the raw stream for what is actually about to be said.
+                    // The stream still carries the [POINT:…] tag the user never
+                    // hears, and the bubble now stays up for the whole reading, so
+                    // that tag would otherwise sit on screen for seconds.
+                    if showsResponseText {
+                        streamingAnswerText = spokenText
+                    }
+
                     do {
                         try await bailianTTSClient.speakText(spokenText)
                         // speakText returns after player.play() — audio is now playing
                         voiceState = .responding
                     } catch {
                         print("⚠️ Bailian TTS error: \(error)")
-                        speakCreditsErrorFallback()
+                        speakCreditsErrorFallback(failure: error)
+                    }
+
+                    // Scheduled outside the do/catch on purpose: a failed synthesis
+                    // plays no audio at all, and the text that is already on screen
+                    // is still worth the linger rather than vanishing the instant
+                    // the request errors.
+                    if showsResponseText {
+                        scheduleAnswerBubbleClear(
+                            lingerSeconds: appSettings.answerBubbleLingerSeconds
+                        )
                     }
                 }
             } catch is CancellationError {
                 // User spoke again — response was interrupted
+                clearAnswerBubble()
             } catch {
                 print("⚠️ Companion response error: \(error)")
-                speakCreditsErrorFallback()
+                clearAnswerBubble()
+                speakCreditsErrorFallback(failure: error)
             }
 
             if !Task.isCancelled {
@@ -715,12 +1066,60 @@ final class CompanionManager: ObservableObject {
         }
     }
 
+    /// Empties the answer bubble right now, and cancels any clear that was still
+    /// waiting to run.
+    ///
+    /// Every path that takes the bubble over goes through here rather than
+    /// assigning `streamingAnswerText` directly, because a clear left pending
+    /// from the previous answer would otherwise fire in the middle of the next
+    /// one and take its opening words off the screen.
+    private func clearAnswerBubble() {
+        answerBubbleClearTask?.cancel()
+        answerBubbleClearTask = nil
+        streamingAnswerText = ""
+    }
+
+    /// Keeps the answer on screen until the voice reading it has stopped, then
+    /// for `lingerSeconds` longer, then clears it.
+    ///
+    /// Deliberately waits on `bailianTTSClient.isPlaying` rather than on
+    /// `speakText`, which returns the moment playback *starts*: clearing there
+    /// showed the answer for the second or two the first chunk took to
+    /// synthesize and then removed it at exactly the moment the user began
+    /// listening. `isPlaying` also covers the gaps between chunks, so the text
+    /// stays put for the whole reply rather than flickering between sentences.
+    ///
+    /// The linger is read at schedule time, not at fire time: it is part of one
+    /// interaction, so a save landing mid-answer should apply to the next
+    /// answer rather than silently extending the one on screen.
+    private func scheduleAnswerBubbleClear(lingerSeconds: Double) {
+        answerBubbleClearTask?.cancel()
+        answerBubbleClearTask = Task { [weak self] in
+            guard let self else { return }
+
+            while self.bailianTTSClient.isPlaying {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                guard !Task.isCancelled else { return }
+            }
+
+            try? await Task.sleep(nanoseconds: UInt64(lingerSeconds * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+
+            self.streamingAnswerText = ""
+        }
+    }
+
     /// If the cursor is in transient mode (user toggled "Show Clicky" off),
     /// waits for TTS playback and any pointing animation to finish, then
-    /// fades out the overlay after a 1-second pause. Cancelled automatically
+    /// fades out the overlay after a pause. Cancelled automatically
     /// if the user starts another push-to-talk interaction.
     private func scheduleTransientHideIfNeeded() {
         guard !isClickyCursorEnabled && isOverlayVisible else { return }
+
+        // Read the delay at schedule time, not at fire time: the pause is part of
+        // one interaction, and a save landing mid-pause should apply to the next
+        // interaction rather than silently extending or cutting this one short.
+        let hideDelaySeconds = AppSettingsStore.snapshot().transientCursorHideDelaySeconds
 
         transientHideTask?.cancel()
         transientHideTask = Task {
@@ -737,8 +1136,18 @@ final class CompanionManager: ObservableObject {
                 guard !Task.isCancelled else { return }
             }
 
-            // Pause 1s after everything finishes, then fade out
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            // Wait for the answer bubble to go. It outlives the voice by the
+            // user's chosen linger, and the bubble is drawn *by* the cursor, so
+            // fading out while it is still up would take the text away with it.
+            // Empty whenever 「回答时显示文字」 is off, which is why the TTS wait
+            // above is still needed.
+            while !streamingAnswerText.isEmpty {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                guard !Task.isCancelled else { return }
+            }
+
+            // Pause after everything finishes, then fade out
+            try? await Task.sleep(nanoseconds: UInt64(hideDelaySeconds * 1_000_000_000))
             guard !Task.isCancelled else { return }
             overlayWindowManager.fadeOutAndHideOverlay()
             isOverlayVisible = false
@@ -747,13 +1156,132 @@ final class CompanionManager: ObservableObject {
 
     /// Speaks a short apology when the response pipeline fails — the API call or
     /// the TTS request errored, so there is no generated audio to play.
-    /// Uses NSSpeechSynthesizer so it still works when Bailian is unreachable,
-    /// which is exactly the case this exists to cover.
-    private func speakCreditsErrorFallback() {
+    /// Uses NSSpeechSynthesizer so it still works when the model provider is
+    /// unreachable, which is exactly the case this exists to cover.
+    ///
+    /// `failure` is also recorded in `lastErrorMessage` for the panel to display.
+    /// The spoken apology is the same sentence for every kind of failure, so the
+    /// audio alone cannot tell the user what went wrong: an exhausted free quota
+    /// (403 `AllocationQuota.FreeTierOnly`) and a model that cannot read images
+    /// both come out as "抱歉，我这边出了点问题". Keeping the provider's own wording
+    /// on screen is what makes those two distinguishable.
+    private func speakCreditsErrorFallback(failure: Error) {
+        lastErrorMessage = failure.localizedDescription
+        print("⚠️ Companion fallback — speaking apology. Reason: \(failure.localizedDescription)")
+
         let utterance = "抱歉，我这边出了点问题，刚才没能答上来。再试一次好吗？"
         let synthesizer = NSSpeechSynthesizer()
         synthesizer.startSpeaking(utterance)
         voiceState = .responding
+    }
+
+    // MARK: - Conversation Memory
+
+    /// Brings the history back down to the user's round limit.
+    ///
+    /// Zero is a valid choice and means no memory at all — everything is dropped
+    /// after each answer, which is how someone turns the feature off without
+    /// touching the rest of the pipeline.
+    ///
+    /// With 「历史自动压缩」 on, the exchanges that fall outside the limit are folded
+    /// into the running summary instead of being discarded, so a long conversation
+    /// keeps its gist. The folding happens in the background: it costs a model
+    /// request, and making the answer wait on a summary of something the user
+    /// already heard would be spending their time to save their tokens.
+    private func trimConversationHistory(toRounds rememberedConversationRounds: Int) {
+        guard conversationHistory.count > rememberedConversationRounds else { return }
+
+        let agedOutEntries = conversationHistory.prefix(
+            conversationHistory.count - rememberedConversationRounds
+        )
+        conversationHistory.removeFirst(agedOutEntries.count)
+
+        guard AppSettingsStore.snapshot().autoCompressesHistory,
+              !agedOutEntries.isEmpty,
+              historyCompressionTask == nil else { return }
+
+        let entriesToCompress = Array(agedOutEntries)
+        let summarySoFar = compressedHistorySummary
+
+        historyCompressionTask = Task { [weak self] in
+            defer { self?.historyCompressionTask = nil }
+
+            guard let self else { return }
+            guard let foldedSummary = try? await self.summarizeExchanges(
+                entriesToCompress,
+                previousSummary: summarySoFar
+            ) else {
+                // The exchanges are already gone from the window. A failed summary
+                // means they are simply forgotten, which is the behaviour the
+                // setting has when it is off — worth a log line, not an alert.
+                print("⚠️ Clicky: could not compress aged-out conversation; those turns are dropped")
+                return
+            }
+
+            self.compressedHistorySummary = foldedSummary
+            self.persistConversationHistoryIfEnabled()
+            print("💬 Clicky: compressed \(entriesToCompress.count) aged-out exchanges into the conversation summary")
+        }
+    }
+
+    /// Folds `entries` into `previousSummary` with one text-only model request.
+    ///
+    /// Deliberately sends no image: this is a writing task about what was said, and
+    /// attaching the screenshots again would put the largest part of the payload on
+    /// a request that cannot use it.
+    private func summarizeExchanges(
+        _ entries: [ConversationHistoryEntry],
+        previousSummary: String
+    ) async throws -> String {
+        let transcriptOfAgedOutExchanges = entries
+            .map { "user: \($0.userTranscript)\nassistant: \($0.assistantResponse)" }
+            .joined(separator: "\n\n")
+
+        var summarizationRequest = "summarize this conversation so it can be remembered in a few lines.\n"
+        if !previousSummary.isEmpty {
+            summarizationRequest += "\nyou already have this summary of even earlier turns:\n\(previousSummary)\n"
+            summarizationRequest += "\nfold the new turns into it and return one combined summary.\n"
+        }
+        summarizationRequest += "\nkeep what the user asked about, what they were told, and anything they said about themselves or their work. drop pleasantries. write it as plain notes, not prose, in the language the conversation was in.\n\n"
+        summarizationRequest += transcriptOfAgedOutExchanges
+
+        let (summaryText, _) = try await visionChatAPI.analyzeImageStreaming(
+            images: [],
+            systemPrompt: "you compress conversations into short notes that another assistant will read to keep helping the user. reply with the notes only.",
+            userPrompt: summarizationRequest,
+            onTextChunk: { _ in }
+        )
+
+        return summaryText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Writes the conversation to disk — but only when the user asked for it.
+    private func persistConversationHistoryIfEnabled() {
+        guard AppSettingsStore.snapshot().persistsConversationHistory else { return }
+        persistConversationHistory()
+    }
+
+    /// Writes the conversation to disk unconditionally, for the callers that have
+    /// already established that persistence is on.
+    private func persistConversationHistory() {
+        do {
+            try ConversationHistoryStore.save(
+                StoredConversationHistory(
+                    summary: compressedHistorySummary,
+                    entries: conversationHistory
+                )
+            )
+        } catch {
+            // A failed write costs the user their memory of this conversation
+            // across restarts and nothing else — the answer they are waiting for
+            // is unaffected, so this is a log line rather than a spoken error.
+            print("⚠️ Clicky: could not save conversation history: \(error.localizedDescription)")
+        }
+    }
+
+    /// Forgets the conversation, in memory and on disk.
+    func clearConversationMemory() {
+        ConversationHistoryStore.clear()
     }
 
     // MARK: - Point Tag Parsing
