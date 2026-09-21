@@ -21,6 +21,12 @@ struct CompanionPanelView: View {
                 .background(DS.Colors.borderSubtle)
                 .padding(.horizontal, 16)
 
+            if companionManager.voiceState == .processing || companionManager.voiceState == .responding {
+                stopSection
+                    .padding(.top, 12)
+                    .padding(.horizontal, 16)
+            }
+
             permissionsCopySection
                 .padding(.top, 16)
                 .padding(.horizontal, 16)
@@ -152,6 +158,48 @@ struct CompanionPanelView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+    }
+
+    // MARK: - Stop
+
+    /// The one control that says no, shown while the companion is busy. The
+    /// agent loop can be mid-job — clicking, typing, reading pages aloud — and
+    /// "press the talk shortcut" is only a discoverable answer once it is
+    /// written somewhere, so the button carries the hint and the fast path both:
+    /// clicking it stops everything, and the hint says the shortcut does the
+    /// same without opening the panel.
+    private var stopSection: some View {
+        Button(action: {
+            companionManager.interruptActiveResponse()
+        }) {
+            HStack(spacing: 8) {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: 11, weight: .semibold))
+
+                Text("停止")
+                    .font(.system(size: 13, weight: .semibold))
+
+                Spacer(minLength: 8)
+
+                Text("按说话快捷键也能随时打断")
+                    .font(.system(size: 10))
+                    .foregroundColor(DS.Colors.textTertiary)
+            }
+            .foregroundColor(DS.Colors.destructiveText)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(DS.Colors.destructive.opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .stroke(DS.Colors.destructive.opacity(0.35), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
     }
 
     // MARK: - Permissions Copy

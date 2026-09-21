@@ -763,6 +763,15 @@ final class CompanionManager: ObservableObject {
                 bailianTTSClient.stopPlayback()
             }
 
+            // The dictation observation below refuses to override .responding — the
+            // response pipeline owns that state — but the task that owned it was
+            // just cancelled or has already finished. A press during playback has
+            // to hand the state back itself, or the recording that follows runs
+            // under a stale "Responding" and its waveform never shows.
+            if voiceState == .responding {
+                voiceState = .idle
+            }
+
             // A new question owns the bubble from here on: the previous answer's
             // text goes, and its pending clear (which would otherwise fire
             // mid-stream and wipe this answer's opening words) goes with it.
@@ -1492,10 +1501,35 @@ final class CompanionManager: ObservableObject {
             } catch is CancellationError {
                 // User spoke again — response was interrupted
                 clearAnswerBubble()
+                // Usually a new recording takes the state over from here. But an
+                // interrupt that starts nothing — the panel 停止 button, or a stop
+                // press whose recording never got to run — leaves nobody holding
+                // the state, and without this the spinner would spin forever.
+                // The task object is nilled for the same reason
+                // `interruptActiveResponse` nils it: the dictation observation
+                // reads `currentResponseTask == nil` to decide whether an empty
+                // press should schedule the transient hide.
+                currentResponseTask = nil
+                if !buddyDictationManager.isDictationInProgress {
+                    voiceState = .idle
+                }
             } catch {
                 print("⚠️ Companion response error: \(error)")
                 clearAnswerBubble()
                 speakCreditsErrorFallback(failure: error)
+                // A cancellation can surface here instead of the typed catch
+                // above: the in-flight URLSession stream of a cancelled task
+                // tears down as `URLError.cancelled`, not as `CancellationError`.
+                // It needs the same cleanup — without it the finished-but-
+                // cancelled task object stays in `currentResponseTask` and blocks
+                // the dictation observation's transient-hide scheduling, and a
+                // stop that started no recording leaves `voiceState` stuck.
+                if Task.isCancelled {
+                    currentResponseTask = nil
+                    if !buddyDictationManager.isDictationInProgress {
+                        voiceState = .idle
+                    }
+                }
             }
 
             if !Task.isCancelled {
@@ -1516,6 +1550,33 @@ final class CompanionManager: ObservableObject {
         answerBubbleClearTask?.cancel()
         answerBubbleClearTask = nil
         streamingAnswerText = ""
+    }
+
+    /// Stops everything the companion is doing, right now.
+    ///
+    /// This is the panel 停止 button's whole body, and the visible half of the
+    /// interrupt the talk shortcut also performs: the agent loop can be mid-job
+    /// — clicking, typing, reading pages aloud — and the user needs a way to end
+    /// it that does not depend on knowing or finding the shortcut. Cancelling
+    /// the response task is what ends the loop, at its next between-steps check;
+    /// an action already under way always finishes (half a click is worse than
+    /// no click), so "stop" means within a step or so, not mid-keystroke.
+    ///
+    /// The task object is nilled rather than left cancelled on purpose: the
+    /// dictation observation reads `currentResponseTask == nil` to decide
+    /// whether an empty recording should schedule the transient hide, and a
+    /// cancelled-but-still-assigned task would keep the cursor on screen for
+    /// good in the 「只在指位置时出现」 mode.
+    func interruptActiveResponse() {
+        currentResponseTask?.cancel()
+        currentResponseTask = nil
+        bailianTTSClient.stopPlayback()
+        clearAnswerBubble()
+        clearDetectedElementLocation()
+        voiceState = .idle
+        // The user just said "stop" — in the transient presence modes the
+        // companion leaving is part of the stop, not something to wait for.
+        scheduleTransientHideIfNeeded()
     }
 
     /// Keeps the answer on screen until the voice reading it has stopped, then
@@ -1611,6 +1672,19 @@ final class CompanionManager: ObservableObject {
     /// both come out as "抱歉，我这边出了点问题". Keeping the provider's own wording
     /// on screen is what makes those two distinguishable.
     private func speakCreditsErrorFallback(failure: Error) {
+        // An interruption is the user's stop, not a failure — the apology must
+        // never speak over it. Cancellation surfaces in two shapes, and only
+        // one of them is caught upstream: `catch is CancellationError` handles
+        // the typed error, but a cancelled task's in-flight URLSession stream
+        // tears down as `URLError.cancelled`, which falls into the generic
+        // catch and used to arrive here — so stopping the companion mid-answer
+        // was answered with a spoken apology. Neither shape belongs in
+        // `lastErrorMessage` either: the panel showing an error right after a
+        // deliberate stop is feedback the user did not ask for.
+        if failure is CancellationError { return }
+        if let urlError = failure as? URLError, urlError.code == .cancelled { return }
+        guard !Task.isCancelled else { return }
+
         lastErrorMessage = failure.localizedDescription
         print("⚠️ Companion fallback — speaking apology. Reason: \(failure.localizedDescription)")
 

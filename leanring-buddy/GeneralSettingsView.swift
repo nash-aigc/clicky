@@ -821,6 +821,13 @@ struct GeneralSettingsView: View {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.sendsTranscriptImmediatelyOnRelease))
                 }
             }
+            SettingsGroupLabel("停止")
+            SettingsCard {
+                SettingsRow(
+                    label: "怎么打断",
+                    description: "Clicky 在思考、回答或操作电脑时，三种方法随时打断：① 按住说话快捷键不放 —— 立刻停止当前任务，并直接开始听你说新的话；② 按一下快捷键马上松开、不说话 —— 只停止，不发送任何内容；③ 点菜单栏面板里的「停止」按钮 —— 它只在 Clicky 忙的时候自动出现。打断在两步动作之间生效：正在执行中的那一步会做完，之后的不再继续，打断后不会有任何语音或提示。停止是内置行为：没有开关、不用单独设置，任何时刻都有效。"
+                )
+            }
         }
     }
 }
