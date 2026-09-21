@@ -1,0 +1,319 @@
+//
+//  ActionTagParser.swift
+//  leanring-buddy
+//
+//  Parses the "action tags" a model is allowed to put at the end of its reply —
+//  [POINT:…], [CLICK:…], [SCROLL:…], [TYPE:…], [PRESS:…], [OPEN:…], [AX_TREE].
+//
+//  Pointing lives in this file too, but it is deliberately kept out of the
+//  returned `actions` list. Pointing only moves the blue cursor; everything in
+//  `actions` changes the user's actual machine. Keeping the two apart means the
+//  code that executes actions can never accidentally run a point, and the
+//  setting that turns pointing off cannot turn acting off along with it.
+//
+//  This is the single place either tag family is parsed. `CompanionManager`'s
+//  older point-only parser is now a thin adapter over `parse(from:)` rather than
+//  a second regex, because two regexes for one tag would eventually disagree.
+//
+
+import CoreGraphics
+import Foundation
+
+/// A coordinate the model reported, together with the optional element name and
+/// the screen it belongs to.
+///
+/// `normalizedCoordinate` is on the model's **0–1000 grid**, not in screenshot
+/// pixels and not in screen points. The name says so on purpose: a normalized
+/// value and a plausible pixel value look identical, so mixing them up fails
+/// silently rather than crashing — the cursor simply lands somewhere else. See
+/// `CompanionManager.screenshotPixelCoordinate(fromNormalizedPoint:...)` for the
+/// documented conversion and why it exists.
+nonisolated struct ModelReportedCoordinate: Sendable {
+    let normalizedCoordinate: CGPoint
+    let elementLabel: String?
+    /// Which screen the coordinate refers to, 1-based as the model numbers them,
+    /// or nil to mean "whichever screen the mouse is on".
+    let screenNumber: Int?
+}
+
+nonisolated enum ScrollDirection: String, Sendable {
+    case up
+    case down
+}
+
+/// Something the companion can do to the user's machine.
+nonisolated enum CompanionAction: Sendable {
+    case click(at: ModelReportedCoordinate)
+    case rightClick(at: ModelReportedCoordinate)
+    case doubleClick(at: ModelReportedCoordinate)
+    case scroll(at: ModelReportedCoordinate, direction: ScrollDirection, amountInSteps: Int)
+    case typeText(String)
+    case pressKey(keyName: String, modifierNames: [String])
+    case openApplication(named: String)
+    /// Ask for a fresh read of the frontmost app's accessibility tree. The result
+    /// arrives on the *next* turn, which is what makes a multi-step action
+    /// possible: look at the interface, then act on what is really there.
+    case readAccessibilityTree
+}
+
+nonisolated struct ActionParseResult: Sendable {
+    /// The reply with every tag removed — this is what gets spoken aloud.
+    let spokenText: String
+    /// The first [POINT:…] tag, or nil when the model pointed at nothing (it
+    /// wrote [POINT:none], or wrote no point tag at all).
+    let pointingRequest: ModelReportedCoordinate?
+    /// Every action tag, in the order the model wrote them.
+    let actions: [CompanionAction]
+}
+
+nonisolated enum ActionTagParser {
+
+    // MARK: - Tag patterns
+
+    /// `[POINT:x,y]`, `[POINT:x,y:label]`, `[POINT:x,y:label:screen2]`,
+    /// `[POINT:none]` — and the same four shapes for the three click kinds.
+    ///
+    /// Capture groups: 1 = which tag, 2 = x, 3 = y, 4 = label, 5 = screen number.
+    private static let pointingAndClickingPattern =
+        #"\[(POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK):(?:none|(\d+)\s*,\s*(\d+)(?::([^\]:\s][^\]:]*?))?(?::screen(\d+))?)\]"#
+
+    /// `[SCROLL:x,y:up:3]` with an optional `:label` and an optional `:screenN`.
+    ///
+    /// Capture groups: 1 = x, 2 = y, 3 = direction, 4 = steps, 5 = label, 6 = screen.
+    private static let scrollingPattern =
+        #"\[SCROLL:(\d+)\s*,\s*(\d+):(up|down):(\d+)(?::([^\]:\s][^\]:]*?))?(?::screen(\d+))?\]"#
+
+    private static let typingPattern = #"\[TYPE:([^\]]*)\]"#
+    private static let pressingPattern = #"\[PRESS:([^\]]+)\]"#
+    private static let openingPattern = #"\[OPEN:([^\]]+)\]"#
+    private static let accessibilityTreePattern = #"\[AX_TREE\]"#
+
+    // MARK: - Parsing
+
+    /// Pulls every action tag out of a model reply, and returns what is left to
+    /// say out loud alongside the actions to perform.
+    static func parse(from responseText: String) -> ActionParseResult {
+        var claimedRanges: [Range<String.Index>] = []
+        var pointingRequest: ModelReportedCoordinate?
+        var actions: [CompanionAction] = []
+
+        // Tags are removed from the spoken text afterwards, so a tag nested inside
+        // another tag's text would corrupt the result once both were cut. Letting
+        // the first tag to claim a stretch of the reply keep it can't happen with
+        // the shapes the prompt asks for; the guard is here so that it degrades
+        // into "one tag ignored" instead of mangled speech.
+        func claimTagRange(_ tagRange: Range<String.Index>) -> Bool {
+            guard !claimedRanges.contains(where: { $0.overlaps(tagRange) }) else { return false }
+            claimedRanges.append(tagRange)
+            return true
+        }
+
+        forEachMatch(in: responseText, pattern: pointingAndClickingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+
+            let tagName = capture(1, of: match, in: responseText)?.uppercased() ?? ""
+
+            // [POINT:none] / [CLICK:none] carry no coordinate. They are treated as
+            // "no tag" rather than as an error, so a model that answers a question
+            // without pointing still gets its whole sentence spoken.
+            guard let x = capture(2, of: match, in: responseText).flatMap(Double.init),
+                  let y = capture(3, of: match, in: responseText).flatMap(Double.init) else {
+                return
+            }
+
+            let reportedCoordinate = ModelReportedCoordinate(
+                normalizedCoordinate: CGPoint(x: x, y: y),
+                elementLabel: capture(4, of: match, in: responseText)?
+                    .trimmingCharacters(in: .whitespaces),
+                screenNumber: capture(5, of: match, in: responseText).flatMap(Int.init)
+            )
+
+            switch tagName {
+            case "POINT":
+                // Only the first point wins. A second one would have nowhere to
+                // fly to — the cursor can only be in one place.
+                if pointingRequest == nil {
+                    pointingRequest = reportedCoordinate
+                }
+            case "CLICK":
+                actions.append(.click(at: reportedCoordinate))
+            case "RIGHT_CLICK":
+                actions.append(.rightClick(at: reportedCoordinate))
+            case "DOUBLE_CLICK":
+                actions.append(.doubleClick(at: reportedCoordinate))
+            default:
+                break
+            }
+        }
+
+        forEachMatch(in: responseText, pattern: scrollingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+
+            guard let x = capture(1, of: match, in: responseText).flatMap(Double.init),
+                  let y = capture(2, of: match, in: responseText).flatMap(Double.init),
+                  let directionName = capture(3, of: match, in: responseText)?.lowercased(),
+                  let direction = ScrollDirection(rawValue: directionName),
+                  let amountInSteps = capture(4, of: match, in: responseText).flatMap(Int.init) else {
+                return
+            }
+
+            actions.append(
+                .scroll(
+                    at: ModelReportedCoordinate(
+                        normalizedCoordinate: CGPoint(x: x, y: y),
+                        elementLabel: capture(5, of: match, in: responseText)?
+                            .trimmingCharacters(in: .whitespaces),
+                        screenNumber: capture(6, of: match, in: responseText).flatMap(Int.init)
+                    ),
+                    direction: direction,
+                    amountInSteps: amountInSteps
+                )
+            )
+        }
+
+        forEachMatch(in: responseText, pattern: typingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let textToType = capture(1, of: match, in: responseText), !textToType.isEmpty else { return }
+            actions.append(.typeText(textToType))
+        }
+
+        forEachMatch(in: responseText, pattern: pressingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let keyDescription = capture(1, of: match, in: responseText) else { return }
+            let (keyName, modifierNames) = splitKeyDescription(keyDescription)
+            guard !keyName.isEmpty else { return }
+            actions.append(.pressKey(keyName: keyName, modifierNames: modifierNames))
+        }
+
+        forEachMatch(in: responseText, pattern: openingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let applicationName = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespaces), !applicationName.isEmpty else { return }
+            actions.append(.openApplication(named: applicationName))
+        }
+
+        forEachMatch(in: responseText, pattern: accessibilityTreePattern) { _, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            actions.append(.readAccessibilityTree)
+        }
+
+        return ActionParseResult(
+            spokenText: spokenTextByRemoving(claimedRanges, from: responseText),
+            pointingRequest: pointingRequest,
+            actions: actions
+        )
+    }
+
+    // MARK: - Helpers
+
+    /// Splits `"cmd+a"` into the key to press and the modifiers held with it.
+    ///
+    /// Which component is the key is decided by **name, not by position**.
+    /// Position is the obvious way to write this and it is wrong: the prompt
+    /// teaching this tag spells the combination key-first (`[PRESS:a+cmd]`),
+    /// while macOS convention spells it modifier-first, and a model asked for
+    /// "全选" can reasonably emit either. Read positionally, one of those two
+    /// comes out as "hold A down and strike Command" — which the executor
+    /// refuses as an unknown modifier, so the shortcut simply never fires.
+    /// Deciding by name makes both orders the same request, which is what a tag
+    /// written by a language model needs.
+    ///
+    /// A description that is nothing but modifiers (`cmd`) names that modifier
+    /// key itself; there is no other component left to be the one struck.
+    private static func splitKeyDescription(_ keyDescription: String) -> (keyName: String, modifierNames: [String]) {
+        let components = keyDescription
+            .split(separator: "+")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        let modifierNames = components.filter { modifierFlag(named: $0) != nil }
+        let otherNames = components.filter { modifierFlag(named: $0) == nil }
+
+        guard let keyName = otherNames.last ?? modifierNames.last else { return ("", []) }
+        return (keyName, modifierNames.filter { $0 != keyName })
+    }
+
+    /// Maps the words a model may write for a modifier key into the event flag
+    /// they mean, or `nil` for anything that is not a modifier.
+    ///
+    /// This table lives with the tag parser rather than with the code that
+    /// presses the keys, because "which of `cmd+a`'s two halves is the key" is
+    /// a question about the *tag* — the parser has to answer it, and the answer
+    /// has to be the same vocabulary the executor can turn into flags. Two
+    /// tables would eventually disagree, and a disagreement here surfaces as a
+    /// shortcut that quietly does nothing.
+    ///
+    /// Several spellings each, because these come from a language model and not
+    /// from a keyboard: `cmd`, `command` and `⌘` all mean the same thing, and
+    /// refusing one of them would look like the feature is broken.
+    nonisolated static func modifierFlag(named modifierName: String) -> CGEventFlags? {
+        switch modifierName.lowercased() {
+        case "cmd", "command", "meta", "super", "⌘":
+            return .maskCommand
+        case "shift", "⇧":
+            return .maskShift
+        case "opt", "option", "alt", "⌥":
+            return .maskAlternate
+        case "ctrl", "control", "^":
+            return .maskControl
+        case "fn", "function":
+            return .maskSecondaryFn
+        default:
+            return nil
+        }
+    }
+
+    /// Removes the claimed tag ranges and tidies the sentence left behind.
+    ///
+    /// Built by splicing the text *between* the ranges rather than by deleting
+    /// them in place: deleting in place means mutating a string while holding
+    /// indices into a different copy of it, which is the kind of thing that works
+    /// until it doesn't.
+    private static func spokenTextByRemoving(
+        _ tagRanges: [Range<String.Index>],
+        from responseText: String
+    ) -> String {
+        let sortedRanges = tagRanges.sorted { $0.lowerBound < $1.lowerBound }
+
+        var spokenText = ""
+        var nextCharacterToCopy = responseText.startIndex
+        for tagRange in sortedRanges {
+            spokenText += responseText[nextCharacterToCopy..<tagRange.lowerBound]
+            nextCharacterToCopy = tagRange.upperBound
+        }
+        spokenText += responseText[nextCharacterToCopy...]
+
+        return spokenText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func forEachMatch(
+        in text: String,
+        pattern: String,
+        _ body: (NSTextCheckingResult, Range<String.Index>) -> Void
+    ) {
+        // Case-insensitive on purpose: the tags are uppercase in the prompt, but a
+        // model that writes [click:…] means exactly the same thing, and silently
+        // speaking the tag aloud instead of clicking would be a confusing failure.
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return
+        }
+
+        let wholeTextRange = NSRange(text.startIndex..., in: text)
+        for match in regex.matches(in: text, options: [], range: wholeTextRange) {
+            guard let tagRange = Range(match.range, in: text) else { continue }
+            body(match, tagRange)
+        }
+    }
+
+    private static func capture(
+        _ groupIndex: Int,
+        of match: NSTextCheckingResult,
+        in text: String
+    ) -> String? {
+        guard groupIndex < match.numberOfRanges,
+              let groupRange = Range(match.range(at: groupIndex), in: text) else {
+            return nil
+        }
+        return String(text[groupRange])
+    }
+}

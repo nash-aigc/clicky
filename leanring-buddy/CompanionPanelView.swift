@@ -33,6 +33,14 @@ struct CompanionPanelView: View {
                     .padding(.horizontal, 16)
             }
 
+            if companionManager.lastActionDescription != nil {
+                Spacer()
+                    .frame(height: 12)
+
+                lastActionSection
+                    .padding(.horizontal, 16)
+            }
+
             if companionManager.hasCompletedOnboarding && companionManager.allPermissionsGranted {
                 Spacer()
                     .frame(height: 12)
@@ -682,6 +690,47 @@ struct CompanionPanelView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
                     .stroke(DS.Colors.destructive.opacity(0.35), lineWidth: 0.5)
+            )
+        }
+    }
+
+    // MARK: - Last Action
+
+    /// Shows what the companion last did to the machine.
+    ///
+    /// Its answer is spoken, so "我帮你点了" sounds exactly the same whether it
+    /// really clicked or only described where the button is — and whether it
+    /// clicked or refused because a switch is off. This line is the difference,
+    /// and it is the only place the user can see that a setting took effect.
+    @ViewBuilder
+    private var lastActionSection: some View {
+        if let lastActionDescription = companionManager.lastActionDescription {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "cursorarrow.click")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(DS.Colors.info)
+
+                    Text("上一次动手")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(DS.Colors.info)
+                }
+
+                Text(lastActionDescription)
+                    .font(.system(size: 10))
+                    .foregroundColor(DS.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(DS.Colors.info.opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .stroke(DS.Colors.info.opacity(0.35), lineWidth: 0.5)
             )
         }
     }

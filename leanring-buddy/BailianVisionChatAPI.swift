@@ -247,6 +247,9 @@ class BailianVisionChatAPI {
             messages.append(["role": "assistant", "content": entry.assistantResponse])
         }
 
+        // Entries recorded before the companion could act never reach here — the
+        // caller filters them out, see `ConversationHistoryEntry.recordedWithActionTags`.
+
         messages.append([
             "role": "user",
             "content": imageAndTextBlocks(images: images, userPrompt: userPrompt)

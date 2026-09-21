@@ -30,9 +30,29 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     /// follow-up question is still about the same screen.
     var userScreenshots: [ConversationHistoryScreenshot] = []
 
+    /// Whether this reply was recorded by a build whose replies can carry action
+    /// tags.
+    ///
+    /// `nil` — the key absent from the file — means the turn was written before the
+    /// companion could act on the computer at all, so it cannot contain a
+    /// `[CLICK:…]` or a `[TYPE:…]` even in principle. Replaying such a turn is not a
+    /// neutral act: it shows the model a request answered with a past-tense sentence
+    /// and nothing happening, which is exactly the shape the system prompt forbids —
+    /// and an in-context example of the model's *own* past behaviour outweighs an
+    /// instruction. Measured 2026-09-22: a single stale turn was enough to turn
+    /// 「帮我点一下 7」 back into a reply that claimed the click and emitted no tag,
+    /// with ten of them in the file.
+    ///
+    /// `BailianVisionChatAPI` reads this to decide whether the replayed turns need a
+    /// note saying they predate the ability to act. The flag is optional, and so
+    /// `decodeIfPresent`-shaped, for the usual reason: a non-optional `Bool` would
+    /// make every file written before it existed fail to decode (`开发经验/10-踩过的坑.md` E1).
+    var recordedWithActionTags: Bool?
+
     private enum CodingKeys: String, CodingKey {
         case userTranscript
         case assistantResponse
+        case recordedWithActionTags
     }
 }
 

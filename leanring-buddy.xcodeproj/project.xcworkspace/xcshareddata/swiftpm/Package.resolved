@@ -1,6 +1,14 @@
 {
-  "originHash" : "e721da7f9826abdffcb6185e886155efa2514bd6234475f1afa893e29eb258d6",
+  "originHash" : "1093624a93b0a91a717758a075ea39dbca67522fe315f3241b91ea39bf78139e",
   "pins" : [
+    {
+      "identity" : "macosusesdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/mediar-ai/MacosUseSDK",
+      "state" : {
+        "revision" : "a2d7866355bca07faf476c5d180c8664b1992f8c"
+      }
+    },
     {
       "identity" : "sparkle",
       "kind" : "remoteSourceControl",

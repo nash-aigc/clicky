@@ -16,7 +16,17 @@ struct CompanionScreenCapture {
     let isCursorScreen: Bool
     let displayWidthInPoints: Int
     let displayHeightInPoints: Int
+    /// The display's AppKit frame (bottom-left origin) — the space
+    /// `NSEvent.mouseLocation` and the overlay windows already use.
     let displayFrame: CGRect
+    /// The screen's real display ID.
+    ///
+    /// Carried so a Quartz coordinate can be built without assuming where a
+    /// screen sits in Quartz space: `CGDisplayBounds(displayID).origin` is the
+    /// answer, and it differs per screen. Deriving the Quartz origin from the
+    /// main screen's height instead is the classic mistake here — it is right on
+    /// a single display and silently wrong on every other one.
+    let displayID: CGDirectDisplayID
     let screenshotWidthInPixels: Int
     let screenshotHeightInPixels: Int
 }
@@ -109,10 +119,17 @@ enum CompanionScreenCaptureUtility {
                     configuration.width = Int(CGFloat(maximumDimension) * aspectRatio)
                 }
             } else {
-                // 原图 mode: no rescaling at all, the capture is the display's
-                // own pixel size.
-                configuration.width = display.width
-                configuration.height = display.height
+                // 原图 mode: the display's own **pixel** size. SCDisplay.width is in
+                // points — 1728 on this machine's screen — so passing it through gave
+                // a 1x image while the panel's real backing store is 2x, and the
+                // option did not do what its name said. Measured 2026-09-22:
+                // CGDisplayPixelsWide also reports the point size (1728, not 3456),
+                // so the scale has to come from the matched NSScreen's
+                // backingScaleFactor instead. A display with no matching NSScreen
+                // keeps the old behaviour (scale 1) rather than guessing a factor.
+                let backingScale = nsScreenByDisplayID[display.displayID]?.backingScaleFactor ?? 1
+                configuration.width = Int(CGFloat(display.width) * backingScale)
+                configuration.height = Int(CGFloat(display.height) * backingScale)
             }
 
             let cgImage = try await SCScreenshotManager.captureImage(
@@ -144,6 +161,7 @@ enum CompanionScreenCaptureUtility {
                 displayWidthInPoints: Int(displayFrame.width),
                 displayHeightInPoints: Int(displayFrame.height),
                 displayFrame: displayFrame,
+                displayID: display.displayID,
                 screenshotWidthInPixels: configuration.width,
                 screenshotHeightInPixels: configuration.height
             ))

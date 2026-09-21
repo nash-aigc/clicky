@@ -12,6 +12,7 @@
 //  way and a new setting costs one row, not one layout.
 //
 
+import Combine
 import SwiftUI
 
 /// One page of the settings window. The sidebar renders these in order.
@@ -58,10 +59,10 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general: return 9
         case .model: return nil
-        case .memory: return 6
+        case .memory: return 7
         case .listen: return 4
         case .speak: return 4
-        case .vision: return 5
+        case .vision: return 8
         case .shortcuts: return 2
         }
     }
@@ -77,6 +78,20 @@ struct GeneralSettingsView: View {
     /// Whether the 清空对话记忆 confirmation is up. Deleting the conversation
     /// cannot be undone, so it never happens on a single click.
     @State private var isConfirmingConversationMemoryClear = false
+
+    /// Whether macOS currently lets Clicky post clicks and keystrokes for the
+    /// user. Only 看与截图 reads it (see `accessibilityPermissionControl`), and it
+    /// cannot be asked for in code — macOS requires a person to grant it in its
+    /// own dialog — so this is read back on a timer instead.
+    @State private var hasAccessibilityPermission = WindowPositionManager.hasAccessibilityPermission()
+
+    /// Re-reads the Accessibility grant while the 看与截图 page is on screen.
+    ///
+    /// The page is rebuilt whenever the sidebar selection changes, so this only
+    /// ticks while someone is actually looking at the row it updates.
+    private let accessibilityPermissionPollTimer = Timer
+        .publish(every: 1.5, on: .main, in: .common)
+        .autoconnect()
 
     var body: some View {
         ScrollView {
@@ -276,6 +291,27 @@ struct GeneralSettingsView: View {
                 )
             }
 
+            SettingsGroupLabel("系统提示词")
+            SettingsCard {
+                SettingsTextEditorRow(
+                    label: "系统提示词",
+                    description: "Clicky 每次提问都带着的那一整段原话，可以原样读、直接改。改完点右下角「保存」生效。觉得它话多、或者光说不动手，改的就是这里。",
+                    text: systemPromptEditorBinding,
+                    placeholder: "",
+                    minimumHeight: 280
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "恢复默认",
+                    description: "把上面这段换回 Clicky 自带的版本。你自己改的内容会丢掉。"
+                ) {
+                    restoreDefaultSystemPromptButton
+                }
+            }
+            SettingsNote(
+                text: "这段后面还会自动追加两行：「回答长度」和「补充指令」的内容，由上面那两个设置控制，在这里改不了。"
+            )
+
             SettingsGroupLabel("清空")
             SettingsCard {
                 SettingsRow(
@@ -316,6 +352,49 @@ struct GeneralSettingsView: View {
             return "它会立刻忘掉你们刚才聊过的内容，然后从头开始记。"
         }
         return "磁盘上的 \(storedExchangeCount) 轮问答会被删除，它也会立刻忘掉这次运行里记着的上下文。此操作无法撤销。"
+    }
+
+    /// What the 系统提示词 editor reads and writes.
+    ///
+    /// The editor is a plain `String` because that is what a `TextEditor` binds to,
+    /// but the stored setting is `String?`, where nil means "use the built-in
+    /// prompt". So the editor is shown whichever prompt is actually in force — the
+    /// shipped one until the user changes something — and the first edit is what
+    /// turns nil into a real override. Reading never writes, so opening the page and
+    /// pressing 保存 without touching the text leaves the setting on the built-in.
+    private var systemPromptEditorBinding: Binding<String> {
+        Binding(
+            get: {
+                generalSettingsViewModel.draftSettings.customSystemPrompt
+                    ?? CompanionManager.defaultVoiceResponseSystemPrompt
+            },
+            set: {
+                generalSettingsViewModel.draftSettings.customSystemPrompt = $0
+            }
+        )
+    }
+
+    /// Writes nil rather than a copy of the default text, so "restore" really means
+    /// "follow the built-in" — a later build that improves the default prompt then
+    /// reaches this user too, which a stored copy of today's wording would not.
+    private var restoreDefaultSystemPromptButton: some View {
+        Button("恢复默认") {
+            generalSettingsViewModel.draftSettings.customSystemPrompt = nil
+        }
+        .buttonStyle(.plain)
+        .font(.system(size: 12, weight: .medium))
+        .foregroundColor(DS.Colors.textPrimary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .fill(DS.Colors.surface2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .stroke(DS.Colors.borderSubtle, lineWidth: 1)
+        )
+        .pointerCursor()
     }
 
     /// Destructive styling on purpose: this is the one control on the page that
@@ -461,14 +540,14 @@ struct GeneralSettingsView: View {
         Group {
             SettingsPageHeader(
                 title: "看与截图",
-                subtitle: "每次提问发给模型什么画面、发多大。"
+                subtitle: "每次提问发给模型什么画面、发多大，以及允不允许它自己动手。"
             )
 
             SettingsGroupLabel("截图")
             SettingsCard {
                 SettingsRow(
                     label: "截图清晰度",
-                    description: "长边像素。标准够看清大部分 UI；高清适合看小字，payload 约多 56%。"
+                    description: "长边像素。标准够看清大部分 UI；高清适合看小字，payload 约多 56%。原图按屏幕原生像素截（Retina 屏是显示点数的两倍），payload 最大。"
                 ) {
                     SettingsSegmentedPicker(
                         selection: generalSettingsViewModel.binding(\.screenshotMaxDimension),
@@ -530,6 +609,103 @@ struct GeneralSettingsView: View {
                         valueLabel: { String(format: "%.0f", $0) }
                     )
                 }
+            }
+
+            SettingsGroupLabel("操作电脑")
+            SettingsCard {
+                SettingsRow(
+                    label: "允许 Clicky 操作电脑",
+                    description: "模型说「帮你点」时真的去点。关掉之后它只能指给你看，碰不到你的电脑。每次动手都会在菜单栏面板里留一行记录。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.allowsComputerControl))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "允许打字和按快捷键",
+                    description: "点开之后模型可以往当前有焦点的输入框里打字、按快捷键。这两样能通过任何获得焦点的应用触到系统，所以单独一个开关；只想要点击和滚动的话关掉它。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.allowsKeyboardControl))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "输入方式",
+                    description: "模型往输入框里放文字用哪种方式。打字：一个字一个字敲进去，不碰你的剪贴板，但换行要一行一行按回车，长文会慢。粘贴：整段放进剪贴板按一次 ⌘V，快、换行和表格一次到位，用完半秒后把剪贴板还给你。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.textEntryMethod),
+                        options: TextEntryMethod.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "辅助功能权限",
+                    description: "上面两个开关打开之后，还得让 macOS 允许 Clicky 替你按键和点击。没有这项权限时，它只能开口告诉你「没权限」，动不了手。"
+                ) {
+                    accessibilityPermissionControl
+                }
+            }
+
+            if !hasAccessibilityPermission {
+                SettingsNote(text: "点「去授权」会弹出系统授权窗口；如果窗口里没有 Clicky，点「打开设置」在「隐私与安全性 → 辅助功能」里用「+」把它加进去。加完之后不用重启，这里的字会自己变成「已授权」。")
+            }
+        }
+    }
+
+    /// The live Accessibility state, and the one button that requests it.
+    ///
+    /// macOS requires this be granted by a person in its own dialog, so the most
+    /// this control can do is ask for it and then *show* whether it worked —
+    /// hence the polling: the user leaves for System Settings, grants it, and
+    /// comes back to a row that has already caught up, rather than one still
+    /// claiming they never granted anything. The 1.5s cadence matches the one
+    /// `CompanionManager` polls permissions at, so the panel and this page can
+    /// never disagree about what was granted.
+    private var accessibilityPermissionControl: some View {
+        HStack(spacing: 8) {
+            if hasAccessibilityPermission {
+                Circle()
+                    .fill(DS.Colors.success)
+                    .frame(width: 6, height: 6)
+                Text("已授权")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(DS.Colors.success)
+            } else {
+                Button("去授权") {
+                    WindowPositionManager.requestAccessibilityPermission()
+                    hasAccessibilityPermission = WindowPositionManager.hasAccessibilityPermission()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(DS.Colors.textOnAccent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                        .fill(DS.Colors.accent)
+                )
+                .pointerCursor()
+
+                Button("打开设置") {
+                    WindowPositionManager.openAccessibilitySettings()
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(DS.Colors.textSecondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                        .stroke(DS.Colors.borderSubtle, lineWidth: 0.8)
+                )
+                .pointerCursor()
+            }
+        }
+        .onReceive(accessibilityPermissionPollTimer) { _ in
+            let currentlyGranted = WindowPositionManager.hasAccessibilityPermission()
+            if currentlyGranted != hasAccessibilityPermission {
+                hasAccessibilityPermission = currentlyGranted
             }
         }
     }
@@ -697,6 +873,12 @@ struct SettingsTextEditorRow: View {
     @Binding var text: String
     let placeholder: String
 
+    /// How tall the editor starts at. 62 fits the one-liners this row was built for
+    /// (补充指令 and friends); the 系统提示词 editor overrides it to stand several
+    /// hundred points tall, because reading a five-thousand-character prompt through
+    /// a three-line window is the same as not being able to read it.
+    var minimumHeight: CGFloat = 62
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
@@ -722,7 +904,7 @@ struct SettingsTextEditorRow: View {
                     .foregroundColor(DS.Colors.textPrimary)
                     .scrollContentBackground(.hidden)
                     .background(Color.clear)
-                    .frame(minHeight: 62)
+                    .frame(minHeight: minimumHeight)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
             }

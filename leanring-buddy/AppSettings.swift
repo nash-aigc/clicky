@@ -188,6 +188,29 @@ nonisolated enum CursorFollowDistance: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// How the companion delivers a `[TYPE:…]`'s text into whatever app has focus.
+///
+/// Typing posts every character as its own key event, which lands in any app but
+/// cannot carry a line break — editors only answer a real Return press, so
+/// multi-line text has to be split and joined with Return presses. Pasting puts
+/// the whole text on the clipboard and presses cmd+v, which carries newlines in
+/// one step and is much faster for long text — at the cost of borrowing the
+/// user's clipboard for a moment. Typing stays the default because it never
+/// touches anything outside the focused text field.
+nonisolated enum TextEntryMethod: String, Codable, CaseIterable, Sendable {
+    /// One key event per character, line breaks as real Return presses.
+    case typeCharacters
+    /// The whole text on the clipboard, delivered with one cmd+v.
+    case pasteClipboard
+
+    var displayName: String {
+        switch self {
+        case .typeCharacters: return "打字"
+        case .pasteClipboard: return "粘贴"
+        }
+    }
+}
+
 nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     // MARK: - 通用 · 启动
@@ -259,6 +282,17 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// Free-form instructions appended verbatim to the system prompt.
     var extraSystemPromptInstructions: String = ""
 
+    /// The whole base system prompt, when the user has replaced it.
+    ///
+    /// `nil` means "follow the built-in", which is not the same as "empty": a build
+    /// that improves the default prompt has to reach a user who never opened the
+    /// editor. Storing the built-in text as this property's default value instead
+    /// would freeze every existing install on whatever wording happened to ship the
+    /// day it first ran, and the only way out would be to ask the user to rewrite it
+    /// by hand. The length line and 补充指令 still append on top of this, so the
+    /// editor stays about the base prompt and those two settings keep working.
+    var customSystemPrompt: String?
+
     // MARK: - 听（语音识别）
 
     var transcriptionLanguage: TranscriptionLanguage = .chinese
@@ -308,6 +342,28 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     /// When the answer embeds a `[POINT:…]` tag, fly the cursor to that element.
     var pointsAtReferencedElements: Bool = true
+
+    /// Master switch for acting on the machine — clicking, scrolling, typing,
+    /// pressing keys, opening apps, reading the accessibility tree.
+    ///
+    /// On by default. Off means the tags are still parsed and then discarded, so
+    /// the companion can point at things but cannot touch them.
+    var allowsComputerControl: Bool = true
+
+    /// Whether `[TYPE:…]` and `[PRESS:…]` are allowed, separately from everything
+    /// else.
+    ///
+    /// Typing and key presses are the two that can reach any part of the system
+    /// through whatever app happens to have focus, which is why they have their
+    /// own gate rather than riding on the master switch. Clicking and scrolling
+    /// are unaffected by it.
+    var allowsKeyboardControl: Bool = true
+
+    /// How `[TYPE:…]` gets its text into the focused app — one key event per
+    /// character, or a clipboard paste (`cmd+v`). See `TextEntryMethod` for the
+    /// trade-off; typing is the default so the clipboard is untouched unless the
+    /// user asks for paste.
+    var textEntryMethod: TextEntryMethod = .typeCharacters
 
     // MARK: - 快捷键
 
@@ -377,6 +433,7 @@ nonisolated extension AppSettings {
         case includesScreenshotsInHistory
         case answerLengthStyle
         case extraSystemPromptInstructions
+        case customSystemPrompt
         case transcriptionLanguage
         case extraTranscriptionKeyterms
         case finalTranscriptGracePeriodSeconds
@@ -389,6 +446,9 @@ nonisolated extension AppSettings {
         case screenshotCompressionQuality
         case capturesAllDisplays
         case pointsAtReferencedElements
+        case allowsComputerControl
+        case allowsKeyboardControl
+        case textEntryMethod
         case pushToTalkShortcutRawValue
         case sendsTranscriptImmediatelyOnRelease
         case visionMaxCompletionTokens
@@ -415,6 +475,11 @@ nonisolated extension AppSettings {
         includesScreenshotsInHistory = try container.decodeIfPresent(Bool.self, forKey: .includesScreenshotsInHistory) ?? defaults.includesScreenshotsInHistory
         answerLengthStyle = try container.decodeIfPresent(AnswerLengthStyle.self, forKey: .answerLengthStyle) ?? defaults.answerLengthStyle
         extraSystemPromptInstructions = try container.decodeIfPresent(String.self, forKey: .extraSystemPromptInstructions) ?? defaults.extraSystemPromptInstructions
+        // Optional on purpose, and no `?? defaults` fallback: "no key" and "key set
+        // to null" both have to land on nil, because nil is the value that means
+        // "use the built-in prompt". A fallback here would turn every existing
+        // settings file into one that ships a frozen copy of today's prompt.
+        customSystemPrompt = try container.decodeIfPresent(String.self, forKey: .customSystemPrompt)
         transcriptionLanguage = try container.decodeIfPresent(TranscriptionLanguage.self, forKey: .transcriptionLanguage) ?? defaults.transcriptionLanguage
         extraTranscriptionKeyterms = try container.decodeIfPresent(String.self, forKey: .extraTranscriptionKeyterms) ?? defaults.extraTranscriptionKeyterms
         finalTranscriptGracePeriodSeconds = try container.decodeIfPresent(Double.self, forKey: .finalTranscriptGracePeriodSeconds) ?? defaults.finalTranscriptGracePeriodSeconds
@@ -427,6 +492,13 @@ nonisolated extension AppSettings {
         screenshotCompressionQuality = try container.decodeIfPresent(Double.self, forKey: .screenshotCompressionQuality) ?? defaults.screenshotCompressionQuality
         capturesAllDisplays = try container.decodeIfPresent(Bool.self, forKey: .capturesAllDisplays) ?? defaults.capturesAllDisplays
         pointsAtReferencedElements = try container.decodeIfPresent(Bool.self, forKey: .pointsAtReferencedElements) ?? defaults.pointsAtReferencedElements
+        // `decodeIfPresent` is not optional politeness here: a synthesized `Codable`
+        // throws on a missing key, so a plain `Bool` added today would make every
+        // settings file written before today fail to load — and the store would
+        // silently fall back to defaults for the user's entire configuration.
+        allowsComputerControl = try container.decodeIfPresent(Bool.self, forKey: .allowsComputerControl) ?? defaults.allowsComputerControl
+        allowsKeyboardControl = try container.decodeIfPresent(Bool.self, forKey: .allowsKeyboardControl) ?? defaults.allowsKeyboardControl
+        textEntryMethod = try container.decodeIfPresent(TextEntryMethod.self, forKey: .textEntryMethod) ?? defaults.textEntryMethod
         pushToTalkShortcutRawValue = try container.decodeIfPresent(String.self, forKey: .pushToTalkShortcutRawValue) ?? defaults.pushToTalkShortcutRawValue
         sendsTranscriptImmediatelyOnRelease = try container.decodeIfPresent(Bool.self, forKey: .sendsTranscriptImmediatelyOnRelease) ?? defaults.sendsTranscriptImmediatelyOnRelease
         visionMaxCompletionTokens = try container.decodeIfPresent(Int.self, forKey: .visionMaxCompletionTokens) ?? defaults.visionMaxCompletionTokens
