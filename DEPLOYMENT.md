@@ -23,7 +23,7 @@ PostHog ──→ 上游作者的分析账号（上传你的语音转写、模�
 Clicky ──→ 阿里云百炼（工作空间专属端点，直连，无代理）
               ├─→ qwen3-asr-flash-realtime    （👂 实时语音转文字，websocket）
               ├─→ qwen3-vl-plus / flash       （🧠 看屏幕截图回答问题，SSE 流式）
-              └─→ qwen-audio-3.1-tts-flash    （👄 朗读回答，音色 yuxiaoyun_v3.1）
+              └─→ qwen-audio-3.1-tts-flash    （👄 朗读回答，音色=赵今麦克隆音色）
 分析上报：无（PostHog 已彻底移除）
 ```
 
@@ -52,7 +52,7 @@ API 密钥放在 **gitignore 的 `BailianSecrets.plist`** 里，不进代码、�
 |---|---|---|---|
 | 语音转文字 | AssemblyAI（经 Worker 拿临时 token） | `qwen3-asr-flash-realtime` websocket 直连 | `BailianRealtimeTranscriptionProvider.swift`（新） |
 | 看屏幕回答 | Anthropic Claude | `qwen3-vl-plus`（可选 flash）OpenAI 兼容 SSE | `BailianVisionChatAPI.swift`（新） |
-| 朗读 | ElevenLabs | `qwen-audio-3.1-tts-flash`，音色 `yuxiaoyun_v3.1` | `BailianTTSClient.swift`（新） |
+| 朗读 | ElevenLabs | `qwen-audio-3.1-tts-flash`，音色=赵今麦克隆音色（voice-enrollment 复刻，想换回官方音色改 `BailianConfiguration.textToSpeechVoice` 为 `yuxiaoyun_v3.1` 等） | `BailianTTSClient.swift`（新） |
 | 分析上报 | PostHog（传转写/回答/邮箱） | **无** | `ClickyAnalytics.swift` 已删 |
 | 密钥 | 硬编码 / Worker 环境变量 | gitignored `BailianSecrets.plist` | `BailianConfiguration.swift`（新）、`AppBundleConfiguration.swift`（扩展） |
 
@@ -257,7 +257,7 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST \
    ⚠️ 只要签名变了，这三项会重新要一次 —— 只此一次，之后稳定。
 
 6) 端到端验证：菜单栏图标 → 按住 ctrl+option 说一句中文 → 松开
-   应看到：实时转写 → 蓝色光标旁出文字气泡 → 女声朗读（于小云）→
+   应看到：实时转写 → 蓝色光标旁出文字气泡 → 朗读（当前为赵今麦克隆音色）→
    问"某某按钮在哪"会看到蓝三角飞过去指。
 ```
 
