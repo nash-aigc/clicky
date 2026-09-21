@@ -70,6 +70,37 @@ struct Triangle: Shape {
     }
 }
 
+/// A macOS-style pointer outline, for users who would rather the companion read
+/// as their actual cursor than as a separate triangle.
+///
+/// The tip is drawn at the rect's *centre*, not at its top-left corner, so it
+/// lands on the same point `Triangle` is centred on. `.position(cursorPosition)`
+/// therefore means the same thing for both shapes and neither needs an anchor
+/// correction — which is exactly what makes 「重叠」 put the tip on the mouse.
+struct ArrowCursorShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let size = min(rect.width, rect.height)
+        let tip = CGPoint(x: rect.midX, y: rect.midY)
+
+        // The pointer's own proportions, scaled to the frame: a long leading
+        // edge down to the tail, a notch where the click-finger meets it, and
+        // the short trailing edge back up to the tip.
+        let leadingEdgeBottom = CGPoint(x: tip.x + size * 0.30, y: tip.y + size * 0.62)
+        let notch = CGPoint(x: tip.x + size * 0.38, y: tip.y + size * 0.14)
+        let tailBottom = CGPoint(x: tip.x + size * 0.62, y: tip.y + size * 0.38)
+        let trailingEdgeTop = CGPoint(x: tip.x + size * 0.20, y: tip.y + size * 0.62)
+
+        var path = Path()
+        path.move(to: tip)
+        path.addLine(to: leadingEdgeBottom)
+        path.addLine(to: notch)
+        path.addLine(to: tailBottom)
+        path.addLine(to: trailingEdgeTop)
+        path.closeSubpath()
+        return path
+    }
+}
+
 // PreferenceKey for tracking bubble size
 struct SizePreferenceKey: PreferenceKey {
     static var defaultValue: CGSize = .zero
@@ -131,7 +162,8 @@ struct BlueCursorView: View {
         let mouseLocation = NSEvent.mouseLocation
         let localX = mouseLocation.x - screenFrame.origin.x
         let localY = screenFrame.height - (mouseLocation.y - screenFrame.origin.y)
-        _cursorPosition = State(initialValue: CGPoint(x: localX + 35, y: localY + 25))
+        let followOffset = companionManager.cursorFollowDistance.offsetFromMouse
+        _cursorPosition = State(initialValue: CGPoint(x: localX + followOffset.width, y: localY + followOffset.height))
         _isCursorOnThisScreen = State(initialValue: screenFrame.contains(mouseLocation))
     }
     @State private var timer: Timer?
@@ -367,13 +399,27 @@ struct BlueCursorView: View {
             // During cursor following: fast spring animation for snappy tracking.
             // During navigation: NO implicit animation — the frame-by-frame bezier
             // timer controls position directly at 60fps for a smooth arc flight.
-            Triangle()
-                .fill(DS.Colors.overlayCursorBlue)
-                .frame(width: 16, height: 16)
+            Group {
+                switch companionManager.cursorShapeStyle {
+                case .triangle:
+                    Triangle().fill(DS.Colors.overlayCursorBlue)
+                case .arrow:
+                    ArrowCursorShape().fill(DS.Colors.overlayCursorBlue)
+                }
+            }
+                .frame(
+                    width: companionManager.cursorShapeStyle.frameSizeInPoints,
+                    height: companionManager.cursorShapeStyle.frameSizeInPoints
+                )
                 .rotationEffect(.degrees(triangleRotationDegrees))
                 .shadow(color: DS.Colors.overlayCursorBlue, radius: 8 + (buddyFlightScale - 1.0) * 20, x: 0, y: 0)
                 .scaleEffect(buddyFlightScale)
-                .opacity(buddyIsVisibleOnThisScreen && (companionManager.voiceState == .idle || companionManager.voiceState == .responding) ? cursorOpacity : 0)
+                .opacity(
+                    buddyIsVisibleOnThisScreen
+                        && buddyIdleAppearanceIsAllowed
+                        && (companionManager.voiceState == .idle || companionManager.voiceState == .responding)
+                        ? cursorOpacity * buddyPresenceFactor : 0
+                )
                 .position(cursorPosition)
                 .animation(
                     buddyNavigationMode == .followingCursor
@@ -382,6 +428,13 @@ struct BlueCursorView: View {
                     value: cursorPosition
                 )
                 .animation(.easeIn(duration: 0.25), value: companionManager.voiceState)
+                // Fades the companion in and out as the presence mode's schedule
+                // turns it on and off. Deliberately keyed to `isBuddyShown` alone:
+                // the 「只在指位置时出现」 gate above flips at the start of a flight,
+                // and animating *that* would leave the triangle materialising
+                // mid-arc, a fraction of the way along, at a rotation that has
+                // already snapped to the tangent.
+                .animation(.easeInOut(duration: 0.25), value: companionManager.isBuddyShown)
                 .animation(
                     buddyNavigationMode == .navigatingToTarget ? nil : .easeInOut(duration: 0.3),
                     value: triangleRotationDegrees
@@ -389,14 +442,20 @@ struct BlueCursorView: View {
 
             // Blue waveform — replaces the triangle while listening
             BlueCursorWaveformView(audioPowerLevel: companionManager.currentAudioPowerLevel)
-                .opacity(buddyIsVisibleOnThisScreen && companionManager.voiceState == .listening ? cursorOpacity : 0)
+                .opacity(
+                    buddyIsVisibleOnThisScreen && companionManager.voiceState == .listening
+                        ? cursorOpacity * buddyPresenceFactor : 0
+                )
                 .position(cursorPosition)
                 .animation(.spring(response: 0.2, dampingFraction: 0.6, blendDuration: 0), value: cursorPosition)
                 .animation(.easeIn(duration: 0.15), value: companionManager.voiceState)
 
             // Blue spinner — shown while the AI is processing (transcription + Claude + waiting for TTS)
             BlueCursorSpinnerView()
-                .opacity(buddyIsVisibleOnThisScreen && companionManager.voiceState == .processing ? cursorOpacity : 0)
+                .opacity(
+                    buddyIsVisibleOnThisScreen && companionManager.voiceState == .processing
+                        ? cursorOpacity * buddyPresenceFactor : 0
+                )
                 .position(cursorPosition)
                 .animation(.spring(response: 0.2, dampingFraction: 0.6, blendDuration: 0), value: cursorPosition)
                 .animation(.easeIn(duration: 0.15), value: companionManager.voiceState)
@@ -410,7 +469,10 @@ struct BlueCursorView: View {
             isCursorOnThisScreen = screenFrame.contains(mouseLocation)
 
             let swiftUIPosition = convertScreenPointToSwiftUICoordinates(mouseLocation)
-            self.cursorPosition = CGPoint(x: swiftUIPosition.x + 35, y: swiftUIPosition.y + 25)
+            self.cursorPosition = CGPoint(
+                x: swiftUIPosition.x + cursorFollowOffset.width,
+                y: swiftUIPosition.y + cursorFollowOffset.height
+            )
 
             startTrackingCursor()
 
@@ -471,6 +533,57 @@ struct BlueCursorView: View {
         }
     }
 
+    /// How far the companion sits from the mouse, in screen points. One
+    /// property so the four places that place the companion — the two seeding
+    /// sites, the per-frame follow, and the flight back from a pointed-at
+    /// element — can never drift apart.
+    private var cursorFollowOffset: CGSize {
+        companionManager.cursorFollowDistance.offsetFromMouse
+    }
+
+    /// Multiplied into every part of the companion the app draws, so 通用 →
+    /// 「蓝色光标 → 显示方式」 decides whether it is on screen at all.
+    ///
+    /// Only the companion is gated by this. The onboarding video, the welcome
+    /// bubble and the answer bubble are positioned relative to `cursorPosition`
+    /// and keep their own opacities, which is what lets 「只在指位置时出现」 show the
+    /// answer text beside the mouse with no cursor above it.
+    private var buddyPresenceFactor: Double {
+        // Onboarding is never allowed to play to an invisible companion. The
+        // welcome animation, the intro video and the "press control + option"
+        // prompt all assume the triangle is there to be talked about — and the
+        // demo flight at 0:40 into the video happens with push-to-talk disabled,
+        // so no keypress can bring the companion back for it.
+        if !companionManager.hasCompletedOnboarding
+            || showWelcome
+            || companionManager.showOnboardingVideo
+            || companionManager.showOnboardingPrompt {
+            return 1
+        }
+
+        // A flight in progress also forces the companion out. Belt and braces
+        // with the video check above, but stated in the terms that actually
+        // matter: whenever it has somewhere to point, it is on screen.
+        if companionManager.detectedElementScreenLocation != nil {
+            return 1
+        }
+
+        return companionManager.isBuddyShown ? 1 : 0
+    }
+
+    /// Whether the *idle* companion is allowed out in the current mode.
+    ///
+    /// Under 「只在指位置时出现」 the companion exists for the flight and the pointing
+    /// and nothing else, so the resting triangle is suppressed. The waveform and
+    /// the spinner are deliberately *not* subject to this: they only exist while
+    /// the user is holding the key or waiting on the model, so suppressing them
+    /// would mean talking into a microphone with no sign it was ever live — a
+    /// worse experience than the cursor the user asked to get rid of.
+    private var buddyIdleAppearanceIsAllowed: Bool {
+        companionManager.cursorPresenceMode != .onlyWhenPointing
+            || buddyNavigationMode != .followingCursor
+    }
+
     // MARK: - Cursor Tracking
 
     private func startTrackingCursor() {
@@ -501,9 +614,11 @@ struct BlueCursorView: View {
 
             // Normal cursor following
             let swiftUIPosition = self.convertScreenPointToSwiftUICoordinates(mouseLocation)
-            let buddyX = swiftUIPosition.x + 35
-            let buddyY = swiftUIPosition.y + 25
-            self.cursorPosition = CGPoint(x: buddyX, y: buddyY)
+            let followOffset = self.cursorFollowOffset
+            self.cursorPosition = CGPoint(
+                x: swiftUIPosition.x + followOffset.width,
+                y: swiftUIPosition.y + followOffset.height
+            )
         }
     }
 
@@ -700,7 +815,10 @@ struct BlueCursorView: View {
     private func startFlyingBackToCursor() {
         let mouseLocation = NSEvent.mouseLocation
         let cursorInSwiftUI = convertScreenPointToSwiftUICoordinates(mouseLocation)
-        let cursorWithTrackingOffset = CGPoint(x: cursorInSwiftUI.x + 35, y: cursorInSwiftUI.y + 25)
+        let cursorWithTrackingOffset = CGPoint(
+            x: cursorInSwiftUI.x + cursorFollowOffset.width,
+            y: cursorInSwiftUI.y + cursorFollowOffset.height
+        )
 
         cursorPositionWhenNavigationStarted = cursorInSwiftUI
 

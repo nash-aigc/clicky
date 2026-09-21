@@ -57,14 +57,9 @@ struct CompanionPanelView: View {
                     .padding(.horizontal, 16)
             }
 
-            // Show Clicky toggle — hidden for now
-            // if companionManager.hasCompletedOnboarding && companionManager.allPermissionsGranted {
-            //     Spacer()
-            //         .frame(height: 16)
-            //
-            //     showClickyCursorToggleRow
-            //         .padding(.horizontal, 16)
-            // }
+            // Whether the blue cursor is on screen is 通用 → 「蓝色光标」 in the
+            // settings window now. The toggle that used to live here was commented
+            // out, which is what left the app with no way to hide the cursor at all.
 
             if companionManager.hasCompletedOnboarding && companionManager.allPermissionsGranted {
                 Spacer()
@@ -572,37 +567,6 @@ struct CompanionPanelView: View {
         .padding(.vertical, 6)
     }
 
-
-
-    // MARK: - Show Clicky Cursor Toggle
-
-    private var showClickyCursorToggleRow: some View {
-        HStack {
-            HStack(spacing: 8) {
-                Image(systemName: "cursorarrow")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(DS.Colors.textTertiary)
-                    .frame(width: 16)
-
-                Text("Show Clicky")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(DS.Colors.textSecondary)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: Binding(
-                get: { companionManager.isClickyCursorEnabled },
-                set: { companionManager.setClickyCursorEnabled($0) }
-            ))
-            .toggleStyle(.switch)
-            .labelsHidden()
-            .tint(DS.Colors.accent)
-            .scaleEffect(0.8)
-        }
-        .padding(.vertical, 4)
-    }
-
     private var speechToTextProviderRow: some View {
         HStack {
             HStack(spacing: 8) {
@@ -807,7 +771,7 @@ struct CompanionPanelView: View {
     }
 
     private var statusDotColor: Color {
-        if !companionManager.isOverlayVisible {
+        if !companionManager.isBuddyShown {
             return DS.Colors.textTertiary
         }
         switch companionManager.voiceState {
@@ -824,7 +788,7 @@ struct CompanionPanelView: View {
         if !companionManager.hasCompletedOnboarding || !companionManager.allPermissionsGranted {
             return "Setup"
         }
-        if !companionManager.isOverlayVisible {
+        if !companionManager.isBuddyShown {
             return "Ready"
         }
         switch companionManager.voiceState {

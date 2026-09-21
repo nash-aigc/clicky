@@ -1,7 +1,73 @@
 # Clicky - Agent Instructions
 
-<!-- This is the single source of truth for all AI coding agents. CLAUDE.md is a symlink to this file. -->
+<!-- This is the single source of truth for all AI coding agents. CLAUDE.md and cloud.md are symlinks to this file, so there is only ever one copy of these instructions. -->
 <!-- AGENTS.md spec: https://github.com/agentsmd/agents.md — supported by Claude Code, Cursor, Copilot, Gemini CLI, and others. -->
+
+## 改完代码必须自己编译、自己重启，直接把能用的成品交给用户（最高优先级）
+
+**这一节高于本文件的其他所有内容。** 任何时候改动了 `leanring-buddy/` 下的代码，先把它编译出来、跑起来，再去做别的事。
+
+### 三条规则
+
+1. **改完代码必须重新编译，并重新启动 App。** 不重新编译，用户跑的是旧版本，改动等于没做。
+2. **编译和启动由 agent 自己做，不要交给用户。** 不要写「你在 Xcode 里按 Cmd+R 试一下」——用下面的 CLI 流程自己跑完。终端 `xcodebuild` 在当前签名配置下是安全的（见 [Code signing](#code-signing)）。
+3. **交付的是一个能直接用的成品。** 用户的参与度越低越好，不要留半成品给用户收尾。
+
+### 标准流程
+
+```bash
+# ① 最快的语法检查（不碰签名、不碰 TCC）
+cd /Users/mjm/Desktop/clicky/leanring-buddy
+xcrun swiftc -typecheck -sdk $(xcrun --show-sdk-path --sdk macosx) \
+  -target arm64-apple-macos14.2 -swift-version 5 -default-isolation MainActor \
+  $(ls *.swift | grep -v leanring_buddyApp.swift)
+
+# ② 完整构建
+cd /Users/mjm/Desktop/clicky
+xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy -configuration Debug build
+
+# ③ 问构建系统 app 落在哪 —— 不要写死 DerivedData 里那段哈希，每台机器都不一样
+APP_DIR=$(xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy \
+  -configuration Debug -showBuildSettings 2>/dev/null \
+  | awk -F' = ' '/ BUILT_PRODUCTS_DIR /{print $2}')
+
+# ④ 关掉旧进程，再启动新的
+pkill -TERM -f "$APP_DIR/Clicky.app/Contents/MacOS/Clicky" || true
+open "$APP_DIR/Clicky.app"
+```
+
+**④ 一步都不能省。** macOS 不会给正在运行的进程换代码——这是设计，不是 bug（[`开发经验/10-踩过的坑.md`](开发经验/10-踩过的坑.md) F3）。只做 ①②③ 就宣布做完，用户屏幕上跑的还是旧代码，他只会看到「为什么我没看到任何功能」。这个项目真的这么错过一次，不要再犯。
+
+（`$(ls *.swift | grep -v leanring_buddyApp.swift)` 里的 `grep -v` 不能省：裸 `swiftc` 解析不了 SwiftPM 的 Sparkle 模块，而那个文件是唯一 import 它的。）
+
+### 怎么确认真的生效了
+
+**编译成功 ≠ 改动生效。** 启动完之后要复核——新进程的启动时间必须**晚于**你改过的源文件的修改时间：
+
+```bash
+# 新进程的启动时间
+ps -eo pid,lstart,command | grep "Clicky.app/Contents/MacOS/Clicky" | grep -v grep
+
+# 源文件的修改时间（上面那个时间必须比这些晚）
+ls -lT leanring-buddy/*.swift | tail -5
+
+# 没有新的崩溃报告
+ls -lt ~/Library/Logs/DiagnosticReports/ | head -5
+```
+
+### 只有这三种情况可以留给用户
+
+| 情况 | 为什么躲不掉 |
+|---|---|
+| 系统权限弹窗（录屏 / 辅助功能 / 麦克风） | TCC 弹窗只能由人在系统对话框里点。证书签名下**只需要点一次**，之后重建不会再问 |
+| 纯主观的视觉判断（淡出快慢好不好看、箭头尖有没有对准鼠标） | 这是审美，agent 判断不了，必须用户自己看一眼 |
+| 用户自己的密钥 | 密钥只能由用户提供。拿到之后写进 gitignored 的 `BailianSecrets.plist` 或仓库外的 `0600` JSON，**永远不要在输出里回显** |
+
+**除这三种之外，一律自己做完。**
+
+### 一个例外：改「设置」不用重启
+
+`AppSettings.json` / `ModelConfiguration.json` 里改的是**数据**，存储类会发通知，运行中的 App **立刻生效**，不需要重启。改**代码**才必须走上面的流程。别把这条规则用过头。
 
 ## Overview
 
@@ -18,7 +84,7 @@ This fork talks to Alibaba Cloud Bailian (Model Studio) directly. The upstream C
 - **Speech-to-Text**: Bailian real-time streaming (`qwen3-asr-flash-realtime` by default) over websocket, with OpenAI and Apple Speech as fallbacks
 - **Text-to-Speech**: Bailian Qwen-Audio-TTS (`qwen-audio-3.1-tts-flash` by default, cloned voice 赵今麦 via voice-enrollment) via the `SpeechSynthesizer` endpoint
 - **Model Configuration**: all three models above are user-configurable — see [Model Configuration](#model-configuration). Provider/model choices are made in the settings window, not in code.
-- **Settings**: one window, seven pages — 通用 / 模型 / 对话与记忆 / 听（识别）/ 说（播报）/ 看与截图 / 快捷键 — see [Settings](#settings). 27 of the 30 settings live in `AppSettings.json`; the other three are the model roles.
+- **Settings**: one window, seven pages — 通用 / 模型 / 对话与记忆 / 听（识别）/ 说（播报）/ 看与截图 / 快捷键 — see [Settings](#settings). 30 of the 33 settings live in `AppSettings.json`; the other three are the model roles.
 - **Screen Capture**: ScreenCaptureKit (macOS 14.2+), multi-monitor support
 - **Voice Input**: Push-to-talk via `AVAudioEngine` + pluggable transcription-provider layer. System-wide keyboard shortcut via listen-only CGEvent tap.
 - **Element Pointing**: The model embeds `[POINT:x,y:label:screenN]` tags in responses, where `x` and `y` are on a **normalized 0–1000 grid**, not screenshot pixels. The overlay converts them to pixels, maps them to the correct monitor, and animates the blue cursor along a bezier arc to the target.
@@ -45,7 +111,7 @@ Which provider serves each role, and that provider's URL, API key and model name
 | `BailianAPIKey` | `BailianSecrets.plist` (gitignored) | Seed only — read once, when no `ModelConfiguration.json` exists yet |
 | `BailianWorkspaceBaseURL` | `BailianSecrets.plist` (gitignored) | Seed only, same as above |
 
-The JSON files live outside the repo so they survive a clean checkout and never need a `.gitignore` entry. They are **not** watched for changes: editing one by hand takes effect after a restart. `AppSettings.json` is the same idea for the 27 settings the [Settings](#settings) page writes, and `ConversationHistory.json` is the conversation itself — written only when 「重启后保留对话」 is on, and deleted when it is turned off.
+The JSON files live outside the repo so they survive a clean checkout and never need a `.gitignore` entry. They are **not** watched for changes: editing one by hand takes effect after a restart. `AppSettings.json` is the same idea for the 30 settings the [Settings](#settings) page writes, and `ConversationHistory.json` is the conversation itself — written only when 「重启后保留对话」 is on, and deleted when it is turned off.
 
 Request paths are a property of the provider's protocol, not something the user types:
 
@@ -66,7 +132,7 @@ Request paths are a property of the provider's protocol, not something the user 
 
 **Only `deepseek-flash` can serve 🧠 on DeepSeek.** Measured 2026-09-21: the endpoint exposes exactly two models, and `deepseek-v4-pro` rejects the screenshot outright ("Unsupported Image") while `deepseek-flash` answers it — including emitting `[POINT:…]` tags on the normalized grid, which is the part that could not be assumed. `deepseek-flash` is therefore what the DeepSeek provider pre-fills as its 🧠 model. It is also a reasoning model — see the reasoning-suppression paragraph above for how that is handled, and why the `max_tokens` budget still has to stay generous: reasoning tokens are spent before any content is emitted, and a small budget returns HTTP 200 with an empty `content` — a silent failure the vision client now turns into a thrown error rather than "nothing happened".
 
-**`BailianVisionChatAPI.maxCompletionTokens` is capped by Bailian, not DeepSeek.** One constant serves every provider, so it has to be legal on all of them, and their ceilings are an order of magnitude apart. Measured 2026-09-21 by probing each service: DeepSeek accepts `[1, 393216]` and Bailian rejects above `[1, 32768]` with `InternalError.Algo.InvalidParameter`. 32768 is therefore the largest value that is legal everywhere, and that is what the constant holds — raising it toward DeepSeek's ceiling would break 🧠 the moment the user switched back to Bailian. Both were re-verified at 32768 with a real 1.2 MB screenshot and the app's own 4923-character prompt, and both still answer and still emit `[POINT:…]`. (The separate small `max_tokens` values in `ElementLocationDetector` and `ModelConnectionTester` are unrelated paths and deliberately tiny.)
+**The `max_tokens` budget is capped by Bailian, not DeepSeek.** One value serves every provider, so it has to be legal on all of them, and their ceilings are an order of magnitude apart. Measured 2026-09-21 by probing each service: DeepSeek accepts `[1, 393216]` and Bailian rejects above `[1, 32768]` with `InternalError.Algo.InvalidParameter`. 32768 is therefore the largest value that is legal everywhere, and that is what `AppSettings.visionMaxCompletionTokens` defaults to — raising it toward DeepSeek's ceiling would break 🧠 the moment the user switched back to Bailian. Both were re-verified at 32768 with a real 1.2 MB screenshot and the app's own 4923-character prompt, and both still answer and still emit `[POINT:…]`. The 看与截图 page exposes it as 「单次回答字数上限」, a slider over `256...32768`, and `clamped()` keeps a hand-edited file inside that range. The budget has to stay generous for a second reason: a reasoning model bills its chain of thought against it, and an exhausted budget returns HTTP 200 with an empty `content` — a silent failure the vision client turns into a thrown error rather than "nothing happened". (The separate small `max_tokens` values in `ElementLocationDetector` and `ModelConnectionTester` are unrelated paths and deliberately tiny.)
 
 `ModelConfigurationStore` holds the configuration behind an `NSLock` and is deliberately `nonisolated` (see the Concurrency note below); `BailianConfiguration` is now only a façade over it (`resolvedTranscription` / `resolvedVision` / `resolvedSpeech`) plus the seed constants. All three clients read the configuration **per request**, so a save is live: nothing needs rebuilding, and a change mid-utterance can't split one request across two providers.
 
@@ -78,7 +144,7 @@ One window, opened from the gear in the menu bar panel or from 「更换…」 o
 
 | Page | Holds | Stored in |
 |------|-------|-----------|
-| 通用 | 开机自启动、启动时自动打开面板、回答时显示文字、回答文字多留一会儿、说话时实时显示识别文字、光标闲置后自动隐藏 | `AppSettings.json` |
+| 通用 | 开机自启动、启动时自动打开面板、光标的显示方式/形状/跟随距离/闲置后自动隐藏、回答时显示文字、回答文字多留一会儿、说话时实时显示识别文字 | `AppSettings.json` |
 | 模型 | the three roles and their providers | `ModelConfiguration.json` |
 | 对话与记忆 | 记住最近多少轮对话、重启后保留对话、历史自动压缩、历史里带截图、回答长度、补充指令 — plus 清空对话记忆, an action rather than a setting | `AppSettings.json` |
 | 听（识别） | 识别语言、热词（专有名词偏置）、松键后等最终结果、静音自动断句（免按键连续对话） | `AppSettings.json` |
@@ -88,7 +154,9 @@ One window, opened from the gear in the menu bar panel or from 「更换…」 o
 
 Every row is wired to real behaviour — the sidebar's per-page number is the count of live settings on that page, so a page that grew a decorative row would have to lie about its own size. The three model roles are the only settings outside `AppSettings.json`.
 
-Four settings need a subsystem rather than a flag, because a setting that saves but does nothing is worse than no setting:
+Five settings need a subsystem rather than a flag, because a setting that saves but does nothing is worse than no setting:
+
+- **「显示方式」** — whether the blue cursor is up all the time, only during a conversation, or only while pointing. It is the setting the app used to have and not honour: `isClickyCursorEnabled` (UserDefaults, default `true`) was the only gate, its only control was a commented-out toggle in the panel, and `scheduleTransientHideIfNeeded`'s first line read `guard !isClickyCursorEnabled && …` — so the transient machinery never ran once. It is now three settings in the 通用 page's 「蓝色光标」 group, and `CompanionManager.isBuddyShown` is what the overlay multiplies into everything it draws. See **Cursor Presence** below for why the overlay *windows* stay up and only the drawing is gated.
 
 - **「重启后保留对话」 / 「历史自动压缩」 / 「历史里带截图」** — the memory pipeline. `CompanionManager` replays the last N exchanges as real conversation turns (each with its own screenshots when 「历史里带截图」 is on), compresses the ones that age out into a running summary, and skips all of it when the persistence setting is off. The summary is sent as a **second system message**, not appended to the system prompt — a drifted summary must not read as an instruction the user gave.
 - **「松开立即发送」 off** — confirmation mode. The transcript is held and shown next to the cursor instead of being sent, and a *tap* of the shortcut (under 0.6 s — see `confirmationTapMaximumDurationSeconds`) sends it. The tap rule is phrased in press duration rather than in what was said, because at release the recognition service has not yet returned this press's final transcript, so "did they say something this time" is not a question the release event can answer. An empty transcript never sends and never clears, which is what lets a user whose first attempt was not heard hold the key again without losing what they said.
@@ -125,17 +193,19 @@ Four settings need a subsystem rather than a flag, because a setting that saves 
 
 **Deleting a provider never hands its roles to another provider**: `ModelSettingsViewModel.removeProvider(withID:)` unassigns the roles it served and leaves them unassigned. Silently reassigning would start sending the user's screenshots to a company they did not choose. The confirmation dialog names exactly which roles will stop working before the deletion happens.
 
-**Transient Cursor Mode**: When "Show Clicky" is off, pressing the hotkey fades in the cursor overlay for the duration of the interaction (recording → response → TTS → optional pointing), then fades it out automatically after 1 second of inactivity.
+**Cursor Presence**: The overlay *windows* are permanent — they are built once when onboarding is done and permissions are granted, and never torn down. What the three 显示方式 modes control is whether the companion is *drawn*, through `CompanionManager.isBuddyShown`, which `OverlayWindow` multiplies into the triangle, the waveform and the spinner. Rebuilding the windows instead would flash, lose `cursorPosition` (it is only initialised in `onAppear`), and dismantle the onboarding video player. Three details are deliberate. The fade animation is keyed to `isBuddyShown` **alone**, so 「只在指位置时出现」 shows the companion the instant a flight starts rather than materialising mid-arc. The waveform and spinner are gated only on the voice state, never on `buddyIdleAppearanceIsAllowed` — hiding them too would mean recording with no feedback at all. And onboarding forces the presence factor to 1, so the welcome animation never plays to an invisible companion. `isOverlayVisible` keeps its original meaning ("the windows exist") and is no longer what the panel's status row reads — with permanent windows that value is always true, so the panel would have said "Active" forever; it reads `isBuddyShown` instead.
+
+**Cursor Shape and Follow Distance**: `ArrowCursorShape` draws the macOS pointer with its **tip at `rect` centre**, matching `Triangle`, so `.position(cursorPosition)` means the same thing for both and no anchor correction is needed. `CursorFollowDistance` replaces the four hardcoded `+35 / +25` sites — the `init` default, the `onAppear` placement, the per-frame follow in `startTrackingCursor`, and the landing point in `startFlyingBackToCursor`. Missing the last one makes the companion fly back to the old spot and then jump. The pointing offset in `startNavigatingToElement` (`+8 / +12`) is deliberately untouched: "rest beside the element" is a different idea from "follow the mouse".
 
 ## Key Files
 
 | File | Lines | Purpose |
 |------|-------|---------|
 | `leanring_buddyApp.swift` | ~89 | Menu bar app entry point. Uses `@NSApplicationDelegateAdaptor` with `CompanionAppDelegate` which creates `MenuBarPanelManager` and starts `CompanionManager`. No main window — the app lives entirely in the status bar. |
-| `CompanionManager.swift` | ~1576 | Central state machine. Owns dictation, shortcut monitoring, screen capture, the vision chat API, TTS, and overlay management. Tracks voice state (idle/listening/processing/responding), conversation history, cursor visibility, and the last error message shown in the panel. Owns the settings window and re-renders the panel when either configuration changes. Coordinates the full push-to-talk → screenshot → vision → TTS → pointing pipeline, and owns 对话与记忆's memory: replaying past turns, compressing old ones, and holding a transcript back when 快捷键 → 「松开立即发送」 is off. |
+| `CompanionManager.swift` | ~1624 | Central state machine. Owns dictation, shortcut monitoring, screen capture, the vision chat API, TTS, and overlay management. Tracks voice state (idle/listening/processing/responding), conversation history, whether the cursor is drawn (`isBuddyShown`, plus the three cursor settings it mirrors from `AppSettingsStore`), and the last error message shown in the panel. Owns the settings window and re-renders the panel when either configuration changes. Coordinates the full push-to-talk → screenshot → vision → TTS → pointing pipeline, and owns 对话与记忆's memory: replaying past turns, compressing old ones, and holding a transcript back when 快捷键 → 「松开立即发送」 is off. |
 | `MenuBarPanelManager.swift` | ~243 | NSStatusItem + custom NSPanel lifecycle. Creates the menu bar icon, manages the floating companion panel (show/hide/position), installs click-outside-to-dismiss monitor. |
-| `CompanionPanelView.swift` | ~842 | SwiftUI panel content for the menu bar dropdown. Shows companion status, push-to-talk instructions, a read-only vision-model summary with 「更换…」, a gear that opens the settings window, the last error verbatim, permissions UI, DM feedback button, and quit button. Dark aesthetic using `DS` design system. |
-| `OverlayWindow.swift` | ~946 | Full-screen transparent overlay hosting the blue cursor, response text, waveform, and spinner. Handles cursor animation, element pointing with bezier arcs, multi-monitor coordinate mapping, and fade-out transitions. Also hosts the conversation bubble, which shows whichever of the streaming answer or the live transcript is current. |
+| `CompanionPanelView.swift` | ~806 | SwiftUI panel content for the menu bar dropdown. Shows companion status, push-to-talk instructions, a read-only vision-model summary with 「更换…」, a gear that opens the settings window, the last error verbatim, permissions UI, DM feedback button, and quit button. Dark aesthetic using `DS` design system. |
+| `OverlayWindow.swift` | ~1064 | Full-screen transparent overlay hosting the blue cursor, response text, waveform, and spinner. Handles cursor animation (`Triangle` and `ArrowCursorShape`), element pointing with bezier arcs, multi-monitor coordinate mapping, and fade-out transitions. Also hosts the conversation bubble, which shows whichever of the streaming answer or the live transcript is current. |
 | `CompanionResponseOverlay.swift` | ~217 | Dead code — nothing instantiates `CompanionResponseOverlayManager`; the bubble described above is what actually renders answers and transcripts. Kept only because removing it is out of scope. |
 | `CompanionScreenCaptureUtility.swift` | ~132 | Multi-monitor screenshot capture using ScreenCaptureKit. Returns labeled image data for each connected display. |
 | `BuddyDictationManager.swift` | ~889 | Push-to-talk voice pipeline. Handles microphone capture via `AVAudioEngine`, provider-aware permission checks, keyboard/button dictation sessions, transcript finalization, shortcut parsing, contextual keyterms, and live audio-level reporting for waveform feedback. Re-resolves its transcription provider at the start of a recording if the current one is unconfigured, so fixing the 👂 role in the settings window does not require a restart. |
@@ -158,9 +228,9 @@ Four settings need a subsystem rather than a flag, because a setting that saves 
 | `ModelConfigurationStore.swift` | ~271 | Reads/writes `ModelConfiguration.json` (atomic write, then `0600`), caches it behind an `NSLock`, seeds a first-run configuration from the legacy plist, and posts `.clickyModelConfigurationChanged` on save. Seeding is in memory only — nothing is written until the user presses 保存. |
 | `ModelConnectionTester.swift` | ~242 | One minimal request per role (chat without an image, two characters of TTS, a real websocket handshake) run against a *draft* configuration, so the user learns whether a provider works before committing to it. Reports the service's own error text. |
 | `ModelSettingsViewModel.swift` | ~277 | `@MainActor` state for the settings window: the draft configuration, dirty tracking, role assignment, and save/test actions. All provider bindings resolve by id rather than array index. |
-| `AppSettings.swift` | ~309 | Pure data, no I/O: every user-facing setting that is not a model choice, plus `AnswerLengthStyle`, `TranscriptionLanguage` and `clamped()`. The 27 stored properties are the 27 rows the settings pages show — the sidebar's per-page counts are derived from the same set. |
+| `AppSettings.swift` | ~434 | Pure data, no I/O: every user-facing setting that is not a model choice, plus `AnswerLengthStyle`, `TranscriptionLanguage`, `CursorPresenceMode`, `CursorShapeStyle`, `CursorFollowDistance` and `clamped()`. The 30 stored properties are the 30 rows the settings pages show — the sidebar's per-page counts are derived from the same set. |
 | `AppSettingsStore.swift` | ~155 | Reads/writes `AppSettings.json` (atomic write, then `0600`), caches it behind an `NSLock`, and posts `.clickyAppSettingsChanged` on save. Same `nonisolated` + `NSLock` shape as `ModelConfigurationStore`, and the reason that shape exists: the project builds with `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, so an isolation mistake in a store would be silent. |
-| `GeneralSettingsView.swift` | ~876 | The six non-模型 settings pages (通用 / 对话与记忆 / 听 / 说 / 看 / 快捷键) and the components they share — `SettingsRow`, `SettingsCard`, `SettingsSwitch`, `SettingsSlider`, `SettingsStepper`, the two pickers. All 27 settings are here; none of them is decorative. |
+| `GeneralSettingsView.swift` | ~931 | The six non-模型 settings pages (通用 / 对话与记忆 / 听 / 说 / 看 / 快捷键) and the components they share — `SettingsRow`, `SettingsCard`, `SettingsSwitch`, `SettingsSlider`, `SettingsStepper`, the two pickers. All 30 settings are here; none of them is decorative. |
 | `GeneralSettingsViewModel.swift` | ~194 | `@MainActor` draft-and-save state for those pages, mirroring `ModelSettingsViewModel`. Also owns 清空对话记忆, which is deliberately *not* routed through the draft — deleting a file should not depend on the user also pressing 保存. |
 | `ConversationHistoryStore.swift` | ~207 | Reads/writes `ConversationHistory.json` (atomic write, then `0600`) and posts `.clickyConversationHistoryCleared`. The only place the user's own words reach the disk, which is why the setting that enables it defaults to off and why turning it off deletes the file rather than only stopping future writes. Screenshots are held in memory and excluded from `CodingKeys`, so a restart drops them as the setting's description promises. |
 | `SettingsWindowController.swift` | ~321 | `NSWindowController` hosting all seven pages: a 178pt sidebar plus the selected page, with `ModelSettingsView` swapped in for 模型. Calls `NSApp.activate()` before showing — see the key decisions. |
@@ -169,15 +239,18 @@ Four settings need a subsystem rather than a flag, because a setting that saves 
 
 ## Build & Run
 
-```bash
-# Open in Xcode
-open leanring-buddy.xcodeproj
+**Build and launch from the terminal, not from the Xcode GUI** — the full sequence is at the top of this file, under [改完代码必须自己编译、自己重启](#改完代码必须自己编译自己重启直接把能用的成品交给用户最高优先级). What goes wrong if you skip the relaunch step is written up there too.
 
-# Select the leanring-buddy scheme, set signing team, Cmd+R to build and run
+```bash
+# Build
+cd /Users/mjm/Desktop/clicky
+xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy -configuration Debug build
 
 # Known non-blocking warnings: Swift 6 concurrency warnings,
 # deprecated onChange warning in OverlayWindow.swift. Do NOT attempt to fix these.
 ```
+
+Opening the project in Xcode (`open leanring-buddy.xcodeproj`) is still fine for reading code or inspecting build settings — it is just not how a change gets shipped to the user.
 
 **Terminal `xcodebuild` is safe only while the target is certificate-signed** — see [Code signing](#code-signing). Under ad-hoc signing it resets TCC (Screen Recording / Accessibility / Microphone), because that signature's identity is the binary hash, so a rebuild looks like an entirely new app. The target is certificate-signed today, so `xcodebuild … build` works and is a faster way to get a compile error than opening Xcode. If the target is ever switched back to ad-hoc, go back to building from the Xcode GUI.
 
@@ -274,6 +347,12 @@ IMPORTANT: Follow these naming rules strictly. Clarity is the top priority.
 - Branch naming: `feature/description` or `fix/description`
 - Commit messages: imperative mood, concise, explain the "why" not the "what"
 - Do not force-push to main
+
+## 开发经验
+
+`开发经验/` in the repo root holds the retrospective of this fork's changes — one document per category, in Chinese, aimed at whoever touches this code next rather than at users. It is the place to look before changing a subsystem: `02-光标与覆盖层.md` for the cursor and overlay, `03-设置与配置.md` for how to add a setting (and the offscreen render probe used to check a settings page without relaunching the app), `04-模型接入.md` for provider routing, `09-实测数据.md` for every measured number with its date and payload, `10-踩过的坑.md` for the bugs and their root causes. `开发经验/README.md` is the index.
+
+Add to it rather than duplicating this file: this file states what the app *is*, 开发经验 states what was *learned* building it.
 
 ## Self-Update Instructions
 

@@ -81,6 +81,113 @@ nonisolated enum TranscriptionLanguage: String, Codable, CaseIterable, Sendable 
     }
 }
 
+/// When the blue cursor companion is on screen.
+///
+/// The companion used to follow the mouse permanently with no way to hide it:
+/// the only switch that could have stopped it (`isClickyCursorEnabled`) had its
+/// UI commented out, so the "fade in on hotkey, fade out when idle" machinery
+/// below it never ran even once. This is that switch, spelled out as three
+/// honest choices instead of a hidden boolean.
+nonisolated enum CursorPresenceMode: String, Codable, CaseIterable, Sendable {
+    /// The companion is always on screen. This is what the app did before the
+    /// setting existed, which is why it is the default — an upgrade changes
+    /// nothing until the user asks for it.
+    case alwaysVisible
+    /// The companion fades in on the push-to-talk hotkey and fades out once the
+    /// answer has been spoken, pointing is finished, and the bubble is gone.
+    case duringConversation
+    /// Only while the companion is actually flying to and pointing at something.
+    /// Between questions the screen has no cursor at all; the answer bubble still
+    /// appears next to the mouse, because a bubble does not need a cursor to be
+    /// drawn under it.
+    case onlyWhenPointing
+
+    /// Kept to four characters or fewer: these are rendered as side-by-side
+    /// segmented buttons, and a longer label wraps onto two lines and then
+    /// overflows the settings card. The row's description carries the meaning.
+    var displayName: String {
+        switch self {
+        case .alwaysVisible: return "一直显示"
+        case .duringConversation: return "对话时"
+        case .onlyWhenPointing: return "指位置时"
+        }
+    }
+
+    /// Whether the companion stays on screen with nothing happening. Only the
+    /// first mode does.
+    var showsBuddyWhileIdle: Bool {
+        self == .alwaysVisible
+    }
+
+    /// Whether the "fade in on the hotkey, schedule a fade-out when the
+    /// interaction ends" machinery applies. It is the exact inverse of
+    /// `showsBuddyWhileIdle`, but named separately because the schedule and the
+    /// idle state are different questions at the two call sites that ask.
+    var hidesWhenIdle: Bool {
+        !showsBuddyWhileIdle
+    }
+}
+
+/// What the blue cursor is drawn as.
+nonisolated enum CursorShapeStyle: String, Codable, CaseIterable, Sendable {
+    /// The original filled triangle, pointing up-right at the mouse.
+    case triangle
+    /// A macOS-style pointer outline, for users who want the companion to read
+    /// as a cursor rather than as a separate character.
+    case arrow
+
+    var displayName: String {
+        switch self {
+        case .triangle: return "三角箭头"
+        case .arrow: return "标准指针"
+        }
+    }
+
+    /// The shape's frame. The pointer is drawn larger because its outline is
+    /// thinner than the triangle's filled body, so it needs the extra size to
+    /// carry the same visual weight.
+    var frameSizeInPoints: CGFloat {
+        switch self {
+        case .triangle: return 16
+        case .arrow: return 20
+        }
+    }
+}
+
+/// How far the companion sits from the mouse pointer.
+///
+/// The companion used to be pinned 35 points right and 25 below the mouse at
+/// all times, which reads as a tail that never stops trailing you. This is that
+/// offset, made adjustable.
+nonisolated enum CursorFollowDistance: String, Codable, CaseIterable, Sendable {
+    /// Directly on top of the mouse.
+    case overlapping
+    /// Nudged just clear of the mouse's own pointer.
+    case closeBeside
+    /// Down and to the right, the way the app has always drawn it.
+    case farBehind
+
+    /// Short for the same reason as `CursorPresenceMode.displayName` — the row's
+    /// description spells out what each one does.
+    var displayName: String {
+        switch self {
+        case .overlapping: return "重叠"
+        case .closeBeside: return "紧贴"
+        case .farBehind: return "稍远"
+        }
+    }
+
+    /// Where the companion's frame centre sits relative to the mouse, in screen
+    /// points. Added to the mouse position, so these are right-and-down offsets.
+    var offsetFromMouse: CGSize {
+        switch self {
+        case .overlapping: return CGSize(width: 0, height: 0)
+        case .closeBeside: return CGSize(width: 6, height: 6)
+        case .farBehind: return CGSize(width: 35, height: 25)
+        }
+    }
+}
+
 nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     // MARK: - 通用 · 启动
@@ -111,8 +218,20 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// leave the same amount of time to glance back.
     var answerBubbleLingerSeconds: Double = 3.0
 
-    /// How long the transient cursor lingers after the interaction ends before
-    /// fading out (「显示光标」off only). Was hardcoded to 1 second.
+    // MARK: - 通用 · 蓝色光标
+
+    /// When the blue cursor companion is on screen.
+    var cursorPresenceMode: CursorPresenceMode = .alwaysVisible
+
+    /// What the companion is drawn as.
+    var cursorShapeStyle: CursorShapeStyle = .triangle
+
+    /// How far the companion sits from the mouse pointer.
+    var cursorFollowDistance: CursorFollowDistance = .farBehind
+
+    /// How long the companion lingers after the interaction ends before fading
+    /// out. Only the two modes that hide when idle have anything to schedule, so
+    /// the settings row is disabled under 「一直显示」. Was hardcoded to 1 second.
     var transientCursorHideDelaySeconds: Double = 1.0
 
     // MARK: - 对话与记忆
@@ -248,6 +367,9 @@ nonisolated extension AppSettings {
         case showsResponseText
         case showsLiveTranscript
         case answerBubbleLingerSeconds
+        case cursorPresenceMode
+        case cursorShapeStyle
+        case cursorFollowDistance
         case transientCursorHideDelaySeconds
         case rememberedConversationRounds
         case persistsConversationHistory
@@ -283,6 +405,9 @@ nonisolated extension AppSettings {
         showsResponseText = try container.decodeIfPresent(Bool.self, forKey: .showsResponseText) ?? defaults.showsResponseText
         showsLiveTranscript = try container.decodeIfPresent(Bool.self, forKey: .showsLiveTranscript) ?? defaults.showsLiveTranscript
         answerBubbleLingerSeconds = try container.decodeIfPresent(Double.self, forKey: .answerBubbleLingerSeconds) ?? defaults.answerBubbleLingerSeconds
+        cursorPresenceMode = try container.decodeIfPresent(CursorPresenceMode.self, forKey: .cursorPresenceMode) ?? defaults.cursorPresenceMode
+        cursorShapeStyle = try container.decodeIfPresent(CursorShapeStyle.self, forKey: .cursorShapeStyle) ?? defaults.cursorShapeStyle
+        cursorFollowDistance = try container.decodeIfPresent(CursorFollowDistance.self, forKey: .cursorFollowDistance) ?? defaults.cursorFollowDistance
         transientCursorHideDelaySeconds = try container.decodeIfPresent(Double.self, forKey: .transientCursorHideDelaySeconds) ?? defaults.transientCursorHideDelaySeconds
         rememberedConversationRounds = try container.decodeIfPresent(Int.self, forKey: .rememberedConversationRounds) ?? defaults.rememberedConversationRounds
         persistsConversationHistory = try container.decodeIfPresent(Bool.self, forKey: .persistsConversationHistory) ?? defaults.persistsConversationHistory

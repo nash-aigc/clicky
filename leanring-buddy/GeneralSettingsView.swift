@@ -56,7 +56,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     /// model configuration rather than in `AppSettings`.
     var settingCount: Int? {
         switch self {
-        case .general: return 6
+        case .general: return 9
         case .model: return nil
         case .memory: return 6
         case .listen: return 4
@@ -104,7 +104,7 @@ struct GeneralSettingsView: View {
         Group {
             SettingsPageHeader(
                 title: "通用",
-                subtitle: "启动行为、回答怎么呈现给你。"
+                subtitle: "启动行为、蓝色光标、回答怎么呈现给你。"
             )
 
             SettingsGroupLabel("启动")
@@ -121,6 +121,58 @@ struct GeneralSettingsView: View {
                     description: "首次运行弹权限引导；打开这一项后每次启动都会弹出面板。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.opensPanelOnLaunch))
+                }
+            }
+
+            SettingsGroupLabel("蓝色光标")
+            SettingsCard {
+                SettingsRow(
+                    label: "显示方式",
+                    description: "「一直显示」是它一直跟着鼠标；后两项只在用到它的时候出现，平时屏幕上什么都没有。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.cursorPresenceMode),
+                        options: CursorPresenceMode.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "形状",
+                    description: "「标准指针」把蓝色三角换成 Mac 指针的样子；箭头尖端对准的正是鼠标所在的位置。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.cursorShapeStyle),
+                        options: CursorShapeStyle.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "跟随距离",
+                    description: "它停在鼠标的什么位置。「重叠」是压在鼠标上，「紧贴」只让开一点点，两者都没有那条一直拖着的尾巴。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.cursorFollowDistance),
+                        options: CursorFollowDistance.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "闲置后自动隐藏",
+                    description: "只在上面选了「只在对话时出现」或「只在指位置时出现」时有用：说完话之后光标还留多久才消失。",
+                    isEnabled: generalSettingsViewModel.draftSettings.cursorPresenceMode.hidesWhenIdle
+                ) {
+                    SettingsSlider(
+                        value: generalSettingsViewModel.binding(\.transientCursorHideDelaySeconds),
+                        range: 0.5...5,
+                        step: 0.5,
+                        valueLabel: { String(format: "%.1f 秒", $0) }
+                    )
                 }
             }
 
@@ -151,22 +203,10 @@ struct GeneralSettingsView: View {
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.showsLiveTranscript))
                 }
-                SettingsCardRowDivider()
-                SettingsRow(
-                    label: "光标闲置后自动隐藏",
-                    description: "关闭「显示光标」时，临时唤出的光标在说完话后多久消失。"
-                ) {
-                    SettingsSlider(
-                        value: generalSettingsViewModel.binding(\.transientCursorHideDelaySeconds),
-                        range: 0.5...5,
-                        step: 0.5,
-                        valueLabel: { String(format: "%.1f 秒", $0) }
-                    )
-                }
             }
 
             SettingsNote(
-                text: "「开机自启动」和「回答时显示文字」是这两页里影响最直接的两项：一个决定它在不在，一个决定你听得见之外还看不看得见。"
+                text: "「显示方式」是这一页影响最直接的一项：嫌蓝色光标碍事就改成后两项，平时它就完全不出现了。回答文字和识别文字不受它影响，仍然会显示在鼠标旁边。"
             )
         }
     }
@@ -602,11 +642,24 @@ struct SettingsCardRowDivider: View {
 struct SettingsRow<Control: View>: View {
     let label: String
     let description: String
+    /// False dims the row and stops the control responding.
+    ///
+    /// For a setting that only applies in some of another setting's states —
+    /// 「闲置后自动隐藏」 under 「一直显示」, say. A control that looks live but does
+    /// nothing is the exact complaint that produced this parameter, so the row
+    /// says so rather than quietly accepting a value it will never read.
+    let isEnabled: Bool
     @ViewBuilder let control: () -> Control
 
-    init(label: String, description: String, @ViewBuilder control: @escaping () -> Control) {
+    init(
+        label: String,
+        description: String,
+        isEnabled: Bool = true,
+        @ViewBuilder control: @escaping () -> Control
+    ) {
         self.label = label
         self.description = description
+        self.isEnabled = isEnabled
         self.control = control
     }
 
@@ -627,6 +680,8 @@ struct SettingsRow<Control: View>: View {
 
             control()
                 .padding(.top, 2)
+                .disabled(!isEnabled)
+                .opacity(isEnabled ? 1 : 0.4)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)

@@ -185,26 +185,49 @@ final class CompanionManager: ObservableObject {
     private var conversationHistoryClearedObserver: NSObjectProtocol?
     private var appSettingsChangedObserver: NSObjectProtocol?
 
-    /// User preference for whether the Clicky cursor should be shown.
-    /// When toggled off, the overlay is hidden and push-to-talk is disabled.
-    /// Persisted to UserDefaults so the choice survives app restarts.
-    @Published var isClickyCursorEnabled: Bool = UserDefaults.standard.object(forKey: "isClickyCursorEnabled") == nil
-        ? true
-        : UserDefaults.standard.bool(forKey: "isClickyCursorEnabled")
+    /// Whether the blue cursor companion is currently drawn.
+    ///
+    /// This is what the panel's status row reads, and what the overlay multiplies
+    /// into every part of the companion it draws. It is deliberately separate from
+    /// `isOverlayVisible`: the overlay *windows* stay up for the life of the app
+    /// (see `showOverlayIfPossible`), so `isOverlayVisible` is true even while the
+    /// companion is hidden — reading it for "is the companion on screen" would make
+    /// the panel say "Active" forever.
+    ///
+    /// False while the companion is idle in 「只在对话时出现」/「只在指位置时出现」, and
+    /// permanently true in 「一直显示」. Onboarding forces it true regardless, so the
+    /// welcome animation never plays to an invisible companion.
+    @Published private(set) var isBuddyShown: Bool = true
 
-    func setClickyCursorEnabled(_ enabled: Bool) {
-        isClickyCursorEnabled = enabled
-        UserDefaults.standard.set(enabled, forKey: "isClickyCursorEnabled")
-        transientHideTask?.cancel()
-        transientHideTask = nil
+    /// The three cursor settings, mirrored from `AppSettingsStore`.
+    ///
+    /// The overlay reads the companion through `@ObservedObject` and never touches
+    /// the store itself — that is the pattern every other setting in the app
+    /// follows, and it is what makes a save in the settings window redraw the
+    /// overlay without a restart.
+    @Published private(set) var cursorPresenceMode: CursorPresenceMode = .alwaysVisible
+    @Published private(set) var cursorShapeStyle: CursorShapeStyle = .triangle
+    @Published private(set) var cursorFollowDistance: CursorFollowDistance = .farBehind
 
-        if enabled {
-            overlayWindowManager.hasShownOverlayBefore = true
-            overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
-            isOverlayVisible = true
+    /// Copies the three cursor settings out of the store and applies the ones
+    /// that can be decided without waiting for an interaction.
+    ///
+    /// 「一直显示」 is a standing answer, so it takes effect the moment it is
+    /// saved. The other two modes only ever turn the companion *on* from an
+    /// interaction (the push-to-talk press) and turn it *off* on a schedule, so
+    /// switching to them hides the companion immediately rather than leaving it up
+    /// until the next question.
+    private func applyCursorSettings(_ settings: AppSettings) {
+        cursorPresenceMode = settings.cursorPresenceMode
+        cursorShapeStyle = settings.cursorShapeStyle
+        cursorFollowDistance = settings.cursorFollowDistance
+
+        if settings.cursorPresenceMode.showsBuddyWhileIdle {
+            transientHideTask?.cancel()
+            transientHideTask = nil
+            isBuddyShown = true
         } else {
-            overlayWindowManager.hideOverlay()
-            isOverlayVisible = false
+            isBuddyShown = false
         }
     }
 
@@ -307,19 +330,33 @@ final class CompanionManager: ObservableObject {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                if AppSettingsStore.snapshot().persistsConversationHistory {
+                let settings = AppSettingsStore.snapshot()
+
+                if settings.persistsConversationHistory {
                     self.persistConversationHistory()
                 } else {
                     ConversationHistoryStore.clear()
                 }
+
+                // The cursor settings are the one group that changes something the
+                // overlay draws, so they have to be pushed through to it live.
+                self.applyCursorSettings(settings)
             }
         }
 
+        applyCursorSettings(AppSettingsStore.snapshot())
+
         // If the user already completed onboarding AND all permissions are
-        // still granted, show the cursor overlay immediately. If permissions
-        // were revoked (e.g. signing change), don't show the cursor — the
-        // panel will show the permissions UI instead.
-        if hasCompletedOnboarding && allPermissionsGranted && isClickyCursorEnabled {
+        // still granted, put the cursor overlay up now. If permissions were
+        // revoked (e.g. signing change), don't — the panel will show the
+        // permissions UI instead.
+        //
+        // The overlay windows then stay up for the life of the app. Whether the
+        // companion is *drawn* is `isBuddyShown`'s job, not the window's: taking
+        // the windows down and rebuilding them on every question tore down N
+        // full-screen hosting views each time, which flashed and reset the
+        // companion's position.
+        if hasCompletedOnboarding && allPermissionsGranted {
             overlayWindowManager.hasShownOverlayBefore = true
             overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
             isOverlayVisible = true
@@ -535,8 +572,9 @@ final class CompanionManager: ObservableObject {
                     hasScreenContentPermission = true
                     UserDefaults.standard.set(true, forKey: "hasScreenContentPermission")
 
-                    // If onboarding was already completed, show the cursor overlay now
-                    if hasCompletedOnboarding && allPermissionsGranted && !isOverlayVisible && isClickyCursorEnabled {
+                    // Now that the last permission has landed, the overlay can go
+                    // up if onboarding was already completed.
+                    if hasCompletedOnboarding && allPermissionsGranted && !isOverlayVisible {
                         overlayWindowManager.hasShownOverlayBefore = true
                         overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
                         isOverlayVisible = true
@@ -636,16 +674,14 @@ final class CompanionManager: ObservableObject {
             shortcutPressBeganAt = Date()
             didSendPendingConfirmationThisPress = false
 
-            // Cancel any pending transient hide so the overlay stays visible
+            // Cancel any pending fade-out so the companion stays up for this
+            // interaction, and bring it back on screen if the current mode had it
+            // hidden. This is the whole of "fade in on the hotkey" — the companion
+            // is drawn while `isBuddyShown` is true, and the overlay windows are
+            // already up.
             transientHideTask?.cancel()
             transientHideTask = nil
-
-            // If the cursor is hidden, bring it back transiently for this interaction
-            if !isClickyCursorEnabled && !isOverlayVisible {
-                overlayWindowManager.hasShownOverlayBefore = true
-                overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
-                isOverlayVisible = true
-            }
+            isBuddyShown = true
 
             // Dismiss the menu bar panel so it doesn't cover the screen
             NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
@@ -1109,12 +1145,18 @@ final class CompanionManager: ObservableObject {
         }
     }
 
-    /// If the cursor is in transient mode (user toggled "Show Clicky" off),
-    /// waits for TTS playback and any pointing animation to finish, then
-    /// fades out the overlay after a pause. Cancelled automatically
-    /// if the user starts another push-to-talk interaction.
+    /// In the two modes that hide the cursor when idle, waits for TTS playback,
+    /// any pointing animation and the answer bubble to finish, then takes the
+    /// companion off screen after the user's pause. Cancelled automatically if
+    /// the user starts another push-to-talk interaction.
+    ///
+    /// The guard reads the presence mode, which is the fix for the whole feature:
+    /// this used to test `!isClickyCursorEnabled`, a switch whose only UI was
+    /// commented out and which was therefore always `true` — so this function
+    /// returned on its first line every time it was ever called, and the fade-out
+    /// never happened at all.
     private func scheduleTransientHideIfNeeded() {
-        guard !isClickyCursorEnabled && isOverlayVisible else { return }
+        guard cursorPresenceMode.hidesWhenIdle && isOverlayVisible else { return }
 
         // Read the delay at schedule time, not at fire time: the pause is part of
         // one interaction, and a save landing mid-pause should apply to the next
@@ -1146,11 +1188,11 @@ final class CompanionManager: ObservableObject {
                 guard !Task.isCancelled else { return }
             }
 
-            // Pause after everything finishes, then fade out
+            // Pause after everything finishes, then take the companion off screen.
+            // The overlay windows stay up — only the companion they draw goes.
             try? await Task.sleep(nanoseconds: UInt64(hideDelaySeconds * 1_000_000_000))
             guard !Task.isCancelled else { return }
-            overlayWindowManager.fadeOutAndHideOverlay()
-            isOverlayVisible = false
+            isBuddyShown = false
         }
     }
 
