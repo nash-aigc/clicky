@@ -51,11 +51,17 @@ final class BailianTTSClient {
     /// long answer isn't held back by synthesizing every chunk up front.
     private var remainingChunksPlaybackTask: Task<Void, Never>?
 
-    /// True from the moment `speakText` starts until the last chunk has finished.
-    /// Between chunks the audio player is briefly idle while the next one is
-    /// synthesized, but from the user's point of view the companion is still
-    /// speaking — and the overlay's transient-hide logic polls this to decide
-    /// when the interaction is over, so it must not flicker false mid-answer.
+    /// True from the moment the first chunk's audio starts until the last chunk
+    /// has finished. Between chunks the audio player is briefly idle while the
+    /// next one is synthesized, but from the user's point of view the companion
+    /// is still speaking — and the overlay polls this to decide when the
+    /// interaction is over, so it must not flicker false mid-answer.
+    ///
+    /// **It must be cleared when the sequence ends naturally, not only when it is
+    /// interrupted.** Callers wait on `isPlaying` becoming false; a flag that only
+    /// `stopPlayback()` ever reset would read as "still speaking" from the end of
+    /// the first reply until the start of the next one — see the clearing in
+    /// `speakText`.
     private var isSpeakingChunkSequence = false
 
     /// The endpoint, key, model and voice are resolved per `speakText` call from
@@ -130,12 +136,29 @@ final class BailianTTSClient {
         )
 
         let remainingChunks = Array(speakableChunks.dropFirst())
-        guard !remainingChunks.isEmpty else { return }
 
+        // The whole rest of the sequence runs in this task, so `speakText` can
+        // still return the instant the first chunk is audible: it waits that
+        // chunk out, synthesizes and plays the ones after it, and — the part that
+        // matters — clears `isSpeakingChunkSequence` once the last one has ended.
+        //
+        // That last clear is the fix for a stuck answer bubble. `stopPlayback()`
+        // used to be the only thing that reset the flag, and it runs at the
+        // *start* of the next reply, so after the first answer of a session
+        // `isPlaying` stayed true forever. Every caller that polls it to decide
+        // the interaction is over — `CompanionManager.scheduleAnswerBubbleClear`
+        // and `scheduleTransientHideIfNeeded` — was waiting on a condition that
+        // could never come, so the answer text stayed on screen next to the
+        // cursor and the 「回答文字多留一会儿」 setting was never even read.
         remainingChunksPlaybackTask = Task { [weak self] in
-            for (offset, chunk) in remainingChunks.enumerated() {
-                guard let self, !Task.isCancelled else { return }
+            guard let self else { return }
 
+            // Waits out the chunk `speakText` already started. It is not replayed
+            // here — only the chunks after it are.
+            await self.waitUntilPlaybackFinishes()
+            guard !Task.isCancelled else { return }
+
+            for (offset, chunk) in remainingChunks.enumerated() {
                 do {
                     let audioData = try await self.requestAudioData(
                         for: chunk,
@@ -152,9 +175,16 @@ final class BailianTTSClient {
                     // Partial audio already played is still useful; stop rather
                     // than leaving the companion stuck in a speaking state.
                     print("⚠️ Bailian TTS: stopped after chunk \(offset + 1) of \(remainingChunks.count): \(error.localizedDescription)")
+                    self.isSpeakingChunkSequence = false
                     return
                 }
             }
+
+            // Not cleared when cancelled: a cancelled sequence means a newer one
+            // has already claimed the flag, and clearing it here would report that
+            // one as finished while its audio is still playing.
+            guard !Task.isCancelled else { return }
+            self.isSpeakingChunkSequence = false
         }
     }
 
@@ -310,10 +340,20 @@ final class BailianTTSClient {
             chunkCount: chunkCount,
             playbackConfiguration: playbackConfiguration
         )
+        await waitUntilPlaybackFinishes()
+    }
 
-        // Poll rather than use AVAudioPlayerDelegate so this stays a plain
-        // MainActor class — playback state is checked a few times a second,
-        // which is far finer than the gap between chunks.
+    /// Polls until the player has stopped.
+    ///
+    /// Separate from `playAndWaitUntilFinished` because the *first* chunk is
+    /// started by `speakText` itself, before the playback task exists: for that
+    /// one, starting and waiting are two different moments, and replaying it in
+    /// order to reuse the combined method would restart it from the beginning.
+    ///
+    /// Polls rather than using `AVAudioPlayerDelegate` so this stays a plain
+    /// MainActor class — playback state is checked a few times a second, which is
+    /// far finer than the gap between chunks.
+    private func waitUntilPlaybackFinishes() async {
         while audioPlayer?.isPlaying == true {
             try? await Task.sleep(nanoseconds: 200_000_000)
             guard !Task.isCancelled else { return }
