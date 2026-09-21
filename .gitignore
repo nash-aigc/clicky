@@ -1,0 +1,16 @@
+worker/node_modules/
+worker/.dev.vars
+
+# Holds the Alibaba Bailian API key. Never commit this — it would leak the key.
+leanring-buddy/BailianSecrets.plist
+
+.DS_Store
+*.xcuserstate
+build/
+releases/
+.claude/
+coding-plans/
+
+# Xcode per-user state and coverage artifacts — never part of the project
+leanring-buddy.xcodeproj/xcuserdata/
+default.profraw

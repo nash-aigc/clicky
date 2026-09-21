@@ -1,0 +1,334 @@
+//
+//  BailianTTSClient.swift
+//  leanring-buddy
+//
+//  Speaks the companion's replies aloud using Alibaba Bailian's text-to-speech
+//  (`qwen-audio-3.1-tts-flash`). Replaces the ElevenLabs client.
+//
+//  Bailian has no OpenAI-compatible TTS route, so this talks to DashScope's
+//  native speech-synthesis endpoint. That endpoint is request/response rather
+//  than a stream: it answers with a URL to a finished WAV file, which is then
+//  downloaded and played. There is no partial audio to start playing early.
+//
+//  Which endpoint is correct depends on the model family, and Alibaba documents
+//  the two as non-interchangeable: Qwen-Audio-TTS / CosyVoice live on
+//  `/api/v1/services/audio/tts/SpeechSynthesizer`, while Qwen-TTS
+//  (`qwen3-tts-flash`) lives on `/api/v1/services/aigc/multimodal-generation/
+//  generation`. Posting to the wrong one fails with `InvalidParameter: url
+//  error`, so the model, the voice, the body fields and the path all move
+//  together.
+//
+
+import AVFoundation
+import Foundation
+
+struct BailianTTSClientError: LocalizedError {
+    let message: String
+
+    var errorDescription: String? {
+        message
+    }
+}
+
+@MainActor
+final class BailianTTSClient {
+    private let speechSynthesizerURL: URL
+    private let apiKey: String
+    private let session: URLSession
+
+    /// The player for the chunk currently being spoken. Kept as a property so the
+    /// audio outlives the local scope of whichever method started it.
+    private var audioPlayer: AVAudioPlayer?
+
+    /// Drives playback of chunks after the first one. The first chunk is spoken
+    /// before `speakText` returns; the rest continue here in the background so a
+    /// long answer isn't held back by synthesizing every chunk up front.
+    private var remainingChunksPlaybackTask: Task<Void, Never>?
+
+    /// True from the moment `speakText` starts until the last chunk has finished.
+    /// Between chunks the audio player is briefly idle while the next one is
+    /// synthesized, but from the user's point of view the companion is still
+    /// speaking — and the overlay's transient-hide logic polls this to decide
+    /// when the interaction is over, so it must not flicker false mid-answer.
+    private var isSpeakingChunkSequence = false
+
+    init(workspaceBaseURL: String, apiKey: String) {
+        let trimmedBaseURL = workspaceBaseURL.hasSuffix("/")
+            ? String(workspaceBaseURL.dropLast())
+            : workspaceBaseURL
+        self.speechSynthesizerURL = URL(
+            string: trimmedBaseURL + BailianConfiguration.Paths.dashScopeSpeechSynthesizer
+        )!
+        self.apiKey = apiKey
+
+        let configuration = URLSessionConfiguration.default
+        // Synthesis of a full-length chunk plus the download of the resulting WAV
+        // can take a while for long answers; give it room rather than failing
+        // partway through a reply.
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 180
+        configuration.waitsForConnectivity = true
+        self.session = URLSession(configuration: configuration)
+    }
+
+    /// Synthesizes `text` and begins playing it.
+    ///
+    /// Returns as soon as the *first* chunk of audio starts playing — the caller
+    /// uses that moment to switch the companion into its "responding" state, so
+    /// waiting for a long reply to finish synthesizing would keep the spinner up
+    /// for the whole answer. Any remaining chunks play in the background.
+    func speakText(_ text: String) async throws {
+        stopPlayback()
+
+        let speakableChunks = Self.splitIntoSpeakableChunks(text)
+        guard let firstChunk = speakableChunks.first else { return }
+
+        let firstChunkAudioData = try await requestAudioData(for: firstChunk)
+        try Task.checkCancellation()
+
+        isSpeakingChunkSequence = true
+        playAudioData(firstChunkAudioData, chunkIndex: 1, chunkCount: speakableChunks.count)
+
+        let remainingChunks = Array(speakableChunks.dropFirst())
+        guard !remainingChunks.isEmpty else { return }
+
+        remainingChunksPlaybackTask = Task { [weak self] in
+            for (offset, chunk) in remainingChunks.enumerated() {
+                guard let self, !Task.isCancelled else { return }
+
+                do {
+                    let audioData = try await self.requestAudioData(for: chunk)
+                    guard !Task.isCancelled else { return }
+                    await self.playAndWaitUntilFinished(
+                        audioData,
+                        chunkIndex: offset + 2,
+                        chunkCount: speakableChunks.count
+                    )
+                } catch {
+                    // Partial audio already played is still useful; stop rather
+                    // than leaving the companion stuck in a speaking state.
+                    print("⚠️ Bailian TTS: stopped after chunk \(offset + 1) of \(remainingChunks.count): \(error.localizedDescription)")
+                    return
+                }
+            }
+        }
+    }
+
+    /// Whether audio is currently playing, or is about to be — see
+    /// `isSpeakingChunkSequence` for why the gaps between chunks still count.
+    var isPlaying: Bool {
+        if audioPlayer?.isPlaying == true { return true }
+        return isSpeakingChunkSequence
+    }
+
+    /// Stops playback immediately and abandons any chunks still queued.
+    func stopPlayback() {
+        remainingChunksPlaybackTask?.cancel()
+        remainingChunksPlaybackTask = nil
+        audioPlayer?.stop()
+        audioPlayer = nil
+        isSpeakingChunkSequence = false
+    }
+
+    // MARK: - Synthesis
+
+    /// Requests the finished WAV for one chunk and returns its bytes.
+    private func requestAudioData(for textChunk: String) async throws -> Data {
+        var request = URLRequest(url: speechSynthesizerURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+        // Exactly the fields the official Qwen-Audio-TTS parameter table lists.
+        // Notably there is no `language_type` here — that field belongs to
+        // Qwen-TTS, and this model infers the language from the text.
+        let body: [String: Any] = [
+            "model": BailianConfiguration.Models.textToSpeech,
+            "input": [
+                "text": textChunk,
+                "voice": BailianConfiguration.textToSpeechVoice,
+                "format": BailianConfiguration.textToSpeechFormat,
+                "sample_rate": BailianConfiguration.textToSpeechSampleRate
+            ]
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (responseData, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw BailianTTSClientError(message: "Text-to-speech returned an invalid response.")
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let errorBody = String(data: responseData, encoding: .utf8) ?? "Unknown error"
+            throw BailianTTSClientError(
+                message: "Text-to-speech API error (\(httpResponse.statusCode)): \(errorBody)"
+            )
+        }
+
+        guard let responseJSON = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any],
+              let output = responseJSON["output"] as? [String: Any],
+              let audio = output["audio"] as? [String: Any],
+              let audioURLString = audio["url"] as? String,
+              !audioURLString.isEmpty else {
+            let responseText = String(data: responseData, encoding: .utf8) ?? "Unknown error"
+            throw BailianTTSClientError(
+                message: "Text-to-speech response had no audio URL: \(responseText)"
+            )
+        }
+
+        return try await downloadAudioFile(fromURLString: audioURLString)
+    }
+
+    /// Downloads the synthesized WAV from the URL in the response.
+    private func downloadAudioFile(fromURLString audioURLString: String) async throws -> Data {
+        // Bailian hands back a plain `http://` OSS link. macOS App Transport
+        // Security blocks cleartext HTTP, and the bucket serves the identical
+        // file over TLS under the same signature, so upgrade the scheme instead
+        // of adding a blanket ATS exception for this host.
+        let secureAudioURLString = audioURLString.hasPrefix("http://")
+            ? "https://" + audioURLString.dropFirst("http://".count)
+            : audioURLString
+
+        guard let audioFileURL = URL(string: secureAudioURLString) else {
+            throw BailianTTSClientError(message: "Text-to-speech returned an unusable audio URL.")
+        }
+
+        let (audioFileData, response) = try await session.data(from: audioFileURL)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw BailianTTSClientError(
+                message: "Could not download synthesized audio (HTTP \(statusCode))."
+            )
+        }
+
+        return audioFileData
+    }
+
+    // MARK: - Playback
+
+    private func playAudioData(_ audioData: Data, chunkIndex: Int, chunkCount: Int) {
+        do {
+            let player = try AVAudioPlayer(data: audioData)
+            self.audioPlayer = player
+            player.play()
+            print("🔊 Bailian TTS: playing chunk \(chunkIndex)/\(chunkCount) (\(audioData.count / 1024)KB)")
+        } catch {
+            print("⚠️ Bailian TTS: could not play audio chunk \(chunkIndex)/\(chunkCount): \(error.localizedDescription)")
+        }
+    }
+
+    private func playAndWaitUntilFinished(_ audioData: Data, chunkIndex: Int, chunkCount: Int) async {
+        playAudioData(audioData, chunkIndex: chunkIndex, chunkCount: chunkCount)
+
+        // Poll rather than use AVAudioPlayerDelegate so this stays a plain
+        // MainActor class — playback state is checked a few times a second,
+        // which is far finer than the gap between chunks.
+        while audioPlayer?.isPlaying == true {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { return }
+        }
+    }
+
+    // MARK: - Chunking
+
+    /// Maximum characters per synthesis request.
+    ///
+    /// The official parameter table for Qwen-TTS caps `input.text` at 600
+    /// characters, and the system prompt explicitly invites long, detailed
+    /// answers — so replies routinely exceed one request. Split with headroom
+    /// below the documented limit rather than discovering the ceiling as a
+    /// failed request that leaves the user with no audio at all.
+    private static let maximumCharactersPerChunk = 500
+
+    /// Splits reply text into chunks that each fit one synthesis request,
+    /// preferring to break between sentences so playback doesn't pause mid-thought.
+    static func splitIntoSpeakableChunks(_ text: String) -> [String] {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return [] }
+        guard trimmedText.count > maximumCharactersPerChunk else { return [trimmedText] }
+
+        var chunks: [String] = []
+        var currentChunk = ""
+
+        for sentence in splitIntoSentences(trimmedText) {
+            // A single sentence longer than the limit can't be packed any further —
+            // hard-split it so it still gets spoken.
+            if sentence.count > maximumCharactersPerChunk {
+                if !currentChunk.isEmpty {
+                    chunks.append(currentChunk)
+                    currentChunk = ""
+                }
+                chunks.append(contentsOf: splitLongSentence(sentence))
+                continue
+            }
+
+            if currentChunk.isEmpty {
+                currentChunk = sentence
+            } else if currentChunk.count + sentence.count <= maximumCharactersPerChunk {
+                currentChunk += sentence
+            } else {
+                chunks.append(currentChunk)
+                currentChunk = sentence
+            }
+        }
+
+        if !currentChunk.isEmpty {
+            chunks.append(currentChunk)
+        }
+
+        return chunks
+    }
+
+    /// Splits on sentence-ending punctuation, keeping the punctuation attached to
+    /// the sentence it ends. Handles both full-width (Chinese) and ASCII marks.
+    private static func splitIntoSentences(_ text: String) -> [String] {
+        let sentenceTerminators: Set<Character> = ["。", "！", "？", "；", ".", "!", "?", ";", "\n"]
+
+        var sentences: [String] = []
+        var currentSentence = ""
+
+        for character in text {
+            currentSentence.append(character)
+            if sentenceTerminators.contains(character) {
+                sentences.append(currentSentence)
+                currentSentence = ""
+            }
+        }
+
+        if !currentSentence.isEmpty {
+            sentences.append(currentSentence)
+        }
+
+        return sentences
+    }
+
+    /// Breaks a single over-long sentence at natural pauses, falling back to a
+    /// hard cut when there is no punctuation to break on.
+    private static func splitLongSentence(_ sentence: String) -> [String] {
+        var chunks: [String] = []
+        var currentChunk = ""
+        let softBreakCharacters: Set<Character> = ["，", "、", ",", " ", "：", ":"]
+
+        for character in sentence {
+            currentChunk.append(character)
+
+            let hasReachedSoftBreakPoint = softBreakCharacters.contains(character)
+                && currentChunk.count >= maximumCharactersPerChunk / 2
+            let hasReachedHardLimit = currentChunk.count >= maximumCharactersPerChunk
+
+            if hasReachedSoftBreakPoint || hasReachedHardLimit {
+                chunks.append(currentChunk)
+                currentChunk = ""
+            }
+        }
+
+        if !currentChunk.isEmpty {
+            chunks.append(currentChunk)
+        }
+
+        return chunks
+    }
+}
