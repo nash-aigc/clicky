@@ -3,7 +3,7 @@
 //  leanring-buddy
 //
 //  The user-facing app settings — every switch and slider the settings window's
-//  通用 / 对话与记忆 / 听 / 说 / 看与截图 / 快捷键 pages edit, as one value type.
+//  通用 / 对话与记忆 / 听 / 说 / 看与截图 / 操作 / 快捷键 pages edit, as one value type.
 //
 //  Pure data + clamping, no I/O: persistence lives in `AppSettingsStore`, which
 //  mirrors `ModelConfigurationStore`. Every type here is `nonisolated` for the
@@ -211,6 +211,35 @@ nonisolated enum TextEntryMethod: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// A keyboard shortcut as the user actually pressed it: which modifier keys
+/// were held, plus the one ordinary key that was struck (nil for a
+/// modifier-only combo like ctrl + option).
+///
+/// `modifierFlagsRawValue` is an `NSEvent.ModifierFlags` raw value filtered
+/// down to the five modifiers a shortcut can meaningfully use (control,
+/// option, shift, command, function) — capsLock and the rest are noise a
+/// stray keypress could otherwise smuggle in.
+nonisolated struct RecordedKeyboardShortcut: Codable, Equatable, Sendable {
+    var modifierFlagsRawValue: UInt
+    var keyCode: UInt16?
+}
+
+/// How the push-to-talk shortcut behaves: hold-to-talk (press, speak, release
+/// to send) or double-tap (press to start recording, press again to finalize
+/// and send) — the latter for long utterances that are uncomfortable to hold
+/// a key through.
+nonisolated enum ShortcutTriggerMode: String, Codable, CaseIterable, Sendable {
+    case holdToTalk
+    case doubleTapToTalk
+
+    var displayName: String {
+        switch self {
+        case .holdToTalk: return "按住说话"
+        case .doubleTapToTalk: return "点两下说话"
+        }
+    }
+}
+
 nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     // MARK: - 通用 · 启动
@@ -343,6 +372,8 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// When the answer embeds a `[POINT:…]` tag, fly the cursor to that element.
     var pointsAtReferencedElements: Bool = true
 
+    // MARK: - 操作
+
     /// Master switch for acting on the machine — clicking, scrolling, typing,
     /// pressing keys, opening apps, reading the accessibility tree.
     ///
@@ -371,6 +402,36 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// string so an unknown value from a future/older build degrades to the
     /// default instead of failing the whole decode.
     var pushToTalkShortcutRawValue: String = BuddyPushToTalkShortcut.ShortcutOption.controlOption.rawValue
+
+    /// The shortcut the user recorded by pressing keys in the settings window,
+    /// or nil to follow the preset named by `pushToTalkShortcutRawValue`.
+    /// A recorded shortcut always wins over the preset — the recorder is the
+    /// more specific expression of the same one row.
+    var customPushToTalkShortcut: RecordedKeyboardShortcut?
+
+    /// How the shortcut is used: hold-to-talk (press, speak, release to send)
+    /// or double-tap (press to start, press again to finalize and send) — the
+    /// latter for long utterances that are uncomfortable to hold a key through.
+    var pushToTalkTriggerModeRawValue: String = ShortcutTriggerMode.holdToTalk.rawValue
+
+    var pushToTalkTriggerMode: ShortcutTriggerMode {
+        get { ShortcutTriggerMode(rawValue: pushToTalkTriggerModeRawValue) ?? .holdToTalk }
+        set { pushToTalkTriggerModeRawValue = newValue.rawValue }
+    }
+
+    /// The shortcut actually in effect: the user's recorded one when present,
+    /// otherwise the chosen preset. Everything that matches events or displays
+    /// the keys reads this, never the two stored halves directly, so a recorded
+    /// shortcut and a preset can never disagree about which one is live.
+    var pushToTalkShortcutBinding: RecordedKeyboardShortcut {
+        if let customPushToTalkShortcut { return customPushToTalkShortcut }
+        if let preset = BuddyPushToTalkShortcut.ShortcutOption(rawValue: pushToTalkShortcutRawValue) {
+            return preset.defaultShortcutBinding
+        }
+        // Unknown preset string from a future/older build — same fallback the
+        // `pushToTalkShortcutOption` accessor uses.
+        return BuddyPushToTalkShortcut.ShortcutOption.controlOption.defaultShortcutBinding
+    }
 
     /// Send the transcript the moment the key is released (current behavior).
     /// Off holds the transcript for confirmation — a quick tap of the shortcut
@@ -401,12 +462,6 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.screenshotCompressionQuality = min(max(settings.screenshotCompressionQuality, 0.5), 0.95)
         settings.visionMaxCompletionTokens = min(max(settings.visionMaxCompletionTokens, 256), 32768)
         return settings
-    }
-
-    /// The push-to-talk shortcut option these settings name, falling back to the
-    /// original hard-coded `controlOption` when the stored raw value is unknown.
-    var pushToTalkShortcutOption: BuddyPushToTalkShortcut.ShortcutOption {
-        BuddyPushToTalkShortcut.ShortcutOption(rawValue: pushToTalkShortcutRawValue) ?? .controlOption
     }
 }
 
@@ -450,6 +505,8 @@ nonisolated extension AppSettings {
         case allowsKeyboardControl
         case textEntryMethod
         case pushToTalkShortcutRawValue
+        case customPushToTalkShortcut
+        case pushToTalkTriggerModeRawValue
         case sendsTranscriptImmediatelyOnRelease
         case visionMaxCompletionTokens
     }
@@ -500,6 +557,8 @@ nonisolated extension AppSettings {
         allowsKeyboardControl = try container.decodeIfPresent(Bool.self, forKey: .allowsKeyboardControl) ?? defaults.allowsKeyboardControl
         textEntryMethod = try container.decodeIfPresent(TextEntryMethod.self, forKey: .textEntryMethod) ?? defaults.textEntryMethod
         pushToTalkShortcutRawValue = try container.decodeIfPresent(String.self, forKey: .pushToTalkShortcutRawValue) ?? defaults.pushToTalkShortcutRawValue
+        customPushToTalkShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .customPushToTalkShortcut) ?? defaults.customPushToTalkShortcut
+        pushToTalkTriggerModeRawValue = try container.decodeIfPresent(String.self, forKey: .pushToTalkTriggerModeRawValue) ?? defaults.pushToTalkTriggerModeRawValue
         sendsTranscriptImmediatelyOnRelease = try container.decodeIfPresent(Bool.self, forKey: .sendsTranscriptImmediatelyOnRelease) ?? defaults.sendsTranscriptImmediatelyOnRelease
         visionMaxCompletionTokens = try container.decodeIfPresent(Int.self, forKey: .visionMaxCompletionTokens) ?? defaults.visionMaxCompletionTokens
     }

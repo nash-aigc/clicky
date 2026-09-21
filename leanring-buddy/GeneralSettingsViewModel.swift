@@ -179,16 +179,3 @@ nonisolated extension BuddyPushToTalkShortcut.ShortcutOption: RawRepresentable {
         }
     }
 }
-
-nonisolated extension BuddyPushToTalkShortcut.ShortcutOption {
-    /// Every shortcut the 快捷键 page offers, in the order the enum declares them.
-    /// Declared here rather than via `CaseIterable` so the list is visible next
-    /// to the raw-value mapping above, which it must stay in sync with.
-    static let allShortcutOptions: [BuddyPushToTalkShortcut.ShortcutOption] = [
-        .shiftFunction,
-        .controlOption,
-        .shiftControl,
-        .controlOptionSpace,
-        .shiftControlSpace
-    ]
-}

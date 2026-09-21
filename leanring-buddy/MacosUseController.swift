@@ -301,6 +301,15 @@ enum MacosUseController {
                 )
             }
 
+        case .selectText(let startMarker, let endMarker):
+            guard appSettings.allowsKeyboardControl else {
+                return ActionExecutionOutcome(
+                    description: "「允许打字和按快捷键」是关着的，跳过了这次选中。",
+                    contextForNextTurn: nil
+                )
+            }
+            return selectTextByContent(startMarker: startMarker, endMarker: endMarker)
+
         case .pressKey(let keyName, let modifierNames):
             guard appSettings.allowsKeyboardControl else {
                 return ActionExecutionOutcome(
@@ -312,6 +321,22 @@ enum MacosUseController {
 
         case .readAccessibilityTree:
             return await readAccessibilityTreeTask(among: screenCaptures)
+
+        case .wait(let seconds):
+            // Task.sleep throws on cancellation, so a user who starts speaking
+            // again cuts the wait short — a wait must never outlive its job.
+            do {
+                try await Task.sleep(nanoseconds: UInt64(seconds) * 1_000_000_000)
+                return ActionExecutionOutcome(
+                    description: "等了 \(seconds) 秒。",
+                    contextForNextTurn: nil
+                )
+            } catch {
+                return ActionExecutionOutcome(
+                    description: "等待被打断。",
+                    contextForNextTurn: nil
+                )
+            }
         }
     }
 
@@ -501,6 +526,119 @@ enum MacosUseController {
                 pasteboard.writeObjects([restoredItem])
             }
         }
+    }
+
+    /// Selects a stretch of text in the focused text area by finding the words in
+    /// the text area's real value and setting the selection through Accessibility.
+    ///
+    /// This exists because a model anchoring a range edit on *clicked positions*
+    /// deletes too much: in a text editor there is nothing to snap a click to —
+    /// the whole document is one text area, so a name lookup matches nothing and
+    /// the click falls back to the screenshot estimate — and a selection from one
+    /// line off eats that line and everything to its end. Measured shape of the
+    /// failure (2026-09-22): asked to delete one section, the model said "从第五
+    /// 十六行往下" in a 22-line file, its caret click landed one row early, and
+    /// the delete took a live table row with the section. Anchoring on the words
+    /// themselves has no such error term: the offset of "杨幂个人介绍" in the
+    /// document's own text is exact.
+    ///
+    /// Markers are matched literally, first occurrence wins, and the end marker is
+    /// searched from the start marker onward so a repeated phrase anchors the
+    /// right stretch.
+    private static func selectTextByContent(
+        startMarker: String,
+        endMarker: String?
+    ) -> ActionExecutionOutcome {
+        let systemWideElement = AXUIElementCreateSystemWide()
+        var focusedResult: CFTypeRef?
+        let focusError = AXUIElementCopyAttributeValue(
+            systemWideElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedResult
+        )
+        guard focusError == .success, let focusedResult else {
+            return ActionExecutionOutcome(
+                description: "没有正在聚焦的输入区，没有选中。",
+                contextForNextTurn: nil
+            )
+        }
+        let focusedElement = focusedResult as! AXUIElement
+
+        var textResult: CFTypeRef?
+        let valueError = AXUIElementCopyAttributeValue(
+            focusedElement,
+            kAXValueAttribute as CFString,
+            &textResult
+        )
+        guard valueError == .success, let fullText = textResult as? String, !fullText.isEmpty else {
+            return ActionExecutionOutcome(
+                description: "聚焦的地方没有可编辑的文字，没有选中。",
+                contextForNextTurn: nil
+            )
+        }
+
+        // Accessibility text ranges are UTF-16 offsets, which is exactly what
+        // NSString ranges are — so the search runs on NSString, not on String,
+        // and no index system gets translated by hand.
+        let wholeText = fullText as NSString
+        let startRange = wholeText.range(of: startMarker)
+        guard startRange.location != NSNotFound else {
+            return ActionExecutionOutcome(
+                description: "没找到「\(startMarker)」这几个字，没有选中。",
+                contextForNextTurn: nil
+            )
+        }
+
+        let selectionRange: NSRange
+        if let endMarker, !endMarker.isEmpty {
+            let searchRange = NSRange(
+                location: startRange.location,
+                length: wholeText.length - startRange.location
+            )
+            let endRange = wholeText.range(of: endMarker, range: searchRange)
+            guard endRange.location != NSNotFound else {
+                return ActionExecutionOutcome(
+                    description: "找到了开头「\(startMarker)」但没找到结尾「\(endMarker)」，没有选中。",
+                    contextForNextTurn: nil
+                )
+            }
+            selectionRange = NSRange(
+                location: startRange.location,
+                length: endRange.location + endRange.length - startRange.location
+            )
+        } else {
+            selectionRange = startRange
+        }
+
+        var cfSelectionRange = CFRange(
+            location: selectionRange.location,
+            length: selectionRange.length
+        )
+        guard let selectionValue = AXValueCreate(.cfRange, &cfSelectionRange) else {
+            return ActionExecutionOutcome(
+                description: "构造选中范围失败，没有选中。",
+                contextForNextTurn: nil
+            )
+        }
+        let setError = AXUIElementSetAttributeValue(
+            focusedElement,
+            kAXSelectedTextRangeAttribute as CFString,
+            selectionValue
+        )
+        guard setError == .success else {
+            return ActionExecutionOutcome(
+                description: "这个应用不接受程序选中文本（错误码 \(setError.rawValue)），没有选中。",
+                contextForNextTurn: nil
+            )
+        }
+
+        let describedRange = endMarker == nil
+            ? "「\(startMarker)」"
+            : "从「\(startMarker)」到「\(endMarker!)」"
+        return ActionExecutionOutcome(
+            description: "已选中 \(selectionRange.length) 个字符\(describedRange)。",
+            contextForNextTurn: nil
+        )
     }
 
     private static func performKeyPressAction(

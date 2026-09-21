@@ -13,6 +13,16 @@ import Combine
 import Foundation
 import Speech
 
+/// `RecordedKeyboardShortcut` is pure data (a raw-value struct in
+/// `AppSettings.swift`, which deliberately imports no AppKit), so the
+/// `NSEvent.ModifierFlags` view of its stored raw value lives here with the
+/// event-matching code that needs it.
+extension RecordedKeyboardShortcut {
+    var modifierFlags: NSEvent.ModifierFlags {
+        NSEvent.ModifierFlags(rawValue: modifierFlagsRawValue)
+    }
+}
+
 enum BuddyPushToTalkShortcut {
     enum ShortcutOption {
         case shiftFunction
@@ -51,31 +61,37 @@ enum BuddyPushToTalkShortcut {
             }
         }
 
-        fileprivate var modifierOnlyFlags: NSEvent.ModifierFlags? {
+        /// The preset expressed in the same shape as a shortcut the user
+        /// recorded, so the event matcher below has one path for both. Every
+        /// modifier-only preset binds no key; the two space presets bind
+        /// space (key code 49).
+        var defaultShortcutBinding: RecordedKeyboardShortcut {
             switch self {
             case .shiftFunction:
-                return [.shift, .function]
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.shift, .function]).rawValue,
+                    keyCode: nil
+                )
             case .controlOption:
-                return [.control, .option]
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.control, .option]).rawValue,
+                    keyCode: nil
+                )
             case .shiftControl:
-                return [.shift, .control]
-            case .controlOptionSpace, .shiftControlSpace:
-                return nil
-            }
-        }
-
-        fileprivate var spaceShortcutModifierFlags: NSEvent.ModifierFlags? {
-            switch self {
-            case .shiftFunction:
-                return nil
-            case .controlOption:
-                return nil
-            case .shiftControl:
-                return nil
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.shift, .control]).rawValue,
+                    keyCode: nil
+                )
             case .controlOptionSpace:
-                return [.control, .option]
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.control, .option]).rawValue,
+                    keyCode: pushToTalkKeyCode
+                )
             case .shiftControlSpace:
-                return [.shift, .control]
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.shift, .control]).rawValue,
+                    keyCode: pushToTalkKeyCode
+                )
             }
         }
     }
@@ -95,12 +111,15 @@ enum BuddyPushToTalkShortcut {
     /// The push-to-talk keybinding in effect. Read from the app settings on
     /// every access rather than cached: the settings window can change it while
     /// the app runs, and the event-tap matching and the panel's tooltip must
-    /// never disagree about which keys start and end a recording.
-    static var currentShortcutOption: ShortcutOption {
-        AppSettingsStore.snapshot().pushToTalkShortcutOption
+    /// never disagree about which keys start and end a recording. A shortcut
+    /// the user recorded in the settings window wins over the preset.
+    static var currentShortcutBinding: RecordedKeyboardShortcut {
+        AppSettingsStore.snapshot().pushToTalkShortcutBinding
     }
-    static let pushToTalkKeyCode: UInt16 = 49 // Space
-    static var pushToTalkDisplayText: String { currentShortcutOption.displayText }
+    /// Space, the key the two built-in presets bind. Kept as a named constant
+    /// because the preset bindings and any recorder hint text both want it.
+    static let pushToTalkKeyCode: UInt16 = 49
+    static var pushToTalkDisplayText: String { currentShortcutBinding.displayText }
     static var pushToTalkTooltipText: String { "push to talk (\(pushToTalkDisplayText))" }
 
     static func shortcutTransition(
@@ -166,38 +185,40 @@ enum BuddyPushToTalkShortcut {
         modifierFlags: NSEvent.ModifierFlags,
         wasShortcutPreviouslyPressed: Bool
     ) -> ShortcutTransition {
-        if let modifierOnlyFlags = currentShortcutOption.modifierOnlyFlags {
-            guard shortcutEventType == .flagsChanged else { return .none }
+        // One matching path for presets and recorded shortcuts alike — they are
+        // the same shape by the time they get here (`pushToTalkShortcutBinding`
+        // resolves which one is live). Modifier-only bindings press and release
+        // on flagsChanged; bindings with a key press and release on that key.
+        let binding = currentShortcutBinding
+        let requiredModifierFlags = binding.modifierFlags
+            .intersection(.deviceIndependentFlagsMask)
 
-            let isShortcutCurrentlyPressed = modifierFlags.contains(modifierOnlyFlags)
-
-            if isShortcutCurrentlyPressed && !wasShortcutPreviouslyPressed {
+        if let boundKeyCode = binding.keyCode {
+            if shortcutEventType == .keyDown
+                && keyCode == boundKeyCode
+                && modifierFlags.isSuperset(of: requiredModifierFlags)
+                && !wasShortcutPreviouslyPressed {
                 return .pressed
             }
 
-            if !isShortcutCurrentlyPressed && wasShortcutPreviouslyPressed {
+            if shortcutEventType == .keyUp
+                && keyCode == boundKeyCode
+                && wasShortcutPreviouslyPressed {
                 return .released
             }
 
             return .none
         }
 
-        guard let pushToTalkModifierFlags = currentShortcutOption.spaceShortcutModifierFlags else {
-            return .none
-        }
+        guard shortcutEventType == .flagsChanged, !requiredModifierFlags.isEmpty else { return .none }
 
-        let matchesModifierFlags = modifierFlags.isSuperset(of: pushToTalkModifierFlags)
+        let isShortcutCurrentlyPressed = modifierFlags.isSuperset(of: requiredModifierFlags)
 
-        if shortcutEventType == .keyDown
-            && keyCode == pushToTalkKeyCode
-            && matchesModifierFlags
-            && !wasShortcutPreviouslyPressed {
+        if isShortcutCurrentlyPressed && !wasShortcutPreviouslyPressed {
             return .pressed
         }
 
-        if shortcutEventType == .keyUp
-            && keyCode == pushToTalkKeyCode
-            && wasShortcutPreviouslyPressed {
+        if !isShortcutCurrentlyPressed && wasShortcutPreviouslyPressed {
             return .released
         }
 

@@ -3,7 +3,8 @@
 //  leanring-buddy
 //
 //  Parses the "action tags" a model is allowed to put at the end of its reply —
-//  [POINT:…], [CLICK:…], [SCROLL:…], [TYPE:…], [PRESS:…], [OPEN:…], [AX_TREE].
+//  [POINT:…], [CLICK:…], [SCROLL:…], [TYPE:…], [SELECT:…], [PRESS:…], [OPEN:…],
+//  [WAIT:…], [AX_TREE].
 //
 //  Pointing lives in this file too, but it is deliberately kept out of the
 //  returned `actions` list. Pointing only moves the blue cursor; everything in
@@ -49,7 +50,19 @@ nonisolated enum CompanionAction: Sendable {
     case scroll(at: ModelReportedCoordinate, direction: ScrollDirection, amountInSteps: Int)
     case typeText(String)
     case pressKey(keyName: String, modifierNames: [String])
+    /// Select a stretch of text in the focused text area **by content**: from the
+    /// first occurrence of `startMarker` to the end of `endMarker` (or just the
+    /// `startMarker` occurrence when there is no end). Resolved against the text
+    /// area's real value through Accessibility, so it needs no coordinates at all —
+    /// which is the point: a model anchoring a range deletion on a clicked
+    /// position deletes one line too much whenever the click lands one line off.
+    case selectText(startMarker: String, endMarker: String?)
     case openApplication(named: String)
+    /// Do nothing for `seconds` — the pause the agent loop needs when the screen
+    /// is visibly mid-change (a page loading, a window animating in) and acting
+    /// on the next step now would act on a screen that has not settled yet.
+    /// Without it the model's only way to "wait" is to report the job finished.
+    case wait(seconds: Int)
     /// Ask for a fresh read of the frontmost app's accessibility tree. The result
     /// arrives on the *next* turn, which is what makes a multi-step action
     /// possible: look at the interface, then act on what is really there.
@@ -84,9 +97,11 @@ nonisolated enum ActionTagParser {
         #"\[SCROLL:(\d+)\s*,\s*(\d+):(up|down):(\d+)(?::([^\]:\s][^\]:]*?))?(?::screen(\d+))?\]"#
 
     private static let typingPattern = #"\[TYPE:([^\]]*)\]"#
+    private static let selectingPattern = #"\[SELECT:([^\]]+)\]"#
     private static let pressingPattern = #"\[PRESS:([^\]]+)\]"#
     private static let openingPattern = #"\[OPEN:([^\]]+)\]"#
     private static let accessibilityTreePattern = #"\[AX_TREE\]"#
+    private static let waitingPattern = #"\[WAIT:([^\]]+)\]"#
 
     // MARK: - Parsing
 
@@ -177,6 +192,41 @@ nonisolated enum ActionTagParser {
             actions.append(.typeText(textToType))
         }
 
+        forEachMatch(in: responseText, pattern: selectingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let selectionDescription = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespaces), !selectionDescription.isEmpty else { return }
+
+            // The separator is split ONCE, at its first occurrence: the start
+            // marker therefore cannot contain ">>>", but the end marker may.
+            let parts: [String]
+            if let separatorRange = selectionDescription.range(of: ">>>") {
+                parts = [
+                    String(selectionDescription[..<separatorRange.lowerBound]),
+                    String(selectionDescription[separatorRange.upperBound...])
+                ]
+            } else {
+                parts = [selectionDescription]
+            }
+
+            let startMarker = parts[0]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\r\n", with: "\n")
+                .replacingOccurrences(of: "\\n", with: "\n")
+            guard !startMarker.isEmpty else { return }
+            let endMarker = parts.count > 1
+                ? parts[1]
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .replacingOccurrences(of: "\r\n", with: "\n")
+                    .replacingOccurrences(of: "\\n", with: "\n")
+                : nil
+
+            actions.append(.selectText(
+                startMarker: startMarker,
+                endMarker: (endMarker?.isEmpty == false) ? endMarker : nil
+            ))
+        }
+
         forEachMatch(in: responseText, pattern: pressingPattern) { match, tagRange in
             guard claimTagRange(tagRange) else { return }
             guard let keyDescription = capture(1, of: match, in: responseText) else { return }
@@ -195,6 +245,25 @@ nonisolated enum ActionTagParser {
         forEachMatch(in: responseText, pattern: accessibilityTreePattern) { _, tagRange in
             guard claimTagRange(tagRange) else { return }
             actions.append(.readAccessibilityTree)
+        }
+
+        forEachMatch(in: responseText, pattern: waitingPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            // The seconds are clamped rather than rejected: a model that writes
+            // [WAIT:30] is asking for a pause, and refusing it silently would
+            // leave the reply looking like it succeeded while nothing waited.
+            // The text lands in a local first: chaining the conversion straight
+            // onto the optional-capture call makes the overload resolution pick
+            // the wrong flatMap, and this reads better anyway.
+            let secondsText = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: "s", with: "")
+                .replacingOccurrences(of: "秒", with: "")
+            guard let requestedSeconds = secondsText.flatMap({ Double($0) }) else {
+                return
+            }
+            let clampedSeconds = max(1, min(10, requestedSeconds.rounded()))
+            actions.append(.wait(seconds: Int(clampedSeconds)))
         }
 
         return ActionParseResult(

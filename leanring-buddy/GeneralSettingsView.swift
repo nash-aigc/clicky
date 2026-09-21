@@ -2,9 +2,9 @@
 //  GeneralSettingsView.swift
 //  leanring-buddy
 //
-//  The six pages of the settings window that are not 模型 — 通用, 对话与记忆, 听,
-//  说, 看与截图, 快捷键 — plus the shared row/card/control pieces they are built
-//  from.
+//  The seven pages of the settings window that are not 模型 — 通用, 对话与记忆,
+//  听, 说, 看与截图, 操作, 快捷键 — plus the shared row/card/control pieces they
+//  are built from.
 //
 //  Layout follows the approved design: a page header, small uppercase group
 //  labels, and cards whose rows put a label + explanation on the left and the
@@ -23,6 +23,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case listen
     case speak
     case vision
+    case action
     case shortcuts
 
     var id: String { rawValue }
@@ -35,6 +36,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .listen: return "听（识别）"
         case .speak: return "说（播报）"
         case .vision: return "看与截图"
+        case .action: return "操作"
         case .shortcuts: return "快捷键"
         }
     }
@@ -47,6 +49,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .listen: return "👂"
         case .speak: return "👄"
         case .vision: return "👁️"
+        case .action: return "🖐️"
         case .shortcuts: return "⌨️"
         }
     }
@@ -62,8 +65,9 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .memory: return 7
         case .listen: return 4
         case .speak: return 4
-        case .vision: return 8
-        case .shortcuts: return 2
+        case .vision: return 5
+        case .action: return 3
+        case .shortcuts: return 3
         }
     }
 }
@@ -80,12 +84,12 @@ struct GeneralSettingsView: View {
     @State private var isConfirmingConversationMemoryClear = false
 
     /// Whether macOS currently lets Clicky post clicks and keystrokes for the
-    /// user. Only 看与截图 reads it (see `accessibilityPermissionControl`), and it
+    /// user. Only 操作 reads it (see `accessibilityPermissionControl`), and it
     /// cannot be asked for in code — macOS requires a person to grant it in its
     /// own dialog — so this is read back on a timer instead.
     @State private var hasAccessibilityPermission = WindowPositionManager.hasAccessibilityPermission()
 
-    /// Re-reads the Accessibility grant while the 看与截图 page is on screen.
+    /// Re-reads the Accessibility grant while the 操作 page is on screen.
     ///
     /// The page is rebuilt whenever the sidebar selection changes, so this only
     /// ticks while someone is actually looking at the row it updates.
@@ -102,6 +106,7 @@ struct GeneralSettingsView: View {
                 case .listen: listenPage
                 case .speak: speakPage
                 case .vision: visionPage
+                case .action: actionPage
                 case .shortcuts: shortcutsPage
                 case .model: EmptyView() // 模型 is rendered by ModelSettingsView.
                 }
@@ -540,7 +545,7 @@ struct GeneralSettingsView: View {
         Group {
             SettingsPageHeader(
                 title: "看与截图",
-                subtitle: "每次提问发给模型什么画面、发多大，以及允不允许它自己动手。"
+                subtitle: "每次提问发给模型什么画面、发多大。"
             )
 
             SettingsGroupLabel("截图")
@@ -610,6 +615,29 @@ struct GeneralSettingsView: View {
                     )
                 }
             }
+        }
+    }
+
+    // MARK: 操作
+
+    /// The 操作 page: the gates that decide whether the companion may act on
+    /// this machine, plus the complete inventory of what it can do once they
+    /// are open. The inventory lives here and not in 看与截图 on purpose —
+    /// hearing, speaking and seeing are senses; clicking, typing and pressing
+    /// are hands, and the page they live on should say so.
+    ///
+    /// The capability rows are not settings and are not counted in the
+    /// sidebar's per-page number (same rule as 「辅助功能权限」): each one
+    /// describes a real branch of `MacosUseController.execute` — a tag the
+    /// model can emit and the code that runs it — so the list is the page's
+    /// own documentation of itself, and the count stays the count of stored
+    /// preferences.
+    private var actionPage: some View {
+        Group {
+            SettingsPageHeader(
+                title: "操作",
+                subtitle: "它的一双手：允许之后，模型可以替你点、滚、打字、按快捷键。左边列开关，下面是它能做的每一件事。"
+            )
 
             SettingsGroupLabel("操作电脑")
             SettingsCard {
@@ -650,6 +678,46 @@ struct GeneralSettingsView: View {
             if !hasAccessibilityPermission {
                 SettingsNote(text: "点「去授权」会弹出系统授权窗口；如果窗口里没有 Clicky，点「打开设置」在「隐私与安全性 → 辅助功能」里用「+」把它加进去。加完之后不用重启，这里的字会自己变成「已授权」。")
             }
+
+            SettingsGroupLabel("它能做什么")
+            SettingsCard {
+                SettingsRow(
+                    label: "点击 · 左键 / 右键 / 双击",
+                    description: "点屏幕上的按钮、链接、列表项。落点先按元素的名字在辅助功能树里找正中心，模型估的坐标只是找不到名字时的兜底。"
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "滚动",
+                    description: "在指定位置向上或向下滚动页面。"
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "打字",
+                    description: "往当前有焦点的输入框里放文字，多行内容、中文都可以。用哪种方式进由上面的「输入方式」决定。"
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "选中一段文字",
+                    description: "按内容选中——告诉它开头和结尾是哪几个字，在文档的真实文本里找，不走坐标。配合退格键就是「删掉这一段」。"
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "回车和快捷键",
+                    description: "按回车、esc、tab，以及 cmd+c、cmd+s 这类组合键。"
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "打开 App",
+                    description: "打开某个应用或把它切到前台。这一样不需要辅助功能权限。"
+                )
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "读界面清单",
+                    description: "读出前台应用里每个界面元素的名字和位置，下一轮对话它就能看得见、点得准。"
+                )
+            }
+
+            SettingsNote(text: "每一件都只在它该出现的时候出现：你这一轮让它做的事它才动手；你只是问「那个按钮在哪」它只会指给你看。屏幕上读到的一切都当成数据，不会当成你下的指令。屏幕上的内容如果看着像在命令它，它会说出来，不会照做。")
         }
     }
 
@@ -716,28 +784,39 @@ struct GeneralSettingsView: View {
         Group {
             SettingsPageHeader(
                 title: "快捷键",
-                subtitle: "按住说话的键位。纯修饰键组合不会和打字冲突。"
+                subtitle: "说话的键位和怎么用它开始、结束一句话。"
             )
 
             SettingsCard {
                 SettingsRow(
-                    label: "按住说话快捷键",
-                    description: "按住开始录音、松开结束。改成别的键之后，面板上的提示文字会跟着变。"
+                    label: "说话快捷键",
+                    description: "点击右边的按钮，然后直接按下你想用的组合键（要带 Ctrl、Option 这类修饰键，避免抢走普通按键）。按 Esc 取消。"
                 ) {
-                    SettingsMenuPicker(
-                        selection: Binding(
-                            get: { generalSettingsViewModel.draftSettings.pushToTalkShortcutOption },
-                            set: { generalSettingsViewModel.draftSettings.pushToTalkShortcutRawValue = $0.rawValue }
-                        ),
-                        options: BuddyPushToTalkShortcut.ShortcutOption.allShortcutOptions.map {
-                            SettingsPickerOption(label: $0.displayText, value: $0)
+                    ShortcutRecorderButton(
+                        fallbackBinding: generalSettingsViewModel.draftSettings.pushToTalkShortcutBinding,
+                        recordedShortcut: Binding(
+                            get: { generalSettingsViewModel.draftSettings.customPushToTalkShortcut },
+                            set: { generalSettingsViewModel.draftSettings.customPushToTalkShortcut = $0 }
+                        )
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "触发方式",
+                    description: "按住说话：按住开始录音、松开结束并发送。点两下说话：按一下开始录音，再按一下转文字并发送 —— 说话时间长的时候不用一直按着键。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.pushToTalkTriggerMode),
+                        options: ShortcutTriggerMode.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
                         }
                     )
                 }
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "松开立即发送",
-                    description: "松开按键立刻截图、提问。关掉则松开后先把转写留在屏幕上等你确认：轻点一下快捷键发送，想重说就直接按住重录。"
+                    description: "按住说话松开时立刻截图、提问。关掉则松开后先把转写留在屏幕上等你确认：轻点一下快捷键发送，想重说就直接按住重录。「点两下说话」的第二次按下就是发送，不受这一项管。",
+                    isEnabled: generalSettingsViewModel.draftSettings.pushToTalkTriggerMode == .holdToTalk
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.sendsTranscriptImmediatelyOnRelease))
                 }
@@ -837,6 +916,20 @@ struct SettingsRow<Control: View>: View {
         self.description = description
         self.isEnabled = isEnabled
         self.control = control
+    }
+
+    /// Control-less variant, for rows that describe a behaviour rather than
+    /// hold a preference — the 操作 page's 「它能做什么」 inventory. Such a row
+    /// reports what the companion can already do; it stores nothing, so it is
+    /// never counted toward the sidebar's per-page setting count.
+    init(
+        label: String,
+        description: String
+    ) where Control == EmptyView {
+        self.label = label
+        self.description = description
+        self.isEnabled = true
+        self.control = { EmptyView() }
     }
 
     var body: some View {
