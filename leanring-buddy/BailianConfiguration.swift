@@ -63,16 +63,20 @@ enum BailianConfiguration {
         static let textToSpeech = "qwen-audio-3.1-tts-flash"
     }
 
-    /// Voice used for spoken replies. `yuxiaoyun_v3.1` (于小云) is the
-    /// Qwen-Audio-TTS 3.1 voice Alibaba describes as 元气、亲切、自然 — a warm,
-    /// natural Mandarin female voice, and the closest match to the `Cherry` voice
-    /// used before.
+    /// Voice used for spoken replies.
     ///
-    /// Voice names are model-family specific: the Qwen-TTS names (`Cherry`,
-    /// `Serena`, …) are rejected by this model with `Engine error [411]`. See the
-    /// Qwen-Audio-TTS voice list for alternatives such as `yeqinghe_v3.1` or
-    /// `yezhiqing_v3.1`.
-    static let textToSpeechVoice = "yuxiaoyun_v3.1"
+    /// This is a **cloned** voice from the Bailian voice-enrollment service
+    /// (赵今麦's cloned voice). Cloned voice IDs carry the driving model's name
+    /// as their prefix (`qwen-audio-3.1-tts-flash-…`), so this ID only works
+    /// with the matching TTS model — swap the model and the voice must move
+    /// with it.
+    ///
+    /// To use a stock voice instead, pick from the Qwen-Audio-TTS 3.1 voice
+    /// list, e.g. `yuxiaoyun_v3.1` (于小云, 元气亲切女声) or `yeqinghe_v3.1`
+    /// (叶清禾, 亲切温柔). Stock names are model-family specific too: the
+    /// Qwen-TTS names (`Cherry`, `Serena`, …) are rejected by this model with
+    /// `Engine error [411]`.
+    static let textToSpeechVoice = "qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060"
 
     /// Output format and sample rate for synthesized audio. These belong to the
     /// Qwen-Audio-TTS schema — Qwen-TTS has no equivalent fields, and rejects

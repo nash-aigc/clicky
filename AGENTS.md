@@ -16,7 +16,7 @@ This fork talks to Alibaba Cloud Bailian (Model Studio) directly. The upstream C
 - **Pattern**: MVVM with `@StateObject` / `@Published` state management
 - **AI Chat**: Qwen VL (`qwen3-vl-plus` default, `qwen3-vl-flash` optional) via the workspace-scoped Bailian MaaS endpoint with SSE streaming
 - **Speech-to-Text**: Bailian real-time streaming (`qwen3-asr-flash-realtime` model) over websocket, with OpenAI and Apple Speech as fallbacks
-- **Text-to-Speech**: Bailian (`qwen-audio-3.1-tts-flash` model, `yuxiaoyun_v3.1` voice) via the Qwen-Audio-TTS `SpeechSynthesizer` endpoint
+- **Text-to-Speech**: Bailian (`qwen-audio-3.1-tts-flash` model, cloned voice 赵今麦 via voice-enrollment) via the Qwen-Audio-TTS `SpeechSynthesizer` endpoint
 - **Screen Capture**: ScreenCaptureKit (macOS 14.2+), multi-monitor support
 - **Voice Input**: Push-to-talk via `AVAudioEngine` + pluggable transcription-provider layer. System-wide keyboard shortcut via listen-only CGEvent tap.
 - **Element Pointing**: The model embeds `[POINT:x,y:label:screenN]` tags in responses, where `x` and `y` are on a **normalized 0–1000 grid**, not screenshot pixels. The overlay converts them to pixels, maps them to the correct monitor, and animates the blue cursor along a bezier arc to the target.
