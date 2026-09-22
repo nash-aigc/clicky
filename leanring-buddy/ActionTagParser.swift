@@ -42,6 +42,52 @@ nonisolated enum ScrollDirection: String, Sendable {
     case down
 }
 
+/// A green mark the model wants drawn over the user's screen with a
+/// `[SHAPE:…]` tag — a ring around the thing it means, an arrow showing where
+/// something goes, a curve tracing a flow. Purely visual: unlike
+/// `CompanionAction`, none of these touch the machine, which is why they ride
+/// in `ActionParseResult` beside `pointingRequest` rather than in `actions`.
+nonisolated enum AnnotationShapeKind: String, Sendable {
+    /// A ring around something: the first point is its centre, the second a
+    /// point just past its edge — the distance between the two is the radius.
+    case circle
+    /// From the first point to the second, with an arrowhead at the second.
+    case arrow
+    /// A plain segment between two points.
+    case line
+    /// A smooth curve through three or more points.
+    case curve
+    /// A closed outline through three or more points.
+    case polygon
+
+    /// How many points each kind needs to be drawable. Fewer is a malformed
+    /// tag rather than a draw request — a ring around nothing has no meaning.
+    var minimumPointCount: Int {
+        switch self {
+        case .circle, .arrow, .line:
+            return 2
+        case .curve, .polygon:
+            return 3
+        }
+    }
+}
+
+nonisolated struct AnnotationShapeRequest: Sendable {
+    let kind: AnnotationShapeKind
+    /// The shape's points on the model's **0–1000 normalized grid**, in the
+    /// order the model wrote them. Same grid as `[POINT:…]`, same conversion
+    /// machinery — never screenshot pixels, which is what a raw value looks
+    /// like and fails silently as.
+    let points: [CGPoint]
+    /// Short text the drawing is about ("export", "付款流程"), drawn in a small
+    /// capsule beside the shape, or nil.
+    let label: String?
+    /// Which screen the shape belongs to, 1-based as the model numbers them,
+    /// or nil to mean "whichever screen the mouse is on" — same rule as
+    /// `[POINT:…]`.
+    let screenNumber: Int?
+}
+
 /// Something the companion can do to the user's machine.
 nonisolated enum CompanionAction: Sendable {
     case click(at: ModelReportedCoordinate)
@@ -77,6 +123,21 @@ nonisolated struct ActionParseResult: Sendable {
     let pointingRequest: ModelReportedCoordinate?
     /// Every action tag, in the order the model wrote them.
     let actions: [CompanionAction]
+    /// Every [SHAPE:…] tag, in the order the model wrote them — drawings for
+    /// the user's eyes only, never executed and never fed back as actions.
+    let shapeRequests: [AnnotationShapeRequest]
+
+    init(
+        spokenText: String,
+        pointingRequest: ModelReportedCoordinate?,
+        actions: [CompanionAction],
+        shapeRequests: [AnnotationShapeRequest] = []
+    ) {
+        self.spokenText = spokenText
+        self.pointingRequest = pointingRequest
+        self.actions = actions
+        self.shapeRequests = shapeRequests
+    }
 }
 
 nonisolated enum ActionTagParser {
@@ -103,6 +164,13 @@ nonisolated enum ActionTagParser {
     private static let accessibilityTreePattern = #"\[AX_TREE\]"#
     private static let waitingPattern = #"\[WAIT:([^\]]+)\]"#
 
+    /// `[SHAPE:circle:500,300;560,300:a label:screen2]` — kind, then two or more
+    /// ";"-separated points, then an optional label and an optional screen.
+    ///
+    /// Capture groups: 1 = kind, 2 = everything after the kind's colon (points,
+    /// label, screen — split further below).
+    private static let shapePattern = #"\[SHAPE:\s*([^\]]+)\]"#
+
     // MARK: - Parsing
 
     /// Pulls every action tag out of a model reply, and returns what is left to
@@ -111,6 +179,7 @@ nonisolated enum ActionTagParser {
         var claimedRanges: [Range<String.Index>] = []
         var pointingRequest: ModelReportedCoordinate?
         var actions: [CompanionAction] = []
+        var shapeRequests: [AnnotationShapeRequest] = []
 
         // Tags are removed from the spoken text afterwards, so a tag nested inside
         // another tag's text would corrupt the result once both were cut. Letting
@@ -266,10 +335,87 @@ nonisolated enum ActionTagParser {
             actions.append(.wait(seconds: Int(clampedSeconds)))
         }
 
+        forEachMatch(in: responseText, pattern: shapePattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            // The pattern swallows *any* `[SHAPE:…]` tag — an unknown kind, a
+            // malformed point list — and claims it above, so garbage never
+            // reaches the spoken text. Only a fully valid request survives to
+            // the drawing stage.
+            guard let shapeBody = capture(1, of: match, in: responseText) else {
+                return
+            }
+            let bodyParts = shapeBody.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+            guard let kindName = bodyParts.first.map(String.init)?
+                    .trimmingCharacters(in: .whitespaces)
+                    .lowercased(),
+                  let kind = AnnotationShapeKind(rawValue: kindName),
+                  bodyParts.count > 1 else {
+                return
+            }
+            guard let shapeRequest = parseShapeBody(String(bodyParts[1]), kind: kind) else {
+                return
+            }
+            shapeRequests.append(shapeRequest)
+        }
+
         return ActionParseResult(
             spokenText: spokenTextByRemoving(claimedRanges, from: responseText),
             pointingRequest: pointingRequest,
-            actions: actions
+            actions: actions,
+            shapeRequests: shapeRequests
+        )
+    }
+
+    /// Splits a `[SHAPE:…]` tag's body — everything after the kind's colon —
+    /// into its points, label and screen number.
+    ///
+    /// The body reads `"x1,y1;x2,y2[;…][:label][:screenN]"`. The points are
+    /// split off at the body's first `":"` so a label containing a colon still
+    /// parses, and a trailing `:screenN` is only treated as a screen number when
+    /// it actually says "screen" — otherwise it is part of the label.
+    private static func parseShapeBody(
+        _ shapeBody: String,
+        kind: AnnotationShapeKind
+    ) -> AnnotationShapeRequest? {
+        let bodyParts = shapeBody.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        guard let pointsPart = bodyParts.first else { return nil }
+        let trailingPart = bodyParts.count > 1 ? String(bodyParts[1]) : nil
+
+        var labelText: String?
+        var screenNumber: Int?
+        if let trailingPart {
+            if let screenMatch = trailingPart.range(of: #"(?:^|:)screen(\d+)\s*$"#, options: .regularExpression) {
+                let screenText = trailingPart[screenMatch]
+                    .replacingOccurrences(of: "screen", with: "")
+                    .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+                screenNumber = Int(screenText)
+                let labelPart = String(trailingPart[..<screenMatch.lowerBound])
+                let trimmedLabel = labelPart.trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+                labelText = trimmedLabel.isEmpty ? nil : trimmedLabel
+            } else {
+                labelText = trailingPart.isEmpty ? nil : trailingPart
+            }
+        }
+
+        let parsedPoints: [CGPoint] = pointsPart
+            .split(separator: ";")
+            .compactMap { pointText in
+                let coordinates = pointText.split(separator: ",")
+                guard coordinates.count == 2,
+                      let x = Double(coordinates[0].trimmingCharacters(in: .whitespaces)),
+                      let y = Double(coordinates[1].trimmingCharacters(in: .whitespaces)) else {
+                    return nil
+                }
+                return CGPoint(x: x, y: y)
+            }
+
+        guard parsedPoints.count >= kind.minimumPointCount else { return nil }
+
+        return AnnotationShapeRequest(
+            kind: kind,
+            points: parsedPoints,
+            label: labelText,
+            screenNumber: screenNumber
         )
     }
 

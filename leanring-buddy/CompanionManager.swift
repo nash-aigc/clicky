@@ -64,6 +64,11 @@ final class CompanionManager: ObservableObject {
     let buddyDictationManager = BuddyDictationManager()
     let globalPushToTalkShortcutMonitor = GlobalPushToTalkShortcutMonitor()
     let overlayWindowManager = OverlayWindowManager()
+
+    /// Draws the green `[SHAPE:…]` marks over the user's screen. Visual only —
+    /// the marks never touch the machine and are cleared before every fresh
+    /// screenshot so the model never sees its own drawings.
+    let screenAnnotationManager = ScreenAnnotationManager()
     // Response text is now displayed inline on the cursor overlay via
     // streamingResponseText, so no separate response overlay manager is needed.
 
@@ -777,6 +782,9 @@ final class CompanionManager: ObservableObject {
             // mid-stream and wipe this answer's opening words) goes with it.
             clearAnswerBubble()
             clearDetectedElementLocation()
+            // A new question owns the screen too: the previous answer's green
+            // marks are yesterday's drawing.
+            screenAnnotationManager.clear()
 
             // Dismiss the onboarding prompt if it's showing
             if showOnboardingPrompt {
@@ -958,6 +966,20 @@ final class CompanionManager: ObservableObject {
     - user asks what html is: "html stands for hypertext markup language, it's basically the skeleton of every web page. curious how it connects to the css you're looking at? [POINT:none]"
     - user asks how to commit in xcode: "see that source control menu up top? click that and hit commit, or you can use command option c as a shortcut. [POINT:220,15:source control]"
     - element is on screen 2 (not where cursor is): "that's over on your other monitor — see the terminal window? [POINT:310,360:terminal:screen2]"
+
+    drawing on screen:
+    besides the flying cursor, you can draw green marks directly over the user's screen — rings, arrows, lines, curves and outlines, with a small text label on each. use them when drawing would genuinely make the answer clearer: circling the button you're talking about, showing where a window should be dragged, tracing a route through a settings pane. do not draw for general knowledge questions, or when pointing alone already says it.
+
+    format: [SHAPE:kind:x1,y1;x2,y2;...:label] — the same normalized 0-1000 grid as [POINT:], points separated by semicolons, multiple points tracing the shape. append :screenN like [POINT:] does when the shape is on a different screen. the label is short, 1-4 words, written in the element's own words.
+
+    kinds:
+    - circle: TWO points. first = the circle's center, second = a point just past its edge (the distance between them is the radius). circle the thing you mean, leaving a little margin around it.
+    - arrow: TWO points. draws a line with an arrowhead at the second point — use for "this goes there" or "look from here to here".
+    - line: TWO points. a plain line, no arrowhead.
+    - curve: THREE or more points. a smooth line passing through them, for tracing a flow or a route.
+    - polygon: THREE or more points. a closed outline around a region, for framing a whole window or panel.
+
+    rules: at most TWO shapes in one reply, and only when drawing truly helps. shapes are drawn for the user's eyes — they never touch anything and disappear after about ten seconds. example: "your wifi settings live in control center — it's this one up here. [SHAPE:circle:912,35;912,80:control center]"
 
     operating the computer:
     you can act on the machine, not only talk about it. these tags do things:
@@ -1216,6 +1238,13 @@ final class CompanionManager: ObservableObject {
 
                     // Fresh capture every step: the point of the loop is to see what
                     // the previous step's actions actually did to the screen.
+                    //
+                    // The marks from the previous reply are faded out first, on
+                    // purpose: they were drawn for the user, and leaving them up
+                    // would put them in this capture — the model would then see its
+                    // own green rings in the screenshot and re-draw or describe
+                    // them. The fade is cosmetic and does not wait to finish.
+                    screenAnnotationManager.clear()
                     let screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG(
                         maximumDimension: appSettings.screenshotMaxDimension == 0
                             ? nil
@@ -1347,6 +1376,23 @@ final class CompanionManager: ObservableObject {
                         print("🎯 Element pointing: normalized (\(Int(pointingRequest.normalizedCoordinate.x)), \(Int(pointingRequest.normalizedCoordinate.y))) → \"\(pointingRequest.elementLabel ?? "element")\"")
                     } else {
                         print("🎯 Element pointing: \(parseResult.pointingRequest?.elementLabel ?? "no element")")
+                    }
+
+                    // Draw the reply's green shape marks, if it asked for any. Gated by
+                    // the same setting as pointing — they are both "show the user where
+                    // I mean on screen" visuals, and a user who turned that off wants
+                    // neither. Shapes are dropped, not prompted about, mirroring the
+                    // pointing decision above. The 4-shape cap keeps a runaway reply
+                    // from painting the whole screen; the prompt asks for at most two.
+                    if appSettings.pointsAtReferencedElements, !parseResult.shapeRequests.isEmpty {
+                        let annotationMarks = resolvedAnnotationMarks(
+                            from: Array(parseResult.shapeRequests.prefix(Self.maximumAnnotationShapesPerReply)),
+                            among: screenCaptures
+                        )
+                        screenAnnotationManager.show(annotationMarks)
+                        if !annotationMarks.isEmpty {
+                            print("🟢 Screen annotations: \(annotationMarks.count) mark(s) shown")
+                        }
                     }
 
                     // Perform whatever the model asked the companion to do, before the
@@ -1573,6 +1619,9 @@ final class CompanionManager: ObservableObject {
         bailianTTSClient.stopPlayback()
         clearAnswerBubble()
         clearDetectedElementLocation()
+        // The marks belong to the reply that just got cancelled — leaving them
+        // up would show a drawing for an answer the user stopped.
+        screenAnnotationManager.clear()
         voiceState = .idle
         // The user just said "stop" — in the transient presence modes the
         // companion leaving is part of the stop, not something to wait for.
@@ -1801,6 +1850,59 @@ final class CompanionManager: ObservableObject {
     /// Forgets the conversation, in memory and on disk.
     func clearConversationMemory() {
         ConversationHistoryStore.clear()
+    }
+
+    // MARK: - Screen Annotation Resolution
+
+    /// Upper bound on how many `[SHAPE:…]` marks one reply may draw. The prompt
+    /// asks for at most two; the cap exists so a runaway reply cannot paint the
+    /// whole screen.
+    static let maximumAnnotationShapesPerReply = 4
+
+    /// Converts the model's `[SHAPE:…]` requests into drawable marks in real
+    /// screen coordinates.
+    ///
+    /// Each shape is anchored to the capture its first point names — the same
+    /// `screenCapture(for:among:)` the acting path uses, so `:screenN` and the
+    /// cursor's screen mean the same thing here as they do for a click. The
+    /// points then go through the shared `displayLocalPoint` conversion, which
+    /// yields display-local y-down points — exactly the space the annotation
+    /// window's SwiftUI content draws in, so no second mapping is needed.
+    ///
+    /// Deliberately no accessibility element lookup, unlike a click: a ring
+    /// drawn a little large around its target is still a ring around it, while
+    /// a click one key away is a wrong click.
+    private func resolvedAnnotationMarks(
+        from shapeRequests: [AnnotationShapeRequest],
+        among screenCaptures: [CompanionScreenCapture]
+    ) -> [ScreenAnnotationMark] {
+        var marks: [ScreenAnnotationMark] = []
+        for shapeRequest in shapeRequests {
+            let anchorCoordinate = ModelReportedCoordinate(
+                normalizedCoordinate: shapeRequest.points.first ?? CGPoint(x: 500, y: 500),
+                elementLabel: shapeRequest.label,
+                screenNumber: shapeRequest.screenNumber
+            )
+            // A shape whose anchor names a screen the model was not shown is
+            // dropped rather than guessed onto the cursor's screen — a mark on
+            // the wrong display is worse than no mark.
+            guard let capture = MacosUseController.screenCapture(for: anchorCoordinate, among: screenCaptures) else {
+                continue
+            }
+            let displayPoints = shapeRequest.points.map { normalizedPoint in
+                MacosUseController.displayLocalPoint(
+                    fromNormalizedPoint: normalizedPoint,
+                    in: capture
+                )
+            }
+            marks.append(ScreenAnnotationMark(
+                kind: shapeRequest.kind,
+                label: shapeRequest.label,
+                points: displayPoints,
+                displayFrame: capture.displayFrame
+            ))
+        }
+        return marks
     }
 
     // MARK: - Point Tag Parsing
