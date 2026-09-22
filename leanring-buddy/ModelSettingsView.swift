@@ -511,16 +511,7 @@ struct ModelSettingsView: View {
                     Button("保存") {
                         modelSettingsViewModel.save()
                     }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(DS.Colors.textOnAccent)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                            .fill(modelSettingsViewModel.isDirty ? DS.Colors.accent : DS.Colors.accent.opacity(0.4))
-                    )
-                    .pointerCursor()
+                    .buttonStyle(DSPillButtonStyle(isEnabled: modelSettingsViewModel.isDirty))
                     .disabled(!modelSettingsViewModel.isDirty)
 
                     Button("关闭") {

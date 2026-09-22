@@ -41,33 +41,18 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         }
     }
 
-    var sidebarEmoji: String {
+    /// The SF Symbol shown beside each sidebar title. SF Symbols rather than
+    /// emoji so the icons take the text colour and read as one family.
+    var sidebarSymbol: String {
         switch self {
-        case .general: return "⚙️"
-        case .model: return "🧠"
-        case .memory: return "💬"
-        case .listen: return "👂"
-        case .speak: return "👄"
-        case .vision: return "👁️"
-        case .action: return "🖐️"
-        case .shortcuts: return "⌨️"
-        }
-    }
-
-    /// The count shown on the right of the sidebar row — how many settings that
-    /// page holds. Read from the design so the sidebar stays honest when a
-    /// setting is added; 模型 is not counted here because its fields live in the
-    /// model configuration rather than in `AppSettings`.
-    var settingCount: Int? {
-        switch self {
-        case .general: return 9
-        case .model: return nil
-        case .memory: return 7
-        case .listen: return 4
-        case .speak: return 4
-        case .vision: return 6
-        case .action: return 3
-        case .shortcuts: return 3
+        case .general: return "gearshape.fill"
+        case .model: return "cpu"
+        case .memory: return "bubble.left.fill"
+        case .listen: return "mic.fill"
+        case .speak: return "speaker.wave.2.fill"
+        case .vision: return "eye.fill"
+        case .action: return "cursorarrow"
+        case .shortcuts: return "keyboard"
         }
     }
 }
@@ -141,6 +126,23 @@ struct GeneralSettingsView: View {
                     description: "首次运行弹权限引导；打开这一项后每次启动都会弹出面板。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.opensPanelOnLaunch))
+                }
+            }
+
+            SettingsGroupLabel("刘海屏")
+            SettingsCard {
+                SettingsRow(
+                    label: "刘海屏入口",
+                    description: "在带刘海的 Mac 上把入口放进屏幕顶部的刘海里，点开就是主面板；菜单栏面板保留不动。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.enablesNotchPresence))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "刘海屏音效",
+                    description: "对话开始、发送、回答到达这些节点播一声短音效。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.playsNotchSoundEffects))
                 }
             }
 
@@ -871,7 +873,7 @@ struct SettingsGroupLabel: View {
     var body: some View {
         Text(text)
             .font(.system(size: 11, weight: .semibold))
-            .tracking(0.8)
+            .tracking(1.2)
             .foregroundColor(DS.Colors.textTertiary)
             .padding(.top, 22)
             .padding(.bottom, 8)
@@ -888,10 +890,10 @@ struct SettingsCard<Content: View>: View {
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.Colors.surface1)
-        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.large, style: .continuous))
+        .background(DS.Colors.surface2)
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.extraLarge, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: DS.CornerRadius.large, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.CornerRadius.extraLarge, style: .continuous)
                 .stroke(DS.Colors.borderSubtle, lineWidth: 1)
         )
     }
@@ -899,11 +901,16 @@ struct SettingsCard<Content: View>: View {
 
 /// The hairline between two rows of the same card. A row of its own rather than
 /// a `Divider` inside the row, so the line spans the card's full width.
+/// `leadingInset` shortens the line to start where the row's text starts —
+/// the indented divider look the restyle uses between rows of a card.
 struct SettingsCardRowDivider: View {
+    var leadingInset: CGFloat = 0
+
     var body: some View {
         Rectangle()
             .fill(DS.Colors.borderSubtle)
             .frame(height: 1)
+            .padding(.leading, leadingInset)
     }
 }
 
@@ -1065,7 +1072,9 @@ struct SettingsSwitch: View {
         Toggle("", isOn: $isOn)
             .toggleStyle(.switch)
             .labelsHidden()
-            .tint(DS.Colors.success)
+            // 原版的开关是蓝色的——DS.Colors.success 的绿是上一版自己的
+            // 选择，参考截图里没有出现过。
+            .tint(Color(red: 0.30, green: 0.56, blue: 1.0))
             .controlSize(.small)
     }
 }
@@ -1082,7 +1091,7 @@ struct SettingsSlider: View {
         HStack(spacing: 10) {
             Slider(value: $value, in: range, step: step)
                 .frame(width: 150)
-                .tint(DS.Colors.success)
+                .tint(Color(red: 0.30, green: 0.56, blue: 1.0))
 
             Text(valueLabel(value))
                 .font(.system(size: 12))

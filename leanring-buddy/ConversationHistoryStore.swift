@@ -49,10 +49,33 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     /// make every file written before it existed fail to decode (`开发经验/10-踩过的坑.md` E1).
     var recordedWithActionTags: Bool?
 
+    /// The agent loop's executed steps, one line each — what the conversation
+    /// view's 「N 条进度」 disclosure expands to (HeyClicky's progress
+    /// messages). `nil` on turns that ran no actions.
+    var progressSteps: [String]?
+
+    /// How long the turn took, in whole seconds, and when it finished — the
+    /// finished turn's footer line (HeyClicky's `CoworkTurnFooter`).
+    var turnDurationSeconds: Int?
+    var turnFinishedAt: Date?
+
+    /// True when the user stopped this turn mid-job. The conversation view
+    /// renders an 「已被用户打断」 chip instead of a duration (HeyClicky's
+    /// `CoworkInterruptedChip` / "INTERRUPTED BY USER").
+    var wasInterrupted: Bool?
+
+    // Every field above this comment that postdates the file format is
+    // optional (`decodeIfPresent`-shaped) so files written before it existed
+    // still decode — the same E1 rule `recordedWithActionTags` follows.
+
     private enum CodingKeys: String, CodingKey {
         case userTranscript
         case assistantResponse
         case recordedWithActionTags
+        case progressSteps
+        case turnDurationSeconds
+        case turnFinishedAt
+        case wasInterrupted
     }
 }
 
@@ -223,5 +246,373 @@ nonisolated enum ConversationHistoryStore {
         }
 
         return decodedHistory
+    }
+}
+
+// MARK: - Multi-Session Storage
+
+/// One named conversation — a session in the notch panel's sidebar.
+///
+/// `entries` and `summary` carry exactly what the single-conversation
+/// `StoredConversationHistory` carried; a session is that shape plus an
+/// identity, a title and timestamps, which is what lets the sidebar list many
+/// of them and the pipeline keep addressing "the active one".
+nonisolated struct ConversationSession: Codable, Equatable, Identifiable {
+    var id: UUID
+    var title: String
+    var createdAt: Date
+    var updatedAt: Date
+
+    /// The running summary of this session's aged-out exchanges — the same
+    /// 「历史自动压缩」 output the flat store kept, now per session.
+    var summary: String
+
+    var entries: [ConversationHistoryEntry]
+}
+
+/// What is stored on disk for sessions: the list plus which one is live.
+nonisolated struct StoredConversationSessions: Codable, Equatable {
+    var sessions: [ConversationSession] = []
+
+    /// Optional on purpose: a hand-edited file without it still decodes, and
+    /// resolution falls back to the most recently updated session.
+    var activeSessionID: UUID?
+}
+
+/// Posted after every sessions mutation — create, delete, rename, switch,
+/// append, trim, clear — so live UI (the notch sidebar) and the pipeline's
+/// mirror in `CompanionManager` reload without a restart.
+nonisolated extension Notification.Name {
+    static let clickySessionsDidChange = Notification.Name("clickySessionsDidChange")
+}
+
+nonisolated enum ConversationSessionsStore {
+
+    /// `~/Library/Application Support/Clicky/ConversationSessions.json`.
+    static var sessionsFileURL: URL? {
+        guard let applicationSupportDirectory = try? FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        ) else {
+            return nil
+        }
+
+        return applicationSupportDirectory
+            .appendingPathComponent("Clicky", isDirectory: true)
+            .appendingPathComponent("ConversationSessions.json")
+    }
+
+    private static let sessionsLock = NSLock()
+    private static var cachedSessions: StoredConversationSessions?
+
+    /// Title given to a brand-new session until its first user message arrives,
+    /// and to the session the flat pre-sessions history migrates into.
+    static let defaultSessionTitle = "新会话"
+    static let migratedSessionTitle = "默认会话"
+
+    /// The whole sessions document, read from disk on first access.
+    ///
+    /// Same `nonisolated` + `NSLock` shape as `ConversationHistoryStore`, for the
+    /// same `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` reason: isolation here
+    /// has to be right by construction.
+    static func snapshot() -> StoredConversationSessions {
+        sessionsLock.lock()
+        if let cachedSessions {
+            sessionsLock.unlock()
+            return cachedSessions
+        }
+        sessionsLock.unlock()
+
+        let loadedSessions = loadFromDiskWithMigration()
+        sessionsLock.lock()
+        cachedSessions = loadedSessions
+        sessionsLock.unlock()
+        return loadedSessions
+    }
+
+    /// All sessions, oldest created first — sidebar display order.
+    static func allSessions() -> [ConversationSession] {
+        snapshot().sessions
+    }
+
+    /// The session the pipeline is currently recording into. A session always
+    /// exists — a store with none gets an empty default one — so the pipeline
+    /// never has to branch on "no active session".
+    static func activeSession() -> ConversationSession {
+        let storedSessions = snapshot()
+        if let activeSessionID = storedSessions.activeSessionID,
+           let matchingSession = storedSessions.sessions.first(where: { $0.id == activeSessionID }) {
+            return matchingSession
+        }
+        // Falls back to the most recently touched session when the id is absent
+        // or stale (a hand-edited file, or an id whose session was deleted).
+        let mostRecentSession = storedSessions.sessions.max { $0.updatedAt < $1.updatedAt }
+            ?? ConversationSession(id: UUID(), title: defaultSessionTitle, createdAt: Date(), updatedAt: Date(), summary: "", entries: [])
+        return mostRecentSession
+    }
+
+    /// Points the pipeline at another session. No-ops when the id is unknown,
+    /// so a stale sidebar cannot blank the live conversation.
+    static func setActiveSession(_ sessionID: UUID) {
+        mutate { storedSessions in
+            guard storedSessions.sessions.contains(where: { $0.id == sessionID }) else { return }
+            storedSessions.activeSessionID = sessionID
+        }
+    }
+
+    /// Creates an empty session and makes it active — what 「+ 新会话」 does.
+    static func createSession(title: String = defaultSessionTitle) -> ConversationSession {
+        let now = Date()
+        let newSession = ConversationSession(
+            id: UUID(),
+            title: title,
+            createdAt: now,
+            updatedAt: now,
+            summary: "",
+            entries: []
+        )
+        mutate { storedSessions in
+            storedSessions.sessions.append(newSession)
+            storedSessions.activeSessionID = newSession.id
+        }
+        return newSession
+    }
+
+    /// Deletes a session. Deleting the active one moves activity to the most
+    /// recently touched survivor, so the pipeline always has somewhere to write.
+    static func deleteSession(_ sessionID: UUID) {
+        mutate { storedSessions in
+            storedSessions.sessions.removeAll { $0.id == sessionID }
+            if storedSessions.activeSessionID == sessionID {
+                storedSessions.activeSessionID = nil
+            }
+        }
+    }
+
+    static func renameSession(_ sessionID: UUID, to newTitle: String) {
+        let trimmedTitle = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        mutate { storedSessions in
+            guard let index = storedSessions.sessions.firstIndex(where: { $0.id == sessionID }) else { return }
+            guard !trimmedTitle.isEmpty else { return }
+            storedSessions.sessions[index].title = trimmedTitle
+            storedSessions.sessions[index].updatedAt = Date()
+        }
+    }
+
+    /// Appends one exchange to the active session (or, when `targetSessionID`
+    /// is given, to that explicit session) and auto-titles a session that has
+    /// never been titled: the first user message, truncated, is the name a
+    /// sidebar can recognise — nobody names a conversation before saying
+    /// anything in it. A session deleted mid-response is recreated rather
+    /// than losing the turn.
+    ///
+    /// The explicit-session form is what the response pipeline uses: a turn
+    /// belongs to the session that was active when it started, so a session
+    /// switch made while the answer is still streaming must not land the
+    /// finished turn in the conversation the user just left.
+    static func appendEntry(_ entry: ConversationHistoryEntry, targetSessionID: UUID? = nil) {
+        mutate { storedSessions in
+            if storedSessions.sessions.isEmpty {
+                let now = Date()
+                storedSessions.sessions.append(
+                    ConversationSession(
+                        id: UUID(),
+                        title: defaultSessionTitle,
+                        createdAt: now,
+                        updatedAt: now,
+                        summary: "",
+                        entries: []
+                    )
+                )
+            }
+
+            let targetIndex: Int
+            if let targetSessionID,
+               let index = storedSessions.sessions.firstIndex(where: { $0.id == targetSessionID }) {
+                targetIndex = index
+            } else if let activeSessionID = storedSessions.activeSessionID,
+               let index = storedSessions.sessions.firstIndex(where: { $0.id == activeSessionID }) {
+                targetIndex = index
+            } else {
+                targetIndex = storedSessions.sessions.count - 1
+            }
+
+            if storedSessions.sessions[targetIndex].entries.isEmpty
+                && storedSessions.sessions[targetIndex].title == defaultSessionTitle {
+                storedSessions.sessions[targetIndex].title = String(entry.userTranscript.prefix(20))
+            }
+            storedSessions.sessions[targetIndex].entries.append(entry)
+            storedSessions.sessions[targetIndex].updatedAt = Date()
+        }
+    }
+
+    /// Replaces one session's entries and summary in one write — what
+    /// trimming and compression do together after each answer. The
+    /// explicit-session form pairs with `appendEntry(_:targetSessionID:)` so
+    /// a turn's whole write path stays inside the session it started in,
+    /// whatever the sidebar switched to mid-response.
+    static func replaceEntriesAndSummary(
+        entries newEntries: [ConversationHistoryEntry],
+        summary newSummary: String,
+        sessionID targetSessionID: UUID
+    ) {
+        mutate { storedSessions in
+            guard let index = storedSessions.sessions.firstIndex(where: { $0.id == targetSessionID }) else {
+                // The session was deleted while the turn ran — nothing sane
+                // to write back into; the appended entry was recreated by
+                // appendEntry, so re-sync from there instead of dropping.
+                return
+            }
+            storedSessions.sessions[index].entries = newEntries
+            storedSessions.sessions[index].summary = newSummary
+            storedSessions.sessions[index].updatedAt = Date()
+        }
+    }
+
+    /// Replaces the active session's entries and summary in one write — what
+    /// trimming and compression do together after each answer.
+    static func replaceActiveEntriesAndSummary(
+        entries newEntries: [ConversationHistoryEntry],
+        summary newSummary: String
+    ) {
+        mutate { storedSessions in
+            let activeID = storedSessions.activeSessionID
+                ?? storedSessions.sessions.max { $0.updatedAt < $1.updatedAt }?.id
+            guard let activeID,
+                  let index = storedSessions.sessions.firstIndex(where: { $0.id == activeID }) else { return }
+            storedSessions.sessions[index].entries = newEntries
+            storedSessions.sessions[index].summary = newSummary
+            storedSessions.sessions[index].updatedAt = Date()
+        }
+    }
+
+    /// Forgets every conversation, in memory and on disk — 清空对话记忆.
+    /// Also removes the legacy flat file if a migration left it behind.
+    static func clearAllSessions() {
+        sessionsLock.lock()
+        let freshSessions = StoredConversationSessions()
+        cachedSessions = freshSessions
+        sessionsLock.unlock()
+
+        if let sessionsFileURL {
+            try? FileManager.default.removeItem(at: sessionsFileURL)
+        }
+        if let historyFileURL = ConversationHistoryStore.historyFileURL {
+            try? FileManager.default.removeItem(at: historyFileURL)
+        }
+        NotificationCenter.default.post(name: .clickySessionsDidChange, object: nil)
+        NotificationCenter.default.post(name: .clickyConversationHistoryCleared, object: nil)
+    }
+
+    /// Deletes the file but keeps the in-memory sessions — what turning
+    /// 「重启后保留对话」 off means: this run's conversation continues, the disk
+    /// copy is gone.
+    static func removeStoredFile() {
+        if let sessionsFileURL {
+            try? FileManager.default.removeItem(at: sessionsFileURL)
+        }
+        NotificationCenter.default.post(name: .clickySessionsDidChange, object: nil)
+    }
+
+    /// The one mutation funnel: applies `mutation` to the cache, writes to disk
+    /// when persistence is on, posts the change notification. Every public
+    /// mutator goes through here, which is what keeps the notification and the
+    /// file from drifting apart.
+    private static func mutate(_ mutation: (inout StoredConversationSessions) -> Void) {
+        sessionsLock.lock()
+        var storedSessions = cachedSessions ?? loadFromDiskWithMigration()
+        mutation(&storedSessions)
+        cachedSessions = storedSessions
+        sessionsLock.unlock()
+
+        if AppSettingsStore.snapshot().persistsConversationHistory {
+            try? writeSessionsToDisk(storedSessions)
+        }
+        NotificationCenter.default.post(name: .clickySessionsDidChange, object: nil)
+    }
+
+    /// First load: read the sessions file; if there is none but the old flat
+    /// history file exists, migrate — wrap it as 「默认会话」, write the new file,
+    /// rename the old one to `.migrated` rather than deleting it. A migration is
+    /// a data move, not a data delete: nothing the user said is ever discarded
+    /// to make room for a new format.
+    private static func loadFromDiskWithMigration() -> StoredConversationSessions {
+        guard let sessionsFileURL else {
+            return StoredConversationSessions()
+        }
+
+        if let storedData = try? Data(contentsOf: sessionsFileURL),
+           let decodedSessions = try? JSONDecoder().decode(StoredConversationSessions.self, from: storedData) {
+            return decodedSessions
+        }
+
+        // Sessions file absent or unreadable — check for a legacy flat history
+        // worth wrapping before starting from empty.
+        var migratedSessions = StoredConversationSessions()
+        if let historyFileURL = ConversationHistoryStore.historyFileURL,
+           let legacyData = try? Data(contentsOf: historyFileURL),
+           let legacyHistory = try? JSONDecoder().decode(StoredConversationHistory.self, from: legacyData) {
+            let now = Date()
+            let migratedSession = ConversationSession(
+                id: UUID(),
+                title: migratedSessionTitle,
+                createdAt: now,
+                updatedAt: now,
+                summary: legacyHistory.summary,
+                entries: legacyHistory.entries
+            )
+            migratedSessions.sessions = [migratedSession]
+            migratedSessions.activeSessionID = migratedSession.id
+            print("💬 Clicky: migrated \(legacyHistory.entries.count) exchanges into the session 「\(migratedSessionTitle)」")
+
+            try? writeSessionsToDisk(migratedSessions)
+            let migratedFileURL = historyFileURL.deletingLastPathComponent()
+                .appendingPathComponent("ConversationHistory.json.migrated")
+            try? FileManager.default.removeItem(at: migratedFileURL)
+            try? FileManager.default.moveItem(at: historyFileURL, to: migratedFileURL)
+        }
+
+        return migratedSessions
+    }
+
+    private static func writeSessionsToDisk(_ storedSessions: StoredConversationSessions) throws {
+        guard let sessionsFileURL else {
+            throw ModelConfigurationStoreError.applicationSupportDirectoryUnavailable
+        }
+
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        let encodedSessions: Data
+        do {
+            encodedSessions = try encoder.encode(storedSessions)
+        } catch {
+            throw ModelConfigurationStoreError.couldNotEncodeConfiguration(underlyingError: error)
+        }
+
+        let containingDirectoryURL = sessionsFileURL.deletingLastPathComponent()
+        do {
+            try FileManager.default.createDirectory(
+                at: containingDirectoryURL,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+            try encodedSessions.write(to: sessionsFileURL, options: .atomic)
+        } catch {
+            throw ModelConfigurationStoreError.couldNotWriteConfiguration(underlyingError: error)
+        }
+
+        // Same post-rename permission fix as `ConversationHistoryStore.save`:
+        // `.atomic` lands as 0644 and this file holds the user's own words.
+        do {
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o600],
+                ofItemAtPath: sessionsFileURL.path
+            )
+        } catch {
+            throw ModelConfigurationStoreError.couldNotRestrictFilePermissions(underlyingError: error)
+        }
     }
 }

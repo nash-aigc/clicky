@@ -64,6 +64,13 @@ final class CompanionManager: ObservableObject {
     let buddyDictationManager = BuddyDictationManager()
     let globalPushToTalkShortcutMonitor = GlobalPushToTalkShortcutMonitor()
     let overlayWindowManager = OverlayWindowManager()
+    private(set) var notchWindowController: NotchWindowController?
+
+    /// The voice state as a Combine publisher — the notch controller mirrors
+    /// it into its activity phases without polling.
+    var voiceStatePublisher: AnyPublisher<CompanionVoiceState, Never> {
+        $voiceState.eraseToAnyPublisher()
+    }
 
     /// Draws the green `[SHAPE:…]` marks over the user's screen. Visual only —
     /// the marks never touch the machine and are cleared before every fresh
@@ -179,6 +186,18 @@ final class CompanionManager: ObservableObject {
     /// says which, and when it refused, why.
     @Published private(set) var lastActionDescription: String?
 
+    /// The agent loop's steps so far, one line each — what the conversation
+    /// view folds into a 「N 条进度」 disclosure (HeyClicky's progress
+    /// messages). Live while the job runs; the finished list is recorded on
+    /// the history entry so a past turn can expand its own steps again.
+    @Published private(set) var liveJobProgressSteps: [String] = []
+
+    /// The question currently being answered, shown as the outgoing bubble
+    /// the moment the pipeline starts — a history entry is only written when
+    /// the whole turn finishes, and without this the user's words would not
+    /// appear in the conversation until then.
+    @Published private(set) var pendingQuestionText: String?
+
     /// The interface the companion read on the previous turn, waiting to be handed
     /// to the model on its next one.
     ///
@@ -219,6 +238,7 @@ final class CompanionManager: ObservableObject {
     private var settingsWindowController: SettingsWindowController?
     private var modelConfigurationChangedObserver: NSObjectProtocol?
     private var conversationHistoryClearedObserver: NSObjectProtocol?
+    private var sessionsChangeObserver: NSObjectProtocol?
     private var appSettingsChangedObserver: NSObjectProtocol?
 
     /// Whether the blue cursor companion is currently drawn.
@@ -306,10 +326,10 @@ final class CompanionManager: ObservableObject {
         // Restore the conversation before anything can be asked, so the first
         // question of a launch is answered with the memory of the last one.
         if AppSettingsStore.snapshot().persistsConversationHistory {
-            let storedHistory = ConversationHistoryStore.snapshot()
-            conversationHistory = storedHistory.entries
-            compressedHistorySummary = storedHistory.summary
-            print("💬 Clicky: restored \(conversationHistory.count) exchanges from disk")
+            let activeSession = ConversationSessionsStore.activeSession()
+            conversationHistory = activeSession.entries
+            compressedHistorySummary = activeSession.summary
+            print("💬 Clicky: restored \(conversationHistory.count) exchanges from session 「\(activeSession.title)」")
         }
         // Eagerly touch the Bailian vision client so its TLS warmup handshake
         // completes well before the onboarding demo fires at ~40s into the video.
@@ -375,6 +395,29 @@ final class CompanionManager: ObservableObject {
             }
         }
 
+        // The session store is the source of truth for which conversation is
+        // live; this mirror has to follow when someone else moves it — the
+        // notch sidebar switching the active session. Every store mutation
+        // posts this notification, including the mirror's own writes, so the
+        // reload must be safe to run redundantly — it just copies values. It
+        // stands down while a response is in flight: the running task holds
+        // its own step history and appends at the end, and a reload in the
+        // middle would pull a different session's entries under it.
+        sessionsChangeObserver = NotificationCenter.default.addObserver(
+            forName: .clickySessionsDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.currentResponseTask == nil else { return }
+                let activeSession = ConversationSessionsStore.activeSession()
+                guard activeSession.entries != self.conversationHistory
+                    || activeSession.summary != self.compressedHistorySummary else { return }
+                self.conversationHistory = activeSession.entries
+                self.compressedHistorySummary = activeSession.summary
+            }
+        }
+
         // Turning 「重启后保留对话」 off has to delete what is already on disk, not
         // just stop future writes — the user is saying they do not want their
         // conversation kept, and a file left behind would make that untrue. Turning
@@ -392,7 +435,21 @@ final class CompanionManager: ObservableObject {
                 if settings.persistsConversationHistory {
                     self.persistConversationHistory()
                 } else {
-                    ConversationHistoryStore.clear()
+                    // Off means the user does not want the conversation kept:
+                    // file deleted and every session forgotten, in memory too —
+                    // the same semantics the flat store had, now across all
+                    // sessions at once.
+                    ConversationSessionsStore.clearAllSessions()
+                }
+
+                // 「刘海屏入口」 applies live: on builds (or rebuilds) the pills,
+                // off tears the whole subsystem down. Sound effects need no
+                // wiring — `SoundEffectPlayer` reads the setting at play time.
+                if settings.enablesNotchPresence {
+                    self.ensureNotchPresenceIfNeeded()
+                } else {
+                    self.notchWindowController?.teardown()
+                    self.notchWindowController = nil
                 }
 
                 // The cursor settings are the one group that changes something the
@@ -417,7 +474,35 @@ final class CompanionManager: ObservableObject {
             overlayWindowManager.hasShownOverlayBefore = true
             overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
             isOverlayVisible = true
+            ensureNotchPresenceIfNeeded()
         }
+    }
+
+    // MARK: - Notch Presence
+
+    /// The notch entry point — one invisible pill per notched screen that
+    /// expands into the app's main sheet. Built lazily once and kept for the
+    /// app's lifetime (the same permanence the overlay windows have);
+    /// 「刘海屏入口」 off tears it down instead of ever building it. A machine
+    /// without a notch supports nothing and the subsystem quietly idles —
+    /// the menu bar panel is the permanent backup entry.
+    private func ensureNotchPresenceIfNeeded() {
+        guard AppSettingsStore.snapshot().enablesNotchPresence else { return }
+
+        if notchWindowController == nil {
+            let controller = NotchWindowController(
+                companionManager: self,
+                audioHistoryProvider: { [weak self] in
+                    self?.buddyDictationManager.recordedAudioPowerHistory ?? []
+                }
+            )
+            controller.bindCompanionState(voiceStatePublisher: voiceStatePublisher)
+            controller.bindDictationFinalizing(
+                buddyDictationManager.$isFinalizingTranscript.eraseToAnyPublisher()
+            )
+            notchWindowController = controller
+        }
+        notchWindowController?.installIfScreensSupportIt()
     }
 
     // MARK: - Settings
@@ -455,6 +540,9 @@ final class CompanionManager: ObservableObject {
         }
         if let conversationHistoryClearedObserver {
             NotificationCenter.default.removeObserver(conversationHistoryClearedObserver)
+        }
+        if let sessionsChangeObserver {
+            NotificationCenter.default.removeObserver(sessionsChangeObserver)
         }
         if let appSettingsChangedObserver {
             NotificationCenter.default.removeObserver(appSettingsChangedObserver)
@@ -694,8 +782,17 @@ final class CompanionManager: ObservableObject {
                 guard self.voiceState != .responding else { return }
 
                 if isFinalizing {
+                    // The observation refires on every combineLatest tick, so each
+                    // chime is guarded on the state actually changing — without that
+                    // a tick while already .processing would replay the send chime.
+                    if self.voiceState != .processing {
+                        SoundEffectPlayer.shared.play(.transcriptSent)
+                    }
                     self.voiceState = .processing
                 } else if isRecording {
+                    if self.voiceState != .listening {
+                        SoundEffectPlayer.shared.play(.listeningStarted)
+                    }
                     self.voiceState = .listening
                     // The whole time the user is holding the shortcut (or a
                     // double-tap recording is open) they may circle something;
@@ -753,6 +850,18 @@ final class CompanionManager: ObservableObject {
             guard !buddyDictationManager.isDictationInProgress else { return }
             // Don't register push-to-talk while the onboarding video is playing
             guard !showOnboardingVideo else { return }
+
+            // 正在思考或回答时的第一次按下 = 纯打断，到此为止：停任务、停播报、
+            // 回到待命，**不开麦**——再按一次才开始收听。之前的做法是打断和开麦
+            // 同一步完成：旧回答被取消的同一瞬间新录音就开始了，用户看到的是
+            // 「按了没打断，只是重新听我说了一遍」，于是永远打不断。
+            if voiceState == .processing || voiceState == .responding {
+                interruptActiveResponse()
+                // 让 release 把这次按下当成一次没有时长的按压：既不能触发确认
+                // 轻点的「发送暂存的话」，也不能留下一个陈旧的计时。
+                shortcutPressBeganAt = nil
+                return
+            }
 
             // Recorded so the release can tell a tap (send what's waiting) from a
             // hold (say something new). See `handleFinalTranscript`.
@@ -990,7 +1099,7 @@ final class CompanionManager: ObservableObject {
     drawing on screen:
     besides the flying cursor, you can draw green marks directly over the user's screen — rings, arrows, lines, curves and outlines, with a small text label on each. use them when drawing would genuinely make the answer clearer: circling the button you're talking about, showing where a window should be dragged, tracing a route through a settings pane. do not draw for general knowledge questions, or when pointing alone already says it.
 
-    format: [SHAPE:kind:x1,y1;x2,y2;...:label] — the same normalized 0-1000 grid as [POINT:], points separated by semicolons, multiple points tracing the shape. append :screenN like [POINT:] does when the shape is on a different screen. the label is short, 1-4 words, written in the element's own words — for circle and polygon the label is looked up in the interface exactly like a click's label, and a match redraws the ring around the real element, so a copy of the element's own text lands exactly while a description ("数字5") falls back to your coordinates.
+    format: [SHAPE:kind:x1,y1;x2,y2;...:label] — the same normalized 0-1000 grid as [POINT:], points separated by semicolons, multiple points tracing the shape. append :screenN like [POINT:] does when the shape is on a different screen. the label is short, 1-4 words, written in the element's own words — for circle and polygon the label is looked up in the interface exactly like a click's label, and a match redraws the ring around the real element, so a copy of the element's own text lands exactly while a description ("数字5") falls back to your coordinates. because of that lookup, the label MUST stay the element's own on-screen words even when the user asks you to rename or translate it: write "anchor|display" then — the element's own words before the |, the caption the user asked for after it, e.g. the user says "把标签改成中文" on a button that reads "Manage 管理 관리" → [SHAPE:circle:...;...:Manage 管理 관리|管理]. never drop the anchor: a label that matches no element loses the exact snap and the ring lands on your guessed coordinates.
 
     kinds:
     - circle: TWO points. first = the circle's center, second = a point just past its edge (the distance between them is the radius). circle the thing you mean, leaving a little margin around it.
@@ -1186,6 +1295,23 @@ final class CompanionManager: ObservableObject {
     /// action tags or `maximumAutonomousActionSteps` is reached. Only the loop's
     /// last reply is spoken, and the whole job is recorded to history as a single
     /// turn — the user's words against every step's raw reply, tags and all.
+    /// A question typed into the conversation view's text field — HeyClicky's
+    /// composer accepts both voice and keyboard, and this is the keyboard half.
+    /// It rides the exact same pipeline as a spoken question (screenshot,
+    /// vision model, agent loop, TTS): the only differences are where the
+    /// words came from and that no recording is torn down, because none
+    /// started. A running job is interrupted the same way a new spoken
+    /// question would interrupt it, since `sendTranscriptToVisionChat…`
+    /// cancels the current task at its top.
+    func submitTypedQuestion(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        lastTranscript = trimmed
+        liveTranscriptText = ""
+        sendTranscriptToVisionChatWithScreenshot(transcript: trimmed)
+    }
+
     private func sendTranscriptToVisionChatWithScreenshot(transcript: String) {
         currentResponseTask?.cancel()
         bailianTTSClient.stopPlayback()
@@ -1197,9 +1323,56 @@ final class CompanionManager: ObservableObject {
             // produce one reply built from two different configurations.
             let appSettings = AppSettingsStore.snapshot()
 
+            // This turn belongs to the session that is active when it STARTS —
+            // a switch made while the answer is still streaming must not move
+            // the finished turn into another session. The mirror reloads here
+            // too: the observer below stands down while a response runs, so a
+            // session switch made during one is invisible to it, and a stale
+            // mirror is exactly how one session's history used to bleed into
+            // the next (the persist step would write it over the newly active
+            // session).
+            let turnTargetSession = ConversationSessionsStore.activeSession()
+            let turnSessionID = turnTargetSession.id
+            conversationHistory = turnTargetSession.entries
+            compressedHistorySummary = turnTargetSession.summary
+
             // Stay in processing (spinner) state — no streaming text displayed
             voiceState = .processing
             clearAnswerBubble()
+
+            // The user's words appear as the outgoing bubble the moment the
+            // pipeline starts — a history entry is only written when the whole
+            // turn finishes, and without this the question would not show in
+            // the conversation until then.
+            pendingQuestionText = transcript
+            liveJobProgressSteps = []
+
+            // The finished turn's footer shows how long the job took, and the
+            // interrupted path records progress too — both need the start
+            // time, so it is declared above the `do` the loop lives in.
+            let jobStartedAt = Date()
+
+            // The loop's accumulators live OUTSIDE the `do` on purpose: the
+            // catch below records an interrupted turn's partial reply and its
+            // progress steps, which it can only do if they survive the throw.
+            //
+            // Every step's raw reply concatenated, tags and all — the permanent
+            // history records that as the assistant's single response to the
+            // user's words, which is what keeps a replayed turn reading as the
+            // record of what happened rather than «asked, said done, did nothing».
+            var combinedRawResponseText = ""
+
+            // Only the loop's last reply is spoken; an intermediate step's
+            // receipt stays in the bubble while the next request is in flight.
+            var finalSpokenText = ""
+
+            // The panel's 上一次动手 row accumulates across steps, so it describes
+            // the whole job so far rather than only its last reply. Cleared once
+            // here, before the loop, for the same reason the single-step path
+            // cleared it before dispatching: an absent row is the one honest
+            // signal that no tag came back at all.
+            var allActionDescriptions: [String] = []
+            lastActionDescription = nil
 
             do {
                 // Multi-step jobs run as an agent loop: after a reply's action tags
@@ -1220,24 +1393,6 @@ final class CompanionManager: ObservableObject {
                 // replayed. See `ConversationHistoryEntry.recordedWithActionTags` for
                 // the measurement behind it.
                 var stepHistory = conversationHistory.filter { $0.recordedWithActionTags == true }
-
-                // Every step's raw reply concatenated, tags and all — the permanent
-                // history records that as the assistant's single response to the
-                // user's words, which is what keeps a replayed turn reading as the
-                // record of what happened rather than «asked, said done, did nothing».
-                var combinedRawResponseText = ""
-
-                // Only the loop's last reply is spoken; an intermediate step's
-                // receipt stays in the bubble while the next request is in flight.
-                var finalSpokenText = ""
-
-                // The panel's 上一次动手 row accumulates across steps, so it describes
-                // the whole job so far rather than only its last reply. Cleared once
-                // here, before the loop, for the same reason the single-step path
-                // cleared it before dispatching: an absent row is the one honest
-                // signal that no tag came back at all.
-                var allActionDescriptions: [String] = []
-                lastActionDescription = nil
 
                 // The screenshots the job started against — what the user was looking
                 // at when they asked — are what the history entry carries. Later
@@ -1342,6 +1497,12 @@ final class CompanionManager: ObservableObject {
                     }
                     pendingAccessibilityContext = nil
 
+                    // The receive chime fires once per step, on the answer's very
+                    // first text — the moment the model has started replying — not
+                    // when TTS begins, which is seconds later. Keyed on the empty
+                    // accumulated text rather than a one-shot flag so the semantics
+                    // stay "the first real content arrived".
+                    var announcedAnswerStart = false
                     let (fullResponseText, _) = try await visionChatAPI.analyzeImageStreaming(
                         images: labeledImages,
                         systemPrompt: Self.companionSystemPrompt(for: appSettings),
@@ -1355,6 +1516,10 @@ final class CompanionManager: ObservableObject {
                             // means the [POINT:…] tag is visible while it streams and then
                             // disappears when the reply is parsed and read aloud.
                             // Delivered on the main actor, so no hop is needed here.
+                            if !announcedAnswerStart, !accumulatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                announcedAnswerStart = true
+                                SoundEffectPlayer.shared.play(.answerStarted)
+                            }
                             guard showsResponseText else { return }
                             self?.streamingAnswerText = accumulatedText
                         }
@@ -1504,6 +1669,13 @@ final class CompanionManager: ObservableObject {
                     if !actionDescriptionsForThisStep.isEmpty {
                         allActionDescriptions.append(contentsOf: actionDescriptionsForThisStep)
                         lastActionDescription = allActionDescriptions.joined(separator: "；")
+
+                        // HeyClicky's conversation view folds each executed step into
+                        // a 「N 条进度」 disclosure while the job runs. Same here: the
+                        // live list feeds the disclosure in real time, and the same
+                        // lines are recorded on the finished entry so a past turn can
+                        // expand its own steps again.
+                        liveJobProgressSteps.append(contentsOf: actionDescriptionsForThisStep)
                     }
 
                     // The loop continues only while the model is still acting: a reply
@@ -1545,18 +1717,35 @@ final class CompanionManager: ObservableObject {
                 // sometimes answers with silence" — true of a cancelled or failed
                 // request, and not something worth replaying.
                 if !combinedRawResponseText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    conversationHistory.append(
-                        ConversationHistoryEntry(
-                            userTranscript: transcript,
-                            assistantResponse: combinedRawResponseText,
-                            userScreenshots: historyScreenshots,
-                            recordedWithActionTags: true
-                        )
+                    let newEntry = ConversationHistoryEntry(
+                        userTranscript: transcript,
+                        assistantResponse: combinedRawResponseText,
+                        userScreenshots: historyScreenshots,
+                        recordedWithActionTags: true,
+                        progressSteps: liveJobProgressSteps.isEmpty ? nil : liveJobProgressSteps,
+                        turnDurationSeconds: Int(Date().timeIntervalSince(jobStartedAt).rounded()),
+                        turnFinishedAt: Date(),
+                        wasInterrupted: nil
                     )
+                    conversationHistory.append(newEntry)
+                    // The session store is the source of truth for the sidebar
+                    // and for which conversation is live; appendEntry is the
+                    // write that auto-titles a never-named session from this
+                    // first message. The replace below (after trimming) then
+                    // re-syncs the trimmed window. Both writes target the
+                    // session this turn started in — appending to "the active
+                    // session" instead would let a mid-response switch land
+                    // this turn in a conversation the user never asked it in.
+                    ConversationSessionsStore.appendEntry(newEntry, targetSessionID: turnSessionID)
                 }
 
+                // The turn is finished one way or another from here: the
+                // pending outgoing bubble gives way to the recorded one.
+                pendingQuestionText = nil
+                liveJobProgressSteps = []
+
                 trimConversationHistory(toRounds: appSettings.rememberedConversationRounds)
-                persistConversationHistoryIfEnabled()
+                persistConversationHistory(toSession: turnSessionID)
 
                 print("🧠 Conversation history: \(conversationHistory.count) exchanges (limit \(appSettings.rememberedConversationRounds))")
 
@@ -1600,9 +1789,49 @@ final class CompanionManager: ObservableObject {
                     // the next question replaces it.
                     clearAnswerBubble()
                 }
+
+                // The turn is over; nothing owns the task any more. Leaving the
+                // finished object in `currentResponseTask` broke two things
+                // downstream: the session-mirror observer stands down while a
+                // task is alive, so after the first reply it never followed a
+                // session switch again (one session's history then persisted
+                // over every other session), and the dictation observation
+                // reads `== nil` to decide transient-hide scheduling. Guarded
+                // on `!isCancelled` because a cancelled task can reach here
+                // without throwing (cancelled mid-TTS) — by then the
+                // interrupting path has already nilled or replaced the
+                // reference, and wiping it would drop the *new* task.
+                if !Task.isCancelled {
+                    currentResponseTask = nil
+                }
             } catch is CancellationError {
                 // User spoke again — response was interrupted
                 clearAnswerBubble()
+
+                // HeyClicky shows the turn it had to abandon as an
+                // "INTERRUPTED BY USER" chip rather than dropping it, and the
+                // same is true here: whatever the job got done before the stop
+                // is the record of what happened. A turn that produced no reply
+                // at all is still not a turn (the same rule as the happy path).
+                if !combinedRawResponseText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    let interruptedEntry = ConversationHistoryEntry(
+                        userTranscript: transcript,
+                        assistantResponse: combinedRawResponseText,
+                        userScreenshots: [],
+                        recordedWithActionTags: true,
+                        progressSteps: liveJobProgressSteps.isEmpty ? nil : liveJobProgressSteps,
+                        turnDurationSeconds: Int(Date().timeIntervalSince(jobStartedAt).rounded()),
+                        turnFinishedAt: Date(),
+                        wasInterrupted: true
+                    )
+                    conversationHistory.append(interruptedEntry)
+                    ConversationSessionsStore.appendEntry(interruptedEntry, targetSessionID: turnSessionID)
+                    trimConversationHistory(toRounds: appSettings.rememberedConversationRounds)
+                    persistConversationHistory(toSession: turnSessionID)
+                }
+                pendingQuestionText = nil
+                liveJobProgressSteps = []
+
                 // Usually a new recording takes the state over from here. But an
                 // interrupt that starts nothing — the panel 停止 button, or a stop
                 // press whose recording never got to run — leaves nobody holding
@@ -1610,8 +1839,13 @@ final class CompanionManager: ObservableObject {
                 // The task object is nilled for the same reason
                 // `interruptActiveResponse` nils it: the dictation observation
                 // reads `currentResponseTask == nil` to decide whether an empty
-                // press should schedule the transient hide.
-                currentResponseTask = nil
+                // press should schedule the transient hide. Only nilled when
+                // the stored task is this cancelled one: a new question asked
+                // in the meantime has already replaced the reference, and
+                // wiping it here would orphan that task.
+                if currentResponseTask?.isCancelled == true {
+                    currentResponseTask = nil
+                }
                 if !buddyDictationManager.isDictationInProgress {
                     voiceState = .idle
                 }
@@ -1619,6 +1853,11 @@ final class CompanionManager: ObservableObject {
                 print("⚠️ Companion response error: \(error)")
                 clearAnswerBubble()
                 speakCreditsErrorFallback(failure: error)
+                // No turn is recorded on an error, so the pending outgoing
+                // bubble has nothing to hand over to — clear it, or the
+                // user's words would sit in the conversation forever.
+                pendingQuestionText = nil
+                liveJobProgressSteps = []
                 // A cancellation can surface here instead of the typed catch
                 // above: the in-flight URLSession stream of a cancelled task
                 // tears down as `URLError.cancelled`, not as `CancellationError`.
@@ -1627,7 +1866,12 @@ final class CompanionManager: ObservableObject {
                 // the dictation observation's transient-hide scheduling, and a
                 // stop that started no recording leaves `voiceState` stuck.
                 if Task.isCancelled {
-                    currentResponseTask = nil
+                    // Same replacement rule as the typed catch above: nil only
+                    // when the stored task is this cancelled one, never a task
+                    // a newer question has already put in its place.
+                    if currentResponseTask?.isCancelled == true {
+                        currentResponseTask = nil
+                    }
                     if !buddyDictationManager.isDictationInProgress {
                         voiceState = .idle
                     }
@@ -1793,6 +2037,7 @@ final class CompanionManager: ObservableObject {
         guard !Task.isCancelled else { return }
 
         lastErrorMessage = failure.localizedDescription
+        SoundEffectPlayer.shared.play(.errorSurprised)
         print("⚠️ Companion fallback — speaking apology. Reason: \(failure.localizedDescription)")
 
         let utterance = "抱歉，我这边出了点问题，刚才没能答上来。再试一次好吗？"
@@ -1881,33 +2126,39 @@ final class CompanionManager: ObservableObject {
         return summaryText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Writes the conversation to disk — but only when the user asked for it.
+    /// Mirrors the live conversation into the active session.
+    ///
+    /// Runs whatever the persistence setting says: the in-memory session list
+    /// has to stay true even when nothing is written to disk — the notch
+    /// sidebar reads the store, not this mirror. The store decides on its own
+    /// whether to touch the disk, and gates that on the same setting.
+    private func persistConversationHistory() {
+        ConversationSessionsStore.replaceActiveEntriesAndSummary(
+            entries: conversationHistory,
+            summary: compressedHistorySummary
+        )
+    }
+
+    /// Writes the trimmed mirror back to the session this turn ran in — the
+    /// same session the append went to. Persisting to "the active session"
+    /// instead is how one conversation's history used to bleed into another:
+    /// a session switch made while the answer streamed would redirect the
+    /// finished turn's whole window into the newly selected session.
+    private func persistConversationHistory(toSession sessionID: UUID) {
+        ConversationSessionsStore.replaceEntriesAndSummary(
+            entries: conversationHistory,
+            summary: compressedHistorySummary,
+            sessionID: sessionID
+        )
+    }
+
     private func persistConversationHistoryIfEnabled() {
-        guard AppSettingsStore.snapshot().persistsConversationHistory else { return }
         persistConversationHistory()
     }
 
-    /// Writes the conversation to disk unconditionally, for the callers that have
-    /// already established that persistence is on.
-    private func persistConversationHistory() {
-        do {
-            try ConversationHistoryStore.save(
-                StoredConversationHistory(
-                    summary: compressedHistorySummary,
-                    entries: conversationHistory
-                )
-            )
-        } catch {
-            // A failed write costs the user their memory of this conversation
-            // across restarts and nothing else — the answer they are waiting for
-            // is unaffected, so this is a log line rather than a spoken error.
-            print("⚠️ Clicky: could not save conversation history: \(error.localizedDescription)")
-        }
-    }
-
-    /// Forgets the conversation, in memory and on disk.
+    /// Forgets the conversation, in memory and on disk — every session at once.
     func clearConversationMemory() {
-        ConversationHistoryStore.clear()
+        ConversationSessionsStore.clearAllSessions()
     }
 
     // MARK: - Screen Annotation Resolution
@@ -2051,6 +2302,7 @@ final class CompanionManager: ObservableObject {
             marks.append(ScreenAnnotationMark(
                 kind: shapeRequest.kind,
                 label: shapeRequest.label,
+                displayLabel: shapeRequest.displayLabel,
                 points: displayPoints,
                 displayFrame: capture.displayFrame
             ))

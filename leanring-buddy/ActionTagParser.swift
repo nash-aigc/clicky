@@ -80,8 +80,15 @@ nonisolated struct AnnotationShapeRequest: Sendable {
     /// like and fails silently as.
     let points: [CGPoint]
     /// Short text the drawing is about ("export", "付款流程"), drawn in a small
-    /// capsule beside the shape, or nil.
+    /// capsule beside the shape, or nil. Also the **anchor**: enclosing shapes
+    /// look an element up by it in the AX tree. The two jobs are separable —
+    /// `label` stays the element's own on-screen words while `displayLabel`
+    /// carries whatever caption the user asked for (`锚定词|显示文字`).
     let label: String?
+    /// The caption to actually draw, when the tag wrote `anchor|display` and
+    /// the user asked for a label different from the element's own name. nil
+    /// means draw `label` unchanged.
+    let displayLabel: String?
     /// Which screen the shape belongs to, 1-based as the model numbers them,
     /// or nil to mean "whichever screen the mouse is on" — same rule as
     /// `[POINT:…]`.
@@ -166,6 +173,9 @@ nonisolated enum ActionTagParser {
 
     /// `[SHAPE:circle:500,300;560,300:a label:screen2]` — kind, then two or more
     /// ";"-separated points, then an optional label and an optional screen.
+    /// The label may carry an `anchor|display` split (`Manage|管理`): before
+    /// the pipe is the element's own on-screen name the AX lookup anchors on,
+    /// after it the caption the user asked to see drawn instead.
     ///
     /// Capture groups: 1 = kind, 2 = everything after the kind's colon (points,
     /// label, screen — split further below).
@@ -382,6 +392,7 @@ nonisolated enum ActionTagParser {
         let trailingPart = bodyParts.count > 1 ? String(bodyParts[1]) : nil
 
         var labelText: String?
+        var displayText: String?
         var screenNumber: Int?
         if let trailingPart {
             if let screenMatch = trailingPart.range(of: #"(?:^|:)screen(\d+)\s*$"#, options: .regularExpression) {
@@ -394,6 +405,29 @@ nonisolated enum ActionTagParser {
                 labelText = trimmedLabel.isEmpty ? nil : trimmedLabel
             } else {
                 labelText = trailingPart.isEmpty ? nil : trailingPart
+            }
+        }
+
+        // Optional `anchor|display` split: everything before the first `|`
+        // stays the AX-lookup anchor, everything after is what the capsule
+        // draws. A label the user asked to rename/translate must keep the
+        // element's own words as the anchor — a translated-only label matches
+        // no element, the lookup fails, and the shape falls back to the
+        // model's estimated coordinates (the "renamed it and it went crazy"
+        // failure).
+        if let existingLabelText = labelText, let pipeIndex = existingLabelText.firstIndex(of: "|") {
+            let anchor = String(existingLabelText[existingLabelText.startIndex..<pipeIndex])
+                .trimmingCharacters(in: .whitespaces)
+            let display = String(existingLabelText[existingLabelText.index(after: pipeIndex)...])
+                .trimmingCharacters(in: .whitespaces)
+            if anchor.isEmpty {
+                // `|display` with no anchor: nothing to look up, so keep the
+                // whole text as a plain display-only label.
+                labelText = nil
+                displayText = display.isEmpty ? nil : display
+            } else {
+                labelText = anchor
+                displayText = display.isEmpty ? nil : display
             }
         }
 
@@ -415,6 +449,7 @@ nonisolated enum ActionTagParser {
             kind: kind,
             points: parsedPoints,
             label: labelText,
+            displayLabel: displayText,
             screenNumber: screenNumber
         )
     }

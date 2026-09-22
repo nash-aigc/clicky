@@ -380,6 +380,18 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// marking the model's subject, not the model marking the user's screen.
     var allowsCircleToAsk: Bool = true
 
+    /// 「刘海屏音效」: short one-shot chimes at conversation state transitions
+    /// (recording started, transcript sent, answer arriving, an error) and when
+    /// the notch sheet expands. Ported from HeyClicky's own chime set. Off means
+    /// every sound effect is silent — spoken answers are unaffected either way.
+    var playsNotchSoundEffects: Bool = true
+
+    /// 「刘海屏入口」: whether the notch-area pill is built at all on MacBooks
+    /// with a hardware notch. The menu-bar panel is the permanent backup entry,
+    /// so turning this off returns the app to a menu-bar-only life. On machines
+    /// without a notch the subsystem idles regardless of this setting.
+    var enablesNotchPresence: Bool = true
+
     // MARK: - 操作
 
     /// Master switch for acting on the machine — clicking, scrolling, typing,
@@ -510,6 +522,8 @@ nonisolated extension AppSettings {
         case capturesAllDisplays
         case pointsAtReferencedElements
         case allowsCircleToAsk
+        case playsNotchSoundEffects
+        case enablesNotchPresence
         case allowsComputerControl
         case allowsKeyboardControl
         case textEntryMethod
@@ -559,6 +573,8 @@ nonisolated extension AppSettings {
         capturesAllDisplays = try container.decodeIfPresent(Bool.self, forKey: .capturesAllDisplays) ?? defaults.capturesAllDisplays
         pointsAtReferencedElements = try container.decodeIfPresent(Bool.self, forKey: .pointsAtReferencedElements) ?? defaults.pointsAtReferencedElements
         allowsCircleToAsk = try container.decodeIfPresent(Bool.self, forKey: .allowsCircleToAsk) ?? defaults.allowsCircleToAsk
+        playsNotchSoundEffects = try container.decodeIfPresent(Bool.self, forKey: .playsNotchSoundEffects) ?? defaults.playsNotchSoundEffects
+        enablesNotchPresence = try container.decodeIfPresent(Bool.self, forKey: .enablesNotchPresence) ?? defaults.enablesNotchPresence
         // `decodeIfPresent` is not optional politeness here: a synthesized `Codable`
         // throws on a missing key, so a plain `Bool` added today would make every
         // settings file written before today fail to load — and the store would

@@ -30,7 +30,12 @@ import SwiftUI
 /// One drawable annotation resolved into real screen coordinates.
 nonisolated struct ScreenAnnotationMark: Sendable {
     let kind: AnnotationShapeKind
+    /// The anchor label the shape resolved against — an element's own words.
     let label: String?
+    /// The caption the capsule actually draws — what the user asked the label
+    /// to say, when that differs from `label` (`anchor|display`). nil draws
+    /// `label` unchanged.
+    let displayLabel: String?
     /// The shape's points in **display-local points, y down from the display's
     /// top-left** — the coordinate space the annotation window's SwiftUI
     /// content uses directly, with no further conversion.
@@ -162,7 +167,7 @@ private struct AnnotationCanvasView: View {
                     }
                 }
                 ForEach(Array(marks.enumerated()), id: \.offset) { _, mark in
-                    if let label = mark.label, drawProgress >= 1 {
+                    if let label = mark.displayLabel ?? mark.label, drawProgress >= 1 {
                         annotationLabel(label)
                             .position(labelPosition(for: mark))
                     }

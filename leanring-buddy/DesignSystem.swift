@@ -24,39 +24,42 @@ enum DS {
         // Layered surfaces from deepest to most elevated.
         // Higher surfaces are lighter, creating a sense of depth.
 
+        // Neutral dark palette (no green/grey cast) — hues are pure neutral,
+        // elevation steps are small so cards read as one family.
+
         /// The deepest background — used for the main app window fill.
-        static let background = Color(hex: "#101211")
+        static let background = Color(hex: "#0D0D0E")
 
         /// First elevation layer — used for cards, sidebar, top bar backgrounds.
-        static let surface1 = Color(hex: "#171918")
+        static let surface1 = Color(hex: "#141416")
 
         /// Second elevation layer — used for input fields, elevated cards, chat bubbles.
-        static let surface2 = Color(hex: "#202221")
+        static let surface2 = Color(hex: "#1B1B1E")
 
         /// Third elevation layer — used for hover backgrounds on interactive elements.
-        static let surface3 = Color(hex: "#272A29")
+        static let surface3 = Color(hex: "#232326")
 
         /// Fourth elevation layer — used for active/pressed states on interactive elements.
-        static let surface4 = Color(hex: "#2E3130")
+        static let surface4 = Color(hex: "#2C2C30")
 
         // ── Borders ──────────────────────────────────────────────────
 
         /// Subtle border — used for card outlines, dividers, input field borders.
-        static let borderSubtle = Color(hex: "#373B39")
+        static let borderSubtle = Color(hex: "#2A2A2E")
 
         /// Strong border — used for focused inputs, hovered card outlines.
-        static let borderStrong = Color(hex: "#444947")
+        static let borderStrong = Color(hex: "#3A3A3F")
 
         // ── Text ─────────────────────────────────────────────────────
 
         /// Primary text — main body text, titles, headings.
-        static let textPrimary = Color(hex: "#ECEEED")
+        static let textPrimary = Color(hex: "#F2F2F4")
 
         /// Secondary text — descriptions, hints, muted labels.
-        static let textSecondary = Color(hex: "#ADB5B2")
+        static let textSecondary = Color(hex: "#A8A8AD")
 
         /// Tertiary text — very muted, used for section labels, timestamps, disabled text.
-        static let textTertiary = Color(hex: "#6B736F")
+        static let textTertiary = Color(hex: "#6C6C72")
 
         /// Text used on top of the accent fill (#2563eb blue), like the primary button label.
         /// White on #2563eb achieves ~5.1:1 contrast — WCAG AA compliant.
@@ -104,8 +107,21 @@ enum DS {
         static let accentText = blue400
 
         /// Very subtle accent tint — used for selected item backgrounds (e.g. current step
-        /// in the sidebar). Low opacity so it doesn't overpower.
-        static let accentSubtle = blue500.opacity(0.10)
+        /// in the sidebar). Neutral white rather than blue: selection is a "you are
+        /// here" state, not an action — blue is reserved for toggles and focus.
+        static let accentSubtle = Color.white.opacity(0.08)
+
+        // ── Pill Button (the light capsule in HeyClicky screenshots) ──
+
+        /// Light gradient top stop for the pill button — the pale capsule the
+        /// restyle's primary actions use instead of a blue fill.
+        static let pillButtonBackgroundTop = Color(hex: "#F5F5F7")
+
+        /// Light gradient bottom stop for the pill button.
+        static let pillButtonBackgroundBottom = Color(hex: "#E8E8EC")
+
+        /// Text drawn on the light pill button.
+        static let pillButtonText = Color(hex: "#1A1A1C")
 
         // ── Semantic Colors ──────────────────────────────────────────
 
@@ -696,9 +712,56 @@ struct DSIconButtonStyle: ButtonStyle {
     }
 }
 
+/// Light pill button — the pale capsule the restyled UI uses for primary
+/// actions (保存 / 新会话 style), matching the light 「Change」 capsule in the
+/// HeyClicky screenshots. Light gradient fill, dark semibold text, hover
+/// brightens. `isEnabled: false` flattens the gradient to the disabled
+/// background token.
+struct DSPillButtonStyle: ButtonStyle {
+    var isEnabled: Bool = true
+
+    @State private var isHovered = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(DS.Colors.pillButtonText)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 18)
+            .background(
+                Capsule().fill(
+                    LinearGradient(
+                        colors: [DS.Colors.pillButtonBackgroundTop, DS.Colors.pillButtonBackgroundBottom],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .opacity(backgroundOpacity(isPressed: configuration.isPressed))
+                )
+            )
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.easeOut(duration: DS.Animation.fast), value: configuration.isPressed)
+            .animation(.easeOut(duration: DS.Animation.fast), value: isHovered)
+            .onHover { hovering in
+                guard isEnabled else { return }
+                isHovered = hovering
+            }
+            .pointerCursor(isEnabled: isEnabled)
+    }
+
+    private func backgroundOpacity(isPressed: Bool) -> Double {
+        guard isEnabled else { return 0.35 }
+        if isPressed { return 1.0 }
+        return isHovered ? 1.0 : 0.92
+    }
+}
+
 // MARK: - Convenience View Extensions
 
 extension View {
+    /// Applies the light pill button style (primary action in the restyled UI).
+    func dsPillButtonStyle(isEnabled: Bool = true) -> some View {
+        self.buttonStyle(DSPillButtonStyle(isEnabled: isEnabled))
+    }
     /// Applies the primary button style (accent-colored CTA).
     func dsPrimaryButtonStyle(isFullWidth: Bool = true) -> some View {
         self.buttonStyle(DSPrimaryButtonStyle(isFullWidth: isFullWidth))

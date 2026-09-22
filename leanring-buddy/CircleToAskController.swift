@@ -166,6 +166,7 @@ final class CircleToAskController {
             ScreenAnnotationMark(
                 kind: .curve,
                 label: nil,
+                displayLabel: nil,
                 points: localPoints,
                 displayFrame: dragScreen.frame
             )

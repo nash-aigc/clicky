@@ -101,25 +101,25 @@ final class GeneralSettingsViewModel: ObservableObject {
     /// happened again.
     @Published private(set) var conversationMemoryStatusMessage: String?
 
-    /// How many exchanges are stored on disk right now.
+    /// How many exchanges are stored right now, across every session.
     ///
     /// Read live from the store rather than kept as state, because nothing here
     /// writes to it except the clear button — and after a clear the answer is
     /// simply zero, which needs no cache to be correct.
     var storedConversationExchangeCount: Int {
-        ConversationHistoryStore.snapshot().entries.count
+        ConversationSessionsStore.allSessions().reduce(0) { $0 + $1.entries.count }
     }
 
-    /// Deletes the stored conversation and tells the running app to forget it.
+    /// Deletes every stored session and tells the running app to forget them.
     ///
     /// Deliberately *not* routed through the draft-and-save flow the rest of this
-    /// page uses. Deleting a file the user asked to delete should not depend on
+    /// page uses. Deleting files the user asked to delete should not depend on
     /// them also pressing 保存 afterwards — and the store posts
     /// `.clickyConversationHistoryCleared`, which is what makes the live copy in
     /// `CompanionManager` drop too rather than being written straight back on the
     /// next turn.
     func clearConversationMemory() {
-        ConversationHistoryStore.clear()
+        ConversationSessionsStore.clearAllSessions()
         conversationMemoryStatusMessage = "已清空，接下来它会从头开始记。"
     }
 

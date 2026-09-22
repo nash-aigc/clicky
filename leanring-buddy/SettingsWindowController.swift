@@ -130,33 +130,91 @@ private struct ClickySettingsRootView: View {
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("设置")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(DS.Colors.textPrimary)
-                .padding(.horizontal, 16)
-                .padding(.top, 18)
-                .padding(.bottom, 12)
+        VStack(alignment: .leading, spacing: 0) {
+            // HeyClicky 式头部：应用身份卡在导航之上。
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [DS.Colors.overlayCursorBlue.opacity(0.85), DS.Colors.overlayCursorBlue.opacity(0.45)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 34, height: 34)
+                    .overlay(
+                        Triangle()
+                            .stroke(Color.white, lineWidth: 2)
+                            .frame(width: 12, height: 10)
+                    )
 
-            ForEach(SettingsPage.allCases) { page in
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Clicky")
+                        .font(.system(size: 13.5, weight: .semibold))
+                        .foregroundColor(DS.Colors.textPrimary)
+                    Text("本地语音伴侣")
+                        .font(.system(size: 10.5))
+                        .foregroundColor(DS.Colors.textTertiary)
+                }
+
+                Spacer()
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(DS.Colors.surface2)
+            )
+            .padding(.horizontal, 12)
+            .padding(.top, 16)
+            .padding(.bottom, 14)
+
+            // 分组导航：组与组之间用大写小标签隔开——HeyClicky 的侧栏是
+            // 「General / 对话 / 看与操作」三段，不是一列平铺。
+            sidebarSection(title: nil, pages: [.general, .model])
+            sidebarSection(title: "对话", pages: [.memory, .listen, .speak, .shortcuts])
+            sidebarSection(title: "看与操作", pages: [.vision, .action])
+
+            Spacer()
+
+            Text(versionLine)
+                .font(.system(size: 10.5))
+                .foregroundColor(DS.Colors.textTertiary)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(DS.Colors.surface1)
+    }
+
+    /// One titled (or untitled) block of sidebar rows.
+    private func sidebarSection(title: String?, pages: [SettingsPage]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            if let title {
+                Text(title)
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(1.2)
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 12)
+                    .padding(.bottom, 5)
+            }
+
+            ForEach(pages, id: \.self) { page in
                 SettingsSidebarItem(
                     page: page,
                     isSelected: page == pageSelection.selectedPage,
                     action: { pageSelection.selectedPage = page }
                 )
             }
-
-            Spacer()
-
-            Text("改动在点「保存」之前不会生效。")
-                .font(.system(size: 10.5))
-                .foregroundColor(DS.Colors.textTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
         }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(DS.Colors.surface1)
+    }
+
+    /// "Clicky 1.2 (137)" — the same identification HeyClicky prints in the
+    /// bottom-left of its settings sidebar.
+    private var versionLine: String {
+        let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let buildVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+        return "Clicky \(shortVersion) (\(buildVersion))"
     }
 
     @ViewBuilder
@@ -191,8 +249,9 @@ private struct SettingsSidebarItem: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Text(page.sidebarEmoji)
-                    .font(.system(size: 12))
+                Image(systemName: page.sidebarSymbol)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(isSelected ? DS.Colors.textPrimary : DS.Colors.textSecondary)
                     .frame(width: 16)
 
                 Text(page.sidebarTitle)
@@ -200,15 +259,6 @@ private struct SettingsSidebarItem: View {
                     .foregroundColor(isSelected ? DS.Colors.textPrimary : DS.Colors.textSecondary)
 
                 Spacer(minLength: 4)
-
-                // How many settings this page holds. Hidden on 模型, whose fields
-                // live in a different file and a different count.
-                if let settingCount = page.settingCount {
-                    Text("\(settingCount)")
-                        .font(.system(size: 10.5, weight: .medium))
-                        .monospacedDigit()
-                        .foregroundColor(isSelected ? DS.Colors.accentText : DS.Colors.textTertiary)
-                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
@@ -242,7 +292,9 @@ private struct SettingsSidebarItem: View {
 ///
 /// Sits outside the page's `ScrollView` so 保存 is reachable without scrolling,
 /// which matters most on the longest page (对话与记忆).
-private struct GeneralSettingsActionBar: View {
+// Internal rather than private: the notch sheet's embedded settings area
+// reuses the same save bar as the titled window (NotchSettingsArea).
+struct GeneralSettingsActionBar: View {
     @ObservedObject var generalSettingsViewModel: GeneralSettingsViewModel
 
     var body: some View {
@@ -283,20 +335,7 @@ private struct GeneralSettingsActionBar: View {
                 Button("保存") {
                     generalSettingsViewModel.save()
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(DS.Colors.textOnAccent)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                        .fill(
-                            generalSettingsViewModel.isDirty
-                                ? DS.Colors.accent
-                                : DS.Colors.accent.opacity(0.4)
-                        )
-                )
-                .pointerCursor(isEnabled: generalSettingsViewModel.isDirty)
+                .buttonStyle(DSPillButtonStyle(isEnabled: generalSettingsViewModel.isDirty))
                 .disabled(!generalSettingsViewModel.isDirty)
 
                 Button("关闭") {
