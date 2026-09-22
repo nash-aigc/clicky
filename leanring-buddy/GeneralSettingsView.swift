@@ -513,6 +513,18 @@ struct GeneralSettingsView: View {
             SettingsGroupLabel("播放行为")
             SettingsCard {
                 SettingsRow(
+                    label: "播报方式",
+                    description: generalSettingsViewModel.draftSettings.speechSpeakMode.descriptionText
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.speechSpeakMode),
+                        options: SpeechSpeakMode.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
                     label: "新提问立刻打断播报",
                     description: "正在朗读时你再按快捷键，立刻停下听你说。关掉则是播完才接受新提问。"
                 ) {
@@ -536,7 +548,7 @@ struct GeneralSettingsView: View {
             }
 
             SettingsNote(
-                text: "朗读慢的大头不是这些参数，是「等整段回答生成完 + 合成约 2 秒」。想再快，治本的办法是让回答更短。"
+                text: "「逐句快答」默认边生成边读：第一声只等模型的开头十几个字，长回答不用再等全文。这时朗读还慢，多半是模型出字慢或回答太长，治本的办法是让回答更短。"
             )
         }
     }

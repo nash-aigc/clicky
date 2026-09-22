@@ -536,6 +536,65 @@ nonisolated enum ActionTagParser {
         return spokenText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    // MARK: - Streaming speech support (逐句快答)
+
+    /// The tag keywords one combined pattern for the streaming speech path —
+    /// a keyword added to the parser above must be added here too, or the
+    /// streaming speech would read the tag aloud instead of removing it.
+    private static let streamingTagKeywords =
+        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE"
+
+    /// A complete tag, however far the reply has streamed: `[TYPE:北京新闻]`.
+    private static let streamingCompleteTagPattern =
+        "\\[(?:\(streamingTagKeywords))[^\\]]*\\]"
+
+    /// A tag that has started but not closed yet — the tail of text still
+    /// streaming in: `[POINT:123,45` (keyword whole, arguments still arriving)
+    /// or `[POIN` (the keyword itself only half-streamed). The second shape
+    /// needs its own arm: `[POIN` matches no keyword yet, so a keyword-only
+    /// pattern would let it through and the tag's first letters would be
+    /// spoken aloud — and the next call would retract them, which breaks the
+    /// prefix monotonicity the session's cumulative feed diffs on. The arm
+    /// matches a trailing `[` followed by letters only, however many: a
+    /// bracketed English word (`[documentation`) is held too, but holding is
+    /// always safe — releasing the held text later only extends the output,
+    /// while leaking it early and removing it later is the break.
+    private static let streamingOpenTagPattern =
+        "\\[(?:\(streamingTagKeywords))[^\\]]*$|\\[[A-Za-z_]*$"
+
+    /// Strips action tags from reply text that may still be mid-tag, for the
+    /// streaming speech path.
+    ///
+    /// Complete tags are removed; a trailing stretch that could still be the
+    /// beginning of a tag is held back (`[POINT:123,45` has not closed yet —
+    /// speaking it now would read the tag aloud, and finding out one character
+    /// too late is what this hold-back prevents). Once the tag closes it is
+    /// removed on a later call, so each call's result always extends the
+    /// previous call's — the session diffs on that property.
+    static func speakableTextFromStreamedReply(_ streamedReplyText: String) -> String {
+        var speakableText = streamedReplyText
+
+        if let completeTagRegex = try? NSRegularExpression(pattern: streamingCompleteTagPattern, options: [.caseInsensitive]) {
+            let wholeTextRange = NSRange(streamedReplyText.startIndex..., in: streamedReplyText)
+            speakableText = completeTagRegex.stringByReplacingMatches(
+                in: streamedReplyText,
+                options: [],
+                range: wholeTextRange,
+                withTemplate: ""
+            )
+        }
+
+        if let openTagRegex = try? NSRegularExpression(pattern: streamingOpenTagPattern, options: [.caseInsensitive]) {
+            let wholeTextRange = NSRange(speakableText.startIndex..., in: speakableText)
+            if let openTagMatch = openTagRegex.firstMatch(in: speakableText, options: [], range: wholeTextRange),
+               let openTagRange = Range(openTagMatch.range, in: speakableText) {
+                speakableText = String(speakableText[..<openTagRange.lowerBound])
+            }
+        }
+
+        return speakableText
+    }
+
     private static func forEachMatch(
         in text: String,
         pattern: String,

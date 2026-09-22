@@ -240,6 +240,40 @@ nonisolated enum ShortcutTriggerMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// How a reply is turned into speech — the 「播报方式」 row on the 说（播报） page.
+///
+/// Ported from the voice-web reference project's `tts_speak_mode` (sentence /
+/// whole). The measured case for the default is written up in that project's
+/// 实现方案/11 doc: synthesis runs ~20× faster than playback, so speaking the
+/// first ~15-character segment while the rest is still being generated gets
+/// the first word out at the floor of what the pipeline allows — waiting for
+/// the whole reply first (whole) costs a 300-character answer about 17 extra
+/// seconds of silence, in exchange for more连贯 intonation across the answer.
+nonisolated enum SpeechSpeakMode: String, Codable, CaseIterable, Sendable {
+    /// 逐句快答 (default): speak sentence-sized segments as the reply streams
+    /// in, each merged to at least 15 characters and cut at 60 when the model
+    /// writes none. The first segment is audible while the model is still
+    /// writing the rest of the answer.
+    case sentenceFastReply
+    /// 整段合成: wait for the model to finish the whole reply, then synthesize
+    /// and play it. Slower to first word, more even intonation.
+    case wholeReply
+
+    var displayName: String {
+        switch self {
+        case .sentenceFastReply: return "逐句快答"
+        case .wholeReply: return "整段合成"
+        }
+    }
+
+    var descriptionText: String {
+        switch self {
+        case .sentenceFastReply: return "边生成边合成边播，第一声最快。"
+        case .wholeReply: return "等全文生成完再合成再播，语调更连贯，长回答等得久。"
+        }
+    }
+}
+
 nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     // MARK: - 通用 · 启动
@@ -355,6 +389,11 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     /// Characters per TTS synthesis request. The documented service cap is 600.
     var maximumSpeechChunkCharacters: Int = 500
+
+    /// 「播报方式」: whether the reply is spoken as it streams in (逐句快答,
+    /// the default) or held until the model has finished the whole answer
+    /// (整段合成). See `SpeechSpeakMode` for the measured trade-off.
+    var speechSpeakMode: SpeechSpeakMode = .sentenceFastReply
 
     // MARK: - 看与截图
 
@@ -517,6 +556,7 @@ nonisolated extension AppSettings {
         case speechPlaybackVolumePercent
         case interruptsPlaybackOnNewQuestion
         case maximumSpeechChunkCharacters
+        case speechSpeakMode
         case screenshotMaxDimension
         case screenshotCompressionQuality
         case capturesAllDisplays
@@ -568,6 +608,7 @@ nonisolated extension AppSettings {
         speechPlaybackVolumePercent = try container.decodeIfPresent(Double.self, forKey: .speechPlaybackVolumePercent) ?? defaults.speechPlaybackVolumePercent
         interruptsPlaybackOnNewQuestion = try container.decodeIfPresent(Bool.self, forKey: .interruptsPlaybackOnNewQuestion) ?? defaults.interruptsPlaybackOnNewQuestion
         maximumSpeechChunkCharacters = try container.decodeIfPresent(Int.self, forKey: .maximumSpeechChunkCharacters) ?? defaults.maximumSpeechChunkCharacters
+        speechSpeakMode = try container.decodeIfPresent(SpeechSpeakMode.self, forKey: .speechSpeakMode) ?? defaults.speechSpeakMode
         screenshotMaxDimension = try container.decodeIfPresent(Int.self, forKey: .screenshotMaxDimension) ?? defaults.screenshotMaxDimension
         screenshotCompressionQuality = try container.decodeIfPresent(Double.self, forKey: .screenshotCompressionQuality) ?? defaults.screenshotCompressionQuality
         capturesAllDisplays = try container.decodeIfPresent(Bool.self, forKey: .capturesAllDisplays) ?? defaults.capturesAllDisplays

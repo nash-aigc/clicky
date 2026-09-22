@@ -1067,6 +1067,7 @@ final class CompanionManager: ObservableObject {
     - a turn where the user asked you to DO something is not a talking turn. do it, then say one short sentence about what happened. no preamble, no plan, no explanation of the steps, no asking whether you should, no offering to do more. the tags do the work; your words are only the receipt.
     - casual, warm. no emojis.
     - write for the ear, not the eye. short sentences. no lists, bullet points, markdown, or formatting — just natural speech.
+    - your reply streams out loud sentence by sentence while you are still writing it, and the FIRST sentence is what the user hears first. make that first sentence a short, complete sentence — about fifteen characters in chinese, or one short english sentence — ending with 。 or . after it, keep writing in full sentences and punctuate normally; never let a clause run on without punctuation, because the pauses you write are where the speech takes a breath.
     - don't use abbreviations or symbols that sound weird read aloud. write "for example" not "e.g.", spell out small numbers.
     - if the user's question relates to what's on their screen, reference specific things you see.
     - if the screenshot doesn't seem relevant to their question, just answer the question directly.
@@ -1366,6 +1367,41 @@ final class CompanionManager: ObservableObject {
             // receipt stays in the bubble while the next request is in flight.
             var finalSpokenText = ""
 
+            // 逐句快答 (the default 播报方式): the session speaks the reply while
+            // the model is still writing it. Declared outside the `do` like the
+            // other accumulators so the catch paths can drain it cleanly; a
+            // user stop tears it down earlier through `stopPlayback`. When the
+            // 👄 role is unusable the setup fails and the whole-reply path
+            // below re-throws the identical error, so the existing error
+            // reporting covers both modes.
+            var streamingSpeechSession: BailianTTSClient.StreamingSpeechSession?
+            if appSettings.speechSpeakMode == .sentenceFastReply {
+                do {
+                    let session = try bailianTTSClient.beginStreamingSpeech()
+                    streamingSpeechSession = session
+                    // The watch task does the two jobs the whole-reply path
+                    // does after `speakText` returns: flip into .responding
+                    // the moment the first segment is audible (which here can
+                    // be while the model is still writing), and speak the
+                    // apology when synthesis failed before anything was heard.
+                    let firstAudioWatchTask = Task { [weak self] in
+                        let outcome = await session.waitUntilFirstAudioOutcome()
+                        guard let self, !Task.isCancelled else { return }
+                        switch outcome {
+                        case .firstAudioStarted:
+                            self.voiceState = .responding
+                        case .failed(let synthesisError):
+                            self.speakCreditsErrorFallback(failure: synthesisError)
+                        case .nothingToSpeak:
+                            break
+                        }
+                    }
+                    _ = firstAudioWatchTask
+                } catch {
+                    streamingSpeechSession = nil
+                }
+            }
+
             // The panel's 上一次动手 row accumulates across steps, so it describes
             // the whole job so far rather than only its last reply. Cleared once
             // here, before the loop, for the same reason the single-step path
@@ -1520,6 +1556,17 @@ final class CompanionManager: ObservableObject {
                                 announcedAnswerStart = true
                                 SoundEffectPlayer.shared.play(.answerStarted)
                             }
+
+                            // 逐句快答: hand the tag-stripped cumulative text to the
+                            // speech session on every chunk, before the display guard —
+                            // the reply is spoken even when the bubble is turned off.
+                            // The session diffs internally, so feeding the whole
+                            // accumulated text is the contract.
+                            if let streamingSpeechSession {
+                                let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
+                                streamingSpeechSession.feed(cumulativeSpeakableText: speakableText)
+                            }
+
                             guard showsResponseText else { return }
                             self?.streamingAnswerText = accumulatedText
                         }
@@ -1762,13 +1809,23 @@ final class CompanionManager: ObservableObject {
                         streamingAnswerText = finalSpokenText
                     }
 
-                    do {
-                        try await bailianTTSClient.speakText(finalSpokenText)
-                        // speakText returns after player.play() — audio is now playing
-                        voiceState = .responding
-                    } catch {
-                        print("⚠️ Bailian TTS error: \(error)")
-                        speakCreditsErrorFallback(failure: error)
+                    if let streamingSpeechSession {
+                        // 逐句快答: the segments were already spoken while the reply
+                        // streamed in; the flush speaks the tail the aggregator was
+                        // still holding. `voiceState` went to .responding when the
+                        // first segment became audible — the watch task set it up
+                        // above — so the whole-reply path's post-`speakText` flip
+                        // has no equivalent here.
+                        streamingSpeechSession.finishStreaming()
+                    } else {
+                        do {
+                            try await bailianTTSClient.speakText(finalSpokenText)
+                            // speakText returns after player.play() — audio is now playing
+                            voiceState = .responding
+                        } catch {
+                            print("⚠️ Bailian TTS error: \(error)")
+                            speakCreditsErrorFallback(failure: error)
+                        }
                     }
 
                     // Scheduled outside the do/catch on purpose: a failed synthesis
@@ -1807,6 +1864,16 @@ final class CompanionManager: ObservableObject {
             } catch is CancellationError {
                 // User spoke again — response was interrupted
                 clearAnswerBubble()
+
+                // The streaming speech session was already stopped if the stop
+                // came through `interruptActiveResponse` or a new question's
+                // `stopPlayback` — this drain is a no-op there. It exists for
+                // cancellation shapes where nothing silenced the client (a new
+                // question with 「新提问立刻打断播报」 off): without it the
+                // session never learns the reply ended, `isPlaying` stays true
+                // forever, and the answer bubble and transient hide hang on a
+                // condition that never arrives.
+                streamingSpeechSession?.finishStreaming()
 
                 // HeyClicky shows the turn it had to abandon as an
                 // "INTERRUPTED BY USER" chip rather than dropping it, and the
@@ -1853,6 +1920,10 @@ final class CompanionManager: ObservableObject {
                 print("⚠️ Companion response error: \(error)")
                 clearAnswerBubble()
                 speakCreditsErrorFallback(failure: error)
+                // Same drain as the typed cancellation catch: the reply died
+                // mid-stream, so without it the session would wait for text
+                // that is never coming.
+                streamingSpeechSession?.finishStreaming()
                 // No turn is recorded on an error, so the pending outgoing
                 // bubble has nothing to hand over to — clear it, or the
                 // user's words would sit in the conversation forever.

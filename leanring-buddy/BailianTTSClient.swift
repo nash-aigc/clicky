@@ -33,7 +33,10 @@ struct BailianTTSClientError: LocalizedError {
 /// One reply's playback parameters, snapshotted in `speakText` and handed to
 /// every chunk, so a settings save landing mid-answer can't split one reply
 /// across two speeds or volumes.
-private struct SpeechPlaybackConfiguration {
+///
+/// Internal rather than private: `StreamingSpeechSession` hands the same
+/// snapshot to its own playback calls.
+struct SpeechPlaybackConfiguration {
     let rate: Float
     let volume: Float
 }
@@ -189,14 +192,48 @@ final class BailianTTSClient {
     }
 
     /// Whether audio is currently playing, or is about to be — see
-    /// `isSpeakingChunkSequence` for why the gaps between chunks still count.
+    /// `isSpeakingChunkSequence` for why the gaps between chunks still count,
+    /// and `StreamingSpeechSession.isSynthesizingBeforeFirstAudio` for why the
+    /// synthesis window before the *first* audio counts too.
     var isPlaying: Bool {
         if audioPlayer?.isPlaying == true { return true }
-        return isSpeakingChunkSequence
+        if isSpeakingChunkSequence { return true }
+        return activeStreamingSession?.isSynthesizingBeforeFirstAudio ?? false
+    }
+
+    /// The live 逐句快答 session, if one is running. `stopPlayback` tears it
+    /// down, so every existing interrupt path (the talk shortcut, the panel's
+    /// 「停止」, a new question) silences it without knowing it exists.
+    private var activeStreamingSession: StreamingSpeechSession?
+
+    /// Begins a streaming speech session (逐句快答): the caller feeds the reply's
+    /// tag-stripped text as it streams in, and the session speaks sentence-sized
+    /// segments while the model is still writing the rest of the answer.
+    ///
+    /// - Throws: the same configuration error `speakText` would throw when the
+    ///   👄 role is unusable — callers that catch it simply fall back to the
+    ///   whole-reply path, which re-throws the identical error.
+    func beginStreamingSpeech() throws -> StreamingSpeechSession {
+        stopPlayback()
+        let resolvedSpeechRole = try resolveSpeechRole()
+        let appSettings = AppSettingsStore.snapshot()
+        let playbackConfiguration = SpeechPlaybackConfiguration(
+            rate: Float(appSettings.speechPlaybackRate),
+            volume: Float(appSettings.speechPlaybackVolumePercent) / 100
+        )
+        let session = StreamingSpeechSession(
+            resolvedSpeechRole: resolvedSpeechRole,
+            playbackConfiguration: playbackConfiguration,
+            owner: self
+        )
+        activeStreamingSession = session
+        return session
     }
 
     /// Stops playback immediately and abandons any chunks still queued.
     func stopPlayback() {
+        activeStreamingSession?.stop()
+        activeStreamingSession = nil
         remainingChunksPlaybackTask?.cancel()
         remainingChunksPlaybackTask = nil
         audioPlayer?.stop()
@@ -210,7 +247,10 @@ final class BailianTTSClient {
     ///
     /// Takes the resolved role rather than reading it here, so every chunk of one
     /// reply is synthesized by the same provider — see `speakText`.
-    private func requestAudioData(
+    ///
+    /// Internal rather than private: `StreamingSpeechSession` below drives the
+    /// same request path for the 逐句快答 mode.
+    func requestAudioData(
         for textChunk: String,
         resolvedSpeechRole: ResolvedModelRole
     ) async throws -> Data {
@@ -307,7 +347,7 @@ final class BailianTTSClient {
 
     // MARK: - Playback
 
-    private func playAudioData(
+    func playAudioData(
         _ audioData: Data,
         chunkIndex: Int,
         chunkCount: Int,
@@ -322,13 +362,16 @@ final class BailianTTSClient {
             player.volume = playbackConfiguration.volume
             self.audioPlayer = player
             player.play()
-            print("🔊 Bailian TTS: playing chunk \(chunkIndex)/\(chunkCount) (\(audioData.count / 1024)KB)")
+            // `speakText` knows the chunk count up front; a streaming session
+            // does not (the reply is still being written), so it passes 0.
+            let chunkDescription = chunkCount > 0 ? "chunk \(chunkIndex)/\(chunkCount)" : "segment \(chunkIndex)"
+            print("🔊 Bailian TTS: playing \(chunkDescription) (\(audioData.count / 1024)KB)")
         } catch {
             print("⚠️ Bailian TTS: could not play audio chunk \(chunkIndex)/\(chunkCount): \(error.localizedDescription)")
         }
     }
 
-    private func playAndWaitUntilFinished(
+    func playAndWaitUntilFinished(
         _ audioData: Data,
         chunkIndex: Int,
         chunkCount: Int,
@@ -351,11 +394,15 @@ final class BailianTTSClient {
     /// order to reuse the combined method would restart it from the beginning.
     ///
     /// Polls rather than using `AVAudioPlayerDelegate` so this stays a plain
-    /// MainActor class — playback state is checked a few times a second, which is
-    /// far finer than the gap between chunks.
-    private func waitUntilPlaybackFinishes() async {
+    /// MainActor class. The interval is the streaming mode's join gap: at
+    /// every segment boundary, the next segment starts only after this loop
+    /// notices the last one ended, so every millisecond here is millisecond
+    /// of dead air the listener hears between sentences — 30 ms (down from
+    /// 200 ms after the long-pauses-at-joins complaint) is silent to the ear
+    /// and costs one boolean check.
+    func waitUntilPlaybackFinishes() async {
         while audioPlayer?.isPlaying == true {
-            try? await Task.sleep(nanoseconds: 200_000_000)
+            try? await Task.sleep(nanoseconds: 30_000_000)
             guard !Task.isCancelled else { return }
         }
     }
@@ -465,5 +512,449 @@ final class BailianTTSClient {
         }
 
         return chunks
+    }
+
+    // MARK: - Streaming speech (逐句快答)
+
+    /// What waiting for the stream's first audio resolved to. The response
+    /// pipeline uses this to flip into its "responding" state at the moment the
+    /// user actually hears the first segment — which in this mode can be while
+    /// the model is still writing — and to speak the apology when synthesis
+    /// failed before anything was heard.
+    enum StreamingSpeechOutcome: Sendable {
+        case firstAudioStarted
+        case failed(Error)
+        /// The reply ended with nothing speakable (empty, or all action tags),
+        /// or the session was stopped — no audio will ever start.
+        case nothingToSpeak
+    }
+
+    /// Speaks a reply while the model is still generating it.
+    ///
+    /// Ported from the voice-web reference project's three-part speech chain
+    /// (实现方案/11): the reply's tag-stripped text is fed in as it streams, an
+    /// aggregator turns the stream into segments that are synthesized the
+    /// moment they exist — with up to two syntheses in flight, so while one
+    /// segment is playing the next is already on its way. The measured physics
+    /// behind the design: synthesis (~19 ms/char + ~450 ms fixed) runs far
+    /// faster than playback (~5.8 chars/s), so once the first segment is
+    /// audible every later segment is ready before the previous one finishes,
+    /// and first audio lands roughly one synthesis after the model's first
+    /// words instead of after the whole reply.
+    ///
+    /// The first sentence's shortness (~15 characters) is a two-sided contract
+    /// (2026-09-22): the reference project's own numbers (merge to ≥15, cut at
+    /// 60) made the first sound late, and a character-count force cut then made
+    /// it sound torn — a sentence chopped mid-phrase. The fix splits the job:
+    /// the SYSTEM PROMPT makes the model write its first sentence short (about
+    /// 15 characters, ending in 。), while this cutter only ever cuts at
+    /// punctuation the model actually wrote.
+    ///
+    /// The two halves of the reply run under different merge budgets, measured
+    /// against the 2026-09-22 complaint that the reply played as many short
+    /// segments with a long pause at every join (an eight-segment reply on one
+    /// real reply). Later segments cost nothing to enlarge — synthesis is
+    /// ~20 ms/char against ~170 ms/char of playback, so a 30-character segment
+    /// plays for ~5 s while its successor synthesizes in ~1 s — and every join
+    /// avoided is one less per-segment fixed cost (one synthesis request, one
+    /// player start, the poll lag, the service's own trailing silence). Only
+    /// the FIRST segment stays small, because it alone gates when the user
+    /// first hears anything.
+    @MainActor
+    final class StreamingSpeechSession {
+
+        /// Later segments: merged sentences shorter than this are held until
+        /// they add up. This shapes evenness only, never latency — later
+        /// segments are synthesized while earlier ones play. 30 (raised from
+        /// the reference project's 15 after the too-many-joins complaint) is
+        /// several sentences' worth, so joins land mostly at 。 rather than at
+        /// every comma, and each segment plays long enough for the model to
+        /// stream the next one well ahead of its turn.
+        private let minimumSegmentCharacters = 30
+        /// Later segments' only remaining character-count cut: a stretch this
+        /// long with no punctuation whatsoever (no sentence mark, no comma, no
+        /// space — pathologically run-on) still segments here. Kept well above
+        /// `minimumSegmentCharacters` so a comma at ≤ 59 characters always
+        /// wins over this backstop — the cut must land on punctuation the
+        /// model wrote, and the backstop only exists so one unbroken stream
+        /// can never stall the queue.
+        private let unpunctuatedCutCharacters = 60
+        /// The FIRST segment's no-punctuation backstop. Deliberately smaller
+        /// than the later one: nothing has sounded yet, so a run-on first
+        /// stretch must not be allowed to hold the first sound past 40
+        /// characters.
+        private let firstSegmentUnpunctuatedCutCharacters = 40
+        /// How long a first sentence may be and still play whole rather than
+        /// being comma-cut for speed. The system prompt asks the model for ~15
+        /// characters; 22 gives that promise slack so a 17–20 character
+        /// sentence is not needlessly split at its first comma.
+        private let firstSegmentPreferredCeiling = 22
+        /// Lookahead depth. Two in-flight syntheses cover ~10 s of playback
+        /// against ~1 s of synthesis each at the 30-character merge — deep
+        /// enough that the queue never runs dry at real speaking speeds.
+        private let maximumSynthesesInFlight = 2
+
+        private let resolvedSpeechRole: ResolvedModelRole
+        private let playbackConfiguration: SpeechPlaybackConfiguration
+        /// The client that owns this session. Weak because the ownership runs
+        /// the other way; the client outlives the session either way.
+        private weak var owner: BailianTTSClient?
+
+        init(resolvedSpeechRole: ResolvedModelRole, playbackConfiguration: SpeechPlaybackConfiguration, owner: BailianTTSClient) {
+            self.resolvedSpeechRole = resolvedSpeechRole
+            self.playbackConfiguration = playbackConfiguration
+            self.owner = owner
+        }
+
+        // Aggregation state. `consumedSpeakableText` is what has already been
+        // diffed; feed() receives the cumulative stripped text, so a repeated
+        // or partial update can never double-speak a sentence.
+        private var consumedSpeakableText = ""
+        private var unemittedBuffer = ""
+        /// The first segment runs under a different (faster) rule than the
+        /// rest — this flag is what switches between the two.
+        private var hasEmittedAnySegment = false
+        private var hasFinishedStreaming = false
+        private var isStopped = false
+
+        // Synthesis pipeline.
+        private var pendingSegments: [String] = []
+        private var inFlightSyntheses: [(segmentIndex: Int, task: Task<Data, Error>)] = []
+        private var playbackLoopTask: Task<Void, Never>?
+        private var queuedSegmentCount = 0
+        private var pumpedSegmentCount = 0
+        private var firstAudioStarted = false
+        private var synthesisFailure: Error?
+
+        /// Fired the moment the first segment's audio actually starts playing.
+        var onFirstAudioStarted: (() -> Void)?
+
+        /// True while the session still owes the user audio that has not begun:
+        /// a segment is queued or synthesizing and none has sounded yet.
+        ///
+        /// `isPlaying` is false throughout this window — nothing is playing and
+        /// `isSpeakingChunkSequence` only turns on at the first audio — so a
+        /// caller that starts polling `isPlaying` right after the reply finished
+        /// streaming (the bubble-clear scheduler, the transient hide) would pass
+        /// immediately and take the text down while the first segment was still
+        /// being synthesized. This is the missing half of that condition. False
+        /// once the first audio starts (`isPlaying` covers the rest), and false
+        /// when the session can never produce audio — stopped, failed, or ended
+        /// with nothing speakable — so the waiter is never stuck.
+        var isSynthesizingBeforeFirstAudio: Bool {
+            !isStopped && synthesisFailure == nil && !firstAudioStarted
+                && !(hasFinishedStreaming && pendingSegments.isEmpty && inFlightSyntheses.isEmpty)
+        }
+
+        // MARK: Feeding
+
+        /// Receives the reply's cumulative tag-stripped text. Diffed against
+        /// what was already consumed, so the caller can hand over the whole
+        /// accumulated text on every update.
+        func feed(cumulativeSpeakableText: String) {
+            guard !isStopped, !hasFinishedStreaming else { return }
+            guard cumulativeSpeakableText.hasPrefix(consumedSpeakableText) else {
+                // Stripping only ever removes text, so a lost prefix means the
+                // caller changed the text underneath us. Ignoring it is safer
+                // than speaking a duplicate sentence.
+                print("⚠️ Streaming speech: streamed text lost its prefix; ignoring this update")
+                return
+            }
+            let delta = String(cumulativeSpeakableText.dropFirst(consumedSpeakableText.count))
+            guard !delta.isEmpty else { return }
+            consumedSpeakableText = cumulativeSpeakableText
+            unemittedBuffer += delta
+            emitReadySegments()
+            // Pump here, not only in the playback loop: a segment that arrives
+            // while the previous one is playing must start synthesizing now,
+            // or it would only begin after playback ends — the exact gap this
+            // mode exists to remove.
+            pumpSynthesis()
+            ensurePlaybackLoop()
+        }
+
+        /// The reply is complete: flush whatever the aggregator is still
+        /// holding and let the loop play out the queue.
+        func finishStreaming() {
+            guard !isStopped, !hasFinishedStreaming else { return }
+            hasFinishedStreaming = true
+            if !unemittedBuffer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                enqueueSegment(unemittedBuffer)
+            }
+            unemittedBuffer = ""
+            pumpSynthesis()
+            ensurePlaybackLoop()
+        }
+
+        /// Stops everything and forgets all queued work. Called from the
+        /// client's `stopPlayback`, so every existing interrupt path reaches it.
+        func stop() {
+            isStopped = true
+            hasFinishedStreaming = true
+            playbackLoopTask?.cancel()
+            playbackLoopTask = nil
+            for (_, task) in inFlightSyntheses {
+                task.cancel()
+            }
+            inFlightSyntheses = []
+            pendingSegments = []
+            unemittedBuffer = ""
+        }
+
+        /// Waits until the stream's first segment is audible, synthesis fails,
+        /// the stream ends with nothing speakable, or the session is stopped.
+        func waitUntilFirstAudioOutcome() async -> StreamingSpeechOutcome {
+            while true {
+                if firstAudioStarted { return .firstAudioStarted }
+                if let synthesisFailure { return .failed(synthesisFailure) }
+                if isStopped { return .nothingToSpeak }
+                if hasFinishedStreaming, pendingSegments.isEmpty, inFlightSyntheses.isEmpty {
+                    // The stream ended before anything speakable arrived.
+                    return .nothingToSpeak
+                }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+        }
+
+        // MARK: Aggregation (cut at the model's own punctuation, never mid-sentence)
+
+        /// Moves every segment the buffer already holds into the synthesis
+        /// queue. The design rule above every number below: a cut lands where
+        /// the model wrote punctuation, never between two characters it
+        /// wrote as one phrase — an earlier character-count cut tore sentences
+        /// in two and the user heard the tear. The FIRST sentence's shortness
+        /// (~15 characters) is the system prompt's job now, not the cutter's.
+        ///
+        /// First segment, checked on every feed:
+        /// ① the first sentence terminator at ≤ 22 characters — a short whole
+        /// sentence, the shape the prompt asks for, plays whole rather than
+        /// being split at its first comma into a 3-character crumb plus one
+        /// extra join;
+        /// ② the first comma-family pause — but only once the buffer has
+        /// outgrown the 22-character ceiling, so a short first sentence gets
+        /// its whole length to arrive before the comma cut fires. The comma
+        /// is a cut the model itself wrote, so the first sound still stays
+        /// fast whenever the first sentence really is long;
+        /// ③ any longer terminator;
+        /// ④ a stretch with no punctuation at all still hard-cuts at 40 so
+        /// the first sound can never be stalled by one run-on stream.
+        ///
+        /// Later segments:
+        /// ⑤ the smallest prefix ending at a sentence terminator carrying at
+        /// least 30 characters — short sentences merge together, so joins land
+        /// on 。 instead of on every comma;
+        /// ⑥ no terminator — the first comma-family pause past 30 characters;
+        /// ⑦ the 60-character no-punctuation backstop.
+        private func emitReadySegments() {
+            while true {
+                if !hasEmittedAnySegment {
+                    if let segmentLength = speakableSentenceSegmentLength(
+                        in: unemittedBuffer,
+                        minimumCharacters: 1,
+                        maximumCharacters: firstSegmentPreferredCeiling) {
+                        enqueueSegment(String(unemittedBuffer.prefix(segmentLength)))
+                        unemittedBuffer.removeFirst(segmentLength)
+                        continue
+                    }
+                    if unemittedBuffer.count > firstSegmentPreferredCeiling,
+                       let cutLength = softBreakCutLength(in: unemittedBuffer, minimumCharacters: 1) {
+                        enqueueSegment(String(unemittedBuffer.prefix(cutLength)))
+                        unemittedBuffer.removeFirst(cutLength)
+                        continue
+                    }
+                    if let segmentLength = speakableSentenceSegmentLength(
+                        in: unemittedBuffer,
+                        minimumCharacters: 1) {
+                        enqueueSegment(String(unemittedBuffer.prefix(segmentLength)))
+                        unemittedBuffer.removeFirst(segmentLength)
+                        continue
+                    }
+                    if unemittedBuffer.count >= firstSegmentUnpunctuatedCutCharacters {
+                        enqueueSegment(String(unemittedBuffer.prefix(firstSegmentUnpunctuatedCutCharacters)))
+                        unemittedBuffer.removeFirst(firstSegmentUnpunctuatedCutCharacters)
+                        continue
+                    }
+                    break
+                }
+                if let segmentLength = speakableSentenceSegmentLength(in: unemittedBuffer) {
+                    enqueueSegment(String(unemittedBuffer.prefix(segmentLength)))
+                    unemittedBuffer.removeFirst(segmentLength)
+                    continue
+                }
+                if let cutLength = softBreakCutLength(
+                    in: unemittedBuffer,
+                    minimumCharacters: minimumSegmentCharacters) {
+                    enqueueSegment(String(unemittedBuffer.prefix(cutLength)))
+                    unemittedBuffer.removeFirst(cutLength)
+                    continue
+                }
+                if unemittedBuffer.count >= unpunctuatedCutCharacters {
+                    enqueueSegment(String(unemittedBuffer.prefix(unpunctuatedCutCharacters)))
+                    unemittedBuffer.removeFirst(unpunctuatedCutCharacters)
+                    continue
+                }
+                break
+            }
+        }
+
+        /// The length of the smallest prefix ending in a sentence terminator
+        /// with at least `minimumCharacters` characters, or nil. The first
+        /// segment passes 1 (any terminator wins immediately); later segments
+        /// pass `minimumSegmentCharacters`. `maximumCharacters` bounds the
+        /// match from above — the first segment passes
+        /// `firstSegmentPreferredCeiling` so a short whole sentence plays
+        /// whole while a long one falls through to the comma rule. A
+        /// terminator squeezed between two digits ("3.14") is part of the
+        /// number, not a sentence boundary — and because the digits stream in
+        /// one at a time, an ASCII "." sitting at the very end of the buffer
+        /// is *not yet known* not to be a decimal point, so it is held until
+        /// the next character arrives (a "。" is unambiguous and never held).
+        private func speakableSentenceSegmentLength(
+            in text: String,
+            minimumCharacters: Int? = nil,
+            maximumCharacters: Int? = nil
+        ) -> Int? {
+            let minimumLength = minimumCharacters ?? minimumSegmentCharacters
+            let characters = Array(text)
+            var previousCharacter: Character?
+            for (index, character) in characters.enumerated() {
+                let characterCount = index + 1
+                if let maximumCharacters, characterCount > maximumCharacters {
+                    return nil
+                }
+                let lookaheadCharacter = index + 1 < characters.count ? characters[index + 1] : nil
+                if Self.sentenceTerminators.contains(character),
+                   characterCount >= minimumLength,
+                   !(character == "." && Self.isBetweenDigits(previousCharacter, lookaheadCharacter)),
+                   !(character == "." && lookaheadCharacter == nil) {
+                    return characterCount
+                }
+                previousCharacter = character
+            }
+            return nil
+        }
+
+        /// The length of the prefix ending at the first comma-family pause at
+        /// or past `minimumCharacters`, or nil when the text has none. This is
+        /// where a cut that must not wait for a sentence terminator lands —
+        /// the model wrote this pause, so cutting here never tears a phrase.
+        /// An ASCII "," at the very end of the buffer is held like the "."
+        /// above: with no lookahead it may still turn out to be a thousands
+        /// separator ("1,000"), and the next character settles it.
+        private func softBreakCutLength(in text: String, minimumCharacters: Int) -> Int? {
+            let characters = Array(text)
+            var previousCharacter: Character?
+            for (index, character) in characters.enumerated() {
+                let characterCount = index + 1
+                let lookaheadCharacter = index + 1 < characters.count ? characters[index + 1] : nil
+                defer { previousCharacter = character }
+                guard characterCount >= minimumCharacters,
+                      Self.softBreakCharacters.contains(character),
+                      !(character == "," && Self.isBetweenDigits(previousCharacter, lookaheadCharacter)),
+                      !(character == "," && lookaheadCharacter == nil)
+                else { continue }
+                return characterCount
+            }
+            return nil
+        }
+
+        private static let digitCharacters: Set<Character> = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+        /// Whether the breakpoint sits inside a number — "1,000", "3.14" are
+        /// one token, and cutting there reads out half a number.
+        private static func isBetweenDigits(
+            _ previousCharacter: Character?,
+            _ lookaheadCharacter: Character?
+        ) -> Bool {
+            guard let previousCharacter,
+                  Self.digitCharacters.contains(previousCharacter),
+                  let lookaheadCharacter,
+                  Self.digitCharacters.contains(lookaheadCharacter)
+            else { return false }
+            return true
+        }
+
+        private static let sentenceTerminators: Set<Character> = ["。", "！", "？", "；", ".", "!", "?", ";", "\n"]
+        private static let softBreakCharacters: Set<Character> = ["，", "、", ",", " ", "：", ":"]
+
+        // MARK: Synthesis and playback pipeline
+
+        private func enqueueSegment(_ segment: String) {
+            queuedSegmentCount += 1
+            print("🗣️ Streaming speech: queued segment \(queuedSegmentCount) (\(segment.count) chars)")
+            pendingSegments.append(segment)
+            // From here on the later-segment rules (①②③ in emitReadySegments)
+            // take over from the first-segment rule.
+            hasEmittedAnySegment = true
+        }
+
+        private func pumpSynthesis() {
+            guard let owner else { return }
+            while inFlightSyntheses.count < maximumSynthesesInFlight, !pendingSegments.isEmpty {
+                let segment = pendingSegments.removeFirst()
+                pumpedSegmentCount += 1
+                let segmentIndex = pumpedSegmentCount
+                let resolvedSpeechRole = self.resolvedSpeechRole
+                let synthesisTask = Task {
+                    try await owner.requestAudioData(for: segment, resolvedSpeechRole: resolvedSpeechRole)
+                }
+                inFlightSyntheses.append((segmentIndex, synthesisTask))
+            }
+        }
+
+        private func ensurePlaybackLoop() {
+            guard playbackLoopTask == nil, !isStopped else { return }
+            playbackLoopTask = Task { [weak self] in
+                guard let self else { return }
+                await self.runPlaybackLoop()
+                // Detach from the owner only if it still points at *this*
+                // session — a newer reply's session may already have replaced it.
+                if self.owner?.activeStreamingSession === self {
+                    self.owner?.activeStreamingSession = nil
+                }
+            }
+        }
+
+        private func runPlaybackLoop() async {
+            guard let owner else { return }
+            while !Task.isCancelled, !isStopped {
+                pumpSynthesis()
+                if let nextSynthesis = inFlightSyntheses.first {
+                    do {
+                        let audioData = try await nextSynthesis.task.value
+                        guard !Task.isCancelled, !isStopped else { return }
+                        inFlightSyntheses.removeFirst()
+                        if !firstAudioStarted {
+                            firstAudioStarted = true
+                            owner.isSpeakingChunkSequence = true
+                            onFirstAudioStarted?()
+                        }
+                        await owner.playAndWaitUntilFinished(
+                            audioData,
+                            chunkIndex: nextSynthesis.segmentIndex,
+                            chunkCount: 0,
+                            playbackConfiguration: playbackConfiguration
+                        )
+                    } catch {
+                        if isStopped || Task.isCancelled { return }
+                        print("⚠️ Streaming speech: segment synthesis failed: \(error.localizedDescription)")
+                        synthesisFailure = error
+                        // Partial audio already played is still useful; end the
+                        // sequence rather than leaving the companion stuck in a
+                        // speaking state (same rule as `speakText`'s chunk loop).
+                        owner.isSpeakingChunkSequence = false
+                        return
+                    }
+                } else if hasFinishedStreaming, pendingSegments.isEmpty {
+                    owner.isSpeakingChunkSequence = false
+                    return
+                } else {
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
+            }
+            if isStopped {
+                owner.isSpeakingChunkSequence = false
+            }
+        }
     }
 }
