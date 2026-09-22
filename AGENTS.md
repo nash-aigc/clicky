@@ -1,7 +1,8 @@
 # Clicky - Agent Instructions
 
-<!-- This is the single source of truth for all AI coding agents. CLAUDE.md and cloud.md are symlinks to this file, so there is only ever one copy of these instructions. -->
+<!-- This is the single source of truth for all AI coding agents. The user's agent is Claude Code — it reads this file through the CLAUDE.md symlink. cloud.md is also a symlink here, so there is only ever one copy of these instructions; edit AGENTS.md itself. -->
 <!-- AGENTS.md spec: https://github.com/agentsmd/agents.md — supported by Claude Code, Cursor, Copilot, Gemini CLI, and others. -->
+<!-- Git: single branch `main`, commit straight to it and push — see the Git Workflow section at the bottom. -->
 
 ## 改完代码必须自己编译、自己重启，直接把能用的成品交给用户（最高优先级）
 
