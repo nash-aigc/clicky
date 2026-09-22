@@ -194,8 +194,15 @@ struct NotchHomeView: View {
                     }
 
                     // The answer currently streaming in, live under the last
-                    // finished turn.
-                    if !companionManager.streamingAnswerText.isEmpty {
+                    // finished turn. Gated on the question still being pending:
+                    // once the turn is recorded the flow renders it from
+                    // history, and the live text (kept up on purpose through
+                    // the TTS reading for the overlay bubble's sake) would
+                    // paint the same reply a second time until the post-linger
+                    // clear — the 「回复先出现两条再变一条」 the user reported
+                    // 2026-09-22.
+                    if companionManager.pendingQuestionText != nil,
+                       !companionManager.streamingAnswerText.isEmpty {
                         assistantBubble(companionManager.streamingAnswerText)
                             .id("streaming")
                     }
