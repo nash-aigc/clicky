@@ -19,6 +19,7 @@ import SwiftUI
 enum SettingsPage: String, CaseIterable, Identifiable {
     case general
     case model
+    case agent
     case memory
     case listen
     case speak
@@ -32,6 +33,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "通用"
         case .model: return "模型"
+        case .agent: return "Agent"
         case .memory: return "对话与记忆"
         case .listen: return "听（识别）"
         case .speak: return "说（播报）"
@@ -47,6 +49,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         switch self {
         case .general: return "gearshape.fill"
         case .model: return "cpu"
+        case .agent: return "hammer"
         case .memory: return "bubble.left.fill"
         case .listen: return "mic.fill"
         case .speak: return "speaker.wave.2.fill"
@@ -87,6 +90,7 @@ struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 switch page {
                 case .general: generalPage
+                case .agent: agentPage
                 case .memory: memoryPage
                 case .listen: listenPage
                 case .speak: speakPage
@@ -850,6 +854,156 @@ struct GeneralSettingsView: View {
                 )
             }
         }
+    }
+
+    // MARK: Agent
+
+    private var agentPage: some View {
+        Group {
+            SettingsPageHeader(
+                title: "Agent",
+                subtitle: "让本机的 Claude Code 在你指定的项目文件夹里替你干活——读文件、改代码、跑命令，每一步都显示在 Agent 会话里。"
+            )
+
+            SettingsGroupLabel("开关")
+            SettingsCard {
+                SettingsRow(
+                    label: "允许 Agent 后台任务",
+                    description: "总闸。关掉后侧栏的 Agent 区不能再派发新任务；关掉前已经在跑的任务不受影响。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.allowsAgentSubsystem))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "Agent 悬浮图标",
+                    description: "正在运行的 Agent 在屏幕右上角显示一个小圆标，悬停看进度，点开进会话。关掉后只剩侧栏里的 Agent 列表。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.allowsAgentDesktopHUD))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "Agent 完成时语音播报",
+                    description: "Agent 干完活时用语音告诉你结果第一句。正在和你语音对话时不播报，只响提示音。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.announcesAgentCompletion))
+                }
+            }
+
+            SettingsGroupLabel("权限")
+            SettingsCard {
+                SettingsRow(
+                    label: "Agent 权限",
+                    description: generalSettingsViewModel.draftSettings.agentPermissionMode.descriptionText
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.agentPermissionMode),
+                        options: AgentPermissionMode.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+            }
+            SettingsNote(
+                text: "「完全授权」会让 Agent 不经任何确认执行命令（包括删文件、联网）。只在你完全清楚自己让它做什么的时候使用。"
+            )
+
+            SettingsGroupLabel("运行")
+            SettingsCard {
+                SettingsRow(
+                    label: "claude 命令路径",
+                    description: "Agent 靠本机已登录的 Claude Code 命令行工作。留空自动探测（Homebrew → /usr/local）。"
+                ) {
+                    TextField("自动探测", text: claudeExecutablePathBinding)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12))
+                        .foregroundColor(DS.Colors.textSecondary)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 210)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(DS.Colors.surface2)
+                        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.small, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: DS.CornerRadius.small, style: .continuous)
+                                .stroke(DS.Colors.borderSubtle, lineWidth: 1)
+                        )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "默认项目文件夹",
+                    description: "新建 Agent 选文件夹时的起点。留空则从主目录开始。"
+                ) {
+                    Button(action: pickDefaultProjectFolder) {
+                        Text(defaultProjectFolderButtonLabel)
+                            .font(.system(size: 12))
+                            .foregroundColor(DS.Colors.textSecondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(width: 210, alignment: .trailing)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(DS.Colors.surface2)
+                            .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.small, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: DS.CornerRadius.small, style: .continuous)
+                                    .stroke(DS.Colors.borderSubtle, lineWidth: 1)
+                            )
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .pointerCursor()
+                    .help("选择默认项目文件夹")
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "最多同时运行",
+                    description: "同时运行的 Agent 数上限。每个 Agent 都是一次真实的 Claude Code 会话，按它的用量计费。"
+                ) {
+                    SettingsStepper(
+                        value: generalSettingsViewModel.binding(\.maximumConcurrentAgents),
+                        range: 1...6
+                    )
+                }
+            }
+        }
+    }
+
+    /// `agentClaudeExecutablePath` is `String?` where nil means「自动探测」——
+    /// the text field edits a plain `String`, so empty string writes nil and
+    /// nil reads as the placeholder.
+    private var claudeExecutablePathBinding: Binding<String> {
+        Binding(
+            get: { generalSettingsViewModel.draftSettings.agentClaudeExecutablePath ?? "" },
+            set: { generalSettingsViewModel.draftSettings.agentClaudeExecutablePath = $0.isEmpty ? nil : $0 }
+        )
+    }
+
+    private var defaultProjectFolderButtonLabel: String {
+        guard let folderPath = generalSettingsViewModel.draftSettings.agentDefaultProjectFolder else {
+            return "主目录"
+        }
+        return folderPath
+    }
+
+    /// Folder picker for the default project folder. The app must activate
+    /// first (an LSUIElement app's modal panels appear but never key
+    /// otherwise), same as the sidebar's new-agent picker.
+    private func pickDefaultProjectFolder() {
+        NSApp.activate()
+
+        let folderPicker = NSOpenPanel()
+        folderPicker.canChooseDirectories = true
+        folderPicker.canChooseFiles = false
+        folderPicker.allowsMultipleSelection = false
+        folderPicker.canCreateDirectories = true
+        folderPicker.message = "选择新建 Agent 时的默认项目文件夹"
+        folderPicker.prompt = "使用"
+        if let currentFolderPath = generalSettingsViewModel.draftSettings.agentDefaultProjectFolder {
+            folderPicker.directoryURL = URL(fileURLWithPath: currentFolderPath)
+        }
+
+        guard folderPicker.runModal() == .OK, let pickedURL = folderPicker.url else { return }
+        generalSettingsViewModel.draftSettings.agentDefaultProjectFolder = pickedURL.path
     }
 }
 

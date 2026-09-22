@@ -16,11 +16,16 @@ import SwiftUI
 struct HomeSpaceSidebarView: View {
 
     @ObservedObject var sessionsModel: ConversationSessionsModel
+    @ObservedObject var agentSessionManager: AgentSessionManager
     @Binding var showsSettings: Bool
 
     @State private var hoveringSessionID: UUID?
     @State private var renamingSessionID: UUID?
     @State private var renameDraft: String = ""
+
+    /// Renaming targets an agent instead of a conversation session — the two
+    /// lists share one inline-rename interaction, so one id pair serves both.
+    @State private var renamingAgentID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -28,11 +33,46 @@ struct HomeSpaceSidebarView: View {
             // 的波形 logo 已删——账户行自己带上茎带高度，就是侧栏第一行；
             // 设置齿轮在行右侧，同样在最顶部。
             accountSection
-            searchRow
-            sessionList
+            sidebarSectionSwitcher
+
+            switch agentSessionManager.selectedSidebarSection {
+            case .conversations:
+                searchRow
+                sessionList
+            case .agents:
+                agentList
+            }
             Spacer(minLength: 0)
         }
         .background(Color.black.opacity(0.35))
+    }
+
+    // MARK: - Section switcher
+
+    /// 「对话 / Agent」二选一的小切换器——Agent 是独立于会话的一套列表
+    /// （用户定的取舍：侧栏加 Agent 区，不走对话自动升级）。
+    private var sidebarSectionSwitcher: some View {
+        HStack(spacing: 4) {
+            ForEach(SidebarSection.allCases, id: \.self) { section in
+                let isSelected = agentSessionManager.selectedSidebarSection == section
+                Button(action: { agentSessionManager.selectedSidebarSection = section }) {
+                    Text(section.displayName)
+                        .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                        .foregroundColor(isSelected ? .white : .white.opacity(0.45))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule().fill(isSelected ? Color.white.opacity(0.12) : Color.clear)
+                        )
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 
     // MARK: - Pieces
@@ -201,8 +241,186 @@ struct HomeSpaceSidebarView: View {
         if let renamingSessionID {
             sessionsModel.renameSession(renamingSessionID, to: renameDraft)
         }
+        if let renamingAgentID {
+            agentSessionManager.renameAgent(renamingAgentID, to: renameDraft)
+        }
         renamingSessionID = nil
+        renamingAgentID = nil
         renameDraft = ""
+    }
+
+    // MARK: - Agent list
+
+    private var agentList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                newAgentRow
+
+                ForEach(Array(agentSessionManager.sessions.enumerated()), id: \.element.id) { rowIndex, agent in
+                    agentRow(agent)
+                    if rowIndex < agentSessionManager.sessions.count - 1 {
+                        Divider()
+                            .overlay(Color.white.opacity(0.08))
+                            .padding(.leading, 46)
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 2)
+        }
+    }
+
+    /// The 「＋ 新建 Agent」 row: opens the folder picker, and the picked
+    /// folder becomes the new agent's working directory.
+    private var newAgentRow: some View {
+        Button(action: createAgentWithFolderPicker) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 5, height: 5)
+
+                Image(systemName: "plus.circle")
+                    .font(.system(size: 15))
+                    .foregroundColor(.white.opacity(0.6))
+                    .frame(width: 38, height: 38)
+
+                Text("新建 Agent")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help("选一个项目文件夹，新建一个 Agent")
+    }
+
+    private func agentRow(_ agent: AgentSession) -> some View {
+        let isSelected = agent.id == agentSessionManager.selectedAgentID
+            && agentSessionManager.selectedSidebarSection == .agents
+            && !showsSettings
+
+        return Button(action: {
+            agentSessionManager.selectAgent(agent.id)
+            agentSessionManager.selectedSidebarSection = .agents
+            showsSettings = false
+        }) {
+            HStack(alignment: .center, spacing: 10) {
+                Circle()
+                    .fill(Color(red: 0.25, green: 0.52, blue: 1.0))
+                    .frame(width: 5, height: 5)
+                    .opacity(isSelected ? 1 : 0)
+
+                // 状态点代替会话的角色头像——Agent 的信息是「它在不在跑」。
+                Circle()
+                    .fill(agentStatusColor(agent.status))
+                    .frame(width: 38, height: 38)
+                    .overlay(
+                        Image(systemName: "hammer.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(.black.opacity(0.55))
+                    )
+
+                if agent.id == renamingAgentID {
+                    TextField("Agent 名", text: $renameDraft, onCommit: commitRename)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13))
+                        .foregroundColor(.white)
+                } else {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(alignment: .center, spacing: 6) {
+                            Text(agent.name)
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+
+                            Spacer(minLength: 4)
+
+                            if hoveringSessionID == agent.id {
+                                Button(action: { agentSessionManager.deleteAgent(agent.id) }) {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(.white.opacity(0.55))
+                                        .frame(width: 18, height: 18)
+                                        .background(Circle().fill(Color.white.opacity(0.1)))
+                                }
+                                .buttonStyle(.plain)
+                                .pointerCursor()
+                                .help("删除这个 Agent")
+                            }
+                        }
+
+                        Text(agent.lastPreview.isEmpty
+                            ? "还没有任务"
+                            : agent.lastPreview)
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.45))
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(hoveringSessionID == agent.id && agent.id != renamingAgentID
+                        ? Color.white.opacity(0.05)
+                        : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .onHover { hovering in
+            hoveringSessionID = hovering ? agent.id : (hoveringSessionID == agent.id ? nil : hoveringSessionID)
+        }
+        .contextMenu {
+            Button("重命名") {
+                renamingAgentID = agent.id
+                renameDraft = agent.name
+            }
+            Button("删除", role: .destructive) {
+                agentSessionManager.deleteAgent(agent.id)
+            }
+        }
+    }
+
+    private func agentStatusColor(_ status: AgentSessionStatus) -> Color {
+        switch status {
+        case .idle: return Color.white.opacity(0.25)
+        case .running: return Color(red: 0.35, green: 0.85, blue: 0.55)
+        case .completed: return Color(red: 0.35, green: 0.6, blue: 1.0)
+        case .failed: return Color(red: 1.0, green: 0.45, blue: 0.4)
+        case .interrupted: return Color(red: 1.0, green: 0.75, blue: 0.35)
+        }
+    }
+
+    /// Folder picker → `createAgent`. The app must activate first (an
+    /// LSUIElement app's modal panels appear but never key otherwise — the
+    /// same key-window trap the settings window has).
+    private func createAgentWithFolderPicker() {
+        NSApp.activate()
+
+        let folderPicker = NSOpenPanel()
+        folderPicker.canChooseDirectories = true
+        folderPicker.canChooseFiles = false
+        folderPicker.allowsMultipleSelection = false
+        folderPicker.canCreateDirectories = true
+        folderPicker.message = "选择 Agent 工作的项目文件夹"
+        folderPicker.prompt = "新建 Agent"
+        if let defaultFolderPath = AppSettingsStore.snapshot().agentDefaultProjectFolder {
+            folderPicker.directoryURL = URL(fileURLWithPath: defaultFolderPath)
+        }
+
+        guard folderPicker.runModal() == .OK, let pickedURL = folderPicker.url else { return }
+        agentSessionManager.createAgent(
+            name: pickedURL.lastPathComponent,
+            projectFolderPath: pickedURL.path
+        )
     }
 
     /// 顶部账户区：首字母头像 + 账户名 + 状态行，右侧一颗进设置的齿轮。

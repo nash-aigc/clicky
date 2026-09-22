@@ -1168,7 +1168,11 @@ enum MacosUseController {
             "/Applications/Utilities",
             "/System/Applications",
             "/System/Applications/Utilities",
-            NSHomeDirectory() + "/Applications"
+            NSHomeDirectory() + "/Applications",
+            // 访达等系统常驻 app 不在上面任何一个目录里 —— Finder.app 住在这里。
+            // 缺了它，[OPEN:访达] 查不到名字，把裸中文丢给 SDK 报
+            // "Application not found for identifier: '访达'"（2026-09-22 实测踩中）。
+            "/System/Library/CoreServices"
         ]
 
         for directory in searchDirectories {

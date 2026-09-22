@@ -17,6 +17,11 @@ struct NotchSheetRootView: View {
 
     @ObservedObject var panelModel: NotchPanelModel
     @ObservedObject var companionManager: CompanionManager
+    /// The agent subsystem, held by `CompanionManager` (one instance for the
+    /// app) — observed here because the root view itself switches the content
+    /// column and the top-bar chip on its state, so the switching view must
+    /// be the one observing it, not only the subviews.
+    @ObservedObject private var agentSessionManager: AgentSessionManager
     var collapseAction: () -> Void
     var audioHistoryProvider: () -> [CGFloat]
 
@@ -26,6 +31,23 @@ struct NotchSheetRootView: View {
 
     @State private var showsSettings = false
     @State private var selectedSettingsPage: SettingsPage = .general
+
+    init(
+        panelModel: NotchPanelModel,
+        companionManager: CompanionManager,
+        collapseAction: @escaping () -> Void,
+        audioHistoryProvider: @escaping () -> [CGFloat]
+    ) {
+        self.panelModel = panelModel
+        self.companionManager = companionManager
+        // `agentSessionManager` must come from `CompanionManager`, not a
+        // @StateObject here — two instances would mean two rosters observing
+        // the same store, and only the manager the app holds owns the
+        // subprocesses.
+        self.agentSessionManager = companionManager.agentSessionManager
+        self.collapseAction = collapseAction
+        self.audioHistoryProvider = audioHistoryProvider
+    }
 
     var body: some View {
         Group {
@@ -43,6 +65,7 @@ struct NotchSheetRootView: View {
                 HStack(spacing: 0) {
                     HomeSpaceSidebarView(
                         sessionsModel: sessionsModel,
+                        agentSessionManager: agentSessionManager,
                         showsSettings: $showsSettings
                     )
                     .frame(width: 245)
@@ -53,10 +76,17 @@ struct NotchSheetRootView: View {
 
                     VStack(spacing: 0) {
                         topBar
-                        NotchHomeView(
-                            companionManager: companionManager,
-                            sessionsModel: sessionsModel
-                        )
+                        // 侧栏顶部的「对话 / Agent」切换器决定右列显示哪一
+                        // 个内容视图——两个视图共享同一个 sheet，不嵌套。
+                        switch agentSessionManager.selectedSidebarSection {
+                        case .conversations:
+                            NotchHomeView(
+                                companionManager: companionManager,
+                                sessionsModel: sessionsModel
+                            )
+                        case .agents:
+                            AgentSessionView(agentSessionManager: agentSessionManager)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -88,7 +118,13 @@ struct NotchSheetRootView: View {
         HStack(spacing: 14) {
             Spacer()
 
-            sessionChip
+            // Agent 页顶栏只显示当前 Agent 的名字（会话切换 Menu 跟会话
+            // 无关，不能混进 Agent 视图）。
+            if agentSessionManager.selectedSidebarSection == .agents {
+                agentChip
+            } else {
+                sessionChip
+            }
 
             NotchActivityView(
                 phase: panelModel.activityPhase,
@@ -157,6 +193,31 @@ struct NotchSheetRootView: View {
         .fixedSize()
         .pointerCursor()
     }
+    /// The Agent counterpart of `sessionChip` — a plain name capsule, not a
+    /// Menu: switching agents happens in the sidebar list, so there is
+    /// nothing to drop down here.
+    private var agentChip: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "hammer.fill")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(.white.opacity(0.5))
+
+            Text(agentSessionManager.selectedAgent?.name ?? "Agent")
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundColor(.white.opacity(0.8))
+                .lineLimit(1)
+
+            if let selectedAgent = agentSessionManager.selectedAgent {
+                Text(selectedAgent.status.displayName)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundColor(.white.opacity(0.45))
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(Color.white.opacity(0.07)))
+        .fixedSize()
+    }
 }
 
 // MARK: - Settings area
@@ -182,7 +243,7 @@ struct NotchSettingsArea: View {
     /// first block is HeyClicky's 「通用 / 模型」 pair, the same grouping the
     /// titled window's sidebar uses.
     private static let sidebarSections: [(label: String?, pages: [SettingsPage])] = [
-        (label: nil, pages: [.general, .model]),
+        (label: nil, pages: [.general, .model, .agent]),
         (label: "对话", pages: [.memory, .listen, .speak, .shortcuts]),
         (label: "看与操作", pages: [.vision, .action]),
     ]

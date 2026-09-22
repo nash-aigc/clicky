@@ -274,6 +274,58 @@ nonisolated enum SpeechSpeakMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// How much authority a spawned agent subprocess carries, expressed as the
+/// claude CLI permission arguments it is launched with.
+///
+/// The three levels mirror the reference design's approval policy (plan /
+/// auto-edit / full). The vocabulary — which flags mean what on the CLI — is
+/// held only here, so the process bridge never re-derives it.
+nonisolated enum AgentPermissionMode: String, Codable, CaseIterable, Sendable {
+    /// 只读规划: the agent may read and think but changes nothing. The safest
+    /// level, for "what would you do" questions.
+    case readOnlyPlan
+    /// 自动改文件 (default): file edits inside the project folder are accepted
+    /// automatically and the common working tools are pre-approved, so a
+    /// headless agent (nobody to answer approval prompts) keeps working instead
+    /// of stalling on every command.
+    case autoEdit
+    /// 完全授权: every tool auto-approved, including anything destructive. The
+    /// settings row's description states the risk outright.
+    case fullAccess
+
+    var displayName: String {
+        switch self {
+        case .readOnlyPlan: return "只读规划"
+        case .autoEdit: return "自动改文件"
+        case .fullAccess: return "完全授权"
+        }
+    }
+
+    var descriptionText: String {
+        switch self {
+        case .readOnlyPlan: return "Agent 只能看和想，不改任何文件。"
+        case .autoEdit: return "自动接受项目内的文件修改，常用工具直接放行。"
+        case .fullAccess: return "所有操作免确认，包括删除和覆盖——请只在可信任的文件夹上使用。"
+        }
+    }
+
+    /// The permission arguments appended to the claude launch command.
+    var cliArguments: [String] {
+        switch self {
+        case .readOnlyPlan:
+            return ["--permission-mode", "plan"]
+        case .autoEdit:
+            // acceptEdits alone would still stall on tool approval prompts, and a
+            // headless `-p` run has nobody to answer them — the pre-approved set
+            // is what makes the default level actually usable unattended.
+            return ["--permission-mode", "acceptEdits",
+                    "--allowedTools", "Read Edit Write Glob Grep Bash WebSearch WebFetch Task NotebookEdit"]
+        case .fullAccess:
+            return ["--dangerously-skip-permissions"]
+        }
+    }
+}
+
 nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     // MARK: - 通用 · 启动
@@ -497,6 +549,49 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// sends it, holding the key again re-records over it.
     var sendsTranscriptImmediatelyOnRelease: Bool = true
 
+    // MARK: - Agent
+
+    /// Master switch for the agent subsystem — spawning claude subprocesses
+    /// that work on a project folder in the background. Off means 「新建 Agent」
+    /// and send are refused with an explanation rather than silently doing
+    /// nothing (the same "don't act, but say so" rule as `allowsComputerControl`).
+    var allowsAgentSubsystem: Bool = true
+
+    /// Path to the claude CLI executable. `nil` means auto-detect (`which
+    /// claude`, then the Homebrew locations) at spawn time, so a user who never
+    /// opens settings still works; the settings row exists for installs where
+    /// the CLI lives somewhere unusual.
+    var agentClaudeExecutablePath: String?
+
+    /// Folder pre-selected when a new agent is created. `nil` means the folder
+    /// picker starts at the user's home directory.
+    var agentDefaultProjectFolder: String?
+
+    /// Raw value of `AgentPermissionMode`, stored as a string so an unknown
+    /// value from a future/older build degrades to the default instead of
+    /// failing the whole decode.
+    var agentPermissionModeRawValue: String = AgentPermissionMode.autoEdit.rawValue
+
+    var agentPermissionMode: AgentPermissionMode {
+        get { AgentPermissionMode(rawValue: agentPermissionModeRawValue) ?? .autoEdit }
+        set { agentPermissionModeRawValue = newValue.rawValue }
+    }
+
+    /// How many agent subprocesses may run at once. Each one is an independent
+    /// claude process billing the user's own Claude login, so the ceiling is
+    /// deliberately low.
+    var maximumConcurrentAgents: Int = 3
+
+    /// Whether agents with a non-idle status show up as floating chips in the
+    /// screen's top-right corner (the HeyClicky HUD form). Off hides the
+    /// controller's panels entirely — the roster in the notch sheet still works.
+    var allowsAgentDesktopHUD: Bool = true
+
+    /// Whether a finished agent turn is read aloud through the speech role.
+    /// Announcements only fire while the voice companion is idle, so this can
+    /// never cut into an answer the user is listening to.
+    var announcesAgentCompletion: Bool = true
+
     // MARK: - 模型
 
     /// `max_completion_tokens` sent with every vision request. Shared by every
@@ -520,6 +615,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.maximumSpeechChunkCharacters = min(max(settings.maximumSpeechChunkCharacters, 200), 600)
         settings.screenshotCompressionQuality = min(max(settings.screenshotCompressionQuality, 0.5), 0.95)
         settings.visionMaxCompletionTokens = min(max(settings.visionMaxCompletionTokens, 256), 32768)
+        settings.maximumConcurrentAgents = min(max(settings.maximumConcurrentAgents, 1), 6)
         return settings
     }
 }
@@ -572,6 +668,13 @@ nonisolated extension AppSettings {
         case pushToTalkTriggerModeRawValue
         case sendsTranscriptImmediatelyOnRelease
         case visionMaxCompletionTokens
+        case allowsAgentSubsystem
+        case agentClaudeExecutablePath
+        case agentDefaultProjectFolder
+        case agentPermissionModeRawValue
+        case maximumConcurrentAgents
+        case allowsAgentDesktopHUD
+        case announcesAgentCompletion
     }
 
     init(from decoder: Decoder) throws {
@@ -628,5 +731,12 @@ nonisolated extension AppSettings {
         pushToTalkTriggerModeRawValue = try container.decodeIfPresent(String.self, forKey: .pushToTalkTriggerModeRawValue) ?? defaults.pushToTalkTriggerModeRawValue
         sendsTranscriptImmediatelyOnRelease = try container.decodeIfPresent(Bool.self, forKey: .sendsTranscriptImmediatelyOnRelease) ?? defaults.sendsTranscriptImmediatelyOnRelease
         visionMaxCompletionTokens = try container.decodeIfPresent(Int.self, forKey: .visionMaxCompletionTokens) ?? defaults.visionMaxCompletionTokens
+        allowsAgentSubsystem = try container.decodeIfPresent(Bool.self, forKey: .allowsAgentSubsystem) ?? defaults.allowsAgentSubsystem
+        agentClaudeExecutablePath = try container.decodeIfPresent(String.self, forKey: .agentClaudeExecutablePath) ?? defaults.agentClaudeExecutablePath
+        agentDefaultProjectFolder = try container.decodeIfPresent(String.self, forKey: .agentDefaultProjectFolder) ?? defaults.agentDefaultProjectFolder
+        agentPermissionModeRawValue = try container.decodeIfPresent(String.self, forKey: .agentPermissionModeRawValue) ?? defaults.agentPermissionModeRawValue
+        maximumConcurrentAgents = try container.decodeIfPresent(Int.self, forKey: .maximumConcurrentAgents) ?? defaults.maximumConcurrentAgents
+        allowsAgentDesktopHUD = try container.decodeIfPresent(Bool.self, forKey: .allowsAgentDesktopHUD) ?? defaults.allowsAgentDesktopHUD
+        announcesAgentCompletion = try container.decodeIfPresent(Bool.self, forKey: .announcesAgentCompletion) ?? defaults.announcesAgentCompletion
     }
 }

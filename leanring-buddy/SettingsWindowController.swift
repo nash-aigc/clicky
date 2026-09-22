@@ -170,7 +170,7 @@ private struct ClickySettingsRootView: View {
 
             // 分组导航：组与组之间用大写小标签隔开——HeyClicky 的侧栏是
             // 「General / 对话 / 看与操作」三段，不是一列平铺。
-            sidebarSection(title: nil, pages: [.general, .model])
+            sidebarSection(title: nil, pages: [.general, .model, .agent])
             sidebarSection(title: "对话", pages: [.memory, .listen, .speak, .shortcuts])
             sidebarSection(title: "看与操作", pages: [.vision, .action])
 

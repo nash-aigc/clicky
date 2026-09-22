@@ -133,18 +133,47 @@ nonisolated struct ActionParseResult: Sendable {
     /// Every [SHAPE:…] tag, in the order the model wrote them — drawings for
     /// the user's eyes only, never executed and never fed back as actions.
     let shapeRequests: [AnnotationShapeRequest]
+    /// Every [AGENT_SPAWN:…] / [AGENT_SEND:…] tag. Deliberately NOT in
+    /// `actions`: dispatching a background agent touches no screen, so it must
+    /// not enter the one-action-per-screenshot continuation loop — these are
+    /// handed to `AgentSessionManager` directly, the way `shapeRequests` are
+    /// handed to the annotation manager.
+    let agentRequests: [AgentDispatchRequest]
 
     init(
         spokenText: String,
         pointingRequest: ModelReportedCoordinate?,
         actions: [CompanionAction],
-        shapeRequests: [AnnotationShapeRequest] = []
+        shapeRequests: [AnnotationShapeRequest] = [],
+        agentRequests: [AgentDispatchRequest] = []
     ) {
         self.spokenText = spokenText
         self.pointingRequest = pointingRequest
         self.actions = actions
         self.shapeRequests = shapeRequests
+        self.agentRequests = agentRequests
     }
+}
+
+/// One [AGENT_SPAWN:…] or [AGENT_SEND:…] tag: the model asking the voice
+/// companion to act as a dispatcher — start a background agent, or hand a
+/// follow-up instruction to one that already exists.
+nonisolated struct AgentDispatchRequest: Sendable {
+    nonisolated enum Kind: Sendable {
+        /// Start a new agent named `agentName` and give it `message` as its
+        /// first task.
+        case spawn
+        /// Give `message` to the existing agent named `agentName`.
+        case send
+    }
+
+    let kind: Kind
+    /// The agent's name as the model wrote it — matched against the roster
+    /// case-insensitively, by containment, because the model may abbreviate.
+    let agentName: String
+    /// The task text: a new agent's first instruction, or an existing agent's
+    /// follow-up.
+    let message: String
 }
 
 nonisolated enum ActionTagParser {
@@ -181,6 +210,19 @@ nonisolated enum ActionTagParser {
     /// label, screen — split further below).
     private static let shapePattern = #"\[SHAPE:\s*([^\]]+)\]"#
 
+    /// `[AGENT_SPAWN:调研员:整理沙箱文件夹里的文件清单]` — start a new background
+    /// agent and hand it the task. The name may not contain a colon (it is the
+    /// split point); the task text may contain anything but `]`.
+    ///
+    /// Capture groups: 1 = agent name, 2 = task text.
+    private static let agentSpawnPattern = #"\[AGENT_SPAWN:\s*([^:\]]+?)\s*:\s*([^\]]*?)\s*\]"#
+
+    /// `[AGENT_SEND:调研员:把清单写成 markdown]` — hand a follow-up instruction
+    /// to an agent that already exists in the roster.
+    ///
+    /// Capture groups: same as `agentSpawnPattern`.
+    private static let agentSendPattern = #"\[AGENT_SEND:\s*([^:\]]+?)\s*:\s*([^\]]*?)\s*\]"#
+
     // MARK: - Parsing
 
     /// Pulls every action tag out of a model reply, and returns what is left to
@@ -190,6 +232,7 @@ nonisolated enum ActionTagParser {
         var pointingRequest: ModelReportedCoordinate?
         var actions: [CompanionAction] = []
         var shapeRequests: [AnnotationShapeRequest] = []
+        var agentRequests: [AgentDispatchRequest] = []
 
         // Tags are removed from the spoken text afterwards, so a tag nested inside
         // another tag's text would corrupt the result once both were cut. Letting
@@ -368,11 +411,35 @@ nonisolated enum ActionTagParser {
             shapeRequests.append(shapeRequest)
         }
 
+        forEachMatch(in: responseText, pattern: agentSpawnPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let agentName = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespaces), !agentName.isEmpty else { return }
+            let taskText = capture(2, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            // An empty task would start an agent that does nothing; treating it
+            // as no tag at all (it has already been claimed, so the garbage
+            // never reaches the spoken text either).
+            guard !taskText.isEmpty else { return }
+            agentRequests.append(AgentDispatchRequest(kind: .spawn, agentName: agentName, message: taskText))
+        }
+
+        forEachMatch(in: responseText, pattern: agentSendPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let agentName = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespaces), !agentName.isEmpty else { return }
+            let followUpText = capture(2, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !followUpText.isEmpty else { return }
+            agentRequests.append(AgentDispatchRequest(kind: .send, agentName: agentName, message: followUpText))
+        }
+
         return ActionParseResult(
             spokenText: spokenTextByRemoving(claimedRanges, from: responseText),
             pointingRequest: pointingRequest,
             actions: actions,
-            shapeRequests: shapeRequests
+            shapeRequests: shapeRequests,
+            agentRequests: agentRequests
         )
     }
 
@@ -542,7 +609,7 @@ nonisolated enum ActionTagParser {
     /// a keyword added to the parser above must be added here too, or the
     /// streaming speech would read the tag aloud instead of removing it.
     private static let streamingTagKeywords =
-        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE"
+        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE|AGENT_SPAWN|AGENT_SEND"
 
     /// A complete tag, however far the reply has streamed: `[TYPE:北京新闻]`.
     private static let streamingCompleteTagPattern =

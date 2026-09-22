@@ -118,6 +118,56 @@ final class CompanionManager: ObservableObject {
     /// speaks again so a new response can begin immediately.
     private var currentResponseTask: Task<Void, Never>?
 
+    /// The agent subsystem — its own roster, its own subprocesses, its own
+    /// state. Deliberately separate from `currentResponseTask` / `voiceState`:
+    /// those are one mutually-exclusive slot driving the voice pipeline, and an
+    /// agent is a long-running background job that must survive a new voice
+    /// question, an interrupt and a session switch.
+    lazy var agentSessionManager: AgentSessionManager = {
+        let manager = AgentSessionManager()
+        // Closures rather than a `CompanionManager` reference: the agent
+        // subsystem may *ask* whether the voice is idle and *request* a spoken
+        // announcement, but it never touches `voiceState` or the response task
+        // itself — the one-way decoupling is the subsystem's red line
+        // (开发经验/14-Agent子系统.md 五).
+        manager.voiceIdleProvider = { [weak self] in
+            guard let self else { return false }
+            return self.voiceState == .idle
+        }
+        manager.speakAnnouncement = { [weak self] announcementText in
+            // `speakText` stops whatever is playing before it speaks — which is
+            // exactly why the caller gates on the voice being idle first.
+            try? await self?.bailianTTSClient.speakText(announcementText)
+        }
+        return manager
+    }()
+
+    /// The desktop HUD — the top-right chip stack for running agents. Its
+    /// panels exist for the whole app run (same permanence as the overlay
+    /// windows), but show nothing until an agent's status leaves `.idle`.
+    /// Owned by the manager rather than `AgentSessionManager` because it
+    /// reaches into the notch subsystem on chip taps, which is this object's
+    /// coordination job.
+    lazy var agentHUDController: AgentHUDController = {
+        let controller = AgentHUDController()
+        controller.onChipOpen = { [weak self] agentID in
+            self?.openAgentPage(agentID: agentID)
+        }
+        return controller
+    }()
+
+    /// A HUD chip tap: switch the sidebar to the Agent section, select that
+    /// agent, and expand the notch sheet. The sheet's content column reads
+    /// `selectedSidebarSection` live, so an already-expanded sheet just
+    /// switches content — no requested-page plumbing needed (settings need
+    /// the request flag because pages are exclusive of the sidebar; the
+    /// Agent view is the sidebar's other half).
+    func openAgentPage(agentID: UUID) {
+        agentSessionManager.selectAgent(agentID)
+        agentSessionManager.selectedSidebarSection = .agents
+        notchWindowController?.expandForLaunch()
+    }
+
     private var shortcutTransitionCancellable: AnyCancellable?
     private var voiceStateCancellable: AnyCancellable?
     private var audioPowerCancellable: AnyCancellable?
@@ -360,6 +410,11 @@ final class CompanionManager: ObservableObject {
         // The warmup targets whatever host is configured at launch; the client
         // warms a newly chosen provider's host on the first request after a switch.
         _ = visionChatAPI
+
+        // The HUD's panels must exist before the first agent mutation posts —
+        // a chip built only at the SECOND mutation would mean a running agent
+        // invisible on the desktop until it finished.
+        _ = agentHUDController
 
         // The panel used to read the configuration through computed properties —
         // the configuration is resolved per request, so there is nothing cached to
@@ -1182,6 +1237,11 @@ final class CompanionManager: ObservableObject {
 
     coordinates work exactly like [POINT:…]: the same 0-1000 grid over the screenshot, and the same optional :screenN.
 
+    background work the user asked for that does NOT need to see or touch the screen — research, writing a document, fixing code in another project — is dispatched to a background agent instead of being done by clicking around:
+    [AGENT_SPAWN:name:task] — start a new background agent named "name" and give it "task" as its first job. the name is 2-8 characters, in the user's own language, describing the role (调研员, 文档写手). write the task as a complete self-contained instruction: the agent sees ONLY that text, never this conversation.
+    [AGENT_SEND:name:message] — hand a follow-up instruction to a background agent that already exists (yours, or one created earlier). the name matches by containment, so "调研" reaches 「调研员」.
+    the agent works in its own project folder and reports back when finished; a small floating icon appears on the desktop while it runs. the dispatch itself needs no screenshot loop — the result of your dispatch arrives in an <agent_dispatch_results> block with your next message. after dispatching, tell the user in one short sentence who you sent the job to and what it will do. spawn at most ONE agent per reply, and only for a real background job — a question, or anything that needs to look at the screen right now, is answered or acted on directly as always. never dispatch something destructive; the same "the user asked for that exact thing this turn" rule applies to background work.
+
     only act when the user actually asked you to do the thing. the test is whether their words tell you to do something: "click the send button for me", "open the calculator", "type that in there", "帮我点一下 7" are requests, and you act on them. "where's the send button", "how do i get to settings", "what does this one do" are questions, and the answer is [POINT:…], not a click. an instruction about the screen is always a request — never answer one by pointing at the thing the user just told you to click, and never turn it into a question. "when in doubt, point" is for a sentence you genuinely cannot tell apart from a question, not for a request you have decided to be careful with. pointing is always safe and clicking is not, which is exactly why the sentence that says "帮我点一下" has to end in a click.
 
     NEVER describe an action without emitting its tag in the same reply. if you are going to click something, [CLICK:…] goes in this reply — saying "i'll click that now" or "let me put the cursor there first" and emitting nothing is the worst answer you can give, because the user hears a promise and watches nothing happen. there is no third option where you talk about acting: either act in this turn, or ask one question and act on the next one. narrating the steps you are about to take is never an answer.
@@ -1762,6 +1822,30 @@ final class CompanionManager: ObservableObject {
                     // executed; the continuation prompt says so, which is what stops
                     // the model from believing its whole batch already happened.
                     unexecutedActionCountFromPreviousStep = max(0, parseResult.actions.count - 1)
+
+                    // A reply's [AGENT_SPAWN:…] / [AGENT_SEND:…] tags are dispatched here,
+                    // not in the action switch above: they touch no screen, so they must
+                    // not enter the one-action-per-screenshot loop. The outcome lines ride
+                    // `pendingAccessibilityContext` into the next step's data block so the
+                    // model can see what actually happened to its request, and a failure is
+                    // also surfaced on the conversation view's error line — a spawn the
+                    // model already announced out loud must not silently not exist.
+                    let agentDispatchOutcomeLines = dispatchAgentRequests(parseResult.agentRequests)
+                    if !agentDispatchOutcomeLines.isEmpty {
+                        let dispatchContext = "<agent_dispatch_results>\n"
+                            + agentDispatchOutcomeLines.joined(separator: "\n")
+                            + "\n</agent_dispatch_results>"
+                        if let existingContext = pendingAccessibilityContext {
+                            pendingAccessibilityContext = existingContext + "\n" + dispatchContext
+                        } else {
+                            pendingAccessibilityContext = dispatchContext
+                        }
+                        if agentDispatchOutcomeLines.contains(where: { $0.hasPrefix("Agent dispatch failed") }) {
+                            lastErrorMessage = agentDispatchOutcomeLines
+                                .first(where: { $0.hasPrefix("Agent dispatch failed") })?
+                                .replacingOccurrences(of: "Agent dispatch failed: ", with: "")
+                        }
+                    }
 
                     // The row accumulates across the loop's steps, so it describes the
                     // whole job so far rather than only its last reply.
@@ -2431,6 +2515,42 @@ final class CompanionManager: ObservableObject {
             ))
         }
         return marks
+    }
+
+    // MARK: - Agent Dispatch
+
+    /// Executes a reply's [AGENT_SPAWN:…] / [AGENT_SEND:…] requests and returns
+    /// one outcome line per request, phrased as data for the next turn's
+    /// `<screen_contents>` block — the model reads what happened to its
+    /// dispatch the same way it reads an `[AX_TREE]` result. The agent
+    /// subsystem's own gate (`allowsAgentSubsystem`) is checked here rather
+    /// than left to `AgentSessionManager`, because a refused dispatch has to
+    /// come back as a sentence the model can pass on, not as a roster-side
+    /// error line the user would have to go looking for.
+    private func dispatchAgentRequests(_ requests: [AgentDispatchRequest]) -> [String] {
+        guard !requests.isEmpty else { return [] }
+
+        let settings = AppSettingsStore.snapshot()
+        guard settings.allowsAgentSubsystem else {
+            return requests.map { _ in
+                "Agent dispatch failed: 未执行——Agent 功能已在设置 → Agent 里关闭。"
+            }
+        }
+
+        return requests.map { request -> String in
+            switch request.kind {
+            case .spawn:
+                return agentSessionManager.spawnAndSendFirstTurn(
+                    name: request.agentName,
+                    firstTurnText: request.message
+                )
+            case .send:
+                return agentSessionManager.dispatchFollowUp(
+                    named: request.agentName,
+                    turnText: request.message
+                )
+            }
+        }
     }
 
     // MARK: - Point Tag Parsing

@@ -14,3 +14,13 @@ coding-plans/
 # Xcode per-user state and coverage artifacts — never part of the project
 leanring-buddy.xcodeproj/xcuserdata/
 default.profraw
+
+# Local-only neighbours of the project: the user's own voice recordings
+# (`voice-agent/*.wav`), a side experiment that keeps a plaintext key
+# (`mini-agent/.deepseek-key`), design mockups and scratch test scratch.
+# None of it belongs to Clicky, and a stray `git add -A` would publish all of
+# it — so it is blocked here rather than left to be noticed at commit time.
+voice-agent/
+mini-agent/
+design-preview/
+.tmp-open-test/
