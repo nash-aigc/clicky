@@ -241,7 +241,23 @@ struct NotchPillRootView: View {
             let isActive = panelModel.activityPhase != .idle
 
             ZStack(alignment: .top) {
-                HStack(spacing: 0) {
+                // Negative spacing: each wing overlaps the middle segment by
+                // 2pt. With flush adjacency (spacing 0) the wing's edge and
+                // the pill's edge antialias independently at the SAME
+                // coordinate, and whenever that coordinate lands on a pixel
+                // boundary the pair leaves a see-through slit — a full-height
+                // hairline showing the desktop through the band on BOTH sides
+                // of the notch (recorded 2026-09-23 from a 30fps screen
+                // recording of the live animation; the user reported it as
+                // 「刘海的左侧和右侧分别有一个空白间隙」). With the overlap,
+                // every one of those four edges lands inside the other view's
+                // solid black — black-on-black — so the slit cannot exist and
+                // the wings read as growing out of the notch's interior.
+                // The layout still resolves to the pill EXACTLY centered at
+                // rest (both wings 0 wide: pill_left = center + 0 − 2 −
+                // (0 + 0 − 4)/2 … = center), and the ±1pt drift mid-animation
+                // is black-on-black and invisible.
+                HStack(spacing: -2) {
                     NotchWingView(
                         phase: panelModel.activityPhase,
                         audioHistoryProvider: audioHistoryProvider,
@@ -305,13 +321,12 @@ struct NotchWingView: View {
     let isLeading: Bool
 
     /// The wing's outer bottom corner radius. Measured 2026-09-22 off the
-    /// user's target screenshot (L29938, Listening, 1.635 px/pt): the band's
-    /// bottom edge recedes 26 px ≈ 16 pt at the outer edge column, flattening
-    /// over ~23 px ≈ 14 pt — i.e. a corner of roughly 14–16 pt, notably larger
-    /// than the resting pill's 6. (A second reference, L31041, measures ~10 pt;
-    /// the two disagree within their compression blur, and the user's own
-    /// target image is the one to match.) The inner edge stays square: it meets
-    /// the middle segment, and a rounded seam there is G8's notch-shaped gap.
+    /// user's target screenshot (L29938, Listening, 1.635 px/pt): a corner of
+    /// roughly 14–16 pt, notably larger than the resting pill's 6. Briefly
+    /// set to 0 on 2026-09-23 while chasing the corner's see-through arc —
+    /// the user then asked for the rounding back (「应该添加圆角，你给删除了」),
+    /// so 14 pt stands. The inner edge stays square: it meets the middle
+    /// segment, and a rounded seam there is G8's notch-shaped gap.
     static let outerBottomCornerRadius: CGFloat = 14
 
     /// The wing's outline: square along the top (it fuses with the notch) and
