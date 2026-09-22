@@ -86,6 +86,10 @@ final class NotchWindowController {
     private var workspaceObservers: [NSObjectProtocol] = []
     private var defaultCenterObservers: [NSObjectProtocol] = []
     private var hasPlayedBootChime = false
+    /// Bumped on every collapse so a pending convergence watchdog from an
+    /// earlier collapse stands down instead of snapping a newer collapse's
+    /// mid-flight animation to rest.
+    private var collapseGeneration = 0
 
     /// The screen whose sheet is currently expanded. At most one — expanding
     /// on a second screen collapses the first.
@@ -442,17 +446,20 @@ final class NotchWindowController {
         guard expandBackToPill,
               let collapsingPresence,
               let restingFrame = NotchSupport.restingWindowFrame(on: collapsingPresence.screen) else {
-            withAnimation(.timingCurve(
-                CGFloat(NotchSupport.collapseTimingControlPoints.0),
-                CGFloat(NotchSupport.collapseTimingControlPoints.1),
-                CGFloat(NotchSupport.collapseTimingControlPoints.2),
-                CGFloat(NotchSupport.collapseTimingControlPoints.3),
-                duration: NotchSupport.collapseAnimationDuration
-            )) {
-                panelModel.expansionProgress = 0
-            }
+            // Teardown path: the panel is ordered out right after this, so
+            // nobody sees a morph — assign directly. Animating here would be
+            // the same stall risk as the morph path (the SwiftUI animation
+            // occasionally never lands), and this shared panel model survives
+            // a rebuild, so a frozen value would leak into the next panel.
+            panelModel.expansionProgress = 0
             return
         }
+
+        // Every collapse bumps the generation; a pending convergence callback
+        // from an earlier collapse sees the bump and stands down instead of
+        // snapping this collapse's mid-flight animation to rest.
+        collapseGeneration += 1
+        let collapseGenerationAtStart = collapseGeneration
 
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = NotchSupport.collapseAnimationDuration
@@ -465,10 +472,14 @@ final class NotchWindowController {
             )
             context.allowsImplicitAnimation = true
             collapsingPresence.panel.setFrame(restingFrame, display: true)
-        }, completionHandler: {
+        }, completionHandler: { [weak self] in
+            // A newer expand/collapse owns the panel now — its own completion
+            // path handles the shadow, and snapping mid-flight would be visible.
+            guard let self, self.collapseGeneration == collapseGenerationAtStart else { return }
             // Shadow off only once the morph lands — dropping it at the
             // start would make the sheet's silhouette pop mid-animation.
             collapsingPresence.panel.hasShadow = false
+            self.convergeOnRestingState(collapsingPresence)
         })
         // Back to the inert resting state — see the panel creation comment.
         collapsingPresence.panel.ignoresMouseEvents = true
@@ -480,6 +491,48 @@ final class NotchWindowController {
             CGFloat(NotchSupport.collapseTimingControlPoints.3),
             duration: NotchSupport.collapseAnimationDuration
         )) {
+            panelModel.expansionProgress = 0
+        }
+
+        // Convergence watchdog: the completion handler above can be skipped
+        // when the frame animation is replaced or dropped, and the SwiftUI
+        // progress animation occasionally stalls on its own (measured
+        // 2026-09-23: window back at the resting frame, expansionProgress
+        // frozen high — the panel keeps drawing the mid-collapse outline,
+        // which reads as 「刘海变大了缩不回去」). After the morph's deadline,
+        // force both states to rest unless a newer expand/collapse owns them.
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.collapseAnimationDuration + 0.25) { [weak self] in
+            guard let self,
+                  self.collapseGeneration == collapseGenerationAtStart,
+                  !self.panelModel.isExpanded else { return }
+            self.convergeOnRestingState(collapsingPresence)
+        }
+    }
+
+    /// Forces the panel and the SwiftUI progress to the resting state with no
+    /// animation — the collapse morph runs as TWO parallel animations (the
+    /// window frame's AppKit animation and `expansionProgress`'s SwiftUI
+    /// animation), and either one stalling leaves the other's finished state
+    /// half-drawn. Idempotent: at every normal completion this is a no-op.
+    /// Deliberately NOT `withAnimation` — in the stall scenario another
+    /// animation could stall the same way; only an immediate assignment
+    /// guarantees the panel ends up back as the invisible resting pill.
+    private func convergeOnRestingState(_ presence: ScreenPresence) {
+        guard !panelModel.isExpanded else { return }
+
+        if let restingFrame = NotchSupport.restingWindowFrame(on: presence.screen) {
+            let frame = presence.panel.frame
+            let isFrameAtRest =
+                abs(frame.minX - restingFrame.minX) < 0.5 &&
+                abs(frame.minY - restingFrame.minY) < 0.5 &&
+                abs(frame.width - restingFrame.width) < 0.5 &&
+                abs(frame.height - restingFrame.height) < 0.5
+            if !isFrameAtRest {
+                presence.panel.setFrame(restingFrame, display: true)
+            }
+        }
+
+        if panelModel.expansionProgress != 0 {
             panelModel.expansionProgress = 0
         }
     }
