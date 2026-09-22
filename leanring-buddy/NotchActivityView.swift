@@ -133,9 +133,10 @@ extension NotchActivityPhase {
 ///
 /// `expansionProgress` lerps the body from the resting notch's size to the
 /// full window. At 0 the shape is exactly the resting pill; at 1 the body
-/// reaches the top of the window and the stem disappears into it. The shape
-/// animates because `expansionProgress` is the `animatableData`, matching
-/// the window-frame morph that runs at the same duration.
+/// reaches the top of the window and the stem disappears into it. The value
+/// is not animated on its own — the controller derives it from the panel's
+/// live frame on every `windowDidResize`, so the shape re-renders once per
+/// animation frame of the window morph and tracks it exactly.
 struct HomeSpaceSheetShape: Shape {
     var expansionProgress: CGFloat
 
@@ -153,10 +154,9 @@ struct HomeSpaceSheetShape: Shape {
     /// The resting pill's drawn size — what the body lerps from.
     var restingNotchSize: CGSize = CGSize(width: 190, height: 32)
 
-    var animatableData: CGFloat {
-        get { expansionProgress }
-        set { expansionProgress = newValue }
-    }
+    // No animatableData: the progress value updates per animation frame from
+    // the window's live frame (see the doc comment above), so there is no
+    // transaction animation for SwiftUI to interpolate.
 
     func path(in rect: CGRect) -> Path {
         let progress = min(max(expansionProgress, 0), 1)

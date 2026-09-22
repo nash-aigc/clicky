@@ -23,8 +23,9 @@ import AppKit
 import CoreGraphics
 
 nonisolated enum NotchSupport {
-    /// 静息胶囊 ↔ 展开面板的形变时长。窗口 setFrame 与 SwiftUI 侧
-    /// expansionProgress 的动画共用这一个值，两边才会同步。
+    /// 静息胶囊 ↔ 展开面板的形变时长。窗口 setFrame 是唯一动画源——
+    /// SwiftUI 侧的 expansionProgress 从窗口实时 frame 推导，没有自己的
+    /// 动画，所以不存在「两边同步」问题。
     /// 0.62 s：design-preview/notch-glow-expand.html 定稿的展开时长——
     /// 面板弹开要一眼看清「长开」的过程，0.38 s 太快看不清。
     static let expansionAnimationDuration: TimeInterval = 0.62
@@ -32,7 +33,7 @@ nonisolated enum NotchSupport {
     /// 即刻提交（点击 / 设置 / 启动）的形变曲线：带过冲的春季曲线
     /// （demo 定稿的 cubic-bezier(.22,1.28,.36,1)）——面板先弹过目标
     /// 尺寸再回落，落位有「稳稳站住」的手感。y 控制点大于 1 就是过冲，
-    /// 窗口 setFrame 与 SwiftUI timingCurve 都接受。
+    /// 窗口 setFrame 接受。
     static let morphTimingControlPoints: (Float, Float, Float, Float) = (0.22, 1.28, 0.36, 1.0)
 
     /// 收起的形变时长与曲线（demo 定稿的 cubic-bezier(.6,.04,.36,1)）：

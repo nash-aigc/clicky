@@ -19,10 +19,13 @@
 //  One panel does both roles: its frame morphs between the resting pill rect
 //  and the expanded sheet rect (a single window resizing — rebuilding or
 //  swapping windows would flash and drop key status), while the SwiftUI
-//  content inside switches between pill and sheet, keyed off the same
-//  `expansionProgress` that drives `HomeSpaceSheetShape`. The frame morph
-//  (`NSAnimationContext`, 0.62 s 过冲曲线) and the progress animation
-//  (SwiftUI `withAnimation`, matched duration) run simultaneously.
+//  content inside switches between pill and sheet, keyed off
+//  `expansionProgress` — which is DERIVED from the panel's live frame on
+//  every `windowDidResize`, not animated on its own. One animation source
+//  (the window frame morph, `NSAnimationContext`, 0.62 s 过冲曲线)：the
+//  silhouette cannot desync from it, and a stalled progress value is
+//  structurally impossible (the desync-stall class behind the 2026-09-23
+//  「刘海缩不回去」 bug — see 开发经验/10 G12).
 //
 //  Collapse paths — all deliberate: Esc (local keyDown monitor, installed
 //  only while expanded), a click outside the sheet, the app resigning active,
@@ -40,8 +43,11 @@ import Combine
 
 final class NotchPanelModel: ObservableObject {
     @Published var activityPhase: NotchActivityPhase = .idle
-    /// 0–1, the sheet expansion. Drives `HomeSpaceSheetShape` and the
-    /// pill/sheet content switch.
+    /// 0–1, the sheet expansion. NOT independently animated — it is derived
+    /// from the expanding panel's live frame on every `windowDidResize` (see
+    /// `syncExpansionProgressWithPanelFrame`), so the window's single frame
+    /// animation is the only animation source and the silhouette cannot
+    /// desync from it, let alone stall behind it.
     @Published var expansionProgress: CGFloat = 0
     @Published var isExpanded: Bool = false
     @Published var isFullscreenSuppressed: Bool = false
@@ -68,6 +74,10 @@ final class NotchWindowController {
         let displayID: CGDirectDisplayID
         let screen: NSScreen
         let panel: NotchPanel
+        /// Fires whenever this panel's frame changes — the per-frame hook
+        /// that re-derives `expansionProgress` from the live frame while the
+        /// morph animates. Removed with the presence in `teardown`.
+        let resizeObserver: NSObjectProtocol?
     }
 
     /// Strong on purpose — the manager owns this controller, so a strong back
@@ -125,6 +135,9 @@ final class NotchWindowController {
     func teardown() {
         collapse(expandBackToPill: false)
         for presence in screenPresences {
+            if let resizeObserver = presence.resizeObserver {
+                NotificationCenter.default.removeObserver(resizeObserver)
+            }
             presence.panel.orderOut(nil)
         }
         screenPresences = []
@@ -183,21 +196,62 @@ final class NotchWindowController {
             panel.contentView?.addSubview(hostingView)
 
             panel.orderFrontRegardless()
+
+            // Every real frame of the panel's morph re-derives the published
+            // expansion progress from the live frame — the window animation
+            // is the single animation source (see the model's doc comment).
+            let resizeObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didResizeNotification,
+                object: panel,
+                queue: .main
+            ) { [weak self] _ in
+                self?.syncExpansionProgressWithPanelFrame(panel, on: screen)
+            }
+
             rebuiltPresences.append(
                 ScreenPresence(
                     displayID: screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? 0,
                     screen: screen,
-                    panel: panel
+                    panel: panel,
+                    resizeObserver: resizeObserver
                 )
             )
         }
 
         for presence in screenPresences where !rebuiltPresences.contains(where: { $0.panel == presence.panel }) {
+            if let resizeObserver = presence.resizeObserver {
+                NotificationCenter.default.removeObserver(resizeObserver)
+            }
             presence.panel.orderOut(nil)
         }
         screenPresences = rebuiltPresences
 
+        // The panel model outlives a rebuild (one shared model), so a rebuilt
+        // presence re-syncs progress from its fresh panel's resting frame —
+        // otherwise a value left high by a torn-down panel would draw the
+        // mid-collapse outline on the new pill.
+        for presence in screenPresences {
+            syncExpansionProgressWithPanelFrame(presence.panel, on: presence.screen)
+        }
+
         refreshFullscreenSuppression()
+    }
+
+    /// Derives `expansionProgress` from the panel's live frame — the inverse
+    /// of the frame morph. `NSWindow` frame animation is a REAL per-frame
+    /// resize (measured 2026-09-23: 18 intermediate frames over a 0.5 s
+    /// morph, each a genuine `window.frame`), so this fires once per
+    /// animation frame via `windowDidResize` and the published progress
+    /// tracks the window exactly, with no second animation to desync or
+    /// stall. Plain assignment — no `withAnimation`: the window is what
+    /// animates; this only reports where it is.
+    private func syncExpansionProgressWithPanelFrame(_ panel: NotchPanel, on screen: NSScreen) {
+        guard let restingFrame = NotchSupport.restingWindowFrame(on: screen) else { return }
+        let expandedFrame = NotchSupport.expandedSheetFrame(on: screen)
+        let heightRange = expandedFrame.height - restingFrame.height
+        guard heightRange > 1 else { return }
+        let progress = (panel.frame.height - restingFrame.height) / heightRange
+        panelModel.expansionProgress = min(max(progress, 0), 1)
     }
 
     // MARK: - Monitors
@@ -368,7 +422,8 @@ final class NotchWindowController {
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = duration
-            // 与 SwiftUI 侧的 timingCurve 同一组控制点，两边同步落地。
+            // 与窗口动画同一条曲线只此一份：SwiftUI 侧没有自己的动画了，
+            // expansionProgress 由 windowDidResize 从实时 frame 推导。
             context.timingFunction = CAMediaTimingFunction(
                 controlPoints: timing.0,
                 timing.1,
@@ -377,15 +432,6 @@ final class NotchWindowController {
             )
             context.allowsImplicitAnimation = true
             presence.panel.setFrame(expandedFrame, display: true)
-        }
-        withAnimation(.timingCurve(
-            CGFloat(timing.0),
-            CGFloat(timing.1),
-            CGFloat(timing.2),
-            CGFloat(timing.3),
-            duration: duration
-        )) {
-            panelModel.expansionProgress = 1
         }
 
         presence.panel.ignoresMouseEvents = false
@@ -447,11 +493,8 @@ final class NotchWindowController {
               let collapsingPresence,
               let restingFrame = NotchSupport.restingWindowFrame(on: collapsingPresence.screen) else {
             // Teardown path: the panel is ordered out right after this, so
-            // nobody sees a morph — assign directly. Animating here would be
-            // the same stall risk as the morph path (the SwiftUI animation
-            // occasionally never lands), and this shared panel model survives
-            // a rebuild, so a frozen value would leak into the next panel.
-            panelModel.expansionProgress = 0
+            // nobody sees a morph — and there is nothing to animate anyway
+            // (progress is derived from the frame, which stays put here).
             return
         }
 
@@ -484,23 +527,11 @@ final class NotchWindowController {
         // Back to the inert resting state — see the panel creation comment.
         collapsingPresence.panel.ignoresMouseEvents = true
 
-        withAnimation(.timingCurve(
-            CGFloat(NotchSupport.collapseTimingControlPoints.0),
-            CGFloat(NotchSupport.collapseTimingControlPoints.1),
-            CGFloat(NotchSupport.collapseTimingControlPoints.2),
-            CGFloat(NotchSupport.collapseTimingControlPoints.3),
-            duration: NotchSupport.collapseAnimationDuration
-        )) {
-            panelModel.expansionProgress = 0
-        }
-
         // Convergence watchdog: the completion handler above can be skipped
-        // when the frame animation is replaced or dropped, and the SwiftUI
-        // progress animation occasionally stalls on its own (measured
-        // 2026-09-23: window back at the resting frame, expansionProgress
-        // frozen high — the panel keeps drawing the mid-collapse outline,
-        // which reads as 「刘海变大了缩不回去」). After the morph's deadline,
-        // force both states to rest unless a newer expand/collapse owns them.
+        // when the frame animation is replaced or dropped. After the morph's
+        // deadline, force the frame to rest unless a newer expand/collapse
+        // owns it — the published progress follows the frame, so one snap
+        // covers both.
         DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.collapseAnimationDuration + 0.25) { [weak self] in
             guard let self,
                   self.collapseGeneration == collapseGenerationAtStart,
@@ -509,14 +540,11 @@ final class NotchWindowController {
         }
     }
 
-    /// Forces the panel and the SwiftUI progress to the resting state with no
-    /// animation — the collapse morph runs as TWO parallel animations (the
-    /// window frame's AppKit animation and `expansionProgress`'s SwiftUI
-    /// animation), and either one stalling leaves the other's finished state
-    /// half-drawn. Idempotent: at every normal completion this is a no-op.
-    /// Deliberately NOT `withAnimation` — in the stall scenario another
-    /// animation could stall the same way; only an immediate assignment
-    /// guarantees the panel ends up back as the invisible resting pill.
+    /// Forces the panel's frame to the resting state with no animation — the
+    /// one remaining morph animation (the window frame) can still be
+    /// skipped, and the published `expansionProgress` is derived from the
+    /// frame, so snapping the frame converges both. Idempotent: at every
+    /// normal completion this is a no-op.
     private func convergeOnRestingState(_ presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
 
@@ -530,10 +558,6 @@ final class NotchWindowController {
             if !isFrameAtRest {
                 presence.panel.setFrame(restingFrame, display: true)
             }
-        }
-
-        if panelModel.expansionProgress != 0 {
-            panelModel.expansionProgress = 0
         }
     }
 
