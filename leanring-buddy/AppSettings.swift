@@ -372,6 +372,14 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// When the answer embeds a `[POINT:…]` tag, fly the cursor to that element.
     var pointsAtReferencedElements: Bool = true
 
+    /// 「圈选提问」: while holding the talk shortcut, the user can draw a circle
+    /// around something on screen with the mouse, and that region rides along
+    /// with the question as extra context — the same behaviour HeyClicky builds
+    /// its precision on. Gated separately from 「回答里的位置自动飞过去指」
+    /// because the two travel in opposite directions: this is the human
+    /// marking the model's subject, not the model marking the user's screen.
+    var allowsCircleToAsk: Bool = true
+
     // MARK: - 操作
 
     /// Master switch for acting on the machine — clicking, scrolling, typing,
@@ -501,6 +509,7 @@ nonisolated extension AppSettings {
         case screenshotCompressionQuality
         case capturesAllDisplays
         case pointsAtReferencedElements
+        case allowsCircleToAsk
         case allowsComputerControl
         case allowsKeyboardControl
         case textEntryMethod
@@ -549,6 +558,7 @@ nonisolated extension AppSettings {
         screenshotCompressionQuality = try container.decodeIfPresent(Double.self, forKey: .screenshotCompressionQuality) ?? defaults.screenshotCompressionQuality
         capturesAllDisplays = try container.decodeIfPresent(Bool.self, forKey: .capturesAllDisplays) ?? defaults.capturesAllDisplays
         pointsAtReferencedElements = try container.decodeIfPresent(Bool.self, forKey: .pointsAtReferencedElements) ?? defaults.pointsAtReferencedElements
+        allowsCircleToAsk = try container.decodeIfPresent(Bool.self, forKey: .allowsCircleToAsk) ?? defaults.allowsCircleToAsk
         // `decodeIfPresent` is not optional politeness here: a synthesized `Codable`
         // throws on a missing key, so a plain `Bool` added today would make every
         // settings file written before today fail to load — and the store would

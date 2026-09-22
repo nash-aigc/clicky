@@ -65,7 +65,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .memory: return 7
         case .listen: return 4
         case .speak: return 4
-        case .vision: return 5
+        case .vision: return 6
         case .action: return 3
         case .shortcuts: return 3
         }
@@ -598,6 +598,13 @@ struct GeneralSettingsView: View {
                     description: "模型回答里带 [POINT:坐标] 时，蓝色光标沿弧线飞到那个元素。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.pointsAtReferencedElements))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "圈选提问",
+                    description: "按住说话键时可以用鼠标在屏幕上画个圈，圈住的区域会随问题一起发给模型 —— 这是标记提问对象的准办法。松开鼠标圈就定格，下次提问生效一次。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.allowsCircleToAsk))
                 }
                 SettingsCardRowDivider()
                 SettingsRow(

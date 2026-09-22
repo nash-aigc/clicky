@@ -69,6 +69,12 @@ final class CompanionManager: ObservableObject {
     /// the marks never touch the machine and are cleared before every fresh
     /// screenshot so the model never sees its own drawings.
     let screenAnnotationManager = ScreenAnnotationManager()
+
+    /// 「你圈我问」: captures the circle the user draws with the mouse while
+    /// holding the talk shortcut, and holds its region for the next question.
+    /// Declared after `screenAnnotationManager` because it hands the finished
+    /// lasso stroke to it for display.
+    lazy var circleToAskController = CircleToAskController(annotationManager: screenAnnotationManager)
     // Response text is now displayed inline on the cursor overlay via
     // streamingResponseText, so no separate response overlay manager is needed.
 
@@ -691,10 +697,17 @@ final class CompanionManager: ObservableObject {
                     self.voiceState = .processing
                 } else if isRecording {
                     self.voiceState = .listening
+                    // The whole time the user is holding the shortcut (or a
+                    // double-tap recording is open) they may circle something;
+                    // the capture is armed per recording and disarmed when it
+                    // ends. A stale pending region from an unanswered
+                    // recording is dropped by the same call.
+                    self.circleToAskController.beginCaptureIfEnabled()
                 } else if isPreparing {
                     self.voiceState = .processing
                 } else {
                     self.voiceState = .idle
+                    self.circleToAskController.endCapture()
                     // If the user pressed and released the hotkey without
                     // saying anything, no response task runs — schedule the
                     // transient hide here so the overlay doesn't get stuck.
@@ -783,8 +796,15 @@ final class CompanionManager: ObservableObject {
             clearAnswerBubble()
             clearDetectedElementLocation()
             // A new question owns the screen too: the previous answer's green
-            // marks are yesterday's drawing.
+            // marks are yesterday's drawing, and so is a circle the user drew
+            // for a question that never got sent. Guarded on no held
+            // transcript, because in confirmation mode this very press may be
+            // the tap that sends the held question — its circle must survive
+            // until the pipeline consumes it.
             screenAnnotationManager.clear()
+            if pendingConfirmationTranscript == nil {
+                circleToAskController.discardPendingRegion()
+            }
 
             // Dismiss the onboarding prompt if it's showing
             if showOnboardingPrompt {
@@ -970,7 +990,7 @@ final class CompanionManager: ObservableObject {
     drawing on screen:
     besides the flying cursor, you can draw green marks directly over the user's screen — rings, arrows, lines, curves and outlines, with a small text label on each. use them when drawing would genuinely make the answer clearer: circling the button you're talking about, showing where a window should be dragged, tracing a route through a settings pane. do not draw for general knowledge questions, or when pointing alone already says it.
 
-    format: [SHAPE:kind:x1,y1;x2,y2;...:label] — the same normalized 0-1000 grid as [POINT:], points separated by semicolons, multiple points tracing the shape. append :screenN like [POINT:] does when the shape is on a different screen. the label is short, 1-4 words, written in the element's own words.
+    format: [SHAPE:kind:x1,y1;x2,y2;...:label] — the same normalized 0-1000 grid as [POINT:], points separated by semicolons, multiple points tracing the shape. append :screenN like [POINT:] does when the shape is on a different screen. the label is short, 1-4 words, written in the element's own words — for circle and polygon the label is looked up in the interface exactly like a click's label, and a match redraws the ring around the real element, so a copy of the element's own text lands exactly while a description ("数字5") falls back to your coordinates.
 
     kinds:
     - circle: TWO points. first = the circle's center, second = a point just past its edge (the distance between them is the radius). circle the thing you mean, leaving a little margin around it.
@@ -980,6 +1000,9 @@ final class CompanionManager: ObservableObject {
     - polygon: THREE or more points. a closed outline around a region, for framing a whole window or panel.
 
     rules: at most TWO shapes in one reply, and only when drawing truly helps. shapes are drawn for the user's eyes — they never touch anything and disappear after about ten seconds. example: "your wifi settings live in control center — it's this one up here. [SHAPE:circle:912,35;912,80:control center]"
+
+    the user's own circle:
+    the user can mark the screen themselves: while holding the talk key they may draw a circle around something with the mouse before or while speaking. when they did, a <screen_contents> block arrives with the next message describing the circled region — its bounding rect on the 1000x1000 grid and the accessibility elements inside it, exact strings and coordinates included. the circle IS the subject of their question: "这个是什么", "帮我把这个关掉", "这里面哪个最便宜" all mean the circled thing, even when their sentence names nothing. treat the region as the strongest hint there is — more reliable than your own reading of the screenshot. when you then point, click or draw a shape at it, prefer the exact elements and coordinates the region block lists, and prefer [CLICK:x,y:exact string] over a coordinate guess. if the user circled something but you cannot tell what they want done with it, answer about the circled thing and ask what they would like.
 
     operating the computer:
     you can act on the machine, not only talk about it. these tags do things:
@@ -1244,7 +1267,22 @@ final class CompanionManager: ObservableObject {
                     // would put them in this capture — the model would then see its
                     // own green rings in the screenshot and re-draw or describe
                     // them. The fade is cosmetic and does not wait to finish.
-                    screenAnnotationManager.clear()
+                    //
+                    // ONE exception, and it is the user's own circle-to-ask lasso:
+                    // on step 1, when the question being sent is the one the user
+                    // drew the circle for, the lasso MUST survive into this capture.
+                    // It is the strongest signal there is of what their question is
+                    // about — a vision model that can see the green ring around "2"
+                    // never has to guess between the twelve buttons the region's
+                    // element list also names. Clearing it here (as this line used
+                    // to, unconditionally) is why a circled "2" came back as "3 or
+                    // 4". The lasso is cleared right after the capture, below, so
+                    // the continuation steps stay clean.
+                    if stepCount == 1, circleToAskController.pendingMarkedRegion != nil {
+                        print("🟢 Circle-to-ask: keeping the user's lasso visible for this capture")
+                    } else {
+                        screenAnnotationManager.clear()
+                    }
                     let screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG(
                         maximumDimension: appSettings.screenshotMaxDimension == 0
                             ? nil
@@ -1257,6 +1295,24 @@ final class CompanionManager: ObservableObject {
 
                     if stepCount == 1 {
                         firstStepScreenCaptures = screenCaptures
+
+                        // The region the user circled while asking rides along
+                        // with step 1 only — it belongs to the user's turn, the
+                        // way their words do. Merged into the same
+                        // `<screen_contents>` channel the [AX_TREE] read uses,
+                        // so the data-not-instruction framing comes for free.
+                        if let markedRegionContext = await buildMarkedRegionContextIfPending() {
+                            pendingAccessibilityContext = pendingAccessibilityContext
+                                .map { $0 + "\n" + markedRegionContext }
+                                ?? markedRegionContext
+                        }
+                        // The capture is done — the model has seen the circle.
+                        // Take it off the screen now so no later step's capture
+                        // picks it up, and the user sees it retire with their
+                        // question having been sent.
+                        if circleToAskController.pendingMarkedRegion == nil {
+                            screenAnnotationManager.clear()
+                        }
                     }
 
                     // Build image labels with the actual screenshot pixel dimensions
@@ -1385,7 +1441,7 @@ final class CompanionManager: ObservableObject {
                     // pointing decision above. The 4-shape cap keeps a runaway reply
                     // from painting the whole screen; the prompt asks for at most two.
                     if appSettings.pointsAtReferencedElements, !parseResult.shapeRequests.isEmpty {
-                        let annotationMarks = resolvedAnnotationMarks(
+                        let annotationMarks = await resolvedAnnotationMarks(
                             from: Array(parseResult.shapeRequests.prefix(Self.maximumAnnotationShapesPerReply)),
                             among: screenCaptures
                         )
@@ -1620,8 +1676,10 @@ final class CompanionManager: ObservableObject {
         clearAnswerBubble()
         clearDetectedElementLocation()
         // The marks belong to the reply that just got cancelled — leaving them
-        // up would show a drawing for an answer the user stopped.
+        // up would show a drawing for an answer the user stopped. The pending
+        // circle they drew goes with it: a cancelled question owns nothing.
         screenAnnotationManager.clear()
+        circleToAskController.discardPendingRegion()
         voiceState = .idle
         // The user just said "stop" — in the transient presence modes the
         // companion leaving is part of the stop, not something to wait for.
@@ -1854,6 +1912,50 @@ final class CompanionManager: ObservableObject {
 
     // MARK: - Screen Annotation Resolution
 
+    /// Builds the prompt context for a region the user circled while asking,
+    /// or nil when there is none (or the setting is off).
+    ///
+    /// The circle itself is the human-precise part: the subject of the
+    /// question is where the user's own mouse drew it, not where a vision
+    /// model would guess. The elements inside are read from the accessibility
+    /// tree so the model gets exact strings and exact coordinates instead of
+    /// re-reading the image — the same primacy of real data the click path
+    /// follows.
+    private func buildMarkedRegionContextIfPending() async -> String? {
+        guard AppSettingsStore.snapshot().allowsCircleToAsk else {
+            circleToAskController.discardPendingRegion()
+            return nil
+        }
+        guard let region = circleToAskController.consumePendingRegion() else {
+            return nil
+        }
+
+        var contextLines = [
+            "while asking, the user drew a circle around a region on screen \(region.screenNumber): normalized bounding rect from (\(Int(region.normalizedRect.minX)), \(Int(region.normalizedRect.minY))) to (\(Int(region.normalizedRect.maxX)), \(Int(region.normalizedRect.maxY))) on the 1000x1000 grid. the circle marks the subject of their question."
+        ]
+
+        let quartzBounds = CGDisplayBounds(region.displayID)
+        let quartzRegion = CGRect(
+            x: quartzBounds.origin.x + region.localBounds.minX,
+            y: quartzBounds.origin.y + region.localBounds.minY,
+            width: region.localBounds.width,
+            height: region.localBounds.height
+        )
+        if let elementSummary = await MacosUseController.accessibilityElementsInRegion(
+            quartzRegion,
+            normalizedIn: quartzBounds
+        ) {
+            contextLines.append("accessibility data for elements in or touching that region, smallest first; elements marked \"fully inside\" are the likeliest subject of the question (exact strings and exact coordinates — use them, do not re-read them from the image): \n\(elementSummary)")
+        }
+
+        let result = contextLines.joined(separator: "\n")
+        // The region context is the model's entire knowledge of what the user
+        // circled — when a circled question comes back wrong, this log line is
+        // the first thing to read.
+        print("🟢 Circle-to-ask region context:\n\(result)")
+        return result
+    }
+
     /// Upper bound on how many `[SHAPE:…]` marks one reply may draw. The prompt
     /// asks for at most two; the cap exists so a runaway reply cannot paint the
     /// whole screen.
@@ -1869,13 +1971,21 @@ final class CompanionManager: ObservableObject {
     /// yields display-local y-down points — exactly the space the annotation
     /// window's SwiftUI content draws in, so no second mapping is needed.
     ///
-    /// Deliberately no accessibility element lookup, unlike a click: a ring
-    /// drawn a little large around its target is still a ring around it, while
-    /// a click one key away is a wrong click.
+    /// Enclosing shapes (circle, polygon) go through the same resolution a
+    /// click at the same tag would be aimed with: a label that names a real
+    /// element wins, failing that the small control under the estimated point,
+    /// failing that the model's raw points. A click one key away is a wrong
+    /// click, and a ring one key away is a ring around the wrong thing — the
+    /// measured 2026-09-22 fix for rings landing beside their target is to ride
+    /// the exact chain the click path proved pixel-exact, rather than a
+    /// name-lookup-only variant that silently falls back to the estimate.
+    /// Arrows, lines and curves stay on the model's points: they are
+    /// directional strokes between two places, and snapping their endpoints
+    /// to a frame would say something the model did not mean.
     private func resolvedAnnotationMarks(
         from shapeRequests: [AnnotationShapeRequest],
         among screenCaptures: [CompanionScreenCapture]
-    ) -> [ScreenAnnotationMark] {
+    ) async -> [ScreenAnnotationMark] {
         var marks: [ScreenAnnotationMark] = []
         for shapeRequest in shapeRequests {
             let anchorCoordinate = ModelReportedCoordinate(
@@ -1889,12 +1999,55 @@ final class CompanionManager: ObservableObject {
             guard let capture = MacosUseController.screenCapture(for: anchorCoordinate, among: screenCaptures) else {
                 continue
             }
-            let displayPoints = shapeRequest.points.map { normalizedPoint in
+            var displayPoints = shapeRequest.points.map { normalizedPoint in
                 MacosUseController.displayLocalPoint(
                     fromNormalizedPoint: normalizedPoint,
                     in: capture
                 )
             }
+
+            // The AX upgrade for enclosing shapes: resolve the ring the way a
+            // click at the same tag would be aimed. The frame is Quartz
+            // global; convert it into this display's local points.
+            if shapeRequest.kind == .circle || shapeRequest.kind == .polygon {
+                let quartzEstimate = MacosUseController.quartzGlobalPoint(
+                    fromNormalizedPoint: anchorCoordinate.normalizedCoordinate,
+                    in: capture
+                )
+                if let elementFrame = await MacosUseController.annotationEnclosingFrame(
+                    forLabel: shapeRequest.label,
+                    estimate: quartzEstimate
+                ) {
+                    let quartzOrigin = CGDisplayBounds(capture.displayID).origin
+                    let localFrame = CGRect(
+                        x: elementFrame.minX - quartzOrigin.x,
+                        y: elementFrame.minY - quartzOrigin.y,
+                        width: elementFrame.width,
+                        height: elementFrame.height
+                    )
+                    // A little margin so the ring breathes instead of
+                    // touching the element's edges.
+                    let framedElement = localFrame.insetBy(dx: -8, dy: -6)
+                    if shapeRequest.kind == .circle {
+                        let centre = CGPoint(x: framedElement.midX, y: framedElement.midY)
+                        let radius = max(framedElement.width, framedElement.height) / 2
+                        // Same centre + just-past-the-edge-point language the
+                        // tag itself uses.
+                        displayPoints = [centre, CGPoint(x: centre.x + radius, y: centre.y)]
+                    } else {
+                        displayPoints = [
+                            CGPoint(x: framedElement.minX, y: framedElement.minY),
+                            CGPoint(x: framedElement.minX, y: framedElement.maxY),
+                            CGPoint(x: framedElement.maxX, y: framedElement.maxY),
+                            CGPoint(x: framedElement.maxX, y: framedElement.minY)
+                        ]
+                    }
+                    print("🟢 Annotation snapped to AX element \(localFrame) (label: \(shapeRequest.label ?? "none"))")
+                } else {
+                    print("🟢 Annotation kept model's points (no AX match for label: \(shapeRequest.label ?? "none"))")
+                }
+            }
+
             marks.append(ScreenAnnotationMark(
                 kind: shapeRequest.kind,
                 label: shapeRequest.label,

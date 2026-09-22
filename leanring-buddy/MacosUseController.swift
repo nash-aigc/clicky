@@ -849,7 +849,11 @@ enum MacosUseController {
     /// Returns nil when the tag carries no label, when the label names nothing in the
     /// app in front, or when that app will not talk — and the caller falls back to
     /// the estimate, which is what this did before any of it existed.
-    private static func accessibilityElementFrame(
+    /// Internal, not private: the green-annotation path resolves a named
+    /// target through the same lookup — a ring drawn around the real element
+    /// beats a ring around the model's estimate, and the ranking rules (exact
+    /// name → control-sized → nearest) are identical.
+    static func accessibilityElementFrame(
         matchingLabel elementLabel: String,
         nearestTo quartzPoint: CGPoint
     ) async -> CGRect? {
@@ -879,43 +883,64 @@ enum MacosUseController {
                 return nil
             }
 
-            var bestFrame: CGRect?
-            var bestRank = (
-                nameRank: Int.max,
-                sizeRank: Int.max,
-                distance: CGFloat.greatestFiniteMagnitude
-            )
+            func rankedCandidates(for searchedLabel: String) -> [(frame: CGRect, rank: (nameRank: Int, sizeRank: Int, distance: CGFloat))] {
+                var candidates: [(frame: CGRect, rank: (nameRank: Int, sizeRank: Int, distance: CGFloat))] = []
+                for element in responseData.elements {
+                    guard let elementText = element.text, !elementText.isEmpty,
+                          let x = element.x, let y = element.y,
+                          let width = element.width, let height = element.height,
+                          width >= 1, height >= 1 else {
+                        continue
+                    }
 
-            for element in responseData.elements {
-                guard let elementText = element.text, !elementText.isEmpty,
-                      let x = element.x, let y = element.y,
-                      let width = element.width, let height = element.height,
-                      width >= 1, height >= 1 else {
-                    continue
+                    let lowercasedElementText = elementText.lowercased()
+                    guard lowercasedElementText.contains(searchedLabel) else { continue }
+
+                    let frame = CGRect(x: x, y: y, width: width, height: height)
+                    let rank = (
+                        // An element *called* "7" beats one that merely mentions it…
+                        nameRank: lowercasedElementText == searchedLabel ? 0 : 1,
+                        // …a control beats the window that contains it, because the
+                        // centre of a window is not where anyone pointed…
+                        sizeRank: frame.width <= maximumSnappableElementWidth
+                            && frame.height <= maximumSnappableElementHeight ? 0 : 1,
+                        // …and past that, the one nearest what the model pointed at.
+                        distance: hypot(frame.midX - quartzPoint.x, frame.midY - quartzPoint.y)
+                    )
+                    candidates.append((frame, rank))
                 }
+                return candidates.sorted { $0.rank < $1.rank }
+            }
 
-                let lowercasedElementText = elementText.lowercased()
-                guard lowercasedElementText.contains(searchedLabel) else { continue }
+            // First try the label as given. Measured 2026-09-22: "5" against
+            // Calculator resolves to the key's true frame, offset 0.0.
+            var ranked = rankedCandidates(for: searchedLabel)
 
-                let frame = CGRect(x: x, y: y, width: width, height: height)
-                let rank = (
-                    // An element *called* "7" beats one that merely mentions it…
-                    nameRank: lowercasedElementText == searchedLabel ? 0 : 1,
-                    // …a control beats the window that contains it, because the
-                    // centre of a window is not where anyone pointed…
-                    sizeRank: frame.width <= maximumSnappableElementWidth
-                        && frame.height <= maximumSnappableElementHeight ? 0 : 1,
-                    // …and past that, the one nearest what the model pointed at.
-                    distance: hypot(frame.midX - quartzPoint.x, frame.midY - quartzPoint.y)
-                )
-
-                if rank < bestRank {
-                    bestRank = rank
-                    bestFrame = frame
+            // When the label matched nothing, retry with the ASCII words inside
+            // it. Chinese models decorate names — the user says "在数字 5 的位置"
+            // and the tag comes back [SHAPE:circle:…:数字 5], but the element is
+            // still called "5"; measured the same day, "数字5" matched nothing and
+            // the ring fell back to the raw estimate, which is the offset the
+            // user saw. Splitting on non-ASCII-alphanumerics turns "数字 5" into
+            // ["5"]; a purely Chinese label ("发送") yields no tokens and no
+            // retry, so Chinese-named elements are never mismatched by this.
+            if ranked.isEmpty {
+                let asciiTokenCharset = CharacterSet(charactersIn:
+                    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+                let asciiTokens = searchedLabel
+                    .components(separatedBy: asciiTokenCharset.inverted)
+                    .filter { !$0.isEmpty }
+                    .sorted { $0.count > $1.count }
+                for token in asciiTokens.prefix(3) {
+                    ranked = rankedCandidates(for: token.lowercased())
+                    if !ranked.isEmpty {
+                        print("🎯 Label \"\(elementLabel)\" matched nothing; ASCII token \"\(token)\" did")
+                        break
+                    }
                 }
             }
 
-            return bestFrame
+            return ranked.first?.frame
         }.value
     }
 
@@ -940,9 +965,132 @@ enum MacosUseController {
         return accessibilityFrame(of: hitElement)
     }
 
+    /// The frame an enclosing annotation (ring, outline) should be drawn
+    /// around, resolved the same way a click at the same tag would be aimed.
+    ///
+    /// The chain is the click path's, verbatim in order: a label that names a
+    /// real element wins outright; failing that, whatever **small** control the
+    /// estimated point lands on is used; failing that, nil — the caller draws
+    /// on the model's raw points. Returning the frame rather than the centre
+    /// is the one difference: a ring needs the element's extent to be sized,
+    /// not just its middle.
+    ///
+    /// Measured 2026-09-22, the reason this exists: a ring left on the model's
+    /// raw estimate landed beside the target every time, while the same
+    /// resolution chain a click follows is pixel-exact against Calculator's
+    /// keys — so the ring now rides the proven chain instead of the estimate.
+    static func annotationEnclosingFrame(
+        forLabel elementLabel: String?,
+        estimate quartzEstimate: CGPoint
+    ) async -> CGRect? {
+        if let elementLabel, !elementLabel.isEmpty {
+            if let namedFrame = await accessibilityElementFrame(
+                matchingLabel: elementLabel,
+                nearestTo: quartzEstimate
+            ) {
+                return namedFrame
+            }
+        }
+
+        // Same fallback the click path takes, same small-control gate: the
+        // element under the estimated point, when that element is a control
+        // and not the window that contains it.
+        let snappedFrame = await Task.detached(priority: .userInitiated) {
+            accessibilityElementFrame(near: quartzEstimate)
+        }.value
+        guard let snappedFrame,
+              snappedFrame.width <= maximumSnappableElementWidth,
+              snappedFrame.height <= maximumSnappableElementHeight else {
+            return nil
+        }
+        return snappedFrame
+    }
+
+    /// Lists the frontmost app's elements whose frames intersect a Quartz
+    /// region, most specific first, formatted for the model.
+    ///
+    /// This is the「你圈我问」half of the annotation story: the user's own
+    /// circle is already pixel-exact, so the elements inside it are read from
+    /// the tree rather than guessed from the image — the same primacy of real
+    /// data over vision estimates the click path follows. Coordinates come
+    /// back on the normalized 0–1000 grid of `displayBounds`, so the model can
+    /// aim a `[CLICK:]`/`[POINT:]` at them directly.
+    ///
+    /// Returns nil when nothing matches or the app will not talk; the caller
+    /// then describes the region without the element list.
+    static func accessibilityElementsInRegion(
+        _ quartzRegion: CGRect,
+        normalizedIn displayBounds: CGRect
+    ) async -> String? {
+        guard let frontmostApplication = NSWorkspace.shared.frontmostApplication,
+              frontmostApplication.processIdentifier != ProcessInfo.processInfo.processIdentifier else {
+            return nil
+        }
+        let processIdentifier = frontmostApplication.processIdentifier
+
+        // Off the main actor: the tree walk is a synchronous round trip to
+        // the other process.
+        return await Task.detached(priority: .userInitiated) { () -> String? in
+            guard let responseData = try? traverseAccessibilityTree(
+                pid: processIdentifier,
+                onlyVisibleElements: true
+            ) else {
+                return nil
+            }
+
+            var matches: [(text: String, role: String, frame: CGRect)] = []
+            for element in responseData.elements {
+                guard let x = element.x, let y = element.y,
+                      let width = element.width, let height = element.height,
+                      width >= 1, height >= 1 else {
+                    continue
+                }
+                let frame = CGRect(x: x, y: y, width: width, height: height)
+                guard frame.intersects(quartzRegion) else { continue }
+                matches.append((
+                    text: element.text ?? "",
+                    role: element.role,
+                    frame: frame
+                ))
+            }
+
+            guard !matches.isEmpty else { return nil }
+
+            // Fully-contained elements come first, smallest first, then the
+            // partial overlaps. The thing a user circles is almost always
+            // entirely inside the ring they drew — a neighbour that merely
+            // touches the region's edge because of the padding is a different
+            // candidate, and the model needs the two kinds separated to pick
+            // right (measured 2026-09-22: a circle around Calculator's "2"
+            // with no containment signal came back as "3 or 4", because every
+            // digit in the grid is the same size and area ordering alone says
+            // nothing about which one was inside the ring).
+            let contained = matches.filter { quartzRegion.contains($0.frame) }
+            let partial = matches.filter { !quartzRegion.contains($0.frame) }
+            let smallestFirst: ((text: String, role: String, frame: CGRect), (text: String, role: String, frame: CGRect)) -> Bool = {
+                $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height
+            }
+            let sortedBySpecificity = contained.sorted(by: smallestFirst)
+                + partial.sorted(by: smallestFirst)
+            let maximumListedElements = 12
+            return sortedBySpecificity.prefix(maximumListedElements).map { match in
+                let normalizedCenter = CGPoint(
+                    x: (match.frame.midX - displayBounds.origin.x) / displayBounds.width * 1000,
+                    y: (match.frame.midY - displayBounds.origin.y) / displayBounds.height * 1000
+                )
+                let textDescription = match.text.isEmpty
+                    ? "(no text)"
+                    : "\"\(match.text)\""
+                let containment = quartzRegion.contains(match.frame)
+                    ? "fully inside the circle"
+                    : "partially overlapping the circle's edge"
+                return "- \(match.role) \(textDescription), center at (\(Int(normalizedCenter.x)), \(Int(normalizedCenter.y))), \(containment)"
+            }.joined(separator: "\n")
+        }.value
+    }
+
     /// Reads an element's screen-space frame (Quartz origin, top-left).
-    private nonisolated static func accessibilityFrame(of element: AXUIElement) -> CGRect? {
-        var positionValue: CFTypeRef?
+    private nonisolated static func accessibilityFrame(of element: AXUIElement) -> CGRect? {        var positionValue: CFTypeRef?
         var sizeValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionValue) == .success,
               AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeValue) == .success,
