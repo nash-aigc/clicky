@@ -172,19 +172,30 @@ final class CompanionManager: ObservableObject {
 
     /// The most recent failure worth telling the user about, or nil.
     ///
-    /// Shown as a line of text in the panel. The companion apologises out loud when
-    /// a request fails, but a spoken apology is indistinguishable from the model
-    /// failing to answer — it hid an exhausted-quota 403 behind "抱歉，我这边出了点
-    /// 问题" for a long time. The panel shows the API's own words instead.
+    /// The companion apologises out loud when a request fails, but a spoken
+    /// apology is indistinguishable from the model failing to answer — it hid
+    /// an exhausted-quota 403 behind "抱歉，我这边出了点问题" for a long time.
+    /// The last error's verbatim API text, or nil. The notch sheet's
+    /// conversation home shows it as a dim line above the composer — the
+    /// companion answers in speech, so an error that only spoke the fixed
+    /// apology "抱歉，我这边出了点问题" would hide the actual cause (an
+    /// exhausted quota, a bad key) from the user entirely.
     @Published private(set) var lastErrorMessage: String?
 
     /// What the companion last did to the machine, or nil if it has not acted.
     ///
-    /// Shown as a line in the panel, next to `lastErrorMessage` and for the same
-    /// reason: the companion answers in speech, so "我帮你点了" sounds identical
-    /// whether it really clicked or only described where the button is. The line
-    /// says which, and when it refused, why.
+    /// Shown next to `lastErrorMessage` in the notch sheet's conversation home
+    /// and for the same reason: the companion answers in speech, so "我帮你点了"
+    /// sounds identical whether it really clicked or only described where the
+    /// button is. The line says which, and when it refused, why.
     @Published private(set) var lastActionDescription: String?
+
+    /// Lets the UI dismiss a stale error line — `lastErrorMessage` only clears
+    /// itself on a model-configuration save, and an error nobody can act on
+    /// should not sit above the composer forever.
+    func clearLastErrorMessage() {
+        lastErrorMessage = nil
+    }
 
     /// The agent loop's steps so far, one line each — what the conversation
     /// view folds into a 「N 条进度」 disclosure (HeyClicky's progress
@@ -219,6 +230,20 @@ final class CompanionManager: ObservableObject {
     /// which is what keeps the setting to one gate, in the pipeline that fills this.
     @Published private(set) var streamingAnswerText: String = ""
 
+    /// Whether the notch sheet is expanded right now. `NotchWindowController`
+    /// sets it in `expand(on:)` / `collapse(expandBackToPill:)`.
+    ///
+    /// The overlay holds its answer and transcript bubble back while this is
+    /// true: the expanded sheet's conversation flow is already showing the
+    /// same text a few hundred points away, and showing it twice was the
+    /// 「返回的结果先是两个，后来又合并成一个」 report — while the answer streamed,
+    /// the sheet and the cursor bubble displayed it together, and when the
+    /// bubble cleared at the end of the turn the user saw the two "merge"
+    /// into one. Published, because the overlay reads it through
+    /// `@ObservedObject` and has to drop the bubble the moment the sheet
+    /// opens, not at the next text update.
+    @Published var isNotchSheetExpanded: Bool = false
+
     /// Clears the answer bubble once the voice has stopped and the user's linger
     /// has elapsed. Cancelled whenever a new answer takes the bubble over.
     private var answerBubbleClearTask: Task<Void, Never>?
@@ -232,9 +257,8 @@ final class CompanionManager: ObservableObject {
 
     /// The settings window, held strongly.
     ///
-    /// `MenuBarPanelManager` holds its panel the same way and for the same reason:
-    /// a window controller released while its window is still on screen takes the
-    /// window down with it.
+    /// A window controller released while its window is still on screen takes
+    /// the window down with it.
     private var settingsWindowController: SettingsWindowController?
     private var modelConfigurationChangedObserver: NSObjectProtocol?
     private var conversationHistoryClearedObserver: NSObjectProtocol?
@@ -337,10 +361,11 @@ final class CompanionManager: ObservableObject {
         // warms a newly chosen provider's host on the first request after a switch.
         _ = visionChatAPI
 
-        // The panel reads the configuration through computed properties, so there
-        // is nothing cached to invalidate when it changes — it only needs a signal
-        // to re-render. A stale error is cleared at the same time, because the user
-        // has just been given the chance to fix whatever caused it.
+        // The panel used to read the configuration through computed properties —
+        // the configuration is resolved per request, so there is nothing cached to
+        // invalidate on a change; observers only need a signal to re-render. A
+        // stale error is cleared at the same time, because the user has just been
+        // given the chance to fix whatever caused it.
         modelConfigurationChangedObserver = NotificationCenter.default.addObserver(
             forName: .clickyModelConfigurationChanged,
             object: nil,
@@ -460,22 +485,33 @@ final class CompanionManager: ObservableObject {
 
         applyCursorSettings(AppSettingsStore.snapshot())
 
+        // First launch (the menu bar panel that used to host this flow is
+        // gone): raise the permission prompts right away — they are what the
+        // panel's permission rows' buttons did — then complete onboarding, so
+        // the welcome animation and video play like they always did. The
+        // overlay and the notch pills install themselves the moment the last
+        // permission lands (see the permission poll), without a restart.
+        if !hasCompletedOnboarding {
+            promptForMicrophoneIfNotDetermined()
+            WindowPositionManager.requestScreenRecordingPermission()
+            WindowPositionManager.requestAccessibilityPermission()
+            requestScreenContentPermission()
+            triggerOnboarding()
+        }
+
         // If the user already completed onboarding AND all permissions are
-        // still granted, put the cursor overlay up now. If permissions were
-        // revoked (e.g. signing change), don't — the panel will show the
-        // permissions UI instead.
+        // still granted, put the cursor overlay up now. If a permission was
+        // revoked (e.g. signing change), the poll's
+        // `installCompanionPresenceIfReady` puts everything up the moment it
+        // is re-granted — no restart, and no panel to show a permissions UI
+        // in any more.
         //
         // The overlay windows then stay up for the life of the app. Whether the
         // companion is *drawn* is `isBuddyShown`'s job, not the window's: taking
         // the windows down and rebuilding them on every question tore down N
         // full-screen hosting views each time, which flashed and reset the
         // companion's position.
-        if hasCompletedOnboarding && allPermissionsGranted {
-            overlayWindowManager.hasShownOverlayBefore = true
-            overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
-            isOverlayVisible = true
-            ensureNotchPresenceIfNeeded()
-        }
+        installCompanionPresenceIfReady()
     }
 
     // MARK: - Notch Presence
@@ -507,24 +543,27 @@ final class CompanionManager: ObservableObject {
 
     // MARK: - Settings
 
-    /// Opens the settings window, creating it on first use.
+    /// Opens settings — the notch sheet's embedded settings UI when the notch
+    /// subsystem can host it, the titled window otherwise.
     ///
-    /// The panel is dismissed first because it floats above normal windows and
-    /// would otherwise sit on top of the settings form, hiding it. The window is
-    /// then opened on the next run loop turn rather than immediately, so the
-    /// panel's `orderOut` has taken effect before the settings window tries to
-    /// become key.
+    /// The notch sheet is the app's only settings UI the user sees day to day
+    /// (its pages are the same views the titled window shows). The sheet
+    /// expands with the full notch animation straight into the requested
+    /// page. The titled window survives only as the fallback for the states
+    /// where the subsystem does not exist or cannot show — on a Mac without
+    /// a notch, with 「刘海屏入口」 off, or under another process's fullscreen
+    /// window. (With the menu bar panel gone, nothing calls this today; it
+    /// stays as the documented settings entry for exactly those fallback
+    /// states, reachable from code or a future entry point.)
     ///
-    /// Clicking inside the settings window cannot re-dismiss the panel: the
-    /// panel's outside-click monitor is a global `NSEvent` monitor, which only
-    /// ever receives events destined for other applications.
-    ///
-    /// - Parameter initialPage: The page to open on. Omitted, the window reopens
-    ///   on whichever page it was last showing — right for the gear icon, wrong
-    ///   for the panel's 「更换…」, which passes `.model` because that is what it
-    ///   promises.
+    /// - Parameter initialPage: The page to open on. Omitted, the notch sheet
+    ///   opens on 通用 (the sheet has no "last page" memory across openings —
+    ///   it is a fresh SwiftUI state each expansion) and the titled window
+    ///   keeps its last page.
     func openSettings(initialPage: SettingsPage? = nil) {
-        NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
+        if notchWindowController?.expandShowingSettings(initialPage: initialPage ?? .general) == true {
+            return
+        }
 
         DispatchQueue.main.async {
             if self.settingsWindowController == nil {
@@ -550,15 +589,13 @@ final class CompanionManager: ObservableObject {
     }
 
     /// Called by BlueCursorView after the buddy finishes its pointing
-    /// animation and returns to cursor-following mode.
-    /// Triggers the onboarding sequence — dismisses the panel and restarts
-    /// the overlay so the welcome animation and intro video play.
+    /// animation and returns to cursor-following mode, and by `start()` on a
+    /// fresh install (see `runFirstLaunchFlowIfNeeded`). Triggers the
+    /// onboarding sequence — restarts the overlay so the welcome animation
+    /// and intro video play.
     func triggerOnboarding() {
-        // Post notification so the panel manager can dismiss the panel
-        NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
-
-        // Mark onboarding as completed so the Start button won't appear
-        // again on future launches — the cursor will auto-show instead
+        // Mark onboarding as completed so the flow never runs again on
+        // future launches — the cursor will auto-show instead
         hasCompletedOnboarding = true
 
         // Play Besaid theme at 60% volume, fade out after 1m 30s
@@ -570,11 +607,10 @@ final class CompanionManager: ObservableObject {
         isOverlayVisible = true
     }
 
-    /// Replays the onboarding experience from the "Watch Onboarding Again"
-    /// footer link. Same flow as triggerOnboarding but the cursor overlay
-    /// is already visible so we just restart the welcome animation and video.
+    /// Replays the onboarding experience. Same flow as triggerOnboarding but
+    /// the cursor overlay is already visible so we just restart the welcome
+    /// animation and video.
     func replayOnboarding() {
-        NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
         startOnboardingMusic()
         // Tear down any existing overlays and recreate with isFirstAppearance = true
         overlayWindowManager.hasShownOverlayBefore = false
@@ -756,8 +792,27 @@ final class CompanionManager: ObservableObject {
         accessibilityCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.refreshAllPermissions()
+                // The overlay and the notch install the moment their
+                // preconditions are met — on a fresh install that is the
+                // turn the last permission lands, not the next launch.
+                self?.installCompanionPresenceIfReady()
             }
         }
+    }
+
+    /// Puts the cursor overlay up and installs the notch pills once
+    /// onboarding is complete AND every permission is granted. Called from
+    /// `start()` and from the permission poll, so a fresh install (where
+    /// permissions land seconds after launch, mid-onboarding video) and a
+    /// revoked-then-regranted permission both come up without a restart.
+    /// `isOverlayVisible` guards against a double-show; the notch install is
+    /// idempotent (`ensureNotchPresenceIfNeeded` builds only once).
+    private func installCompanionPresenceIfReady() {
+        guard hasCompletedOnboarding, allPermissionsGranted, !isOverlayVisible else { return }
+        overlayWindowManager.hasShownOverlayBefore = true
+        overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
+        isOverlayVisible = true
+        ensureNotchPresenceIfNeeded()
     }
 
     private func bindAudioPowerLevel() {
@@ -876,9 +931,6 @@ final class CompanionManager: ObservableObject {
             transientHideTask?.cancel()
             transientHideTask = nil
             isBuddyShown = true
-
-            // Dismiss the menu bar panel so it doesn't cover the screen
-            NotificationCenter.default.post(name: .clickyDismissPanel, object: nil)
 
             // Cancel any in-progress response and TTS from a previous utterance
             currentResponseTask?.cancel()

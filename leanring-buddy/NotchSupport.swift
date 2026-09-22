@@ -25,7 +25,25 @@ import CoreGraphics
 nonisolated enum NotchSupport {
     /// 静息胶囊 ↔ 展开面板的形变时长。窗口 setFrame 与 SwiftUI 侧
     /// expansionProgress 的动画共用这一个值，两边才会同步。
-    static let expansionAnimationDuration: TimeInterval = 0.38
+    /// 0.62 s：design-preview/notch-glow-expand.html 定稿的展开时长——
+    /// 面板弹开要一眼看清「长开」的过程，0.38 s 太快看不清。
+    static let expansionAnimationDuration: TimeInterval = 0.62
+
+    /// 即刻提交（点击 / 设置 / 启动）的形变曲线：带过冲的春季曲线
+    /// （demo 定稿的 cubic-bezier(.22,1.28,.36,1)）——面板先弹过目标
+    /// 尺寸再回落，落位有「稳稳站住」的手感。y 控制点大于 1 就是过冲，
+    /// 窗口 setFrame 与 SwiftUI timingCurve 都接受。
+    static let morphTimingControlPoints: (Float, Float, Float, Float) = (0.22, 1.28, 0.36, 1.0)
+
+    /// 悬停生长（鼠标搁在刘海上、尚未提交）的形变曲线：起步极缓，
+    /// 悬停期满时约长到两三成、随后顺势铺开——「等待期间逐渐变大，
+    /// 而不是等完再突然展开」。窗口 setFrame 与 SwiftUI 侧同一组控制点。
+    static let hoverMorphTimingControlPoints: (Float, Float, Float, Float) = (0.75, 0.0, 0.15, 1.0)
+
+    /// 收起的形变时长与曲线（demo 定稿的 cubic-bezier(.6,.04,.36,1)）：
+    /// 起步慢半拍、随后加速收回——收起读起来是「退场」，不跟展开抢戏。
+    static let collapseAnimationDuration: TimeInterval = 0.5
+    static let collapseTimingControlPoints: (Float, Float, Float, Float) = (0.6, 0.04, 0.36, 1.0)
 
 
     /// The resting pill is the hardware notch widened by this much on each

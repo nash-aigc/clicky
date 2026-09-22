@@ -2,9 +2,9 @@
 //  leanring_buddyApp.swift
 //  leanring-buddy
 //
-//  Menu bar-only companion app. No dock icon, no main window — just an
-//  always-available status item in the macOS menu bar. Clicking the icon
-//  opens a floating panel with companion voice controls.
+//  Notch-only companion app. No dock icon, no main window, no menu bar
+//  icon — the app's entire UI is the notch pill / expanded sheet (and the
+//  blue cursor overlay).
 //
 
 import ServiceManagement
@@ -16,20 +16,21 @@ struct leanring_buddyApp: App {
     @NSApplicationDelegateAdaptor(CompanionAppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // The app lives entirely in the menu bar panel managed by the AppDelegate.
-        // This empty Settings scene satisfies SwiftUI's requirement for at least
-        // one scene but is never shown (LSUIElement=true removes the app menu).
+        // The app lives entirely in the notch subsystem managed by the
+        // AppDelegate. This empty Settings scene satisfies SwiftUI's
+        // requirement for at least one scene but is never shown
+        // (LSUIElement=true removes the app menu).
         Settings {
             EmptyView()
         }
     }
 }
 
-/// Manages the companion lifecycle: creates the menu bar panel and starts
-/// the companion voice pipeline on launch.
+/// Manages the companion lifecycle: starts the companion voice pipeline on
+/// launch, applies the login-item setting, and auto-expands the notch sheet
+/// when 「启动时自动打开面板」 asks for it.
 @MainActor
 final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
-    private var menuBarPanelManager: MenuBarPanelManager?
     private let companionManager = CompanionManager()
     private var sparkleUpdaterController: SPUStandardUpdaterController?
 
@@ -39,7 +40,6 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
 
         UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 0])
 
-        menuBarPanelManager = MenuBarPanelManager(companionManager: companionManager)
         companionManager.start()
 
         // 通用 → 启动: whether the app registers itself as a login item is now a
@@ -49,13 +49,17 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
         let appSettings = AppSettingsStore.snapshot()
         applyLoginItemSetting(launchesAtLogin: appSettings.launchesAtLogin)
 
-        // Auto-open the panel if the user still needs to do something: either
-        // they haven't onboarded yet, permissions were revoked — or they turned
-        // on 「启动时自动打开面板」.
-        if !companionManager.hasCompletedOnboarding
-            || !companionManager.allPermissionsGranted
-            || appSettings.opensPanelOnLaunch {
-            menuBarPanelManager?.showPanelOnLaunch()
+        // 通用 → 「启动时自动打开面板」: expand the notch sheet on launch so the
+        // conversation is already open. Only meaningful once the notch
+        // subsystem exists — onboarding and the permissions have to be done
+        // (a fresh launch is running its first-launch flow instead), and the
+        // pills need a beat to build, hence the delay.
+        if appSettings.opensPanelOnLaunch,
+           companionManager.hasCompletedOnboarding,
+           companionManager.allPermissionsGranted {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.companionManager.notchWindowController?.expandForLaunch()
+            }
         }
 
         NotificationCenter.default.addObserver(

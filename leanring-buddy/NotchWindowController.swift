@@ -9,17 +9,16 @@
 //
 //  Structure mirrors HeyClicky's recovered `NotchScreenInstance` shape (one
 //  instance per display holding its panel) and `NotchPanelViewState` (the
-//  per-panel visible state), with the panel class copied from
-//  `MenuBarPanelManager`'s `KeyablePanel` — borderless, nonactivating, keyable,
-//  which is what lets the expanded sheet take keyboard focus without stealing
-//  the frontmost app's activation.
+//  per-panel visible state). `NotchPanel` is borderless, nonactivating and
+//  keyable, which is what lets the expanded sheet take keyboard focus without
+//  stealing the frontmost app's activation.
 //
 //  One panel does both roles: its frame morphs between the resting pill rect
 //  and the expanded sheet rect (a single window resizing — rebuilding or
 //  swapping windows would flash and drop key status), while the SwiftUI
 //  content inside switches between pill and sheet, keyed off the same
 //  `expansionProgress` that drives `HomeSpaceSheetShape`. The frame morph
-//  (`NSAnimationContext`, 0.38 s) and the progress animation
+//  (`NSAnimationContext`, 0.62 s 过冲曲线) and the progress animation
 //  (SwiftUI `withAnimation`, matched duration) run simultaneously.
 //
 //  Collapse paths — all deliberate: Esc (local keyDown monitor, installed
@@ -45,15 +44,21 @@ final class NotchPanelModel: ObservableObject {
     @Published var expansionProgress: CGFloat = 0
     @Published var isExpanded: Bool = false
     @Published var isFullscreenSuppressed: Bool = false
+    /// An outside caller's request (the menu bar panel's 「更换…」) for the
+    /// sheet to open straight into the settings pages. `NotchSheetRootView`
+    /// consumes it — on appear and on change — by switching to settings and
+    /// nilling it back. Optional because "no request pending" is the normal
+    /// state, and the sheet must not re-enter settings on every unrelated
+    /// panel-model publish.
+    @Published var requestedSettingsPage: SettingsPage?
 }
 
 @MainActor
 final class NotchWindowController {
 
-    /// Borderless panel that can become key — copied from
-    /// `KeyablePanel` (`MenuBarPanelManager.swift`), for the same reason:
-    /// the expanded sheet has text fields, and a window that cannot become
-    /// key silently swallows every keystroke.
+    /// Borderless panel that can become key — the expanded sheet has text
+    /// fields, and a window that cannot become key silently swallows every
+    /// keystroke.
     final class NotchPanel: NSPanel {
         override var canBecomeKey: Bool { true }
     }
@@ -89,6 +94,14 @@ final class NotchWindowController {
     /// The screen whose sheet is currently expanded. At most one — expanding
     /// on a second screen collapses the first.
     private var expandedScreen: NSScreen?
+
+    /// The screen whose hover-growth is under way: the silhouette is creeping
+    /// out of the notch but the sheet is not committed yet (no content, no
+    /// key status, no shadow, no chime). nil when idle or already committed.
+    private var growingPresence: ScreenPresence?
+    /// The hover-growth's commit timer. Cancelling it is part of every
+    /// cancel/collapse path — a cancelled commit must never fire.
+    private var hoverCommitTask: Task<Void, Never>?
 
     init(companionManager: CompanionManager, audioHistoryProvider: @escaping () -> [CGFloat]) {
         self.companionManager = companionManager
@@ -309,9 +322,20 @@ final class NotchWindowController {
     }
 
     private func pollHoverDwell() {
-        guard !panelModel.isExpanded else { return }
-
         let cursorLocation = NSEvent.mouseLocation
+
+        // Mid-hover-growth: the silhouette is creeping out of the notch. The
+        // poll's only remaining job is to watch the cursor — leaving the exit
+        // frame calls the growth off (it recedes back into the notch);
+        // otherwise the commit task fires on its own at the dwell deadline.
+        if growingPresence != nil {
+            if let presence = growingPresence,
+               let restingFrame = NotchSupport.restingPillFrame(on: presence.screen),
+               !restingFrame.insetBy(dx: -NotchSupport.hoverExitMargin, dy: -NotchSupport.hoverExitMargin).contains(cursorLocation) {
+                cancelHoverGrowth()
+            }
+            return
+        }
 
         // Which pill is the cursor over? Entered with the wide (enter)
         // margin, exited with the narrow one — the hysteresis band keeps the
@@ -345,23 +369,60 @@ final class NotchWindowController {
         }
 
         if dwellStartedAt == nil {
+            // 生长的起点就是光标到达的那一刻。不再「等满 0.35 秒再突然
+            // 展开」：轮廓即刻开始生长，悬停期满只是提交（内容/激活/音效）。
             dwellStartedAt = Date()
-        }
-        let elapsed = Date().timeIntervalSince(dwellStartedAt ?? Date())
-        panelModel.dwellProgress = CGFloat(elapsed / Self.hoverDwellDuration)
-
-        if elapsed >= Self.hoverDwellDuration {
-            // Reset the dwell state but do NOT stop the timer — the poll
-            // early-returns while expanded, and a stopped timer would leave
-            // the pill permanently unable to dwell again after collapse
-            // (nothing restarts it except teardown).
-            dwellStartedAt = nil
-            panelModel.dwellProgress = 0
-            expand(on: hoveredPresence)
+            beginExpansion(on: hoveredPresence, commitDelay: Self.hoverDwellDuration)
         }
     }
 
     // MARK: - Expand / collapse
+
+    /// Expands the sheet straight into the settings pages — the menu bar
+    /// panel's 「更换…」 path, so the notch sheet's settings UI (the one the
+    /// user kept) is what opens instead of the old titled window. Returns
+    /// false when no screen can host the sheet right now (no notched screen,
+    /// or every one is under another process's fullscreen window), and the
+    /// caller falls back to the titled window — which is also what keeps
+    /// settings reachable before onboarding installs the subsystem at all.
+    @discardableResult
+    func expandShowingSettings(initialPage: SettingsPage) -> Bool {
+        guard !screenPresences.isEmpty, !panelModel.isFullscreenSuppressed else { return false }
+
+        // Set the request BEFORE expanding: the sheet view is inserted by
+        // expand() in this same call, so its onAppear is what consumes it —
+        // ordering the flag first means the view can never appear, miss the
+        // request, and sit on the conversation home.
+        panelModel.requestedSettingsPage = initialPage
+
+        if !panelModel.isExpanded {
+            // Reuse whichever screen was expanded last (the user's mental
+            // model of "the notch"), else the first notched screen.
+            let targetPresence = screenPresences.first { $0.screen == expandedScreen }
+                ?? screenPresences[0]
+            expand(on: targetPresence)
+        }
+        // Already expanded: the running sheet consumes the request through
+        // its onChange below — no collapse/re-expand flash.
+        return true
+    }
+
+    /// 「启动时自动打开面板」: expands the sheet on launch so the conversation
+    /// is already open. Same screen choice as `expandShowingSettings` —
+    /// whichever screen was expanded last, else the first notched screen.
+    /// Returns false (and does nothing) when no screen can host the sheet
+    /// right now.
+    @discardableResult
+    func expandForLaunch() -> Bool {
+        guard !screenPresences.isEmpty, !panelModel.isFullscreenSuppressed else { return false }
+
+        if !panelModel.isExpanded {
+            let targetPresence = screenPresences.first { $0.screen == expandedScreen }
+                ?? screenPresences[0]
+            expand(on: targetPresence)
+        }
+        return true
+    }
 
     private func handleGlobalClick(at clickLocation: NSPoint) {
         if panelModel.isExpanded {
@@ -382,39 +443,99 @@ final class NotchWindowController {
         }
     }
 
-    private func expand(on presence: ScreenPresence) {
+    /// Starts the sheet growing on `presence`. `commitDelay == nil` commits
+    /// immediately (click / settings / launch paths — the fast-start sweep).
+    /// A delay is the hover path: the window and the silhouette creep out of
+    /// the notch the moment the cursor arrives, keep growing through the wait,
+    /// and the commit (content, activation, key status, shadow, chime) lands
+    /// when the delay elapses — the growth never pauses, so there is no
+    /// 「等满 0.35 秒再突然展开」. Hover uses the slow-start curve, which is
+    /// what makes the wait itself show visible growth.
+    private func beginExpansion(on presence: ScreenPresence, commitDelay: TimeInterval?) {
         guard !panelModel.isExpanded else { return }
         let expandedFrame = NotchSupport.expandedSheetFrame(on: presence.screen)
 
         expandedScreen = presence.screen
-        panelModel.isExpanded = true
         // A click-expand can arrive mid-dwell; a stale dwellStartedAt would
         // make the very next hover after collapse skip the ring and expand
         // instantly.
         dwellStartedAt = nil
         panelModel.dwellProgress = 0
 
+        let timing = commitDelay == nil
+            ? NotchSupport.morphTimingControlPoints
+            : NotchSupport.hoverMorphTimingControlPoints
+        let duration = NotchSupport.expansionAnimationDuration + (commitDelay ?? 0)
+
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = NotchSupport.expansionAnimationDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            context.duration = duration
+            // 与 SwiftUI 侧的 timingCurve 同一组控制点，两边同步落地。
+            context.timingFunction = CAMediaTimingFunction(
+                controlPoints: timing.0,
+                timing.1,
+                timing.2,
+                timing.3
+            )
             context.allowsImplicitAnimation = true
             presence.panel.setFrame(expandedFrame, display: true)
         }
+        withAnimation(.timingCurve(
+            CGFloat(timing.0),
+            CGFloat(timing.1),
+            CGFloat(timing.2),
+            CGFloat(timing.3),
+            duration: duration
+        )) {
+            panelModel.expansionProgress = 1
+        }
+
+        presence.panel.ignoresMouseEvents = false
+
+        if let commitDelay {
+            // Hover path: the silhouette grows with isExpanded still false —
+            // the root view draws the creeping sheet outline, not the content.
+            growingPresence = presence
+            hoverCommitTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(commitDelay))
+                guard !Task.isCancelled else { return }
+                self?.commitHoverGrowthNow()
+            }
+        } else {
+            panelModel.isExpanded = true
+            finishExpansionCommit(on: presence)
+        }
+    }
+
+    /// The hover-growth's commit: the sheet has crept out and is mid-sweep —
+    /// make it real. Activation and key status wait for this moment because
+    /// stealing the frontmost app's focus the instant the cursor grazes the
+    /// notch would yank focus on an accidental graze.
+    private func commitHoverGrowthNow() {
+        hoverCommitTask?.cancel()
+        hoverCommitTask = nil
+        let presence = growingPresence
+            ?? screenPresences.first { $0.screen == expandedScreen }
+        growingPresence = nil
+        guard let presence else { return }
+        panelModel.isExpanded = true
+        finishExpansionCommit(on: presence)
+    }
+
+    /// Everything "the sheet is now open" means: content, shadow, activation,
+    /// key status, chime, Esc monitor. The overlay's bubble gate follows the
+    /// content — it reads `companionManager.isNotchSheetExpanded`.
+    private func finishExpansionCommit(on presence: ScreenPresence) {
         // The sheet's shadow comes on with the expansion: the resting pill
         // must never cast one (it would draw a halo under the menu bar), but
         // the expanded sheet is #161615 on whatever the user has behind it —
         // often near-black windows — and without a shadow its silhouette,
         // rounded bottom corners included, disappears into the background.
         presence.panel.hasShadow = true
-
-        withAnimation(.easeInOut(duration: NotchSupport.expansionAnimationDuration)) {
-            panelModel.expansionProgress = 1
-        }
+        companionManager.isNotchSheetExpanded = true
 
         // The sheet has text fields (search, composer) — it cannot receive
         // keystrokes without the app being active and the panel being key,
         // the same trap the settings window documents.
-        presence.panel.ignoresMouseEvents = false
         NSApp.activate(ignoringOtherApps: true)
         presence.panel.makeKeyAndOrderFront(nil)
 
@@ -423,10 +544,42 @@ final class NotchWindowController {
         installEscapeMonitorIfNeeded()
     }
 
+    /// Calls a hover-growth off — the cursor left the pill before the dwell
+    /// elapsed. The recede reuses `collapse`, the same morph back, just from
+    /// wherever the growth had reached.
+    private func cancelHoverGrowth() {
+        hoverCommitTask?.cancel()
+        hoverCommitTask = nil
+        growingPresence = nil
+        dwellStartedAt = nil
+        panelModel.dwellProgress = 0
+        collapse(expandBackToPill: true)
+    }
+
+    /// Immediate-commit expand — click / settings / launch. While a
+    /// hover-growth is under way, any expand request commits it: the user
+    /// has made up their mind, so the growth stops creeping and finishes
+    /// its sweep.
+    private func expand(on presence: ScreenPresence) {
+        if growingPresence != nil {
+            commitHoverGrowthNow()
+            return
+        }
+        beginExpansion(on: presence, commitDelay: nil)
+    }
+
     /// Every collapse path funnels here. `expandBackToPill` false (teardown)
-    /// leaves the panel off-screen entirely.
+    /// leaves the panel off-screen entirely. Also the recede path for an
+    /// uncommitted hover-growth — `isExpanded` is still false then, so the
+    /// guard admits `growingPresence` too.
     func collapse(expandBackToPill: Bool) {
-        guard panelModel.isExpanded else { return }
+        guard panelModel.isExpanded || growingPresence != nil else { return }
+
+        // A hover-growth cut short by any collapse path leaves no pending
+        // commit behind.
+        hoverCommitTask?.cancel()
+        hoverCommitTask = nil
+        growingPresence = nil
 
         // The panel that is expanded is resolved BEFORE the expanded-screen
         // bookkeeping clears — after that, no presence matches "expanded"
@@ -434,6 +587,7 @@ final class NotchWindowController {
         let collapsingPresence = screenPresences.first { $0.screen == expandedScreen }
         panelModel.isExpanded = false
         expandedScreen = nil
+        companionManager.isNotchSheetExpanded = false
         removeEscapeMonitor()
 
         // Morph back to the WIDE resting frame (restingWindowFrame), not the
@@ -446,15 +600,27 @@ final class NotchWindowController {
         guard expandBackToPill,
               let collapsingPresence,
               let restingFrame = NotchSupport.restingWindowFrame(on: collapsingPresence.screen) else {
-            withAnimation(.easeInOut(duration: NotchSupport.expansionAnimationDuration)) {
+            withAnimation(.timingCurve(
+                CGFloat(NotchSupport.collapseTimingControlPoints.0),
+                CGFloat(NotchSupport.collapseTimingControlPoints.1),
+                CGFloat(NotchSupport.collapseTimingControlPoints.2),
+                CGFloat(NotchSupport.collapseTimingControlPoints.3),
+                duration: NotchSupport.collapseAnimationDuration
+            )) {
                 panelModel.expansionProgress = 0
             }
             return
         }
 
         NSAnimationContext.runAnimationGroup({ context in
-            context.duration = NotchSupport.expansionAnimationDuration
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            context.duration = NotchSupport.collapseAnimationDuration
+            // 收起专用的先缓后快曲线（demo 定稿），退场不跟展开抢戏。
+            context.timingFunction = CAMediaTimingFunction(
+                controlPoints: NotchSupport.collapseTimingControlPoints.0,
+                NotchSupport.collapseTimingControlPoints.1,
+                NotchSupport.collapseTimingControlPoints.2,
+                NotchSupport.collapseTimingControlPoints.3
+            )
             context.allowsImplicitAnimation = true
             collapsingPresence.panel.setFrame(restingFrame, display: true)
         }, completionHandler: {
@@ -465,7 +631,13 @@ final class NotchWindowController {
         // Back to the inert resting state — see the panel creation comment.
         collapsingPresence.panel.ignoresMouseEvents = true
 
-        withAnimation(.easeInOut(duration: NotchSupport.expansionAnimationDuration)) {
+        withAnimation(.timingCurve(
+            CGFloat(NotchSupport.collapseTimingControlPoints.0),
+            CGFloat(NotchSupport.collapseTimingControlPoints.1),
+            CGFloat(NotchSupport.collapseTimingControlPoints.2),
+            CGFloat(NotchSupport.collapseTimingControlPoints.3),
+            duration: NotchSupport.collapseAnimationDuration
+        )) {
             panelModel.expansionProgress = 0
         }
     }

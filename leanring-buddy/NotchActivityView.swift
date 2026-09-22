@@ -677,6 +677,15 @@ struct NotchPanelRootSwitchingView: View {
                 collapseAction: collapseAction,
                 companionManager: companionManager
             )
+        } else if panelModel.expansionProgress > 0.01 {
+            // 悬停生长期：面板轮廓（HomeSpaceSheetShape）从刘海里探出来。
+            // 窗口 frame 正沿同一条缓动曲线向展开尺寸生长，形状的 body 又
+            // 从「当前窗口尺寸」向「完全展开」插值——两层运动叠出「等待
+            // 期间逐渐变大」。只画轮廓不画内容：内容要等提交才插入，避免
+            // 整套 UI 在小尺寸里被压扁。填充用展开后的同一张暗紫皮
+            // （轮廓长成什么，提交后就是什么）。
+            HomeSpaceSheetShape(expansionProgress: panelModel.expansionProgress)
+                .fill(NotchExpandedSheetStyle.surfaceColor)
         } else {
             NotchPillRootView(
                 panelModel: panelModel,
@@ -687,6 +696,45 @@ struct NotchPanelRootSwitchingView: View {
 }
 
 // MARK: - Expanded sheet (Phase C placeholder content)
+
+/// 展开面板的配色，取色来源是 design-preview/notch-glow-expand.html。
+///
+/// 面板表面 = 那份文件 `.skin` 的深色皮 `rgba(14,14,13,.92)`——用户要的
+/// 「深色背景」是这块皮，**不是**那条蓝紫渐变：渐变在文件里只当左、右、
+/// 下三边露出的 1.5pt 边光（`.panel` 的 1.5px padding），从没铺过面。
+private enum NotchExpandedSheetStyle {
+
+    /// 边光渐变的四个取色——`.panel` 的
+    /// `background:linear-gradient(115deg, …)`，顺序和位置
+    /// （0 / 35% / 70% / 100%）与文件完全一致。只当边光用。
+    private static let demoGradientRGB: [(red: CGFloat, green: CGFloat, blue: CGFloat)] = [
+        (0x7C, 0x3A, 0xED), // #7C3AED 紫
+        (0xC0, 0x84, 0xFC), // #C084FC 亮紫
+        (0x22, 0xD3, 0xEE), // #22D3EE 亮青
+        (0x08, 0x91, 0xB2), // #0891B2 深青
+    ]
+
+    /// 面板皮肤的深色底——demo `.skin` 的 `rgba(14,14,13,.92)` 原值。
+    /// 保留 8% 透明和文件一致；面板后面是什么就透一点什么。
+    static let surfaceColor = Color(red: 14 / 255, green: 14 / 255, blue: 13 / 255, opacity: 0.92)
+
+    /// 三边边光的取色——同一条渐变，不打折（它是「光」，保持满饱和才亮
+    /// 得起来）。
+    static let edgeGlowGradientColors: [Color] = demoGradientRGB.map { rgb in
+        Color(red: rgb.red / 255, green: rgb.green / 255, blue: rgb.blue / 255)
+    }
+
+    /// 渐变方向：文件里的 115deg——几乎竖直、略向右下偏。
+    static let gradientStartPoint = UnitPoint(x: 0.18, y: 0)
+    static let gradientEndPoint = UnitPoint(x: 0.82, y: 1)
+
+    /// 面板底角的圆角半径。内层表面比外层小一个边光宽度，两层的圆角才是
+    /// 同心弧——内层若用直角，圆角里会露出一块方形亮边。
+    static let sheetCornerRadius: CGFloat = 20
+
+    /// 边光露出的宽度（demo 的 1.5px padding）。
+    static let edgeGlowInset: CGFloat = 1.5
+}
 
 /// The expanded sheet: the `HomeSpaceSheetShape` body carrying the session
 /// sidebar and the conversation/settings content (`NotchSheetRootView`), with
@@ -700,22 +748,35 @@ struct NotchExpandedSheetView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // 恒按「完全展开」画背景形状，不读 panelModel.expansionProgress：
-            // 那个值经 withAnimation 写入、视图又在同一帧插入，历史上两次
-            // 修过仍间歇性读到 0——形状画成静息胶囊尺寸，整个面板透明透出
-            // 桌面。形变过程由窗口 setFrame 动画负责（形状随窗口一起缩放，
-            // 视觉上就是胶囊长开），这里的填充因此没有动画值可读错。
-            //
-            // 面板表面是深灰（原版实测 #161615），不是纯黑：静息胶囊必须
-            // 纯黑才能和硬件刘海融为一体，但展开后的面板在纯黑桌面/暗色
-            // 窗口前面时，纯黑的轮廓——包括下面两个圆角——会整个隐形，
-            // 用户看到的就是「右下角没有圆角」。原版正是靠这 22 个灰阶差
-            // 加投影把面板从黑底上衬出来的。
-            HomeSpaceSheetShape(expansionProgress: 1)
-                .fill(Color(red: 0x16 / 255.0, green: 0x16 / 255.0, blue: 0x15 / 255.0))
+            // 外层：亮蓝紫渐变，本身不是面板的底色，只作为三边的边光——
+            // 内层表面在左、右、下各让出 1.5pt，露出来的就是这条线。
+            LinearGradient(
+                colors: NotchExpandedSheetStyle.edgeGlowGradientColors,
+                startPoint: NotchExpandedSheetStyle.gradientStartPoint,
+                endPoint: NotchExpandedSheetStyle.gradientEndPoint
+            )
+
+            // 内层：整面深色皮（demo `.skin` 的 rgba(14,14,13,.92)）——
+            // 面板的底色。顶部不让边（inset 为 0），顶边没有线，
+            // 面板直接贴住屏幕最上沿和菜单栏连成一条。
+            NotchExpandedSheetStyle.surfaceColor
+            // 内层自己的底角半径要比外层小一个边光宽度，两层圆角才是
+            // 同心弧；用直角内层会在圆角里露出一块方形亮边。
+            .clipShape(HomeSpaceSheetShape(
+                expansionProgress: 1,
+                cornerRadius: NotchExpandedSheetStyle.sheetCornerRadius
+                    - NotchExpandedSheetStyle.edgeGlowInset
+            ))
+            .padding(EdgeInsets(
+                top: 0,
+                leading: NotchExpandedSheetStyle.edgeGlowInset,
+                bottom: NotchExpandedSheetStyle.edgeGlowInset,
+                trailing: NotchExpandedSheetStyle.edgeGlowInset
+            ))
 
             // 仿 HeyClicky：会话侧栏通高，顶栏（右上角关闭等）属于内容区，
-            // 都在 NotchSheetRootView 内部。
+            // 都在 NotchSheetRootView 内部。内容也一起让出边光那 1.5pt，
+            // 否则侧栏自带的深色底会把左边光压暗。
             NotchSheetRootView(
                 panelModel: panelModel,
                 companionManager: companionManager,
@@ -723,6 +784,12 @@ struct NotchExpandedSheetView: View {
                 audioHistoryProvider: audioHistoryProvider
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(EdgeInsets(
+                top: 0,
+                leading: NotchExpandedSheetStyle.edgeGlowInset,
+                bottom: NotchExpandedSheetStyle.edgeGlowInset,
+                trailing: NotchExpandedSheetStyle.edgeGlowInset
+            ))
         }
         // 整块内容裁进面板轮廓：底部操作条等自绘背景若不裁剪，会画到
         // 形状的圆角之上，把面板的下面两角顶成方角。

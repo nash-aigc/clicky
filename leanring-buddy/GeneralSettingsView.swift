@@ -116,14 +116,14 @@ struct GeneralSettingsView: View {
             SettingsCard {
                 SettingsRow(
                     label: "开机自启动",
-                    description: "登录 Mac 时自动在菜单栏待命。"
+                    description: "登录 Mac 时自动启动 Clicky。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.launchesAtLogin))
                 }
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "启动时自动打开面板",
-                    description: "首次运行弹权限引导；打开这一项后每次启动都会弹出面板。"
+                    description: "打开这一项后，每次启动都会自动展开刘海屏的对话面板。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.opensPanelOnLaunch))
                 }
@@ -133,7 +133,7 @@ struct GeneralSettingsView: View {
             SettingsCard {
                 SettingsRow(
                     label: "刘海屏入口",
-                    description: "在带刘海的 Mac 上把入口放进屏幕顶部的刘海里，点开就是主面板；菜单栏面板保留不动。"
+                    description: "在带刘海的 Mac 上把入口放进屏幕顶部的刘海里，点开就是主面板。关掉后应用将没有任何可见入口。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.enablesNotchPresence))
                 }

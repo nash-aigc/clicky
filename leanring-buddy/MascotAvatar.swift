@@ -68,26 +68,31 @@ enum MascotRoster {
 
 /// 会话列表行的圆形头像：粉彩底 + 角色上半身（顶部对齐的裁切正好框住
 /// 脸——素材是全身像，居中裁会把头切掉）。
+///
+/// 布局尺寸必须只由底盘决定：图片放在 overlay 里（overlay 永远不参与
+/// 布局），整块再 clipShape 兜底。不能让 Image 自己 `.frame` + `clipped`
+/// ——顶栏把它放进 `Menu` 的 label，macOS 的 Menu 对 label 提议不设上限
+/// （实测 2026-09-22：图按素材原始 256pt 炸开，把整条顶栏撑到 255pt 高，
+/// 就是用户反复报的「右侧的小人删不掉」）。
 struct MascotAvatarDisc: View {
 
     let identity: MascotIdentity
     var diameter: CGFloat = 26
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color(identity.pastelBackground))
-
-            if let nsImage = MascotRoster.image(named: identity.imageName) {
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: diameter, height: diameter)
-                    .clipped()
-                    .offset(y: diameter * 0.08)
+        Circle()
+            .fill(Color(identity.pastelBackground))
+            .overlay {
+                if let nsImage = MascotRoster.image(named: identity.imageName) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .scaledToFit()
+                        // 脚底沉进圆盘一点，才是「站在盘里」而不是「贴在盘上」
+                        .offset(y: diameter * 0.08)
+                }
             }
-        }
-        .frame(width: diameter, height: diameter)
+            .clipShape(Circle())
+            .frame(width: diameter, height: diameter)
     }
 }
 

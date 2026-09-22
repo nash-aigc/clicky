@@ -2,12 +2,13 @@
 //  HomeSpaceSidebarView.swift
 //  leanring-buddy
 //
-//  The notch sheet's session sidebar, drawn to HeyClicky's reference
-//  screenshot: a waveform logo at the top, a search field beside a round
-//  new-session button, the session list (pastel avatar, title + relative
-//  time, preview line, hairline separators, a blue dot marking the active
-//  session), and the account section pinned at the bottom (initial avatar,
-//  account name, status line, gear into the settings).
+//  The notch sheet's session sidebar: the account section at the very top
+//  (initial-letter disc, account name, status line, gear into the settings —
+//  moved up from the bottom on the user's request so it is always one click
+//  away; the old top-left waveform logo was deleted with the move), then a
+//  search field beside a round new-session button, then the session list
+//  (pastel avatar, title + relative time, preview line, hairline separators,
+//  a blue dot marking the active session).
 //
 
 import SwiftUI
@@ -23,29 +24,18 @@ struct HomeSpaceSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            logoHeader
+            // 账户区在最顶部（用户的要求）：应用没有标题可显示，原左上角
+            // 的波形 logo 已删——账户行自己带上茎带高度，就是侧栏第一行；
+            // 设置齿轮在行右侧，同样在最顶部。
+            accountSection
             searchRow
             sessionList
             Spacer(minLength: 0)
-            accountSection
         }
         .background(Color.black.opacity(0.35))
     }
 
     // MARK: - Pieces
-
-    /// 原版顶部只有一颗波形 logo，没有应用名文字。
-    private var logoHeader: some View {
-        Image(systemName: "waveform")
-            .font(.system(size: 20, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.leading, 20)
-            // 顶部让开茎带（与刘海相接的那段黑带）。
-            .padding(.top, NotchSupport.restingPillAnimationHeadroom + 10)
-            .padding(.bottom, 16)
-        // .frame(maxWidth: .infinity, alignment: .leading) 由外层 VStack 的
-        // alignment 提供。
-    }
 
     /// 搜索框占满剩余宽度，旁边是原版那颗独立的圆形「＋」。
     private var searchRow: some View {
@@ -91,6 +81,8 @@ struct HomeSpaceSidebarView: View {
             .help("新建会话")
         }
         .padding(.horizontal, 16)
+        // 与账户区分隔线之间的间距——原来这里没有，分隔线贴着搜索框。
+        .padding(.top, 8)
         .padding(.bottom, 10)
     }
 
@@ -213,14 +205,11 @@ struct HomeSpaceSidebarView: View {
         renameDraft = ""
     }
 
-    /// 底部账户区：首字母头像 + 账户名 + 状态行，右侧一颗进设置的齿轮。
+    /// 顶部账户区：首字母头像 + 账户名 + 状态行，右侧一颗进设置的齿轮。
     /// （原版这里还有配额环和 info 图标——配额是账号服务的概念，本地
     /// 应用没有对应的真实数据，空着不画，免得展示一个假数字。）
     private var accountSection: some View {
         VStack(spacing: 0) {
-            Divider()
-                .overlay(Color.white.opacity(0.08))
-
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
@@ -255,8 +244,16 @@ struct HomeSpaceSidebarView: View {
                 .pointerCursor()
                 .help("设置")
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        // 账户区行在顶上时自己让开茎带（与刘海相接的那段黑带）——原来这
+        // 个高度由已删除的波形 logo 承担。
+        .padding(.top, NotchSupport.restingPillAnimationHeadroom + 8)
+        .padding(.bottom, 12)
+
+        // 分隔线在账户区和搜索框之间，上下都留出间距（原来它与搜索框
+        // 挤在一起，用户看着像重叠）。
+        Divider()
+            .overlay(Color.white.opacity(0.08))
         }
     }
 

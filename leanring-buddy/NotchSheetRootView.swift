@@ -28,38 +28,57 @@ struct NotchSheetRootView: View {
     @State private var selectedSettingsPage: SettingsPage = .general
 
     var body: some View {
-        // 设置独占整窗——会话侧栏是对话主页的一部分，进了设置就整块
-        // 让位给设置内容（用户的要求：点设置就应该只显示设置内容）。
-        if showsSettings {
-            NotchSettingsArea(
-                generalSettingsViewModel: generalSettingsViewModel,
-                modelSettingsViewModel: modelSettingsViewModel,
-                selectedPage: $selectedSettingsPage,
-                backAction: { showsSettings = false },
-                closeAction: collapseAction
-            )
-        } else {
-            HStack(spacing: 0) {
-                HomeSpaceSidebarView(
-                    sessionsModel: sessionsModel,
-                    showsSettings: $showsSettings
+        Group {
+            // 设置独占整窗——会话侧栏是对话主页的一部分，进了设置就整块
+            // 让位给设置内容（用户的要求：点设置就应该只显示设置内容）。
+            if showsSettings {
+                NotchSettingsArea(
+                    generalSettingsViewModel: generalSettingsViewModel,
+                    modelSettingsViewModel: modelSettingsViewModel,
+                    selectedPage: $selectedSettingsPage,
+                    backAction: { showsSettings = false },
+                    closeAction: collapseAction
                 )
-                .frame(width: 245)
-
-                Rectangle()
-                    .fill(Color.white.opacity(0.08))
-                    .frame(width: 1)
-
-                VStack(spacing: 0) {
-                    topBar
-                    NotchHomeView(
-                        companionManager: companionManager,
-                        sessionsModel: sessionsModel
+            } else {
+                HStack(spacing: 0) {
+                    HomeSpaceSidebarView(
+                        sessionsModel: sessionsModel,
+                        showsSettings: $showsSettings
                     )
+                    .frame(width: 245)
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: 1)
+
+                    VStack(spacing: 0) {
+                        topBar
+                        NotchHomeView(
+                            companionManager: companionManager,
+                            sessionsModel: sessionsModel
+                        )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .onAppear { consumeRequestedSettingsPageIfNeeded() }
+        .onChange(of: panelModel.requestedSettingsPage) { _, _ in
+            consumeRequestedSettingsPageIfNeeded()
+        }
+    }
+
+    /// The menu bar panel's 「更换…」 asks for settings from outside the
+    /// sheet: the request rides `panelModel.requestedSettingsPage`. It has to
+    /// be consumed from both hooks — onAppear because the expand() that sets
+    /// the flag is the same call that inserts this view (onChange never fires
+    /// for a value the view did not exist to see change), onChange because the
+    /// sheet may already be open when the panel asks.
+    private func consumeRequestedSettingsPageIfNeeded() {
+        guard let requestedPage = panelModel.requestedSettingsPage else { return }
+        selectedSettingsPage = requestedPage
+        showsSettings = true
+        panelModel.requestedSettingsPage = nil
     }
 
     /// 仿 HeyClicky 的内容区顶栏：正中一颗当前会话的胶囊（角色头像 + 会话
@@ -114,13 +133,11 @@ struct NotchSheetRootView: View {
                 Label("新建会话", systemImage: "plus")
             }
         } label: {
+            // 右侧不放小人（用户的要求：角色只在左侧会话列表出现）。
+            // 这里也绝不能放 MascotAvatarDisc：macOS 的 Menu 对 label 提议
+            // 不设上限，图会按素材原始 256pt 炸开、把整条顶栏撑高——
+            // 实测 2026-09-22，任何 overlay/clipShape/frame 都压不住。
             HStack(spacing: 7) {
-                MascotAvatarDisc(
-                    identity: sessionsModel.activeSession.map { MascotRoster.identity(forSessionID: $0.id) }
-                        ?? MascotRoster.homeHero,
-                    diameter: 20
-                )
-
                 Text(sessionsModel.activeSession?.title ?? "新对话")
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundColor(.white.opacity(0.8))
@@ -263,13 +280,36 @@ struct NotchSettingsArea: View {
 
             Spacer(minLength: 0)
 
-            // The app version, pinned at the sidebar's bottom — the
-            // reference screenshot's footer line.
-            Text(Self.versionFooterText)
-                .font(.system(size: 11))
-                .foregroundColor(.white.opacity(0.3))
-                .padding(.horizontal, 18)
-                .padding(.bottom, 12)
+            // 退出按钮 + 版本行，固定在侧栏底部。菜单栏面板曾是应用唯一的
+            // 退出入口（NSApp.terminate），面板删掉后退出搬到这里。
+            HStack(spacing: 10) {
+                Button(action: { NSApp.terminate(nil) }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "power")
+                            .font(.system(size: 10, weight: .medium))
+                        Text("退出 Clicky")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.5))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color.white.opacity(0.06)))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help("退出 Clicky")
+
+                Spacer(minLength: 2)
+
+                // The app version, pinned at the sidebar's bottom — the
+                // reference screenshot's footer line.
+                Text(Self.versionFooterText)
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.3))
+            }
+            .padding(.horizontal, 14)
+            .padding(.bottom, 12)
         }
         .frame(width: 245)
         .background(Color.black.opacity(0.35))

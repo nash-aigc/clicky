@@ -43,6 +43,32 @@ struct NotchHomeView: View {
 
             composerRow
 
+            // The last error's verbatim API text. The deleted menu bar panel
+            // used to be the only place it showed; with the panel gone the
+            // spoken apology must not be the only failure report. A tap
+            // clears it — it would otherwise sit here until the next
+            // model-configuration save.
+            if let errorMessage = companionManager.lastErrorMessage {
+                Button(action: { companionManager.clearLastErrorMessage() }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                        Text(errorMessage)
+                            .font(.system(size: 11.5))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                    .foregroundColor(.red.opacity(0.75))
+                    .padding(.horizontal, 14)
+                    .padding(.bottom, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help("点击隐藏")
+            }
+
             // 「松开发送」 — the original's caption while the talk key is held.
             // Recognition has not returned this press's final transcript yet,
             // so the only honest message is about the key, not the words.
@@ -67,11 +93,11 @@ struct NotchHomeView: View {
 
     /// 原版主页的居中构图：大字号问候和按住说话的提示。语音胶囊在底部
     /// 输入行里——原版主页也是这样，问候居中、输入行贴底。
+    /// 右侧不再放小人了（用户的要求：小人只在左侧会话列表里出现），
+    /// 空会话主页就剩问候和提示两行。
     private var emptySessionHero: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             Spacer(minLength: 20)
-
-            HomeHeroMascotPill()
 
             Text(Self.timeBasedGreeting())
                 .font(.system(size: 26, weight: .bold))
@@ -170,7 +196,7 @@ struct NotchHomeView: View {
                     // The answer currently streaming in, live under the last
                     // finished turn.
                     if !companionManager.streamingAnswerText.isEmpty {
-                        assistantText(companionManager.streamingAnswerText)
+                        assistantBubble(companionManager.streamingAnswerText)
                             .id("streaming")
                     }
                 }
@@ -223,7 +249,7 @@ struct NotchHomeView: View {
             )
         }
 
-        assistantText(entry.assistantResponse)
+        assistantBubble(entry.assistantResponse)
 
         turnFooter(entry)
     }
@@ -275,48 +301,81 @@ struct NotchHomeView: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.05))
+                    .fill(Color.black.opacity(0.26))
             )
 
             Spacer(minLength: 48)
         }
     }
 
-    /// The user's words: a light-blue glossy bubble with a tail at its bottom
-    /// right, dark navy text — the reference screenshot's outgoing shape.
+    /// 两种对话气泡共用的圆角几何：三个角 16pt 圆角，靠近说话人的那个
+    /// 底角收到 5pt。用户气泡收右下、Clicky 气泡收左下，两种气泡的
+    /// 圆角、内边距、字号完全一致，只有底色和贴边方向不同——一眼就能
+    /// 分清谁在说，又读得像同一套东西。
+    private func bubbleShape(isOutgoing: Bool) -> UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: Self.bubbleCornerRadius,
+            bottomLeadingRadius: isOutgoing ? Self.bubbleCornerRadius : Self.bubbleTailCornerRadius,
+            bottomTrailingRadius: isOutgoing ? Self.bubbleTailCornerRadius : Self.bubbleCornerRadius,
+            topTrailingRadius: Self.bubbleCornerRadius,
+            style: .continuous
+        )
+    }
+
+    private static let bubbleCornerRadius: CGFloat = 16
+    private static let bubbleTailCornerRadius: CGFloat = 5
+
+    /// The user's words: a solid violet bubble on the right.
     private func outgoingBubble(_ text: String) -> some View {
         HStack(alignment: .bottom) {
             Spacer(minLength: 56)
 
             Text(text)
                 .font(.system(size: 14))
-                .foregroundColor(Color(red: 0.10, green: 0.16, blue: 0.32))
+                .foregroundColor(.white)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 13)
                 .padding(.vertical, 9)
                 .background(
-                    OutgoingBubbleTailShape()
+                    bubbleShape(isOutgoing: true)
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 0.82, green: 0.89, blue: 1.0),
-                                    Color(red: 0.70, green: 0.81, blue: 0.99)
+                                    Color(red: 0.53, green: 0.36, blue: 0.98),
+                                    Color(red: 0.42, green: 0.24, blue: 0.90)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
                 )
+                .overlay(
+                    bubbleShape(isOutgoing: true)
+                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.5)
+                )
         }
     }
 
-    /// The assistant speaks in plain text on the left — no bubble, matching
-    /// the reference screenshot.
-    private func assistantText(_ text: String) -> some View {
+    /// Clicky's reply: the same bubble geometry and padding on the left, but a
+    /// translucent *dark* card instead of the accent fill — over the purple
+    /// sheet it reads as a card sunk into the surface, which is what makes the
+    /// two bubbles tell apart at a glance while still looking like one family.
+    private func assistantBubble(_ text: String) -> some View {
         HStack(alignment: .top) {
             Text(stripActionTagsForDisplay(text))
                 .font(.system(size: 14))
                 .foregroundColor(.white.opacity(0.92))
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 13)
+                .padding(.vertical, 9)
+                .background(
+                    bubbleShape(isOutgoing: false)
+                        .fill(Color.black.opacity(0.26))
+                )
+                .overlay(
+                    bubbleShape(isOutgoing: false)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
+                )
             Spacer(minLength: 56)
         }
     }
@@ -415,39 +474,34 @@ struct NotchHomeView: View {
         composerFieldIsFocused = false
     }
 
-    /// The mascot sitting on the glossy voice pill — the compact cousin of
-    /// the empty-session hero's `HomeHeroMascotPill`.
+    /// The glossy 「按住 ⌃⌥ 说话」 pill (voice, push-to-talk). The mascot that
+    /// used to sit on its left end is gone with the hero's — the user wants
+    /// the characters only in the sidebar's session list, and the pill's
+    /// waveform icon already says what it does.
     private var voicePill: some View {
-        ZStack(alignment: .top) {
-            HStack(spacing: 6) {
-                Image(systemName: "waveform")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color(red: 0.25, green: 0.45, blue: 0.90))
-                Text("按住 ⌃⌥ 说话")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Color(red: 0.12, green: 0.15, blue: 0.25))
-            }
-            .padding(.leading, 24)
-            .padding(.trailing, 12)
-            .frame(height: 34)
-            .background(
-                Capsule().fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.97, green: 0.98, blue: 1.0),
-                            Color(red: 0.88, green: 0.91, blue: 0.97)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+        HStack(spacing: 6) {
+            Image(systemName: "waveform")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Color(red: 0.25, green: 0.45, blue: 0.90))
+            Text("按住 ⌃⌥ 说话")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Color(red: 0.12, green: 0.15, blue: 0.25))
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 34)
+        .background(
+            Capsule().fill(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.97, green: 0.98, blue: 1.0),
+                        Color(red: 0.88, green: 0.91, blue: 0.97)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
                 )
             )
-            .overlay(Capsule().strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5))
-
-            MascotAvatarDisc(identity: MascotRoster.homeHero, diameter: 26)
-                .offset(x: -64, y: -8)
-        }
-        .padding(.top, 4)
+        )
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5))
     }
 
     private var composerField: some View {
@@ -494,39 +548,5 @@ struct NotchHomeView: View {
             options: .regularExpression
         )
         .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}
-
-/// The outgoing bubble's shape: a rounded rectangle whose bottom-right corner
-/// carries a small tail — the speech-bubble silhouette of the reference
-/// screenshot. Drawn as one shape so the fill and the tail are the same
-/// material (a separate triangle would show a seam at the gradient).
-struct OutgoingBubbleTailShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        let tailWidth: CGFloat = 10
-        let tailHeight: CGFloat = 9
-        let cornerRadius: CGFloat = 14
-
-        var path = Path()
-        let bodyRect = CGRect(
-            x: rect.minX,
-            y: rect.minY,
-            width: rect.width,
-            height: max(0, rect.height - tailHeight)
-        )
-        path.addRoundedRect(
-            in: bodyRect,
-            cornerSize: CGSize(width: cornerRadius, height: cornerRadius),
-            style: .continuous
-        )
-
-        // The tail: from the bubble's bottom edge near its right corner,
-        // down to a point, then back up — flush with the body's bottom.
-        let bodyBottom = bodyRect.maxY
-        path.move(to: CGPoint(x: rect.maxX - tailWidth, y: bodyBottom))
-        path.addLine(to: CGPoint(x: rect.maxX + 1, y: bodyBottom + tailHeight))
-        path.addLine(to: CGPoint(x: rect.maxX + 1, y: bodyBottom))
-        path.closeSubpath()
-        return path
     }
 }

@@ -321,8 +321,14 @@ struct BlueCursorView: View {
             // empty string here means "the user turned this off" and this view
             // never has to ask. Sits under the navigation bubble: when the buddy
             // has flown somewhere to point, the pointer's own words matter more.
+            // Held back entirely while the notch sheet is expanded: the sheet's
+            // conversation flow is showing the very same text, and the duplicate
+            // beside the cursor is what the user reported as 「返回的结果先是两个，
+            // 后来又合并成一个」 — the bubble cleared at the end of the turn and the
+            // two copies "merged" into one.
             if isCursorOnThisScreen
                 && buddyNavigationMode != .pointingAtTarget
+                && !companionManager.isNotchSheetExpanded
                 && !conversationBubbleText.isEmpty {
                 Text(conversationBubbleText)
                     .font(.system(size: 11, weight: .medium))
