@@ -35,11 +35,6 @@ nonisolated enum NotchSupport {
     /// 窗口 setFrame 与 SwiftUI timingCurve 都接受。
     static let morphTimingControlPoints: (Float, Float, Float, Float) = (0.22, 1.28, 0.36, 1.0)
 
-    /// 悬停生长（鼠标搁在刘海上、尚未提交）的形变曲线：起步极缓，
-    /// 悬停期满时约长到两三成、随后顺势铺开——「等待期间逐渐变大，
-    /// 而不是等完再突然展开」。窗口 setFrame 与 SwiftUI 侧同一组控制点。
-    static let hoverMorphTimingControlPoints: (Float, Float, Float, Float) = (0.75, 0.0, 0.15, 1.0)
-
     /// 收起的形变时长与曲线（demo 定稿的 cubic-bezier(.6,.04,.36,1)）：
     /// 起步慢半拍、随后加速收回——收起读起来是「退场」，不跟展开抢戏。
     static let collapseAnimationDuration: TimeInterval = 0.5
@@ -112,12 +107,11 @@ nonisolated enum NotchSupport {
     /// events while resting, so the menu bar items underneath stay clickable.
     static let activeFlankWidth: CGFloat = 150
 
-    /// How close the cursor has to be to the pill before dwell counting
-    /// starts, and how far outside it before the count cancels — the
-    /// asymmetry (a small hysteresis band) keeps the ring from flickering on
-    /// when the cursor jitters across the pill's edge.
-    static let hoverEnterMargin: CGFloat = 4
-    static let hoverExitMargin: CGFloat = 8
+    /// 点击展开的命中余量：pill 四周各放宽这么多，点击才算落在刘海上。
+    /// 原来还有一个更窄的「离开」余量，配合悬停计时的迟滞带防止进度环
+    /// 抖动；悬停触发已在 2026-09-22 整条移除（「鼠标滑动触发太影响体验」），
+    /// 迟滞带随之失去意义，只剩这一个点扩大命中区。
+    static let pillClickHitMargin: CGFloat = 4
 
     // MARK: - Notch detection
 
@@ -156,8 +150,8 @@ nonisolated enum NotchSupport {
 
     /// The resting pill's window frame: the notch widened slightly on each
     /// side and taller by the animation headroom (transparent when idle).
-    /// This is the **drawn pill's** geometry — hover dwell and click-to-expand
-    /// hit-test against it. Nil on screens without a notch.
+    /// This is the **drawn pill's** geometry — click-to-expand hit-tests
+    /// against it. Nil on screens without a notch.
     static func restingPillFrame(on screen: NSScreen) -> CGRect? {
         guard let notchRect = notchRect(on: screen) else { return nil }
 

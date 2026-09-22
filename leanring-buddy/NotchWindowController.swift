@@ -3,9 +3,12 @@
 //  leanring-buddy
 //
 //  The notch presence subsystem: one panel per notched screen, resting as an
-//  invisible black pill fused into the hardware notch, expanding on hover
-//  dwell (0.35 s + progress ring) or click into the app's main floating
-//  sheet — the entry HeyClicky has and Clicky's menu bar panel backs up.
+//  invisible black pill fused into the hardware notch, expanding on CLICK
+//  into the app's main floating sheet. Hover does NOT expand it — the user
+//  removed hover-dwell on 2026-09-22 because a mouse merely passing the menu
+//  bar band kept yanking the sheet open (「鼠标滑动触发太影响体验」); click-only
+//  also deleted the whole dwell/hover-growth machinery (30 Hz poll, growth
+//  commit timer, dwell progress ring).
 //
 //  Structure mirrors HeyClicky's recovered `NotchScreenInstance` shape (one
 //  instance per display holding its panel) and `NotchPanelViewState` (the
@@ -37,8 +40,6 @@ import Combine
 
 final class NotchPanelModel: ObservableObject {
     @Published var activityPhase: NotchActivityPhase = .idle
-    /// 0–1, how full the hover-dwell ring is drawn.
-    @Published var dwellProgress: CGFloat = 0
     /// 0–1, the sheet expansion. Drives `HomeSpaceSheetShape` and the
     /// pill/sheet content switch.
     @Published var expansionProgress: CGFloat = 0
@@ -69,9 +70,6 @@ final class NotchWindowController {
         let panel: NotchPanel
     }
 
-    private static let hoverDwellDuration: TimeInterval = 0.35
-    private static let dwellPollingInterval: TimeInterval = 1.0 / 30.0
-
     /// Strong on purpose — the manager owns this controller, so a strong back
     /// reference is a cycle, and a deliberate one: both objects live for the
     /// whole app run (the same reasoning the overlay windows use), so the
@@ -82,8 +80,6 @@ final class NotchWindowController {
 
     private var screenPresences: [ScreenPresence] = []
     private var cancellables: Set<AnyCancellable> = []
-    private var dwellTimer: Timer?
-    private var dwellStartedAt: Date?
     private var keyDownMonitor: Any?
     private var globalClickMonitor: Any?
     private var localClickMonitor: Any?
@@ -94,14 +90,6 @@ final class NotchWindowController {
     /// The screen whose sheet is currently expanded. At most one — expanding
     /// on a second screen collapses the first.
     private var expandedScreen: NSScreen?
-
-    /// The screen whose hover-growth is under way: the silhouette is creeping
-    /// out of the notch but the sheet is not committed yet (no content, no
-    /// key status, no shadow, no chime). nil when idle or already committed.
-    private var growingPresence: ScreenPresence?
-    /// The hover-growth's commit timer. Cancelling it is part of every
-    /// cancel/collapse path — a cancelled commit must never fire.
-    private var hoverCommitTask: Task<Void, Never>?
 
     init(companionManager: CompanionManager, audioHistoryProvider: @escaping () -> [CGFloat]) {
         self.companionManager = companionManager
@@ -120,11 +108,6 @@ final class NotchWindowController {
 
         rebuildScreenPresences()
         installMonitorsIfNeeded()
-        // The dwell poll runs for the controller's whole life and gates itself
-        // per tick (idle + not expanded + not suppressed). Starting it only on
-        // a non-idle state change — as an earlier version did — left it dead
-        // while idle, which is the one state dwell is supposed to serve.
-        startDwellTimer()
 
         if !screenPresences.isEmpty && !hasPlayedBootChime {
             hasPlayedBootChime = true
@@ -141,7 +124,6 @@ final class NotchWindowController {
             presence.panel.orderOut(nil)
         }
         screenPresences = []
-        stopDwellTimer()
         removeMonitors()
         hasPlayedBootChime = false
     }
@@ -160,7 +142,7 @@ final class NotchWindowController {
             }
             // The window is the pill widened by the flank-animation canvas on
             // both sides; the *pill* rect (restingPillFrame) stays the
-            // hit-test geometry for dwell and click-to-expand below.
+            // hit-test geometry for click-to-expand below.
             guard let restingFrame = NotchSupport.restingWindowFrame(on: screen) else { continue }
 
             let panel = NotchPanel(
@@ -299,83 +281,6 @@ final class NotchWindowController {
         defaultCenterObservers = []
     }
 
-    // MARK: - Dwell detection
-
-    /// Starts the 30 Hz poll that drives hover-dwell. Polling rather than a
-    /// mouseMoved monitor: the pill sits inside the menu-bar band where mouse
-    /// events arrive from whichever app is frontmost, and a poll reads
-    /// `NSEvent.mouseLocation` no matter who owns the event stream.
-    private func startDwellTimer() {
-        guard dwellTimer == nil else { return }
-        let timer = Timer(timeInterval: Self.dwellPollingInterval, repeats: true) { [weak self] _ in
-            self?.pollHoverDwell()
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        dwellTimer = timer
-    }
-
-    private func stopDwellTimer() {
-        dwellTimer?.invalidate()
-        dwellTimer = nil
-        dwellStartedAt = nil
-        panelModel.dwellProgress = 0
-    }
-
-    private func pollHoverDwell() {
-        let cursorLocation = NSEvent.mouseLocation
-
-        // Mid-hover-growth: the silhouette is creeping out of the notch. The
-        // poll's only remaining job is to watch the cursor — leaving the exit
-        // frame calls the growth off (it recedes back into the notch);
-        // otherwise the commit task fires on its own at the dwell deadline.
-        if growingPresence != nil {
-            if let presence = growingPresence,
-               let restingFrame = NotchSupport.restingPillFrame(on: presence.screen),
-               !restingFrame.insetBy(dx: -NotchSupport.hoverExitMargin, dy: -NotchSupport.hoverExitMargin).contains(cursorLocation) {
-                cancelHoverGrowth()
-            }
-            return
-        }
-
-        // Which pill is the cursor over? Entered with the wide (enter)
-        // margin, exited with the narrow one — the hysteresis band keeps the
-        // ring from flickering on a jittering cursor.
-        let hoveredPresence = screenPresences.first { presence in
-            guard let restingFrame = NotchSupport.restingPillFrame(on: presence.screen) else { return false }
-            let enterFrame = restingFrame.insetBy(dx: -NotchSupport.hoverEnterMargin, dy: -NotchSupport.hoverEnterMargin)
-            let exitFrame = restingFrame.insetBy(dx: -NotchSupport.hoverExitMargin, dy: -NotchSupport.hoverExitMargin)
-
-            if dwellStartedAt != nil {
-                return exitFrame.contains(cursorLocation)
-            }
-            return enterFrame.contains(cursorLocation)
-        }
-
-        // Active or suppressed — dwell is meaningless, but the timer keeps
-        // polling: it is the only thing that can start a dwell, so stopping
-        // it here would strand the pill until the next voice-state change.
-        guard panelModel.activityPhase == .idle, !panelModel.isFullscreenSuppressed else {
-            dwellStartedAt = nil
-            panelModel.dwellProgress = 0
-            return
-        }
-
-        // Cursor not over any pill — drop an in-flight dwell (leaving the
-        // exit frame cancels the ring) and keep polling.
-        guard let hoveredPresence else {
-            dwellStartedAt = nil
-            panelModel.dwellProgress = 0
-            return
-        }
-
-        if dwellStartedAt == nil {
-            // 生长的起点就是光标到达的那一刻。不再「等满 0.35 秒再突然
-            // 展开」：轮廓即刻开始生长，悬停期满只是提交（内容/激活/音效）。
-            dwellStartedAt = Date()
-            beginExpansion(on: hoveredPresence, commitDelay: Self.hoverDwellDuration)
-        }
-    }
-
     // MARK: - Expand / collapse
 
     /// Expands the sheet straight into the settings pages — the menu bar
@@ -437,35 +342,25 @@ final class NotchWindowController {
 
         if let clickedPresence = screenPresences.first(where: { presence in
             guard let restingFrame = NotchSupport.restingPillFrame(on: presence.screen) else { return false }
-            return restingFrame.insetBy(dx: -NotchSupport.hoverEnterMargin, dy: -NotchSupport.hoverEnterMargin).contains(clickLocation)
+            return restingFrame.insetBy(dx: -NotchSupport.pillClickHitMargin, dy: -NotchSupport.pillClickHitMargin).contains(clickLocation)
         }) {
             expand(on: clickedPresence)
         }
     }
 
-    /// Starts the sheet growing on `presence`. `commitDelay == nil` commits
-    /// immediately (click / settings / launch paths — the fast-start sweep).
-    /// A delay is the hover path: the window and the silhouette creep out of
-    /// the notch the moment the cursor arrives, keep growing through the wait,
-    /// and the commit (content, activation, key status, shadow, chime) lands
-    /// when the delay elapses — the growth never pauses, so there is no
-    /// 「等满 0.35 秒再突然展开」. Hover uses the slow-start curve, which is
-    /// what makes the wait itself show visible growth.
-    private func beginExpansion(on presence: ScreenPresence, commitDelay: TimeInterval?) {
+    /// Starts the sheet growing on `presence` and commits it in the same
+    /// breath — the window morphs out, the silhouette reaches full size, and
+    /// the sheet becomes real (content, activation, key status, shadow,
+    /// chime). Hover no longer has a path here: expansion is click-only, so
+    /// there is no slow creep to commit later.
+    private func beginExpansion(on presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
         let expandedFrame = NotchSupport.expandedSheetFrame(on: presence.screen)
 
         expandedScreen = presence.screen
-        // A click-expand can arrive mid-dwell; a stale dwellStartedAt would
-        // make the very next hover after collapse skip the ring and expand
-        // instantly.
-        dwellStartedAt = nil
-        panelModel.dwellProgress = 0
 
-        let timing = commitDelay == nil
-            ? NotchSupport.morphTimingControlPoints
-            : NotchSupport.hoverMorphTimingControlPoints
-        let duration = NotchSupport.expansionAnimationDuration + (commitDelay ?? 0)
+        let timing = NotchSupport.morphTimingControlPoints
+        let duration = NotchSupport.expansionAnimationDuration
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = duration
@@ -490,33 +385,6 @@ final class NotchWindowController {
         }
 
         presence.panel.ignoresMouseEvents = false
-
-        if let commitDelay {
-            // Hover path: the silhouette grows with isExpanded still false —
-            // the root view draws the creeping sheet outline, not the content.
-            growingPresence = presence
-            hoverCommitTask = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(commitDelay))
-                guard !Task.isCancelled else { return }
-                self?.commitHoverGrowthNow()
-            }
-        } else {
-            panelModel.isExpanded = true
-            finishExpansionCommit(on: presence)
-        }
-    }
-
-    /// The hover-growth's commit: the sheet has crept out and is mid-sweep —
-    /// make it real. Activation and key status wait for this moment because
-    /// stealing the frontmost app's focus the instant the cursor grazes the
-    /// notch would yank focus on an accidental graze.
-    private func commitHoverGrowthNow() {
-        hoverCommitTask?.cancel()
-        hoverCommitTask = nil
-        let presence = growingPresence
-            ?? screenPresences.first { $0.screen == expandedScreen }
-        growingPresence = nil
-        guard let presence else { return }
         panelModel.isExpanded = true
         finishExpansionCommit(on: presence)
     }
@@ -544,42 +412,16 @@ final class NotchWindowController {
         installEscapeMonitorIfNeeded()
     }
 
-    /// Calls a hover-growth off — the cursor left the pill before the dwell
-    /// elapsed. The recede reuses `collapse`, the same morph back, just from
-    /// wherever the growth had reached.
-    private func cancelHoverGrowth() {
-        hoverCommitTask?.cancel()
-        hoverCommitTask = nil
-        growingPresence = nil
-        dwellStartedAt = nil
-        panelModel.dwellProgress = 0
-        collapse(expandBackToPill: true)
-    }
-
-    /// Immediate-commit expand — click / settings / launch. While a
-    /// hover-growth is under way, any expand request commits it: the user
-    /// has made up their mind, so the growth stops creeping and finishes
-    /// its sweep.
+    /// Every expand path — the pill click, the settings entry, the launch
+    /// entry — runs the same immediate morph.
     private func expand(on presence: ScreenPresence) {
-        if growingPresence != nil {
-            commitHoverGrowthNow()
-            return
-        }
-        beginExpansion(on: presence, commitDelay: nil)
+        beginExpansion(on: presence)
     }
 
     /// Every collapse path funnels here. `expandBackToPill` false (teardown)
-    /// leaves the panel off-screen entirely. Also the recede path for an
-    /// uncommitted hover-growth — `isExpanded` is still false then, so the
-    /// guard admits `growingPresence` too.
+    /// leaves the panel off-screen entirely.
     func collapse(expandBackToPill: Bool) {
-        guard panelModel.isExpanded || growingPresence != nil else { return }
-
-        // A hover-growth cut short by any collapse path leaves no pending
-        // commit behind.
-        hoverCommitTask?.cancel()
-        hoverCommitTask = nil
-        growingPresence = nil
+        guard panelModel.isExpanded else { return }
 
         // The panel that is expanded is resolved BEFORE the expanded-screen
         // bookkeeping clears — after that, no presence matches "expanded"
@@ -595,8 +437,8 @@ final class NotchWindowController {
         // have a 150pt canvas per side, and shrinking to the pill rect here
         // clipped that canvas away permanently — after the first expand the
         // flank animations could never draw again. The pill rect remains the
-        // hit-test geometry (dwell / click-to-expand above); only the window
-        // frame has to come back wide.
+        // hit-test geometry (click-to-expand above); only the window frame has
+        // to come back wide.
         guard expandBackToPill,
               let collapsingPresence,
               let restingFrame = NotchSupport.restingWindowFrame(on: collapsingPresence.screen) else {
@@ -696,14 +538,6 @@ final class NotchWindowController {
                 presence.panel.orderFrontRegardless()
             }
         }
-
-        if isAnyDisplaySuppressed, dwellStartedAt != nil {
-            // Reset an in-flight dwell but keep the timer — same reason the
-            // poll never stops itself: the timer must survive to see the
-            // suppression lift.
-            dwellStartedAt = nil
-            panelModel.dwellProgress = 0
-        }
     }
 
     // MARK: - Companion state binding
@@ -719,9 +553,6 @@ final class NotchWindowController {
                 self.latestVoiceState = voiceState
                 self.refreshActivityPhase()
                 self.refreshFullscreenSuppression()
-                // Idempotent — the timer is already running from install; this
-                // only matters if it was torn down and the subsystem came back.
-                self.startDwellTimer()
             }
             .store(in: &cancellables)
     }

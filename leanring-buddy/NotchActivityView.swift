@@ -271,13 +271,6 @@ struct NotchPillRootView: View {
                     PillShape(bottomCornerRadius: isActive ? 0 : 6)
                         .fill(Color.black)
                         .frame(width: pillWidth, height: notchHeight)
-                        .overlay(alignment: .bottom) {
-                            if !isActive && panelModel.dwellProgress > 0 {
-                                NotchHoverDwellRingView(progress: panelModel.dwellProgress)
-                                    .frame(width: 16, height: 16)
-                                    .offset(y: 6)
-                            }
-                        }
 
                     NotchWingView(
                         phase: panelModel.activityPhase,
@@ -501,23 +494,6 @@ private struct PillShape: Shape {
     }
 }
 
-/// The hover-dwell progress ring (`NotchHoverDwellRingView` in HeyClicky's
-/// recovered types): a thin circle filling clockwise as the dwell timer runs.
-struct NotchHoverDwellRingView: View {
-    var progress: CGFloat
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.white.opacity(0.25), lineWidth: 2)
-            Circle()
-                .trim(from: 0, to: min(max(progress, 0), 1))
-                .stroke(Color.white.opacity(0.9), lineWidth: 2)
-                .rotationEffect(.degrees(-90))
-        }
-    }
-}
-
 // MARK: - Activity drawing
 
 /// The phase-specific animation, sized to fill whatever container it is given
@@ -678,12 +654,10 @@ struct NotchPanelRootSwitchingView: View {
                 companionManager: companionManager
             )
         } else if panelModel.expansionProgress > 0.01 {
-            // 悬停生长期：面板轮廓（HomeSpaceSheetShape）从刘海里探出来。
-            // 窗口 frame 正沿同一条缓动曲线向展开尺寸生长，形状的 body 又
-            // 从「当前窗口尺寸」向「完全展开」插值——两层运动叠出「等待
-            // 期间逐渐变大」。只画轮廓不画内容：内容要等提交才插入，避免
-            // 整套 UI 在小尺寸里被压扁。填充用展开后的同一张暗紫皮
-            // （轮廓长成什么，提交后就是什么）。
+            // 收起的这一路：`isExpanded` 已经翻成 false，窗口 frame 正沿收起
+            // 曲线缩回刘海，`expansionProgress` 同步插值到 0——只画轮廓不画
+            // 内容，面板就顺着同一条曲线退回去。展开时不经过这里：点击是
+            // 即刻提交（`isExpanded` 与窗口形变同帧置位），第一分支直接接管。
             HomeSpaceSheetShape(expansionProgress: panelModel.expansionProgress)
                 .fill(NotchExpandedSheetStyle.surfaceColor)
         } else {
