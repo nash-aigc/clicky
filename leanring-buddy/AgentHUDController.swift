@@ -95,6 +95,14 @@ final class AgentHUDController {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.orderOutAllPanels() }
         }
+        // First draw. Refresh is otherwise only driven by store-mutation
+        // notifications, and a relaunch with NO turn activity yet posts none:
+        // agents left failed/interrupted by the previous run stay non-idle in
+        // the roster, the demotion pass finds nothing .running to demote (so
+        // posts nothing), and the HUD sat invisible until the next turn's
+        // first mutation (measured 2026-09-23). Reading the persisted roster
+        // here is what puts those chips up at launch.
+        refresh()
     }
 
     // MARK: Refresh
@@ -112,6 +120,7 @@ final class AgentHUDController {
         stackModel.agents = visibleAgents
 
         let screens = NSScreen.screens
+
         // A screen that disappeared (or the first refresh) needs panels built.
         let missingScreens = screens.filter { screen in
             screen.displayID != 0 && panelsByDisplayID[screen.displayID] == nil
@@ -126,7 +135,13 @@ final class AgentHUDController {
                 panel.orderOut(nil)
                 continue
             }
-            if panel.contentView == nil {
+            // NOTE: `panel.contentView == nil` is never true — AppKit
+            // materialises a default empty view the first time contentView is
+            // read, so that check silently skipped the install forever (the
+            // panel sat on screen, correctly sized by `sizePanel`, rendering
+            // nothing at all — every captured pixel at alpha 0, measured
+            // 2026-09-23). Check for OUR view instead.
+            if !(panel.contentView is NSHostingView<AgentHUDStackView>) {
                 installStackView(in: panel, displayID: displayID)
             }
             sizePanel(panel, displayID: displayID, agentCount: visibleAgents.count, isCollapsed: stackModel.isAccordionCollapsed)
@@ -195,13 +210,26 @@ final class AgentHUDController {
         )
 
         let hostingView = NSHostingView(rootView: stackView)
-        hostingView.sizingOptions = [.intrinsicContentSize]
+        // The panel is created with `contentRect: .zero`, so the content view
+        // starts zero-sized — and it does NOT follow the later `setFrame`
+        // without help. Measured 2026-09-23: without these two lines the
+        // SwiftUI content rendered nothing at all (the window's capture came
+        // back with every pixel at alpha 0, not even the accordion handle),
+        // while the panel itself sat on screen at the correct 264×216.
+        // `autoresizingMask` keeps the view tracking every later `sizePanel`
+        // re-frame; the explicit frame covers this first placement. Same fix
+        // `CompanionResponseOverlay` applies after its own `setFrame`.
+        hostingView.autoresizingMask = [.width, .height]
         panel.contentView = hostingView
 
         let stackSize = hostingView.fittingSize
         let stackWidth = max(stackSize.width, AgentHUDStackView.minimumStackWidth)
         let marginFromRightEdge: CGFloat = 12
-        let topInset: CGFloat = 4 // just below the menu bar band
+        // Hang the stack BELOW the menu bar band, not 4 pt below the screen's
+        // top edge — `visibleFrame` already has the menu bar subtracted, and
+        // at 4 pt the accordion handle sat inside the menu bar band, hidden
+        // behind it (measured 2026-09-23).
+        let topInset = screen.frame.maxY - screen.visibleFrame.maxY + 4
 
         let panelFrame = NSRect(
             x: screen.frame.maxX - stackWidth - marginFromRightEdge,
@@ -210,6 +238,9 @@ final class AgentHUDController {
             height: stackSize.height
         )
         panel.setFrame(panelFrame, display: true)
+        // Keep the content view in lockstep with this first real frame (the
+        // autoresizing mask installed above covers later re-frames).
+        hostingView.frame = NSRect(origin: .zero, size: panelFrame.size)
     }
 
     /// Re-frames the panel for the CURRENT agent count — chips come and go,
@@ -222,7 +253,8 @@ final class AgentHUDController {
         let stackHeight = AgentHUDStackView.stackHeight(agentCount: agentCount, isCollapsed: isCollapsed)
         let stackWidth = AgentHUDStackView.minimumStackWidth
         let marginFromRightEdge: CGFloat = 12
-        let topInset: CGFloat = 4
+        // Same rule as `installStackView` — below the menu bar band.
+        let topInset = screen.frame.maxY - screen.visibleFrame.maxY + 4
 
         panel.setFrame(
             NSRect(
@@ -297,7 +329,11 @@ struct AgentHUDStackView: View {
     static func stackHeight(agentCount: Int, isCollapsed: Bool = false) -> CGFloat {
         let handleHeight: CGFloat = 20
         guard agentCount > 0, !isCollapsed else { return handleHeight + 12 }
-        return handleHeight + 12 + CGFloat(agentCount) * 56 + CGFloat(max(agentCount - 1, 0)) * 8
+        // The VStack also puts its own 8 pt spacing between the handle and the
+        // first chip row — the formula used to omit it, so `sizePanel` framed
+        // the panel 8 pt shorter than the content `fittingSize` (measured
+        // 2026-09-23: fitting 224 vs formula 216 for three agents).
+        return handleHeight + 12 + 8 + CGFloat(agentCount) * 56 + CGFloat(max(agentCount - 1, 0)) * 8
     }
 
     @ObservedObject var stackModel: AgentHUDStackModel
@@ -421,7 +457,10 @@ struct AgentHUDChipView: View {
                     )
                 Text(agent.name.prefix(1).uppercased())
                     .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
+                    // Deep navy like `MascotAvatarDisc`'s initial — the pastel
+                    // tile is too light for white text to read (measured
+                    // 2026-09-23: the letter was nearly invisible).
+                    .foregroundColor(Color(red: 0.10, green: 0.24, blue: 0.60))
                 Circle()
                     .fill(AgentHUDPalette.statusColor(for: agent.status))
                     .frame(width: Self.statusDotSize, height: Self.statusDotSize)
@@ -533,6 +572,7 @@ enum AgentHUDPalette {
 }
 
 // MARK: - Helpers
+
 
 // `NSScreen.displayID` already exists as a project extension
 // (`WindowPositionManager.swift`) — non-optional, falling back to 0. The HUD
