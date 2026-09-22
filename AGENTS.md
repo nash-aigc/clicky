@@ -394,7 +394,11 @@ IMPORTANT: Follow these naming rules strictly. Clarity is the top priority.
 
 ## Git Workflow
 
-- Branch naming: `feature/description` or `fix/description`
+- **Single branch: `main`, nothing else.** The user collapsed the old
+  feature-branch flow on 2026-09-23 (the auxiliary `~/Desktop/clicky-main`
+  worktree, `feature/agent-sessions` and the stray `websocket-fixes` are all
+  gone) — commit straight to `main` and push it. No feature branches, no
+  merge dance.
 - Commit messages: imperative mood, concise, explain the "why" not the "what"
 - Do not force-push to main
 
