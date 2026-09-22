@@ -109,6 +109,35 @@ nonisolated final class ClaudeAgentProcess {
         return nil
     }
 
+    /// Whether this agent's thread already exists in the CLI's own session
+    /// store (`~/.claude/projects/<escaped-cwd>/<session-id>.jsonl`).
+    ///
+    /// This is the ground truth for the `--session-id` vs `--resume` decision,
+    /// replacing a memory-only flag: the flag resets on every app relaunch,
+    /// and the first turn afterwards then "created" a session the CLI already
+    /// had on disk — the CLI refuses that with
+    /// `Error: Session ID … is already in use.` (measured 2026-09-23 on the
+    /// agent 「Wanna」). The session file surviving the app is exactly what
+    /// the flag was trying to remember, so ask the filesystem instead.
+    ///
+    /// The directory name is the CLI's project slug for the agent's cwd: every
+    /// character outside ASCII letters and digits becomes `-` — measured
+    /// 2026-09-23, `/Users/mjm/Desktop/untitled folder` →
+    /// `-Users-mjm-Desktop-untitled-folder`. Mirroring the rule (rather than
+    /// listing the directory and matching) keeps the check one `FileManager`
+    /// call.
+    static func sessionExistsOnDisk(sessionID: UUID, projectFolderPath: String) -> Bool {
+        let projectSlug = String(projectFolderPath.map { character in
+            ("a"..."z").contains(character)
+                || ("A"..."Z").contains(character)
+                || ("0"..."9").contains(character)
+                ? character : "-"
+        })
+        let sessionFilePath = NSHomeDirectory()
+            + "/.claude/projects/\(projectSlug)/\(sessionID.uuidString).jsonl"
+        return FileManager.default.fileExists(atPath: sessionFilePath)
+    }
+
     // MARK: - State
 
     let agentID: UUID
@@ -181,10 +210,15 @@ nonisolated final class ClaudeAgentProcess {
 
         let launchedProcess = Process()
         launchedProcess.executableURL = URL(fileURLWithPath: executablePath)
+        // Resume when EITHER this process launched before OR the session file
+        // is already on disk from an earlier app run — the in-memory flag
+        // alone misses the cross-launch case (see sessionExistsOnDisk).
+        let sessionAlreadyExists = hasLaunchedOnce
+            || Self.sessionExistsOnDisk(sessionID: agentID, projectFolderPath: projectFolderPath)
         launchedProcess.arguments = Self.launchArguments(
             sessionID: agentID,
             permissionArguments: permissionArguments,
-            resumesThread: hasLaunchedOnce
+            resumesThread: sessionAlreadyExists
         )
 
         // The agent works inside the user's chosen project folder — the CLI's
