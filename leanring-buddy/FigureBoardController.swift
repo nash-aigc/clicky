@@ -7,8 +7,10 @@
 //  to the triangle on screen", CompanionManager resolves the named element's
 //  real frame through Accessibility, runs the figure agent with --no-open (the
 //  SVG is written to disk but no Preview window opens), and this controller
-//  draws that SVG on a small white board placed right beside the element —
-//  the way a tutor would slide a mini whiteboard next to the problem.
+//  draw that SVG floating directly on the transparent window right beside the
+//  element — no card, no surface, just the figure hovering over the screen
+//  the way the green marks do (2026-09-24: an earlier white card was rejected
+//  by the user as 格格不入; the figure itself is the board).
 //
 //  The window recipe is ScreenAnnotationManager's verbatim: one transparent,
 //  click-through OverlayWindow per shown board, an NSHostingView, an
@@ -44,9 +46,10 @@ final class FigureBoardController {
     private var dismissGeneration = 0
     private var autoDismissTask: Task<Void, Never>?
 
-    /// Shows `svgFilePath` on a white board anchored next to the element whose
-    /// Quartz-global frame is `anchorFrame`. Replaces any board already up.
-    /// Returns false when the SVG cannot be loaded (the caller reports that).
+    /// Shows `svgFilePath` floating on the transparent window next to the
+    /// element whose Quartz-global frame is `anchorFrame`. Replaces any board
+    /// already up. Returns false when the SVG cannot be loaded (the caller
+    /// reports that).
     @discardableResult
     func show(svgFilePath: String, anchoredToQuartzFrame anchorFrame: CGRect) -> Bool {
         removeAllNow()
@@ -172,9 +175,11 @@ final class FigureBoardController {
     }
 }
 
-/// The whiteboard itself: a white rounded card with a soft shadow, the SVG
-/// scaled to fit inside it, positioned at `boardFrame` in display-local
-/// points — the coordinate space the hosting view's content draws in.
+/// The figure itself: the SVG scaled to fit, floating directly on the
+/// transparent window (no card, no surface) at `boardFrame` in display-local
+/// points — the coordinate space the hosting view's content draws in. Two
+/// stacked white halo shadows outline the SVG's dark strokes so they stay
+/// readable against any wallpaper without adding a visible panel.
 private struct FigureBoardView: View {
     let boardFrame: CGRect
     let svgImage: NSImage
@@ -190,21 +195,21 @@ private struct FigureBoardView: View {
         .allowsHitTesting(false)
     }
 
+    // The board is deliberately TRANSPARENT (2026-09-24, the user's 「我要的是
+    // 一个透明的，然后在透明的位置上去显示，这样可能会更加原生一点，你这样的话就
+    // 太格格不入了」 — the white card was rejected outright). The figure floats
+    // directly over the desktop the way the green marks do. The only thing
+    // standing between that and an invisible figure is the SVG's own stroke
+    // colour: geometry-dsl strokes are black, so over a dark wallpaper they
+    // would vanish. A soft white halo shadow on the image's non-transparent
+    // pixels keeps the strokes readable on ANY background without adding a
+    // surface — the halo belongs to the strokes, not to a card.
     private var board: some View {
-        VStack(spacing: 0) {
-            Image(nsImage: svgImage)
-                .resizable()
-                .scaledToFit()
-                .padding(12)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.28), radius: 14, y: 5)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.12), lineWidth: 1)
-        )
+        Image(nsImage: svgImage)
+            .resizable()
+            .scaledToFit()
+            .padding(12)
+            .shadow(color: Color.white.opacity(0.9), radius: 2.5)
+            .shadow(color: Color.white.opacity(0.5), radius: 5)
     }
 }
