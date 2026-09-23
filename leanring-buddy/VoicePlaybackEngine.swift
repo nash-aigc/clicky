@@ -273,11 +273,35 @@ final class VoicePlaybackEngine {
     /// own-engine fallback uses and the configuration that was measured pulling
     /// frames.
     func prepareCaptureHost() {
-        preparedCaptureHost = isEngineStarted ? .playbackEngine : .captureOnlyEngine
-        let hostDescription = preparedCaptureHost == .playbackEngine
-            ? "playback engine (an answer is playing — its echo cancellation covers it)"
-            : "capture-only engine (nothing playing — no voice processing, so nothing else is ducked)"
-        print("🎙️ VoicePlaybackEngine: the listening tap will go on the \(hostDescription)")
+        // ONE engine, always. The capture-only engine is never used again, and
+        // the measurement that retired it is the whole reason this app had no
+        // sound (2026-09-24, from the app's own log):
+        //
+        //     [probe] connectGraphAndStart done: isRunning=true
+        //     [probe] installTap BEFORE: engineRunning=false ... inputFormat=3ch
+        //     ⚠️ skipping a TTS chunk — the engine is not running   (×6, whole reply)
+        //
+        // Between those two lines the only thing that runs is the hand-off back
+        // from the capture-only engine — `takeCaptureBackForPlayback` removes its
+        // tap and calls `stopCaptureOnlyEngine()`. Stopping the second engine
+        // kills the FIRST one, because both are AVAudioEngines on the same input
+        // device and voice processing has configured that device into its
+        // communication shape; tearing one down takes the shared IO with it. The
+        // reply is then mute, and the microphone is left un-cancelled — which is
+        // where the mic peaks of 1.000 while the answer plays come from, and
+        // those in turn are what made the reply interrupt itself and the silence
+        // countdown never finish.
+        //
+        // One engine is also the reference's own rule, and it is the one it
+        // records as ARCHITECTURAL rather than tunable: 「音频采集+播放必须都在
+        // WebRTC 里 —— 挪出去会导致浏览器 AEC 失灵 → 自己打断自己」, 教训
+        // 「浏览器回声消除依赖传输形态，架构级约束」 (实现方案/08-踩坑总表.md:11).
+        // The cost is the one the second engine existed to avoid: while a
+        // listening window is open this app is in macOS's communication-app
+        // class, so other audio is ducked — at `.min`, and only while the
+        // microphone is actually open. 「回声消除」 is the user's way out.
+        preparedCaptureHost = .playbackEngine
+        print("🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)")
     }
 
     /// Installs the continuous-listening mic tap on whichever engine
@@ -296,45 +320,16 @@ final class VoicePlaybackEngine {
         installedInputTapHandler = handler
         installedInputTapBufferSize = bufferSize
 
-        // `preparedCaptureHost` may be STALE by the time this runs, and using it
-        // anyway is the one way this app can end up with a live microphone that
-        // has no echo cancellation.
-        //
-        // Measured by reading the two call sites: `prepareCaptureHost` snapshots
-        // `isEngineStarted` (VoicePlaybackEngine.swift:273), and between it and
-        // this call sits a network await — `BuddyDictationManager.swift:851`
-        // opens the ASR session. The window arms on the first-audio hook
-        // (BuddyDictationManager.swift:842-846), so "an answer starts during that
-        // await" is the ordinary case, not a corner. With the snapshot still
-        // saying `.captureOnlyEngine`, the switch below would start the
-        // capture-only engine — which has NO voice processing — and it does not
-        // stop the playback engine, so two microphones run at once and the
-        // recognizer is fed the one engine that cannot cancel anything. That is
-        // the reference project's 坑 1 (实现方案/08-踩坑总表.md:11, "音频采集/播放
-        // 不全在 WebRTC 里 → 浏览器 AEC 失灵 → 自己打断自己") in its native form,
-        // and it lands exactly on the reply the user is trying to hear.
-        //
-        // So the host is decided HERE, from the live state, and the playback
-        // engine wins whenever it is running: it is the only engine whose voice
-        // processing can cancel the answer out of the microphone.
-        if isEngineStarted {
-            installTapOnPlaybackEngine(handler: handler, bufferSize: bufferSize)
-            return
+        // There is exactly one host now (see `prepareCaptureHost`), so the stale
+        // snapshot that used to decide here — and the second engine it could
+        // choose — are both gone. The tap always goes on the engine whose voice
+        // processing can cancel the answer out of the microphone; with nothing
+        // playing there is nothing to cancel, and the engine is simply left
+        // running until the window closes.
+        if !isEngineStarted {
+            try ensureEngineStarted()
         }
-
-        switch preparedCaptureHost {
-        case .playbackEngine:
-            // The snapshot said playback but the engine is not running any more
-            // (a reply that ended during the same await). The capture-only
-            // engine is the only one that can host a tap now.
-            try startCaptureOnlyEngineWithTap(handler: handler, bufferSize: bufferSize)
-        case .captureOnlyEngine:
-            try startCaptureOnlyEngineWithTap(handler: handler, bufferSize: bufferSize)
-        case .none:
-            // Nothing asked for a host, so treat it as the capture-only case —
-            // the safe half: it is the one that cannot duck anything.
-            try startCaptureOnlyEngineWithTap(handler: handler, bufferSize: bufferSize)
-        }
+        installTapOnPlaybackEngine(handler: handler, bufferSize: bufferSize)
     }
 
     /// Puts the listening tap on the playback engine. The one way this is done,
@@ -391,6 +386,14 @@ final class VoicePlaybackEngine {
         }
         inputTapHost = .none
         installedInputTapHandler = nil
+
+        // The window is closed, so this is the moment the engine may go: with
+        // capture and playback sharing one engine, "nobody is listening" is the
+        // only condition that releases it — and releasing it is what switches
+        // voice processing off and ends the ducking of every other app. Refuses
+        // by itself while a chunk is still playing, which is the playback path's
+        // own release.
+        releaseEngineWhenIdle()
     }
 
     /// Puts the tap on the capture-only engine and starts it. The engine itself
@@ -440,13 +443,18 @@ final class VoicePlaybackEngine {
     /// main-actor turn, so no newer playback can have started in between and
     /// `isChunkPlaying` is the whole truth about whether a stop is safe here.
     func releaseEngineWhenIdle() {
-        print("🔊 [probe] releaseEngineWhenIdle entered: isEngineStarted=\(isEngineStarted) engineRunning=\(engine.isRunning) isChunkPlaying=\(isChunkPlaying) tapHost=\(inputTapHost)")
-        guard isEngineStarted, !isChunkPlaying else { return }
-
-        if inputTapHost == .playbackEngine {
-            handCaptureToCaptureOnlyEngine()
+        // A live tap means a listening window is open, and the engine must NOT be
+        // stopped under it — that is the second-engine teardown that killed the
+        // running engine and left a reply mute with an un-cancelled microphone
+        // (see `prepareCaptureHost`). Stopping is not what ends the ducking
+        // anyway; `releaseVoiceProcessingForCaptureOnlyRun` is, and neither
+        // belongs here while the microphone is still in use.
+        guard !isInputTapped else {
+            print("🔊 VoicePlaybackEngine: engine kept running — a listening window is open, and the microphone has nowhere else to live now that capture and playback share one engine")
             return
         }
+
+        guard isEngineStarted, !isChunkPlaying else { return }
 
         engine.stop()
         isEngineStarted = false
