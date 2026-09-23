@@ -3,7 +3,7 @@
 //  leanring-buddy
 //
 //  The assistant reply's card, in one of three themes (blue / black / paper)
-//  chosen in 对话与记忆 → 卡片样式. Ported from the user's reference spec
+//  chosen in 设置 → 交互样式. Ported from the user's reference spec
 //  (「clip 卡片样式」, 实现说明.md): a 10pt-corner card with a 1.5pt border,
 //  tight 10/12 padding, 13.5pt text on a ~22pt line pitch — and the spec's
 //  signature text animation, the blur-focus stream: every new character
@@ -57,8 +57,18 @@ struct AnswerCardTheme {
             self.textColor = .white
             self.drawsRuledLines = false
         case .black:
-            self.backgroundColor = .black
-            self.borderColor = Color.white.opacity(0.16)
+            // 2026-09-23：底色从纯黑抬到 #26262B。用户的原话是「AI 回复消息的
+            // 颜色现在是全黑色，可以变得浅一点，或者用灰色，颜色可以稍微有一点
+            // 差别，但不要这么深的黑色，体验不是特别好，因为颜色太深了」——
+            // 面板地面是 #18181C，纯黑卡片在它上面是一块挖空的洞，抬到这一档
+            // 之后它读起来是浮在面板上的一块深灰。边框同步从 16% 提到 20%，
+            // 否则浅底上那条 1.5pt 的线会淡到看不见。
+            //
+            // 名字仍然是「黑」：`AnswerCardStyle` 是按 rawValue 存进
+            // AppSettings.json 的，改 case 名会让老配置文件解不出来，而这一档
+            // 相对另外两档（实心蓝 / 米黄宣纸）本来就还是"深色那一档"。
+            self.backgroundColor = Color(red: 38 / 255, green: 38 / 255, blue: 43 / 255)
+            self.borderColor = Color.white.opacity(0.20)
             self.textColor = .white
             self.drawsRuledLines = false
         case .paper:

@@ -18,7 +18,7 @@ import SwiftUI
 /// One page of the settings window. The sidebar renders these in order.
 enum SettingsPage: String, CaseIterable, Identifiable {
     case general
-    case cardStyle
+    case interactionStyle
     case model
     case agent
     case memory
@@ -27,13 +27,23 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case vision
     case action
     case shortcuts
+    case exportSettings
+    case importSettings
 
     var id: String { rawValue }
+
+    /// 导出 / 导入这两页不读也不写 `AppSettings`：它们把整套设置写出去或读回来，
+    /// 是**动作**而不是偏好。所以它们不走 `GeneralSettingsActionBar`（上面那三颗
+    /// 「恢复默认 / 保存 / 关闭」在这里要么没有意义、要么危险），由
+    /// `SettingsTransferPage` 自己画。
+    var isSettingsTransferPage: Bool {
+        self == .exportSettings || self == .importSettings
+    }
 
     var sidebarTitle: String {
         switch self {
         case .general: return "通用"
-        case .cardStyle: return "卡片样式"
+        case .interactionStyle: return "交互"
         case .model: return "模型"
         case .agent: return "Agent"
         case .memory: return "对话与记忆"
@@ -42,6 +52,8 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .vision: return "看与截图"
         case .action: return "操作"
         case .shortcuts: return "快捷键"
+        case .exportSettings: return "导出设置"
+        case .importSettings: return "导入设置"
         }
     }
 
@@ -50,7 +62,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     var sidebarSymbol: String {
         switch self {
         case .general: return "gearshape.fill"
-        case .cardStyle: return "paintbrush.fill"
+        case .interactionStyle: return "slider.horizontal.3"
         case .model: return "cpu"
         case .agent: return "hammer"
         case .memory: return "bubble.left.fill"
@@ -59,6 +71,8 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .vision: return "eye.fill"
         case .action: return "cursorarrow"
         case .shortcuts: return "keyboard"
+        case .exportSettings: return "square.and.arrow.up"
+        case .importSettings: return "square.and.arrow.down"
         }
     }
 }
@@ -93,7 +107,7 @@ struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 switch page {
                 case .general: generalPage
-                case .cardStyle: cardStylePage
+                case .interactionStyle: interactionStylePage
                 case .agent: agentPage
                 case .memory: memoryPage
                 case .listen: listenPage
@@ -102,6 +116,9 @@ struct GeneralSettingsView: View {
                 case .action: actionPage
                 case .shortcuts: shortcutsPage
                 case .model: EmptyView() // 模型 is rendered by ModelSettingsView.
+                // 导出 / 导入 is rendered by SettingsTransferPage — it is an
+                // action on the whole settings file, not a page of AppSettings.
+                case .exportSettings, .importSettings: EmptyView()
                 }
             }
             .padding(.horizontal, 24)
@@ -243,25 +260,43 @@ struct GeneralSettingsView: View {
 
     // MARK: 对话与记忆
 
-    // MARK: 卡片样式
+    // MARK: 交互
 
-    /// The AI-reply card's dedicated page. Lived inside 对话与记忆 first and
-    /// the user could not find it there — the sidebar entry is the whole point
-    /// of this page. The picker is the same binding as before (moved, not
-    /// duplicated: one setting, one home), and the preview below it renders the
-    /// chosen theme with real card code, so the choice is visible before saving.
-    private var cardStylePage: some View {
+    /// The card's theme, the sheet's expansion animation, and the composer's
+    /// send key, on one page.
+    ///
+    /// 卡片样式 lived here alone until 2026-09-23, when the user widened it:
+    /// 「把设置页面的"卡片样式"页面调整为"交互样式"，里面包含两个选项：卡片样式 /
+    /// 窗口样式」. Two things about what belongs on a page, and this page is where
+    /// they meet: the panel opening and the reply card are both "what a Clicky
+    /// interaction looks like", which is the axis the user organised it along.
+    ///
+    /// The page was called 交互样式 until later the same day, when the user
+    /// shortened it and added a third group in one instruction: 「设置页面的
+    /// "交互交互样式"改为"交互"，并增加一个选项，即输入方式，或叫发送方法」. The
+    /// send key is the same axis — it is how the user talks to Clicky, not how
+    /// Clicky looks — so it belongs here rather than on 快捷键 (which is about the
+    /// voice shortcut) or 通用.
+    ///
+    /// The card picker keeps the live preview below it, and the window-style row
+    /// deliberately has none — 「不需要提供预览，因为很难预览」. An expansion is a
+    /// 0.34 s animation of the whole 810×940 sheet; rendering a still of it would
+    /// show a scaled-down panel, which is not what picking 中心缩放 buys.
+    ///
+    /// The picker is the same binding as before (moved, not duplicated: one
+    /// setting, one home), so nothing about the stored style changed.
+    private var interactionStylePage: some View {
         Group {
             SettingsPageHeader(
-                title: "卡片样式",
-                subtitle: "AI 回复卡片长什么样。对话页和鼠标旁边的气泡用同一套样式，改完点右下角「保存」生效。"
+                title: "交互",
+                subtitle: "回复卡片长什么样、面板怎么弹出来，以及输入框按哪个键发送。改完点右下角「保存」生效。"
             )
 
-            SettingsGroupLabel("样式")
+            SettingsGroupLabel("卡片样式")
             SettingsCard {
                 SettingsRow(
                     label: "卡片颜色",
-                    description: "蓝色是默认；黑色适合深色桌面；宣纸是米黄底、墨色字、带横线。流式回答带逐字模糊聚焦动画（新字先模糊，再逐渐变清晰）。"
+                    description: "黑色是默认，跟面板底色一致；蓝色是卡片规格里的原色；宣纸是米黄底、墨色字、带横线。流式回答带逐字模糊聚焦动画（新字先模糊，再逐渐变清晰）。"
                 ) {
                     SettingsSegmentedPicker(
                         selection: generalSettingsViewModel.binding(\.answerCardStyle),
@@ -272,7 +307,7 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            SettingsGroupLabel("预览")
+            SettingsGroupLabel("卡片预览")
             SettingsCard {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("回复卡片预览 — 当前所选样式的真实渲染效果")
@@ -288,6 +323,44 @@ struct GeneralSettingsView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
+            }
+
+            SettingsGroupLabel("窗口样式")
+            SettingsCard {
+                SettingsRow(
+                    label: "展开方式",
+                    description: WindowExpansionStyle.notchBloom.explanation
+                        + "（默认）\n"
+                        + WindowExpansionStyle.edgeScale.explanation
+                        + "\n"
+                        + WindowExpansionStyle.curtain.explanation
+                        + "\n三种都是窗口一次到位、内容层做动画，不会逐帧重排，所以都不会卡。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.windowExpansionStyle),
+                        options: WindowExpansionStyle.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+            }
+
+            SettingsGroupLabel("输入")
+            SettingsCard {
+                SettingsRow(
+                    label: "发送方式",
+                    description: ComposerSendShortcut.returnKey.explanation
+                        + "\n"
+                        + ComposerSendShortcut.commandReturn.explanation
+                        + "\n两种都能写多行：没被指定发送的那个键就是换行用的。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.composerSendShortcut),
+                        options: ComposerSendShortcut.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
             }
         }
     }
@@ -1106,7 +1179,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "默认项目文件夹",
-                    description: "新建 Agent 选文件夹时的起点。留空则从主目录开始。"
+                    description: "语音派活的 Agent 就在这个文件夹里工作；手动新建时它也是选文件夹的起点。留空则从主目录开始。选完立即生效。"
                 ) {
                     Button(action: pickDefaultProjectFolder) {
                         Text(defaultProjectFolderButtonLabel)
@@ -1162,7 +1235,13 @@ struct GeneralSettingsView: View {
 
     /// Folder picker for the default project folder. The app must activate
     /// first (an LSUIElement app's modal panels appear but never key
-    /// otherwise), same as the sidebar's new-agent picker.
+    /// otherwise), same as the sidebar's new-agent picker — and the panel needs
+    /// `modalFileDialogWindowLevel` for the same reason that one does: the notch
+    /// panel sits at `.mainMenu + 1`, well above an NSOpenPanel's default.
+    ///
+    /// The choice is persisted on the spot rather than left in the draft — see
+    /// `persistAgentDefaultProjectFolderImmediately`, which is the fix for the
+    /// reported 「设置过，但好像没有被保存，现在又变成空的了」.
     private func pickDefaultProjectFolder() {
         NSApp.activate()
 
@@ -1171,6 +1250,7 @@ struct GeneralSettingsView: View {
         folderPicker.canChooseFiles = false
         folderPicker.allowsMultipleSelection = false
         folderPicker.canCreateDirectories = true
+        folderPicker.level = NotchSupport.modalFileDialogWindowLevel
         folderPicker.message = "选择新建 Agent 时的默认项目文件夹"
         folderPicker.prompt = "使用"
         if let currentFolderPath = generalSettingsViewModel.draftSettings.agentDefaultProjectFolder {
@@ -1178,7 +1258,7 @@ struct GeneralSettingsView: View {
         }
 
         guard folderPicker.runModal() == .OK, let pickedURL = folderPicker.url else { return }
-        generalSettingsViewModel.draftSettings.agentDefaultProjectFolder = pickedURL.path
+        generalSettingsViewModel.persistAgentDefaultProjectFolderImmediately(pickedURL.path)
     }
 }
 

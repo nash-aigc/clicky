@@ -32,7 +32,7 @@ struct NotchHomeView: View {
     /// entry offset; live progress while a job runs is always expanded.
     @State private var expandedProgressOffsets: Set<Int> = []
 
-    @FocusState private var composerFieldIsFocused: Bool
+    @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
 
     /// The composer's 展开 button (user's request): the field grows to 30% of
@@ -45,7 +45,7 @@ struct NotchHomeView: View {
     /// on every screen.
     @State private var contentColumnHeight: CGFloat = 0
 
-    /// The reply-card theme (对话与记忆 → 卡片样式). Snapshotted into state
+    /// The reply-card theme (设置 → 交互样式). Snapshotted into state
     /// so a settings save (`.clickyAppSettingsChanged`) re-renders the flow's
     /// cards without waiting for some other published change to trigger it.
     @State private var answerCardStyle: AnswerCardStyle = AppSettingsStore.snapshot().answerCardStyle
@@ -99,6 +99,14 @@ struct NotchHomeView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // A click anywhere in the column puts the caret in the composer — the
+        // user's ask (2026-09-23): 「用户点击右侧任意位置时，光标自动定位到输入框，
+        // 这样用户点击右侧任何位置都可以直接输入，不需要再把鼠标定位到输入框里」.
+        // Controls win their own taps, and the 对话 page's only ones here are the
+        // error line and the copy buttons; everything else — bubbles, gaps, the
+        // empty hero — is what this catches.
+        .contentShape(Rectangle())
+        .onTapGesture { composerFieldIsFocused = true }
         .background(
             // Measures the column the composer expands against. Taken off the
             // column's own frame (which the parent bounds) rather than off a
@@ -258,6 +266,11 @@ struct NotchHomeView: View {
             // the environment modifier covers every Text beneath it, the
             // reply card's per-character units included.
             .textSelection(.enabled)
+            // A plain click in the flow — on a bubble, on the gap between two —
+            // puts the caret in the composer. Drag-to-select is a drag, not a
+            // tap, so it is untouched.
+            .contentShape(Rectangle())
+            .onTapGesture { composerFieldIsFocused = true }
             .onChange(of: entries.count) { _ in
                 scrollToBottom(proxy)
             }
@@ -432,7 +445,7 @@ struct NotchHomeView: View {
         }
     }
 
-    /// Clicky's reply: the card themed by 设置 → 卡片样式. The default is
+    /// Clicky's reply: the card themed by 设置 → 交互样式. The default is
     /// 「黑」 since 2026-09-23 (the user's 「不需要蓝色，主题应该跟背景颜色一
     /// 致」 changed it from the blue reference default; 蓝 and 宣纸 remain
     /// available in that page), replacing the old translucent dark bubble.
@@ -516,7 +529,13 @@ struct NotchHomeView: View {
             isExpanded: isComposerExpanded,
             canToggleExpansion: contentColumnHeight > 0,
             onToggleExpansion: { isComposerExpanded.toggle() },
-            onSubmit: submitComposerDraft
+            onSubmit: submitComposerDraft,
+            // 「正在回复」 is the same pair of states the cursor's spinner is
+            // drawn for, so the stop button turns red exactly while the user is
+            // watching it work.
+            isResponding: companionManager.voiceState == .processing
+                || companionManager.voiceState == .responding,
+            onStop: { companionManager.interruptActiveResponse() }
         )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)

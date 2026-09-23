@@ -20,7 +20,13 @@ struct AgentSessionView: View {
 
     @ObservedObject var agentSessionManager: AgentSessionManager
 
-    @FocusState private var composerFieldIsFocused: Bool
+    /// 收起 / 重新展开整块面板。「打开」按钮的两半：选文件夹时面板必须让开，
+    /// 选完再放回来（用户 2026-09-23 的第 7 条）。两个都是面板窗口控制器的
+    /// 动作，由 `NotchSheetRootView` 一路传下来。
+    var hideSheet: () -> Void = {}
+    var revealSheet: () -> Void = {}
+
+    @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
 
     /// The composer's 展开 button (user's request): the field grows to 30% of
@@ -40,6 +46,8 @@ struct AgentSessionView: View {
                 composerRow(agent)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture { composerFieldIsFocused = true }
             .background(
                 GeometryReader { geometryProxy in
                     Color.clear
@@ -95,6 +103,9 @@ struct AgentSessionView: View {
 
             Spacer(minLength: 8)
 
+            // 「中断」在前、「打开」钉在最右（用户 2026-09-23：「把"打开"按钮放在
+            // 最右侧」）。中断只在运行中出现，所以它出现/消失时挪动的是自己，
+            // 打开始终在这一排的最右端，不会跟着左右跳。
             if agent.status == .running {
                 Button(action: { agentSessionManager.interrupt(agent.id) }) {
                     HStack(spacing: 5) {
@@ -104,33 +115,114 @@ struct AgentSessionView: View {
                             .font(.system(size: 12, weight: .medium))
                     }
                     .foregroundColor(.white.opacity(0.85))
-                    .padding(.horizontal, 11)
-                    .padding(.vertical, 6)
-                    .background(Capsule().fill(Color.white.opacity(0.1)))
-                    .contentShape(Capsule())
+                    .padding(.horizontal, Self.headerButtonHorizontalPadding)
+                    .frame(height: Self.headerButtonHeight)
+                    .background(
+                        RoundedRectangle(cornerRadius: Self.headerButtonCornerRadius, style: .continuous)
+                            .fill(Color.white.opacity(0.1))
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: Self.headerButtonCornerRadius, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .pointerCursor()
                 .help("停止当前任务（对话历史保留，下次任务接着进行）")
             }
 
-            if let costUSD = agent.lastTurnCostUSD {
-                Text(String(format: "≈$%.2f", costUSD))
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.35))
-            }
-            // 累计花费 only shows once it differs from the last turn's — a
-            // first turn would read the same number twice.
-            if let accumulatedCostUSD = agent.accumulatedCostUSD,
-               accumulatedCostUSD != agent.lastTurnCostUSD {
-                Text(String(format: "累计 ≈$%.2f", accumulatedCostUSD))
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.35))
-            }
+            // It opens a NEW agent rather than re-pointing this one, and the
+            // help text says so, because that is not what "打开" alone implies
+            // and the reason is real: the CLI files a thread under its cwd, so
+            // moving an existing thread's folder would leave the model with no
+            // memory of turns the panel still shows. See
+            // `AgentSessionManager.openFolderAsNewAgent`.
+            openFolderButton
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+        // 页头整体占满 `contentColumnHeaderBandHeight`：这条栏的下边缘必须正好落在
+        // 右列那条贯穿横线上，与对话页 / 语音聊天页同高（用户 2026-09-23：
+        // 「每一个页面的右侧增加一条线…线上面是相关的参数部分」）。原来是内容底边距
+        // 10，换成固定高度后由这条带自己决定内容的位置。
+        .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
         .padding(.top, NotchSupport.sheetHeaderTopInset)
-        .padding(.bottom, 10)
+    }
+
+    /// The header's 「打开」 control: pick a folder, then work in it.
+    ///
+    /// 「长方形加圆角，而不是胶囊」（用户 2026-09-23），与运行中出现的「中断」同一
+    /// 套尺寸与圆角 —— 这一轮 UI 化改造本来就把按钮从胶囊换成了 10pt 圆角矩形
+    /// （见 `DesignSystem`），这一排也跟上，两颗控件才会读成一组。
+    private var openFolderButton: some View {
+        Button(action: openFolderWithPicker) {
+            HStack(spacing: 5) {
+                Image(systemName: "folder")
+                    .font(.system(size: 10, weight: .semibold))
+                Text("打开")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundColor(.white.opacity(0.85))
+            .padding(.horizontal, Self.headerButtonHorizontalPadding)
+            .frame(height: Self.headerButtonHeight)
+            .background(
+                RoundedRectangle(cornerRadius: Self.headerButtonCornerRadius, style: .continuous)
+                    .fill(Color.white.opacity(0.1))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: Self.headerButtonCornerRadius, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help("选一个文件夹，为它新建一个 Agent 并切过去。已经跑过任务的 Agent 不能中途换文件夹——它的对话记忆是按目录存放的——所以这里是新开一个，原来那个连同历史都还在。")
+    }
+
+    /// 页头这两颗按钮共用的一把尺子：同样的高度、横向内边距、圆角。
+    private static let headerButtonHeight: CGFloat = 26
+    private static let headerButtonHorizontalPadding: CGFloat = 11
+    private static let headerButtonCornerRadius: CGFloat = DS.CornerRadius.medium
+
+    /// Folder picker for 「打开」 —— and why it hides the sheet first.
+    ///
+    /// 收起是用户点名的做法（2026-09-23：「用户点击"打开"按钮之后，整个弹窗直接
+    /// 缩回去，就是隐藏一下，要不然用户没有办法去点击选择哪一个文件夹」）：展开的
+    /// 面板是 810×821、从屏幕最上沿垂下来的一大块，系统选文件夹的对话框正好落在
+    /// 它下面。
+    ///
+    /// **等收起动画走完再开对话框**，不能紧接着调用：`runModal()` 进去就一直占住
+    /// 这一帧直到用户选完，紧挨着调用的话，用户看到的不是"面板缩回去、然后选文件
+    /// 夹"，而是"面板还在原地、上面盖了个对话框"。收起用
+    /// `centerScaleCollapseDuration`(0.16s)，这里多等 0.1s 让它真的收干净。选完
+    /// （或取消）再把面板放回来 —— 说的是「隐藏**一下**」，取消也要还原，否则用户
+    /// 点个取消、面板却没了。
+    ///
+    /// `NSApp.activate()` first and `modalFileDialogWindowLevel` on the panel
+    /// are both load-bearing, and both for the same reason as the sidebar's ＋:
+    /// this is an `LSUIElement` app whose only window is a panel floating above
+    /// the menu bar, so a modal file dialog appears behind it and takes no
+    /// clicks unless it is explicitly put in front. The user reported exactly
+    /// that for the ＋ button (「悬浮窗口会遮盖文件夹选择弹窗，导致用户无法选择
+    /// 文件夹」); this button would have had it too.
+    private func openFolderWithPicker() {
+        hideSheet()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.centerScaleCollapseDuration + 0.1) {
+            NSApp.activate()
+
+            let folderPicker = NSOpenPanel()
+            folderPicker.canChooseDirectories = true
+            folderPicker.canChooseFiles = false
+            folderPicker.allowsMultipleSelection = false
+            folderPicker.canCreateDirectories = true
+            folderPicker.level = NotchSupport.modalFileDialogWindowLevel
+            folderPicker.message = "选择一个文件夹，为它新建一个 Agent"
+            folderPicker.prompt = "打开"
+            if let defaultFolderPath = AppSettingsStore.snapshot().agentDefaultProjectFolder {
+                folderPicker.directoryURL = URL(fileURLWithPath: defaultFolderPath)
+            }
+
+            let didConfirm = folderPicker.runModal() == .OK
+            if didConfirm, let pickedURL = folderPicker.url {
+                agentSessionManager.openFolderAsNewAgent(folderPath: pickedURL.path)
+            }
+
+            revealSheet()
+        }
     }
 
     private func statusColor(_ status: AgentSessionStatus) -> Color {
@@ -153,17 +245,16 @@ struct AgentSessionView: View {
                         emptyTranscriptHint(agent)
                     }
 
-                    ForEach(agent.transcript) { entry in
-                        switch entry.kind {
-                        case .userMessage:
-                            outgoingBubble(entry.text)
-                                .id(entry.id)
-                        case .assistantMessage:
-                            assistantBubble(entry.text)
-                                .id(entry.id)
-                        case .toolActivity:
-                            toolActivityLine(entry.text)
-                                .id(entry.id)
+                    ForEach(transcriptRows(for: agent)) { row in
+                        switch row {
+                        case .message(let entry):
+                            messageRow(for: entry)
+                        case .toolRun(let groupID, let toolEntries):
+                            ToolActivityGroupView(
+                                entries: toolEntries,
+                                isAgentRunning: agent.status == .running
+                            )
+                            .id(groupID)
                         }
                     }
 
@@ -192,6 +283,12 @@ struct AgentSessionView: View {
             // a message or drag across one, and this covers every Text below —
             // including the gray tool-activity lines.
             .textSelection(.enabled)
+            // …and a plain click anywhere in the flow puts the caret in the
+            // composer. A drag is not a tap, so drag-to-select is untouched, and
+            // a control still wins its own tap — this catches bubbles, tool
+            // lines, the empty hint and the gaps between rows.
+            .contentShape(Rectangle())
+            .onTapGesture { composerFieldIsFocused = true }
             .onChange(of: agent.transcript.count) { _, _ in
                 scrollToBottom(proxy)
             }
@@ -251,18 +348,72 @@ struct AgentSessionView: View {
 
     @State private var dotsAreBright: Bool = false
 
-    /// A tool invocation, the gray monospace progress line — the same visual
-    /// register as the conversation view's progress-disclosure rows.
-    private func toolActivityLine(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 6) {
-            Text(text)
-                .font(.system(size: 11.5, design: .monospaced))
-                .foregroundColor(.white.opacity(0.5))
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 24)
+    /// A user or assistant message. Tool activity never reaches here — see
+    /// `transcriptRows(for:)`.
+    @ViewBuilder
+    private func messageRow(for entry: AgentTranscriptEntry) -> some View {
+        switch entry.kind {
+        case .userMessage:
+            outgoingBubble(entry.text)
+                .id(entry.id)
+        case .assistantMessage:
+            assistantBubble(entry.text)
+                .id(entry.id)
+        case .toolActivity:
+            // Unreachable by construction: `transcriptRows(for:)` folds every
+            // run of tool activity into a `.toolRun` row, so no `.message` row
+            // can carry that kind. Spelled out rather than defaulted so a new
+            // kind added later is a compile error, not a silently dropped line.
+            EmptyView()
         }
-        .padding(.leading, 4)
+    }
+
+    /// The transcript as *display* rows: consecutive tool-activity entries
+    /// collapsed into one `.toolRun`.
+    ///
+    /// The transcript itself is untouched — one entry per tool invocation is what
+    /// the model's own record and `lastPreview` are built from — and this is a
+    /// second, view-only reading of it. Grouping has to happen here rather than
+    /// inside the row view, because "was the entry before this one also tool
+    /// activity" is a question about the whole array, which a row cannot answer.
+    private func transcriptRows(for agent: AgentSession) -> [TranscriptRow] {
+        var rows: [TranscriptRow] = []
+        var pendingToolEntries: [AgentTranscriptEntry] = []
+
+        func flushPendingToolEntries() {
+            guard let firstPendingEntry = pendingToolEntries.first else { return }
+            // The group's id is its FIRST entry's id: the ids inside a group all
+            // change as the run grows, so keying the view off the first one keeps
+            // its identity (and the user's expansion of it) stable for the whole
+            // run instead of rebuilding it on every new tool call.
+            rows.append(.toolRun(id: firstPendingEntry.id, entries: pendingToolEntries))
+            pendingToolEntries = []
+        }
+
+        for entry in agent.transcript {
+            switch entry.kind {
+            case .toolActivity:
+                pendingToolEntries.append(entry)
+            case .userMessage, .assistantMessage:
+                flushPendingToolEntries()
+                rows.append(.message(entry))
+            }
+        }
+        flushPendingToolEntries()
+        return rows
+    }
+
+    /// One display row of the transcript flow.
+    private enum TranscriptRow: Identifiable {
+        case message(AgentTranscriptEntry)
+        case toolRun(id: UUID, entries: [AgentTranscriptEntry])
+
+        var id: UUID {
+            switch self {
+            case .message(let entry): return entry.id
+            case .toolRun(let groupID, _): return groupID
+            }
+        }
     }
 
     private func emptyTranscriptHint(_ agent: AgentSession) -> some View {
@@ -328,7 +479,12 @@ struct AgentSessionView: View {
             isExpanded: isComposerExpanded,
             canToggleExpansion: contentColumnHeight > 0,
             onToggleExpansion: { isComposerExpanded.toggle() },
-            onSubmit: submitComposerDraft(agent)
+            onSubmit: submitComposerDraft(agent),
+            // Red exactly while THIS agent's turn is in flight — the same test
+            // `interrupt(_:)` guards on, so the button can never be live for a
+            // turn there is nothing to stop.
+            isResponding: agent.status == .running,
+            onStop: { agentSessionManager.interrupt(agent.id) }
         )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)
@@ -428,5 +584,112 @@ struct AgentSessionView: View {
 
             MessageCopyButton(text: text, helpText: "复制 Agent 的回复")
         }
+    }
+}
+
+/// One run of consecutive tool invocations, drawn as a single collapsible block.
+///
+/// The user's spec (2026-09-23) is three clauses in one breath: 「调用过程中可以显示，
+/// 但最多显示两行，之前的调用内容自动隐藏；用户点击折叠按钮可以展开。正常情况下工
+/// 作时最多显示两行，即最新的工具调用；所有工具调用完成后自动折叠成一行，以简化页
+/// 面显示」. That is one rule about the *collapsed* shape plus the user's own right to
+/// open the block up, so the two are kept apart here:
+///
+/// - How many lines a collapsed block shows is **derived from the agent's status**,
+///   never stored: the two newest while tool calls are still arriving, none once the
+///   run has landed — which is what makes a finished block exactly one line (its
+///   header). A finished turn therefore leaves one row in the transcript where there
+///   used to be one row per invocation.
+/// - `isExpandedByUser` records only a deliberate expansion, and nothing ever clears
+///   it. Auto-collapsing a block the user opened to read would take the text away
+///   from them at the exact moment the turn ended; the status change is not evidence
+///   they are done reading.
+///
+/// The header is both the label and the fold control, so the block is never a pile of
+/// unlabeled grey text with a mystery chevron floating beside it.
+private struct ToolActivityGroupView: View {
+
+    let entries: [AgentTranscriptEntry]
+
+    /// Whether the agent is still working — what decides the collapsed shape.
+    let isAgentRunning: Bool
+
+    @State private var isExpandedByUser = false
+
+    /// The newest entries, and only while work is in flight. Zero once the run has
+    /// finished, because "所有工具调用完成后自动折叠成一行" means the header is then
+    /// the whole block.
+    private var collapsedVisibleEntries: [AgentTranscriptEntry] {
+        guard isAgentRunning else { return [] }
+        return Array(entries.suffix(2))
+    }
+
+    private var visibleEntries: [AgentTranscriptEntry] {
+        isExpandedByUser ? entries : collapsedVisibleEntries
+    }
+
+    private var headerText: String {
+        isAgentRunning ? "工具调用中…" : "\(entries.count) 次工具调用"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            header
+
+            ForEach(visibleEntries) { entry in
+                toolActivityLine(entry.text)
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .fill(Color.white.opacity(0.035))
+        )
+        .animation(.easeInOut(duration: 0.18), value: isExpandedByUser)
+    }
+
+    private var header: some View {
+        Button {
+            isExpandedByUser.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 8, weight: .bold))
+                    .rotationEffect(.degrees(isExpandedByUser ? 90 : 0))
+
+                Image(systemName: "hammer")
+                    .font(.system(size: 9, weight: .semibold))
+
+                Text(headerText)
+                    .font(.system(size: 11))
+
+                Spacer(minLength: 0)
+            }
+            .foregroundColor(.white.opacity(0.42))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(
+            isExpandedByUser
+                ? "收起工具调用"
+                : "展开全部 \(entries.count) 次工具调用。平时只显示最新两条，一轮跑完折成一行。"
+        )
+    }
+
+    /// A tool invocation, the gray monospace progress line — the same visual
+    /// register as the conversation view's progress-disclosure rows.
+    private func toolActivityLine(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Text(text)
+                .font(.system(size: 11.5, design: .monospaced))
+                .foregroundColor(.white.opacity(0.5))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 24)
+        }
+        .padding(.leading, 14)
     }
 }

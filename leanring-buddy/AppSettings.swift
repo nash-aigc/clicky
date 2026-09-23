@@ -67,6 +67,86 @@ nonisolated enum AnswerCardStyle: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// How the notch sheet opens.
+///
+/// 用户 2026-09-23：「参考我提供的 HTML 页面，分析它的展开方式和动画效果。它的动画
+/// 非常流畅，是从中心弹开的效果；当前项目是从上到下逐个展开显示。我希望增加一个弹开
+/// 的效果。」随后定了这一页的形状：「把设置页面的"卡片样式"页面调整为"交互样式"，
+/// 里面包含两个选项：卡片样式 / 窗口样式……同时把我刚才提供的中心缩放样式也作为
+/// 一个选项，并将中心缩放样式设为默认样式。」
+///
+/// 两个选项都是**同一套机制**（窗口一次 `setFrame` 到最终位置 + 内容层上一个 Core
+/// Animation），所以加这一个不引入任何逐帧主线程工作 —— 第一版把中心缩放做成了逐帧
+/// `NSWindow.setFrame`，用户当场否掉（「比之前还要卡顿…现在是从左到右展开」）。参考
+/// 页面里十二个窗口动画没有一个改元素尺寸，全是 `transform` / `clip-path`，这就是原因。
+nonisolated enum WindowExpansionStyle: String, Codable, CaseIterable, Sendable {
+    /// 01 中心缩放（2026-09-23 重设计）：内容层被一个**从刘海那一个点向外长开的
+    /// 遮罩**揭开——顶边中点全程钉在刘海底边，左上角向左、右上角向右、底边向下，
+    /// 三个方向同一时刻同一节奏。旧的 transform 顶边锚定实现（`centerPop`）被整体
+    /// 删除：它的锚点依赖拼接顺序和翻转坐标系两个都不报错的约定，修了两轮用户实测
+    /// 仍与边缘缩放无异。rawValue 换成 `notchBloom`；老配置文件里的 `"centerPop"`
+    /// 由解码处迁移到这个 case（见 `AppSettings.init(from:)`）。默认（用户指定）。
+    case notchBloom
+    /// 边缘缩放：内容层从 8% 缩放弹到 100%，锚在面板**底边**的中点，所以面板是
+    /// 从下往上长开的。这是先前当作中心缩放实现时实际画出来的效果——补偿平移算在
+    /// 了错的坐标系里。用户看到后觉得这个效果本身可以留，于是保留为独立选项。
+    case edgeScale
+    /// 02 幕布垂落：内容层被一个从顶边向下长开的遮罩揭开，宽度从第一帧就是最终值。
+    case curtain
+
+    var displayName: String {
+        switch self {
+        case .notchBloom: return "中心缩放"
+        case .edgeScale: return "边缘缩放"
+        case .curtain: return "幕布垂落"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .notchBloom:
+            return "面板从刘海那一个点同时向下、向左、向右展开。"
+        case .edgeScale:
+            return "面板从底部向上弹开、放大到整块。"
+        case .curtain:
+            return "面板宽度先到位，内容从上往下垂落展开。"
+        }
+    }
+}
+
+/// 输入框里哪个按键把写好的字发出去 —— 交互页的「发送方式」一行。
+///
+/// 用户 2026-09-23：「增加一个选项，即输入方式，或叫发送方法：1. 按 Enter 键发送，
+/// 这是默认方法。2. 按 Command 加 Enter 发送。提供两种发送方法，供用户根据个人习惯
+/// 选择」。
+///
+/// 两个值各自对应一种真实的键盘习惯：`.returnKey` 适合一行一句话的短提问，回车即发；
+/// `.commandReturn` 适合经常要写好几段、写的时候还得空行的人 —— 回车留给换行，
+/// 想发的时候顺手带一个 Command。两种都保留**另一个键仍然换行**（回车发送时
+/// Shift+回车换行，Command+回车发送时回车换行），所以哪一种都能写出多行的输入。
+nonisolated enum ComposerSendShortcut: String, Codable, CaseIterable, Sendable {
+    /// 按 Enter 发送（默认）。换行是 Shift + Enter。
+    case returnKey
+    /// 按 Command + Enter 发送。换行就是裸的 Enter。
+    case commandReturn
+
+    var displayName: String {
+        switch self {
+        case .returnKey: return "按 Enter 发送"
+        case .commandReturn: return "按 Command + Enter 发送"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .returnKey:
+            return "在输入框里按回车就把内容发出去，换行按 Shift + 回车。"
+        case .commandReturn:
+            return "回车用来换行，按 Command + 回车才发送 —— 适合经常要写好几段的人。"
+        }
+    }
+}
+
 /// Which language the streaming transcription is told to expect.
 nonisolated enum TranscriptionLanguage: String, Codable, CaseIterable, Sendable {
     case chinese
@@ -418,8 +498,26 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// bubbles to be dark and to match the panel's ground (「气泡调成暗色…
     /// 主题应该跟背景颜色一致」), so the blue reference default became the
     /// option rather than the starting point. 蓝 and 宣纸 are still there for
-    /// whoever wants them, in 设置 → 卡片样式.
+    /// whoever wants them, in 设置 → 交互样式 (the page was called 卡片样式
+    /// until 2026-09-23, when the window style joined it).
     var answerCardStyle: AnswerCardStyle = .black
+
+    /// How the notch sheet opens — 中心缩放 (`notchBloom`, a mask expanding out
+    /// of the notch's own point: down, left and right at once), 边缘缩放 (a
+    /// scale about the bottom edge) or 幕布垂落 (the curtain reveal).
+    /// `.notchBloom` is the default — the user asked for 中心缩放 as the default
+    /// (「并将中心缩放样式设为默认样式」, 2026-09-23) and the 2026-09-23 redesign
+    /// replaced that style's implementation, not its name or default status.
+    ///
+    /// Lives beside `answerCardStyle` rather than in its own section because
+    /// the two are one settings page (交互) — see `WindowExpansionStyle`
+    /// for what each value means and why none of them is a per-frame window
+    /// resize.
+    var windowExpansionStyle: WindowExpansionStyle = .notchBloom
+
+    /// 输入框里哪个键发送 —— 交互页的「发送方式」。两个内容页的输入框
+    /// （`MessageComposerField`）都读它，所以改完立刻生效，不用重启。
+    var composerSendShortcut: ComposerSendShortcut = .returnKey
 
     /// Free-form instructions appended verbatim to the system prompt.
     var extraSystemPromptInstructions: String = ""
@@ -793,6 +891,8 @@ nonisolated extension AppSettings {
         case includesScreenshotsInHistory
         case answerLengthStyle
         case answerCardStyle
+        case windowExpansionStyle
+        case composerSendShortcut
         case extraSystemPromptInstructions
         case customSystemPrompt
         case transcriptionLanguage
@@ -864,6 +964,24 @@ nonisolated extension AppSettings {
         includesScreenshotsInHistory = try container.decodeIfPresent(Bool.self, forKey: .includesScreenshotsInHistory) ?? defaults.includesScreenshotsInHistory
         answerLengthStyle = try container.decodeIfPresent(AnswerLengthStyle.self, forKey: .answerLengthStyle) ?? defaults.answerLengthStyle
         answerCardStyle = try container.decodeIfPresent(AnswerCardStyle.self, forKey: .answerCardStyle) ?? defaults.answerCardStyle
+        // `decodeIfPresent` is what lets a file written before this setting
+        // existed still load: `WindowExpansionStyle` is an enum, so a plain
+        // `decode` would throw on a missing key and every older AppSettings.json
+        // would fail to load. It is read as a STRING and matched by rawValue
+        // rather than decoded as the enum directly, because the 2026-09-23
+        // redesign renamed the 中心缩放 case `centerPop` → `notchBloom`: a file
+        // holding the old value would make `decodeIfPresent(WindowExpansionStyle…)`
+        // throw and take the whole AppSettings.json down with it. Unknown and
+        // legacy values — `"centerPop"` included — read as the new 中心缩放.
+        if let rawExpansionStyle = try container.decodeIfPresent(String.self, forKey: .windowExpansionStyle) {
+            windowExpansionStyle = WindowExpansionStyle(rawValue: rawExpansionStyle) ?? .notchBloom
+        } else {
+            windowExpansionStyle = defaults.windowExpansionStyle
+        }
+        // 同一个理由：`ComposerSendShortcut` 也是枚举，普通 `decode` 会在缺键时
+        // 抛错，把加这一项之前写下的每个 AppSettings.json 都变成读不进来。读不到
+        // 就是默认的「按 Enter 发送」——那也是用户要的默认行为。
+        composerSendShortcut = try container.decodeIfPresent(ComposerSendShortcut.self, forKey: .composerSendShortcut) ?? defaults.composerSendShortcut
         extraSystemPromptInstructions = try container.decodeIfPresent(String.self, forKey: .extraSystemPromptInstructions) ?? defaults.extraSystemPromptInstructions
         // Optional on purpose, and no `?? defaults` fallback: "no key" and "key set
         // to null" both have to land on nil, because nil is the value that means

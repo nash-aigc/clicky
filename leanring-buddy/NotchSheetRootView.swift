@@ -27,6 +27,12 @@ struct NotchSheetRootView: View {
     /// content column read its published presets / phase / transcript.
     @ObservedObject private var voiceWebSessionController: VoiceWebSessionController
     var collapseAction: () -> Void
+    /// 收起 / 重新展开的两半，专给 Agent 页的「打开」用：选文件夹时面板必须
+    /// 让开，选完再放回来（用户 2026-09-23 的第 7 条）。与 `collapseAction`
+    /// 分开是因为语义不同——`collapseAction` 是"用户把面板收起来了"，
+    /// 这两个是"面板暂时让个位，马上回来"。
+    var hideSheetAction: () -> Void
+    var revealSheetAction: () -> Void
     var audioHistoryProvider: () -> [CGFloat]
 
     @StateObject private var sessionsModel = ConversationSessionsModel()
@@ -41,6 +47,8 @@ struct NotchSheetRootView: View {
         panelModel: NotchPanelModel,
         companionManager: CompanionManager,
         collapseAction: @escaping () -> Void,
+        hideSheetAction: @escaping () -> Void,
+        revealSheetAction: @escaping () -> Void,
         audioHistoryProvider: @escaping () -> [CGFloat]
     ) {
         self.panelModel = panelModel
@@ -52,6 +60,8 @@ struct NotchSheetRootView: View {
         self.agentSessionManager = companionManager.agentSessionManager
         self.voiceWebSessionController = companionManager.voiceWebSessionController
         self.collapseAction = collapseAction
+        self.hideSheetAction = hideSheetAction
+        self.revealSheetAction = revealSheetAction
         self.audioHistoryProvider = audioHistoryProvider
     }
 
@@ -106,12 +116,31 @@ struct NotchSheetRootView: View {
                                 sessionsModel: sessionsModel
                             )
                         case .agents:
-                            AgentSessionView(agentSessionManager: agentSessionManager)
+                            AgentSessionView(
+                                agentSessionManager: agentSessionManager,
+                                hideSheet: hideSheetAction,
+                                revealSheet: revealSheetAction
+                            )
                         case .voiceChat:
                             VoiceChatSessionView(controller: voiceWebSessionController)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // 右列那条贯穿的横线，与侧栏切换器下面那条分割线**同一个 y**
+                    // ——用户 2026-09-23：「每一个页面的右侧增加一条线…这条线应该
+                    // 从左到右贯穿，而且必须是一条直线…右侧的正文内容显示在这条线
+                    // 下面，线上面是相关的参数部分」。横向完全贯穿（不留边），所以
+                    // 它与侧栏自己那条线拼起来是一整条，而不是两截。
+                    //
+                    // 画在这里而不是画进三个内容视图：三页的页头高度不同，但这条线
+                    // 必须落在同一个 y 上，只有一列一个 overlay 才能保证这件事。
+                    // 页头各自按 `contentColumnHeaderBandHeight` 排到线下为止。
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(height: 1)
+                            .offset(y: NotchSupport.contentColumnHeaderRuleY)
+                    }
                 }
             }
         }
@@ -180,8 +209,13 @@ struct NotchSheetRootView: View {
             .frame(height: 14)
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+        // 页头整体占满 `contentColumnHeaderBandHeight`：这条栏的下边缘必须正好落在
+        // 右列那条贯穿横线上（`NotchSupport.contentColumnHeaderRuleY`），否则三个
+        // 内容页各按自己的内容高度收尾，线就成了三页各一条、高度不一的短线。
+        // 原来的 `.padding(.bottom, 2)` 是内容底边距，换成固定高度后由这 35pt
+        // 自己决定内容在中线上方的位置。
+        .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
         .padding(.top, NotchSupport.sheetHeaderTopInset)
-        .padding(.bottom, 2)
     }
 }
 
@@ -197,7 +231,7 @@ struct NotchSheetRootView: View {
 ///
 /// 侧栏里原本还有一张账号卡（首字母圆盘 + 用户名 + 「免费版」），2026-09-23
 /// 用户要求「设置页面也把用户名删掉，第一个直接是通用」——本机没有账号服务
-/// 支撑那张卡，删掉后侧栏第一行就是 通用，第二行是 卡片样式。同一天稍后
+/// 支撑那张卡，删掉后侧栏第一行就是 通用，第二行是 交互样式。同一天稍后
 /// 顶部那颗「‹ 返回」胶囊和底部的版本行也按用户要求动了位置：「返回按钮放在
 /// 设置页面的左下角，退出按钮放在返回按钮的右侧。去掉版本号」。
 struct NotchSettingsArea: View {
@@ -214,9 +248,10 @@ struct NotchSettingsArea: View {
     /// first block is HeyClicky's 「通用 / 模型」 pair, the same grouping the
     /// titled window's sidebar uses.
     private static let sidebarSections: [(label: String?, pages: [SettingsPage])] = [
-        (label: nil, pages: [.general, .cardStyle, .model, .agent]),
+        (label: nil, pages: [.general, .interactionStyle, .model, .agent]),
         (label: "对话", pages: [.memory, .listen, .speak, .shortcuts]),
         (label: "看与操作", pages: [.vision, .action]),
+        (label: "导入导出", pages: [.exportSettings, .importSettings]),
     ]
 
     var body: some View {
@@ -233,6 +268,10 @@ struct NotchSettingsArea: View {
                 switch selectedPage {
                 case .model:
                     ModelSettingsView(modelSettingsViewModel: modelSettingsViewModel)
+                case .exportSettings:
+                    SettingsTransferPage(mode: .exportSettings)
+                case .importSettings:
+                    SettingsTransferPage(mode: .importSettings)
                 default:
                     GeneralSettingsView(
                         generalSettingsViewModel: generalSettingsViewModel,
@@ -367,7 +406,7 @@ struct NotchSettingsArea: View {
 
             Spacer(minLength: 8)
 
-            if selectedPage != .model {
+            if selectedPage != .model && !selectedPage.isSettingsTransferPage {
                 // 关闭的动作必须走 `closeAction`（收起面板），**不能**是
                 // `GeneralSettingsActionBar` 默认的 `NSApp.keyWindow?.close()`：
                 // 展开的刘海面板就是 key window，`.close()` 会把它直接 orderOut，

@@ -92,6 +92,40 @@ final class GeneralSettingsViewModel: ObservableObject {
         draftSettings = AppSettings()
     }
 
+    /// Commits **one** field straight to disk and leaves every other unsaved
+    /// edit in the draft alone.
+    ///
+    /// Written for the 默认项目文件夹 row, and the reason is measured rather than
+    /// theoretical: the user reported 「默认项目文件夹路径在设置页面，用户之前设置过，
+    /// 但好像没有被保存，现在又变成空的了」 and the file agrees — the key was
+    /// **absent entirely** from `AppSettings.json`. The picker only ever wrote
+    /// the draft, so choosing a folder and not pressing 保存 lost it, while the
+    /// row went on showing the path as if it had stuck. Every other row on these
+    /// pages is a switch or a slider, where "the draft is not the setting until
+    /// you save" is plain; a folder dialog is the opposite — the click IS the
+    /// commitment gesture, and a path sitting in the row reads as done.
+    ///
+    /// Not simply `save()`: that writes the whole draft, so picking a folder
+    /// would also commit whatever else the user happened to be mid-edit on.
+    /// Here only the one field travels, from a copy of the settings as last
+    /// written — so the other rows stay exactly as dirty as they were.
+    func persistAgentDefaultProjectFolderImmediately(_ folderPath: String?) {
+        draftSettings.agentDefaultProjectFolder = folderPath
+
+        var settingsToSave = savedSettings
+        settingsToSave.agentDefaultProjectFolder = folderPath
+        do {
+            try AppSettingsStore.save(settingsToSave)
+            // Mirror `save()`: the store clamps before caching, so compare
+            // against the clamped values or `isDirty` reports a phantom edit.
+            savedSettings = settingsToSave.clamped()
+            saveErrorMessage = nil
+            lastSavedAt = Date()
+        } catch {
+            saveErrorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Conversation memory
 
     /// What to show under the 清空对话记忆 button once it has run.

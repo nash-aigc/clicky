@@ -356,7 +356,7 @@ struct NotchArchiveArea: View {
     private static let bubbleCornerRadius: CGFloat = 14
     private static let bubbleTailCornerRadius: CGFloat = 4
 
-    /// The card theme the user chose in 设置 → 卡片样式, read fresh so a saved
+    /// The card theme the user chose in 设置 → 交互样式, read fresh so a saved
     /// change reaches this page without a rebuild.
     private var answerCardStyle: AnswerCardStyle {
         AppSettingsStore.snapshot().answerCardStyle

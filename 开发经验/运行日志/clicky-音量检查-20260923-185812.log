@@ -1,0 +1,257 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你好」
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🗣️ Companion sending transcript: 帮我看一下任务完成了吗？
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🗣️ Streaming speech: queued segment 2 (38 chars)
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🗣️ Streaming speech: queued segment 4 (34 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 5 (21 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 Bailian TTS: playing segment 1 (108KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (an answer is playing — its echo cancellation covers it)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 Bailian TTS: playing segment 2 (378KB)
+🎙️ BuddyDictationManager: continuous listening heard a level rise while speaking — waiting for words before interrupting (transcript: "嗯。")
+🎙️ BuddyDictationManager: continuous listening detected speech (ASR transcript, recent mic peak 0.795, transcript: "你觉得")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🎙️ VoicePlaybackEngine: capture-only engine starting — input node 48000 Hz / 1 ch, running=false
+🎙️ VoicePlaybackEngine: nothing playing — the microphone moved to the capture-only engine and voice processing is off, so no other app is ducked
+🎙️ BuddyDictationManager: talk shortcut pressed mid-utterance — sending it now
+🗣️ Companion: follow-up question from continuous listening: 你觉得左侧是什么原因什么原因？
+📸 Companion: using the pre-captured screen for this question
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (16 chars)
+🗣️ Streaming speech: queued segment 2 (34 chars)
+🎙️ BuddyDictationManager: continuous listening heard a level rise while speaking — waiting for words before interrupting (transcript: "嗯。")
+🗣️ Streaming speech: queued segment 3 (30 chars)
+🗣️ Streaming speech: queued segment 4 (38 chars)
+🗣️ Streaming speech: queued segment 5 (31 chars)
+🎙️ VoicePlaybackEngine: the microphone came back for the answer (echo cancellation covers it while it plays)
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 Bailian TTS: playing segment 1 (172KB)
+🗣️ Streaming speech: queued segment 6 (33 chars)
+🗣️ Streaming speech: queued segment 7 (38 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: listening transcript too short to send (1 content chars: "嗯。")
+🔊 Bailian TTS: playing segment 2 (296KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: continuous listening heard a level rise while speaking — waiting for words before interrupting (transcript: "嗯。")
+🔊 Bailian TTS: playing segment 3 (251KB)
+🎙️ BuddyDictationManager: continuous listening detected speech (ASR transcript, recent mic peak 0.521, transcript: "那你觉得")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: talk shortcut pressed mid-utterance — sending it now
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🎙️ VoicePlaybackEngine: capture-only engine starting — input node 48000 Hz / 1 ch, running=false
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🎙️ VoicePlaybackEngine: nothing playing — the microphone moved to the capture-only engine and voice processing is off, so no other app is ducked
+🗣️ Companion: follow-up question from continuous listening: 那你觉得右侧的这些东西造成什么？
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: using the pre-captured screen for this question
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (31 chars)
+🗣️ Streaming speech: queued segment 2 (37 chars)
+🗣️ Streaming speech: queued segment 3 (33 chars)
+🗣️ Streaming speech: queued segment 4 (33 chars)
+🗣️ Streaming speech: queued segment 5 (30 chars)
+🗣️ Streaming speech: queued segment 6 (37 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 7 (11 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ VoicePlaybackEngine: the microphone came back for the answer (echo cancellation covers it while it plays)
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 Bailian TTS: playing segment 1 (281KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 Bailian TTS: playing segment 2 (352KB)
+🎙️ BuddyDictationManager: continuous listening heard a level rise while sinfo: starting traversal for pid: 1144 (Visible Only: true)
+info: checking accessibility permissions...
+info: [0.000s] finished 'checking accessibility permissions (granted)'
+warning: traversal truncated at 2000 elements cap
+info: [1.398s] finished 'traversing accessibility tree (390 elements collected, TRUNCATED)'
+info: total execution time: 1.40 seconds
+peaking — waiting for words before interrupting (transcript: "。")
+🎙️ BuddyDictationManager: continuous listening detected speech (ASR transcript, recent mic peak 0.936, transcript: "在那个")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🎙️ VoicePlaybackEngine: capture-only engine starting — input node 48000 Hz / 1 ch, running=false
+🎙️ VoicePlaybackEngine: nothing playing — the microphone moved to the capture-only engine and voice processing is off, so no other app is ducked
+🎙️ BuddyDictationManager: talk shortcut pressed mid-utterance — sending it now
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Companion: follow-up question from continuous listening: 在那个页面上是什么点哪个信息啊？
+📸 Companion: using the pre-captured screen for this question
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.3MB, 1 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🗣️ Streaming speech: queued segment 1 (12 chars)
+🗣️ Streaming speech: queued segment 2 (36 chars)
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🗣️ Streaming speech: queued segment 4 (50 chars)
+🗣️ Streaming speech: queued segment 5 (37 chars)
+🎙️ VoicePlaybackEngine: the microphone came back for the answer (echo cancellation covers it while it plays)
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 Bailian TTS: playing segment 1 (138KB)
+🗣️ Streaming speech: queued segment 6 (37 chars)
+🗣️ Streaming speech: queued segment 7 (40 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 Bailian TTS: playing segment 2 (255KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 Bailian TTS: playing segment 3 (258KB)
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 VoicePlaybackEngine: engine released (idle) and voice processing is off, so nothing else is ducked
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: 这个人叫什么名字？我画的这个圈。
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🟢 Circle-to-ask: keeping the user's lasso visible for this capture
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🟢 Circle-to-ask region context:
+while asking, the user drew a circle around a region on screen 1: normalized bounding rect from (680, 131) to (840, 312) on the 1000x1000 grid. the circle marks the subject of theinfo: starting traversal for pid: 1144 (Visible Only: true)
+info: checking accessibility permissions...
+info: [0.000s] finished 'checking accessibility permissions (granted)'
+warning: traversal truncated at 2000 elements cap
+info: [1.231s] finished 'traversing accessibility tree (389 elements collected, TRUNCATED)'
+info: total execution time: 1.23 seconds
+ir question.
+accessibility data for elements in or touching that region, smallest first; elements marked "fully inside" are the likeliest subject of the question (exact strings and exact coordinates — use them, do not re-read them from the image): 
+- AXStaticText (文本) "", center at (809, 183), fully inside the circle
+- AXStaticText (文本) "充电", center at (790, 228), fully inside the circle
+- AXStaticText (文本) "弹幕列表", center at (746, 275), fully inside the circle
+- AXStaticText (文本) "李大锤同学", center at (775, 183), fully inside the circle
+- AXLink (链接) "李大锤同学", center at (775, 183), fully inside the circle
+- AXLink (链接) (no text), center at (730, 207), fully inside the circle
+- AXStaticText (文本) "消息", center at (775, 140), partially overlapping the circle's edge
+- AXStaticText (文本) "动态", center at (804, 140), partially overlapping the circle's edge
+- AXStaticText (文本) "收藏", center at (833, 140), partially overlapping the circle's edge
+- AXStaticText (文本) "大会员", center at (746, 140), partially overlapping the circle's edge
+- AXStaticText (文本) "发消息", center at (827, 183), partially overlapping the circle's edge
+- AXLink (链接) " 发消息", center at (823, 183), partially overlapping the circle's edge
+🌐 Bailian streaming request: 0.3MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (17 chars)
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 Bailian TTS: playing segment 1 (165KB)
+🎯 Element pointing: normalized (775, 183) → "李大锤同学"
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 2 (19 chars)
+🎙️ BuddyDictationManager: continuous listening requested
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (an answer is playing — its echo cancellation covers it)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 Bailian TTS: playing segment 2 (206KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ VoicePlaybackEngine: capture-only engine starting — input node 48000 Hz / 1 ch, running=false
+🎙️ VoicePlaybackEngine: nothing playing — the microphone moved to the capture-only engine and voice processing is off, so no other app is ducked
+🎙️ BuddyDictationManager: continuous listening ended
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🗣️ Companion sending transcript: 当前是在哪一个网站上？
+🌐 Bailian streaming request: 0.3MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (5 chars)
+🗣️ Streaming speech: queued segment 2 (32 chars)
+🗣️ Streaming speech: queued segment 3 (31 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 Bailian TTS: playing segment 1 (60KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (an answer is playing — its echo cancellation covers it)
+🔊info: starting traversal for pid: 1144 (Visible Only: true)
+info: checking accessibility permissions...
+info: [0.000s] finished 'checking accessibility permissions (granted)'
+info: [1.204s] finished 'traversing accessibility tree (267 elements collected)'
+info: total execution time: 1.20 seconds
+ Bailian TTS: playing segment 2 (213KB)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 VoicePlaybackEngine: engine released (idle) and voice processing is off, so nothing else is ducked
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🗣️ Companion sending transcript: 当前是在哪一个网站上？
+🌐 Bailian streaming request: 0.3MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (5 chars)
+🗣️ Streaming speech: queued segment 2 (32 chars)
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 4 (16 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 Bailian TTS: playing segment 1 (56KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (an answer is playing — its echo cancellation covers it)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 VoicePlaybackEngine: engine released (idle) and voice processing is off, so nothing else is ducked
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🗣️ Companion sending transcript: 看一下我账户的余额还剩多少钱。
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🌐 Bailian streaming request: 0.2MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (8 chars)
+🎯 Element pointing: normalized (542, 274) → "充值余额"
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min), mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 Bailian TTS: playing segment 1 (78KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (an answer is playing — its echo cancellation covers it)
+🔊 VoicePlaybackEngine: engine released (idle) and voice processing is off, so nothing else is ducked
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: continuous listening ended
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realt

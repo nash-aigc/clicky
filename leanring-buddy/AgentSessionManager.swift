@@ -163,6 +163,37 @@ final class AgentSessionManager: ObservableObject {
         return newAgent
     }
 
+    /// Opens a folder as a **new** agent's working directory and selects it —
+    /// the Agent page's 「打开」 button.
+    ///
+    /// It creates an agent rather than re-pointing the current one, and that is
+    /// a constraint of the CLI rather than a preference. `claude` files a
+    /// thread under `~/.claude/projects/<slug of the cwd>/<session-id>.jsonl`
+    /// (`ClaudeAgentProcess.sessionExistsOnDisk` mirrors that rule), so a cwd
+    /// change moves the thread to a directory the CLI has never heard of: the
+    /// process would come back up with an empty memory while Clicky's own
+    /// transcript still showed the old turns — the panel claiming a history
+    /// the model cannot see, and no error anywhere. A new agent per folder is
+    /// the only shape in which the folder shown and the memory held agree.
+    ///
+    /// The name is the folder's own basename, disambiguated with a numeric
+    /// suffix when an agent already has it: `[AGENT_SEND:]` resolves by name
+    /// and *refuses* an ambiguous one («同时匹配到 N 个»), so letting a second
+    /// 「ClickyAgents」 exist would quietly break voice dispatch to both.
+    @discardableResult
+    func openFolderAsNewAgent(folderPath: String) -> AgentSession? {
+        let folderName = URL(fileURLWithPath: folderPath).lastPathComponent
+
+        var candidateName = folderName.isEmpty ? "未命名项目" : folderName
+        var disambiguationSuffix = 2
+        while sessions.contains(where: { $0.name.caseInsensitiveCompare(candidateName) == .orderedSame }) {
+            candidateName = "\(folderName)-\(disambiguationSuffix)"
+            disambiguationSuffix += 1
+        }
+
+        return createAgent(name: candidateName, projectFolderPath: folderPath)
+    }
+
     func deleteAgent(_ agentID: UUID) {
         processesByAgentID[agentID]?.terminate(force: true)
         processesByAgentID[agentID] = nil

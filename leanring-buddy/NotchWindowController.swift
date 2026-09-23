@@ -26,14 +26,18 @@
 //  Expansion and collapse use two different mechanisms, both ported from
 //  `刘海屏弹出窗口_12种动画对比.html`:
 //
-//    · 展开 = 02 幕布垂落. The frame is set ONCE (the sheet's final rect) and
-//      the animation is a clip on the content layer falling from the top edge
-//      — Core Animation, on the render server, with no per-frame window
-//      resize and no per-frame SwiftUI layout. 2026-09-23: this replaced a
-//      per-frame window resize along the 01 中心缩放 scale path, which was a
-//      category error — the reference animates `transform`/`clip-path` on a
-//      fixed-size element precisely because resizing re-wraps text and
-//      rebuilds the window's drawing surface every frame.
+//    · 展开 = 01 中心缩放 or 02 幕布垂落, the user's pick in 设置 → 交互样式 →
+//      窗口样式 (中心缩放 is the default, chosen 2026-09-23). Either way the
+//      frame is set ONCE (the sheet's final rect) and the animation is a Core
+//      Animation on the content layer — a scale up from 8% pinned at the
+//      top-centre edge, or a clip falling from that same edge. On the render
+//      server, with no per-frame window resize and no per-frame SwiftUI
+//      layout. 2026-09-23: this replaced a per-frame window resize along the
+//      scale path, which was a category error — the reference animates
+//      `transform`/`clip-path` on a fixed-size element precisely because
+//      resizing re-wraps text and rebuilds the window's drawing surface every
+//      frame. The rejected version was that mistake made literal; the scale is
+//      now a `CALayer.transform` and the frame never moves.
 //    · 收起 = the reference's winClose: scale .92 + the whole window fading
 //      out over 160 ms ease-in, still driven frame-by-frame by
 //      `driveCenterScaleFrames` (the window frame is its own animation source
@@ -94,9 +98,10 @@ final class NotchWindowController {
         let displayID: CGDirectDisplayID
         let screen: NSScreen
         let panel: NotchPanel
-        /// The SwiftUI surface inside the panel. Held because the expand
-        /// animation masks *this* layer (02 幕布垂落) — the panel's frame is
-        /// set once and never animated, so the clip is the only moving part.
+        /// The SwiftUI surface inside the panel. Held because both expand
+        /// reveals act on *this* view's layer (its `mask` for the curtain, its
+        /// `transform` for the centre pop) — the panel's frame is set once and
+        /// never animated, so the layer is the only moving part.
         let contentHostingView: NSView
         /// Fires whenever this panel's frame changes — the per-frame hook
         /// that re-derives `expansionProgress` from the live frame while the
@@ -143,6 +148,21 @@ final class NotchWindowController {
     /// 两端 frame 的线性拉伸（「由小变大」而不是「等比缩小」），只能自己算。
     /// 每次新的收起先 invalidate 上一个，防两个驱动器抢同一个面板。
     private var centerScaleAnimationTimer: Timer?
+
+    /// 面板**最近一次**展开在哪块屏幕上。刻意不复用 `expandedScreen`：那个
+    /// 属性在 `collapse` 里被清成 nil，而这里要的是一段记忆而不是一个状态
+    /// —— Agent 页的「打开」先把面板收起来、选完文件夹再放回来，中间那一小段
+    /// 里必须还记得原来开在哪儿。只写不清。
+    private var lastSheetHostScreen: NSScreen?
+
+    /// The key 边缘缩放's scale animation is added under, so `removeReveal` can
+    /// take it off again. One constant rather than a literal in two places —
+    /// a typo in the removal would leave the animation running.
+    private static let scaleRevealAnimationKey = "scaleReveal"
+
+    /// The key 中心缩放's mask + opacity animations are added under, same
+    /// purpose as `scaleRevealAnimationKey`.
+    private static let notchBloomAnimationKey = "notchBloomReveal"
 
     init(companionManager: CompanionManager, audioHistoryProvider: @escaping () -> [CGFloat]) {
         self.companionManager = companionManager
@@ -210,7 +230,7 @@ final class NotchWindowController {
             panel.isOpaque = false
             panel.backgroundColor = .clear
             panel.hasShadow = false
-            panel.level = .mainMenu + 1
+            panel.level = NotchSupport.notchPanelWindowLevel
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.isReleasedWhenClosed = false
             // The resting window is 300pt wider than the visible pill and its
@@ -227,13 +247,20 @@ final class NotchWindowController {
                 collapseAction: { [weak self] in
                     self?.collapse(expandBackToPill: true)
                 },
+                hideSheetAction: { [weak self] in
+                    self?.collapse(expandBackToPill: true)
+                },
+                revealSheetAction: { [weak self] in
+                    self?.revealSheetAfterTemporaryHide()
+                },
                 companionManager: companionManager
             )
             let hostingView = NSHostingView(rootView: rootView)
             hostingView.frame = NSRect(origin: .zero, size: panel.contentView!.bounds.size)
             hostingView.autoresizingMask = [.width, .height]
-            // 展开的幕布挂在宿主层的 `mask` 上（02 幕布垂落），所以这一层必须
-            // 真的存在——NSHostingView 通常自带 layer，显式置位不依赖这个巧合。
+            // 展开的两种揭示都挂在这一层上（幕布用 `mask`、中心缩放用
+            // `transform`），所以这一层必须真的存在——NSHostingView 通常自带
+            // layer，显式置位不依赖这个巧合。
             hostingView.wantsLayer = true
             panel.contentView?.addSubview(hostingView)
 
@@ -430,8 +457,45 @@ final class NotchWindowController {
         return true
     }
 
+    /// Puts the sheet back after Agent 页的「打开」hid it for the folder picker
+    /// (user's 2026-09-23 request: 「整个弹窗直接缩回去，就是隐藏一下」 — 「一下」
+    /// meaning it comes back).
+    ///
+    /// 屏幕取 `lastSheetHostScreen` 而不是 `expandedScreen`：后者已经被
+    /// `collapse` 清成 nil 了。面板已经在展开态时什么都不做——那条路径只在
+    /// "刚让过位"的时候走到；没有可用的屏幕时也什么都不做，刘海还在，用户
+    /// 点一下就能展开。
+    func revealSheetAfterTemporaryHide() {
+        guard !panelModel.isExpanded else { return }
+
+        let targetPresence = screenPresences.first { $0.screen == lastSheetHostScreen }
+            ?? screenPresences.first
+        guard let targetPresence else { return }
+        expand(on: targetPresence)
+    }
+
     private func handleGlobalClick(at clickLocation: NSPoint) {
         if panelModel.isExpanded {
+            // 再点一次刘海就是收起（用户 2026-09-23：「用户点击刘海屏的时候它
+            // 展开，用户再点击刘海屏的时候它自动缩回去，增加这样一个动画效果」）。
+            // 动画走的是既有的 winClose —— 缩放 1.0→0.92 + 整窗淡出，与 Esc /
+            // 点面板外面完全同一条路径。
+            //
+            // 必须判在下面"点在面板外"之前：刘海命中区落在展开面板**之内**
+            // （面板就是从那块刘海垂下来的），先判外面的分支会把这一下当成
+            // "点在面板里"而什么都不做。
+            //
+            // 展开态的刘海那一条是页头的上留白（`sheetHeaderTopInset`），三列
+            // 在那一带都没有可点的东西，所以这里不会抢掉任何控件的点击。
+            if let expandedScreen,
+               let restingFrame = NotchSupport.restingPillFrame(on: expandedScreen),
+               restingFrame
+                   .insetBy(dx: -NotchSupport.pillClickHitMargin, dy: -NotchSupport.pillClickHitMargin)
+                   .contains(clickLocation) {
+                collapse(expandBackToPill: true)
+                return
+            }
+
             if let expandedScreen,
                !NotchSupport.expandedSheetFrame(on: expandedScreen).contains(clickLocation) {
                 collapse(expandBackToPill: true)
@@ -469,47 +533,66 @@ final class NotchWindowController {
 
     /// Starts the sheet opening on `presence` and commits it in the same
     /// breath — the window is put at its final frame in ONE step and the
-    /// reveal is a curtain clip on the content layer (02 幕布垂落, see
-    /// `NotchSupport.curtainRevealDuration`). No per-frame `setFrame`, no
-    /// per-frame SwiftUI layout: the width is final from frame 0, so text
-    /// cannot re-wrap mid-animation, and the main thread has nothing to do
-    /// while the curtain falls.
+    /// reveal is a Core Animation on the content layer. No per-frame
+    /// `setFrame`, no per-frame SwiftUI layout: the width is final from frame
+    /// 0, so text cannot re-wrap mid-animation, and the main thread has nothing
+    /// to do while the reveal plays.
+    ///
+    /// **The reveal is the user's choice** (设置 → 交互 → 窗口样式), and all
+    /// three are the same structure differing only in which geometry moves:
+    /// 中心缩放 (`startNotchBloomReveal`, the default) expands a mask out of the
+    /// notch's own point — down, left and right at once; 边缘缩放
+    /// (`startScaleReveal`) scales the content layer up from 8% about the
+    /// panel's bottom edge; 幕布垂落 (`startCurtainReveal`) grows a mask down
+    /// from the top edge. The one thing they share is the structure above — and
+    /// the zero state installed *before* the frame commit, which is what keeps
+    /// any of them from flashing a finished sheet for one frame (see
+    /// `installRevealCover`).
     private func beginExpansion(on presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
+        // 记住开在哪块屏幕上 —— 「打开」让位之后要放回同一块（见
+        // `lastSheetHostScreen`）。
+        lastSheetHostScreen = presence.screen
         let expandedFrame = NotchSupport.expandedSheetFrame(on: presence.screen)
+        // Read the style ONCE here and carry it through the whole expansion:
+        // saving in the settings window mid-animation must not turn one reveal
+        // into two — the deadline below and the animation have to agree about
+        // how long this expansion lasts.
+        let expansionStyle = AppSettingsStore.snapshot().windowExpansionStyle
+        let revealDuration = NotchSupport.expansionRevealDuration(for: expansionStyle)
 
         expansionGeneration += 1
         let expansionGenerationAtStart = expansionGeneration
         expandedScreen = presence.screen
 
-        // Order matters. The curtain goes on FIRST, at zero visible height:
+        // Order matters. The cover goes on FIRST, hiding the content entirely:
         // `setFrame(display: true)` below forces a synchronous draw, so
-        // installing the mask afterwards would paint the finished sheet for
-        // one frame before the curtain hid it — a visible flash.
-        installCurtainMask(on: presence)
+        // installing it afterwards would paint the finished sheet for one
+        // frame before the reveal hid it — a visible flash.
+        installRevealCover(on: presence)
 
         panelModel.isExpanded = true
         presence.panel.setFrame(expandedFrame, display: true)
 
-        startCurtainReveal(on: presence, expandedFrame: expandedFrame)
+        startReveal(on: presence, style: expansionStyle, expandedFrame: expandedFrame)
 
-        // Back to the deadline the curtain was measured against; the sheet
-        // must be fully revealed by then whether or not the animation ran.
-        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.curtainRevealDuration + 0.05) { [weak self] in
+        // Back to the deadline the reveal was measured against; the sheet must
+        // be fully revealed by then whether or not the animation ran.
+        DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.05) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
-            self.removeCurtainMask(on: presence)
+            self.removeReveal(on: presence)
         }
 
         presence.panel.ignoresMouseEvents = false
         finishExpansionCommit(on: presence)
 
         // Expansion watchdog: a dropped layer animation cannot strand the
-        // sheet half-revealed — past the curtain's deadline, force the
-        // expanded state (frame and mask) unless a newer expand/collapse
-        // owns the panel.
-        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.curtainRevealDuration + 0.25) { [weak self] in
+        // sheet half-revealed — past the reveal's deadline, force the expanded
+        // state (frame, mask and layer transform) unless a newer
+        // expand/collapse owns the panel.
+        DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.25) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
@@ -517,25 +600,45 @@ final class NotchWindowController {
         }
     }
 
-    /// Hangs the curtain on the content layer at zero visible height — the
-    /// panel renders nothing until `startCurtainReveal` grows it.
+    /// Hides the content before the final frame is committed, so the
+    /// synchronous draw that `setFrame(display: true)` forces cannot paint a
+    /// finished sheet for one frame before the reveal catches up.
     ///
-    /// The mask's geometry is computed from the FINAL expanded frame, not
-    /// from the hosting view's current bounds: the window has not been
-    /// resized yet at this point, and a mask sized to the resting frame would
-    /// stay that size (sublayers do not follow their superlayer's bounds) and
-    /// reveal the sheet through a pill-sized hole.
-    private func installCurtainMask(on presence: ScreenPresence) {
+    /// A zero-height mask is the tool because it works for **all three** styles
+    /// and regardless of what the resize does to the layer: a mask hides its
+    /// layer's content outright, whereas the two scale styles' own zero state is
+    /// a `transform` on that same layer — and a layer transform is not something
+    /// we can assume survives AppKit re-syncing the view's geometry during the
+    /// resize. The pop therefore starts from this same cover and drops it in
+    /// the same transaction that installs its scale (see
+    /// `startScaleReveal`), which is a state we can guarantee rather than
+    /// one we hope for.
+    private func installRevealCover(on presence: ScreenPresence) {
         guard let hostingLayer = presence.contentHostingView.layer else { return }
-        let maskLayer = CALayer()
-        maskLayer.backgroundColor = NSColor.black.cgColor
+        let coverLayer = CALayer()
+        coverLayer.backgroundColor = NSColor.black.cgColor
 
         CATransaction.begin()
-        // Implicit animations would animate the mask's own installation —
+        // Implicit animations would animate the cover's own installation —
         // installing it must be instantaneous, the reveal is the animation.
         CATransaction.setDisableActions(true)
-        hostingLayer.mask = maskLayer
+        hostingLayer.mask = coverLayer
         CATransaction.commit()
+    }
+
+    private func startReveal(
+        on presence: ScreenPresence,
+        style: WindowExpansionStyle,
+        expandedFrame: CGRect
+    ) {
+        switch style {
+        case .notchBloom:
+            startNotchBloomReveal(on: presence, expandedFrame: expandedFrame)
+        case .edgeScale:
+            startScaleReveal(on: presence, expandedFrame: expandedFrame)
+        case .curtain:
+            startCurtainReveal(on: presence, expandedFrame: expandedFrame)
+        }
     }
 
     /// 02 幕布垂落's reveal: one Core Animation group growing the mask's
@@ -592,26 +695,275 @@ final class NotchWindowController {
         CATransaction.commit()
     }
 
-    /// Takes the curtain off. Idempotent, and called from every path that
-    /// claims the panel is (or is becoming) fully open or fully closed — a
-    /// mask left behind would clip the sheet forever, and it also costs a
-    /// compositing pass on every frame the panel draws.
-    private func removeCurtainMask(on presence: ScreenPresence) {
-        guard let hostingLayer = presence.contentHostingView.layer, hostingLayer.mask != nil else { return }
+    /// 中心缩放（2026-09-23 重设计）：the visible region grows out of the
+    /// NOTCH's own point — the mask starts as a zero-size rect at the content's
+    /// top-centre (the notch) and expands to the full frame, so the top-left
+    /// corner moves left, the top-right corner moves right and the bottom edge
+    /// moves down, all three at the same instant under the same timing
+    /// function. The user's spec, verbatim: 「从刘海的位置向下、向左、向右同时展开」.
+    ///
+    /// This deliberately does NOT use a layer transform to place the anchor
+    /// (that was the deleted `edgeAnchoredScaleTransform` top-edge variant):
+    /// a transform's anchor depends on concat order and on which way the
+    /// superlayer's y axis runs, and both failures are silent — which is why
+    /// the old 中心缩放 kept coming out identical to 边缘缩放 no matter how the
+    /// math was rearranged. A mask's geometry is written directly in the
+    /// expanded frame, so there is no convention left to get wrong. The
+    /// vertical start point reuses `startCurtainReveal`'s proven
+    /// flippedness read; the horizontal start point is the frame's centre,
+    /// which no flippedness can move.
+    private func startNotchBloomReveal(on presence: ScreenPresence, expandedFrame: CGRect) {
+        guard let hostingLayer = presence.contentHostingView.layer,
+              let maskLayer = hostingLayer.mask else { return }
+        let contentWidth = expandedFrame.width
+        let contentHeight = expandedFrame.height
+
+        // Same vertical convention as the curtain: the content's top edge is
+        // y = 0 in a flipped view and y = height in an unflipped one.
+        let topEdgeY: CGFloat = presence.contentHostingView.isFlipped ? 0 : contentHeight
+
+        // Model values are the END state, like every reveal here: a dropped
+        // animation leaves a fully open sheet, never a half-covered panel.
+        let fullBounds = CGRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
+        let centrePosition = CGPoint(x: contentWidth / 2, y: contentHeight / 2)
+        let pointBounds = CGRect(x: 0, y: 0, width: 0, height: 0)
+        let notchPosition = CGPoint(x: contentWidth / 2, y: topEdgeY)
+
+        let boundsAnimation = CABasicAnimation(keyPath: "bounds")
+        boundsAnimation.fromValue = NSValue(rect: pointBounds)
+        boundsAnimation.toValue = NSValue(rect: fullBounds)
+
+        let positionAnimation = CABasicAnimation(keyPath: "position")
+        positionAnimation.fromValue = NSValue(point: notchPosition)
+        positionAnimation.toValue = NSValue(point: centrePosition)
+
+        // A soft emergence on top of the geometric growth: the sheet fades in
+        // while the mask expands, so the leading edges do not pop. Model value
+        // stays 1 (the end state), fromValue 0 — same pattern as the scale
+        // styles' opacity ramp.
+        let opacityAnimation = CABasicAnimation(keyPath: "opacity")
+        opacityAnimation.fromValue = 0
+        opacityAnimation.toValue = 1
+
+        let revealGroup = CAAnimationGroup()
+        revealGroup.animations = [boundsAnimation, positionAnimation]
+        revealGroup.duration = NotchSupport.expansionRevealDuration(for: .notchBloom)
+        let controlPoints = NotchSupport.curtainRevealTimingControlPoints
+        revealGroup.timingFunction = CAMediaTimingFunction(
+            controlPoints: controlPoints.0,
+            controlPoints.1,
+            controlPoints.2,
+            controlPoints.3
+        )
+        opacityAnimation.duration = revealGroup.duration
+        opacityAnimation.timingFunction = revealGroup.timingFunction
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        maskLayer.bounds = fullBounds
+        maskLayer.position = centrePosition
+        maskLayer.add(revealGroup, forKey: Self.notchBloomAnimationKey)
+        hostingLayer.opacity = 1
+        hostingLayer.add(opacityAnimation, forKey: Self.notchBloomAnimationKey)
+        CATransaction.commit()
+    }
+
+    /// 边缘缩放's reveal: the whole content layer scales up from 8% about its
+    /// BOTTOM edge, so the sheet grows upward off the bottom of where it will
+    /// end up.
+    ///
+    /// (This transform machinery used to serve 中心缩放 too, via an
+    /// `anchoredAtTopEdge` flag pinning the top edge instead. That variant is
+    /// deleted: a transform's anchor depends on concat order and on which way
+    /// the superlayer's y axis runs, both failures silent, and the top-edge pin
+    /// never visibly differed from this bottom-edge one — the user saw 「中心缩放
+    /// 跟边缘缩放效果是一样的」 twice. 中心缩放 is now `startNotchBloomReveal`, a
+    /// mask expansion with no convention left to get wrong.)
+    ///
+    /// One Core Animation on the content layer: the render server plays it, the
+    /// main thread does no per-frame work, and the window's frame never changes.
+    ///
+    /// The cover installed by `installRevealCover` comes off **in the same
+    /// transaction** the scale goes on: mask off + model transform identity +
+    /// the animation added, all with actions disabled, so the very first frame
+    /// presented is the animation's `fromValue` (8%) and there is no
+    /// intermediate paint at full size.
+    private func startScaleReveal(
+        on presence: ScreenPresence,
+        expandedFrame: CGRect
+    ) {
+        guard let hostingLayer = presence.contentHostingView.layer else { return }
+
+        let contentSize = expandedFrame.size
+        let identityTransform = CATransform3DIdentity
+        let startTransform = Self.edgeAnchoredScaleTransform(
+            scale: NotchSupport.centerPopInitialScale,
+            contentSize: contentSize,
+            // The transform acts in the SUPERLAYER's coordinate space, so which
+            // way is "up" is its view's flippedness — not the hosting view's own.
+            superlayerIsFlipped: presence.contentHostingView.superview?.isFlipped ?? false
+        )
+
+        // Model value is the END state, exactly like the curtain's: if the
+        // animation were ever dropped, the worst case is a fully open sheet,
+        // never a permanently shrunken one.
+        let scaleAnimation = CABasicAnimation(keyPath: "transform")
+        scaleAnimation.fromValue = NSValue(caTransform3D: startTransform)
+        scaleAnimation.toValue = NSValue(caTransform3D: identityTransform)
+
+        // The reference's keyframe carries an opacity ramp alongside the scale
+        // (`@keyframes winScale{ 0%{ transform:scale(.08); opacity:0 } … }`),
+        // and it is load-bearing rather than decorative: at 8% the sheet is a
+        // ~65 pt nub, so without the ramp that nub pops into existence at the
+        // notch before it grows. Fading it in is what makes the sheet read as
+        // emerging from the notch instead of appearing at it.
+        let opacityAnimation = CABasicAnimation(keyPath: "opacity")
+        opacityAnimation.fromValue = 0
+        opacityAnimation.toValue = 1
+
+        // Both properties ride ONE group under one timing function, so the
+        // ramp and the scale share a clock and the compositor plays the pair
+        // as a single animation.
+        let revealGroup = CAAnimationGroup()
+        revealGroup.animations = [scaleAnimation, opacityAnimation]
+        revealGroup.duration = NotchSupport.centerPopRevealDuration
+        let controlPoints = NotchSupport.centerPopTimingControlPoints
+        revealGroup.timingFunction = CAMediaTimingFunction(
+            controlPoints: controlPoints.0,
+            controlPoints.1,
+            controlPoints.2,
+            controlPoints.3
+        )
+
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         hostingLayer.mask = nil
+        hostingLayer.transform = identityTransform
+        hostingLayer.opacity = 1
+        hostingLayer.add(revealGroup, forKey: Self.scaleRevealAnimationKey)
+        CATransaction.commit()
+    }
+
+    /// A scale about the layer's BOTTOM horizontal edge, expressed as the one
+    /// `CATransform3D` a layer can be handed — 边缘缩放's start transform.
+    ///
+    /// A layer's `transform` acts about its `anchorPoint`: a point `p` is placed
+    /// at `position + T(p − c)` with `c` = the anchor point. Wanting the point
+    /// `a` to stay put is `T(a − c) = a − c`, and with `T(v) = s·v + d` that
+    /// solves to **`d = (1 − s)·(a − c)`** — a scale plus a compensation
+    /// translation. Here `c` is the layer's centre (AppKit gives a view's
+    /// backing layer an `anchorPoint` of `(0.5, 0.5)`, and the content hosting
+    /// view fills its superview, so its centre is the superview's centre) and
+    /// `a` is the pinned edge's midpoint. Both are on the vertical centre line,
+    /// so `d.x` is always 0 and only the vertical term moves.
+    ///
+    /// **The one thing that has to be right is the sign of `d.y`, and getting
+    /// it wrong is silent** — the sheet still opens, it just grows from the
+    /// wrong edge. `(a − c)` is a vector in the SUPERLAYER's coordinate space,
+    /// because that is the space the transform acts in; so which way is "up"
+    /// is the *superview's* flippedness, NOT the hosting view's. The hosting
+    /// view is an `NSHostingView` and reports `isFlipped == true`, while the
+    /// panel's content view is an ordinary unflipped `NSView` whose y axis
+    /// points up — reading the hosting view's own flip here inverts the sign
+    /// and silently pins the wrong edge.
+    /// (`startCurtainReveal` / `startNotchBloomReveal` may read the hosting
+    /// view's flip directly only because there the layer being moved is the
+    /// mask, whose superlayer *is* the hosting layer.)
+    ///
+    /// The compensation is written from the anchor point rather than by moving
+    /// `anchorPoint` itself: changing `anchorPoint` moves the layer (position
+    /// is expressed through it), so the layer would have to be re-placed to
+    /// compensate, and the whole thing would be two coupled corrections instead
+    /// of one.
+    ///
+    /// **The concat order is load-bearing, and getting it backwards is silent**
+    /// (measured 2026-09-23: `Concat(translate, scale)` mapped the origin to
+    /// (0, 200) for translate(0,100)∘scale(2,2) — the translation got scaled
+    /// along with everything else). `CATransform3D` is a ROW-VECTOR convention:
+    /// translation lives in `m41/m42/m43`, points map as `p' = p·M`, and
+    /// `CATransform3DConcat(a, b)` applies **a first, then b**. So the scale
+    /// must be the FIRST argument and the translation the second —
+    /// `p' = s·p + d`, which is the shape the `d = (1 − s)·(a − c)` derivation
+    /// assumed. Written the other way round, the effective offset is `s·d` and
+    /// the pinned point drifts to `s·(2 − s)·a`: at the 8% start scale the
+    /// pinned edge lands near the layer's CENTRE. That drift was the old
+    /// 中心缩放's fatal flaw (both styles rendered as the same
+    /// grow-outward-from-the-middle animation); the style no longer uses this
+    /// machinery at all — see `startNotchBloomReveal` — and 边缘缩放 keeps it
+    /// because its bottom-edge pin is the behaviour the user accepted.
+    ///
+    /// One property worth knowing, because it is what makes this exact rather
+    /// than approximately right: `d` is proportional to `(1 − s)`, and Core
+    /// Animation interpolates a transform by decomposing it into scale and
+    /// translation and interpolating those linearly against the SAME eased
+    /// progress. So at every instant `d(t) = (1 − s(t))·(a − c)` holds, and the
+    /// pinned edge is fixed for the entire animation, not merely at the two
+    /// endpoints.
+    private static func edgeAnchoredScaleTransform(
+        scale: CGFloat,
+        contentSize: CGSize,
+        superlayerIsFlipped: Bool
+    ) -> CATransform3D {
+        // The offset from the layer's centre to its top edge, in the
+        // superlayer's coordinates: upward is +y in an unflipped superlayer and
+        // −y in a flipped one. The PINNED edge is the BOTTOM one — its offset is
+        // the negation, which is what makes the sheet grow upward.
+        let topEdgeOffsetY = superlayerIsFlipped
+            ? -(contentSize.height / 2)
+            : (contentSize.height / 2)
+        let bottomEdgeOffsetY = -topEdgeOffsetY
+        let compensationY = (1 - scale) * bottomEdgeOffsetY
+        // Scale FIRST (first argument acts first), translate SECOND — see the
+        // concat-order note above.
+        return CATransform3DConcat(
+            CATransform3DMakeScale(scale, scale, 1),
+            CATransform3DMakeTranslation(0, compensationY, 0)
+        )
+    }
+
+    /// Takes the reveal off: the mask (all three styles cover with one), the
+    /// layer transform and the layer opacity (the two 缩放 styles' own zero
+    /// state). Idempotent, and called from every path that claims the panel is
+    /// (or is becoming) fully open or fully closed — a mask left behind would
+    /// clip the sheet forever, and a transform left behind would draw the whole
+    /// sheet at 8% in a corner of its own window. All three also cost a
+    /// compositing pass on every frame the panel draws.
+    ///
+    /// The animation is removed by key as well, not merely overridden by the
+    /// model value: an explicit animation still attached to the layer keeps
+    /// driving the presentation layer until it finishes on its own, so setting
+    /// `transform` back to identity while one is in flight would visibly do
+    /// nothing.
+    private func removeReveal(on presence: ScreenPresence) {
+        guard let hostingLayer = presence.contentHostingView.layer else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        // 中心缩放 rides TWO layers: the mask anim on the mask layer and the
+        // opacity anim on the hosting layer. The mask's anim comes off BEFORE
+        // the mask itself is dropped — removing a layer discards its
+        // animations, but read order matters for clarity and for the nil'd mask.
+        hostingLayer.mask?.removeAnimation(forKey: Self.notchBloomAnimationKey)
+        if hostingLayer.mask != nil {
+            hostingLayer.mask = nil
+        }
+        if !CATransform3DEqualToTransform(hostingLayer.transform, CATransform3DIdentity) || hostingLayer.opacity < 1 {
+            hostingLayer.removeAnimation(forKey: Self.scaleRevealAnimationKey)
+            hostingLayer.transform = CATransform3DIdentity
+            hostingLayer.opacity = 1
+        }
+        hostingLayer.removeAnimation(forKey: Self.notchBloomAnimationKey)
         CATransaction.commit()
     }
 
     /// Forces the panel into the fully-open state with no animation — the
     /// counterpart of `convergeOnRestingState`, covering both halves of what
     /// "open" means: the frame (which `beginExpansion` already put in place in
-    /// one step, so this is normally a no-op) and the curtain (which must come
-    /// off). Idempotent at every normal completion.
+    /// one step, so this is normally a no-op) and the reveal (the cover, and
+    /// the scale if the pop was the style). Idempotent at every normal
+    /// completion.
     private func convergeOnExpandedState(_ presence: ScreenPresence, targetFrame: CGRect) {
         guard panelModel.isExpanded else { return }
-        removeCurtainMask(on: presence)
+        removeReveal(on: presence)
         let frame = presence.panel.frame
         let isFrameAtTarget =
             abs(frame.minX - targetFrame.minX) < 0.5 &&
@@ -671,7 +1023,7 @@ final class NotchWindowController {
         // and the winClose fade must take the WHOLE sheet with it — leave the
         // mask on and the fade would play over a still-clipped panel.
         if let collapsingPresence {
-            removeCurtainMask(on: collapsingPresence)
+            removeReveal(on: collapsingPresence)
         }
 
         // Every collapse bumps the generation; a pending convergence callback
@@ -689,7 +1041,7 @@ final class NotchWindowController {
             centerScaleAnimationTimer?.invalidate()
             centerScaleAnimationTimer = nil
             if let collapsingPresence {
-                removeCurtainMask(on: collapsingPresence)
+                removeReveal(on: collapsingPresence)
                 collapsingPresence.panel.alphaValue = 1
             }
             return
@@ -804,7 +1156,7 @@ final class NotchWindowController {
         // The curtain is expansion state: whatever path got here, the resting
         // pill must not be clipped by a mask left over from an expansion that
         // never finished.
-        removeCurtainMask(on: presence)
+        removeReveal(on: presence)
 
         // Defensive alpha restore: the winClose fade leaves the window fully
         // transparent until the frame snap brings it back. If the fade's

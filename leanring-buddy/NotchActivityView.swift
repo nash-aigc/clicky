@@ -64,7 +64,22 @@ extension NotchActivityPhase {
         case .thinking: return "Thinking"
         case .speaking: return "Speaking"
         case .transcribing: return "Typing…"
-        case .externalChatting: return "聊天中"
+        // 2026-09-23：用户要求这一格也走英文——「如果用户正在语音聊天，把左侧的
+        // "聊天中"也换成英文，比如 Chatting（C H A T I N G），显示效果会更好」。
+        // 前四个状态本来就是英文，只有这一格是中文，在一排英文词里它自己就是那个
+        // 不一致的东西。括号里把字母拆开写是在描述**字距拉开**的样子，所以真正
+        // 要的不是 "C H A T T I N G" 这串字符，而是 `notchStateWordTracking`。
+        case .externalChatting: return "Chatting"
+        }
+    }
+
+    /// 状态词的字距。只有语音聊天那一格拉，另外四个不动：`Chatting` 是这五个词里
+    /// 唯一由小写字母连写、没有上升部/下降部以外的形状变化的词，不拉开字距在 13.5pt
+    /// 加粗下会糊成一团；`Listening` / `Thinking` 本身就有明显的竖笔分布，加了反而散。
+    var notchStateWordTracking: CGFloat {
+        switch self {
+        case .externalChatting: return 1.4
+        default: return 0
         }
     }
 
@@ -421,6 +436,7 @@ struct NotchWingView: View {
                         Spacer(minLength: 0)
                         Text(phase.notchStateWord)
                             .font(.system(size: 13.5, weight: .bold))
+                            .tracking(phase.notchStateWordTracking)
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -529,6 +545,26 @@ struct NotchWingView: View {
 /// `NotchSupport.restingTrailingWingFrame`）。所以它必须一眼看上去像能按的
 /// 东西：`phone.down.fill` 是通话里"挂断"的通用符号，呼吸只是让它在一片黑里
 /// 被注意到，不做任何会让人误判成"正在拨号"的动作。
+///
+/// **2026-09-23 三处放大，一次都没有加宽两翼**：用户的原话是「右侧的挂断按钮，
+/// 可以把光晕或亮度变得再大一点，现在这个动画效果或者挂断按钮有点小」，紧接着
+/// 又补了一句「比如这个红色的挂断按钮，是不是可以再大一点？」，并在同一段里立了
+/// 约束——「整个弹出的弹窗一定要在刘海屏左右两侧宽度固定的情况下，在宽度内做文字
+/// 和图标调整，不要增加宽度，只调整图标大小和整个动画」。所以两翼的 88pt 一点没动，
+/// 变大的是三样看得见的东西：
+///
+///   1. 图标 12 → 15pt；
+///   2. 光晕从**只有一层 `.shadow`** 变成两层：底下加一颗 30pt 的实心圆、模糊 7pt
+///      做底光，外面再叠 `.shadow`。单靠 shadow 拉大半径只会得到一圈越扩越淡的雾，
+///      看不出"更大"；实心圆撑出明确的体积，shadow 再补它外缘的辉光。这颗圆挂在
+///      `.background` 上（只画不占位），所以图标本身没有被挪动——理由见下面那段；
+///   3. 呼吸的幅度与亮度一起抬：暗端 0.3 → 0.45、亮端 0.85 → 1.0，半径 3/7 → 4/11，
+///      缩放 0.94/1.08 → 0.96/1.10。暗端提起来是关键——原来的 0.3 在脉冲谷底几乎
+///      看不见，用户看到的"小"有一半是"有一半时间根本没在亮"。
+///
+/// 光晕直径 44pt（30 + 上下各 7 的模糊）比 32pt 的带子高，会被外面那层
+/// `clipShape(outline)` 裁掉——这正是参考页里那圈光晕的做法（顶到底都被带子切），
+/// 不是需要回避的溢出。
 private struct NotchHangUpGlyph: View {
 
     @State private var isPulsing = false
@@ -539,13 +575,25 @@ private struct NotchHangUpGlyph: View {
 
     var body: some View {
         Image(systemName: "phone.down.fill")
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundColor(Self.hangUpRed)
-            .shadow(
-                color: Self.hangUpRed.opacity(isPulsing ? 0.85 : 0.3),
-                radius: isPulsing ? 7 : 3
+            // 光晕挂在 `.background` 上，**就是为了不参与布局**。这一格的高宽由上面
+            // 那层 `.frame(height: 20)` 和右翼的 `.padding(.trailing, 10)` 决定，而
+            // 那个 padding 是四个相位共用的——挂断之外的三格（波形 / 脉冲 / 均衡器）
+            // 也走同一个 Group。给图标加一个显式的 `.frame(width: 30)` 会把它的中心
+            // 从距右缘 ~19pt 推到 ~25pt，等于顺手把挂断图标挪了位置；而 `.background`
+            // 只画不定尺寸，光晕尽管往外铺，图标自己还站在原来的地方。
+            .background(
+                Circle()
+                    .fill(Self.hangUpRed.opacity(isPulsing ? 0.42 : 0.16))
+                    .frame(width: 30, height: 30)
+                    .blur(radius: 7)
             )
-            .scaleEffect(isPulsing ? 1.08 : 0.94)
+            .shadow(
+                color: Self.hangUpRed.opacity(isPulsing ? 1.0 : 0.45),
+                radius: isPulsing ? 11 : 4
+            )
+            .scaleEffect(isPulsing ? 1.10 : 0.96)
             .onAppear {
                 withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
                     isPulsing = true
@@ -743,6 +791,10 @@ struct NotchPanelRootSwitchingView: View {
     @ObservedObject var panelModel: NotchPanelModel
     var audioHistoryProvider: () -> [CGFloat]
     var collapseAction: () -> Void
+    /// 「打开」按钮让位用的两半 —— 一路透传到 `AgentSessionView`，见
+    /// `NotchSheetRootView` 的同名属性。
+    var hideSheetAction: () -> Void
+    var revealSheetAction: () -> Void
     var companionManager: CompanionManager
 
     var body: some View {
@@ -751,6 +803,8 @@ struct NotchPanelRootSwitchingView: View {
                 panelModel: panelModel,
                 audioHistoryProvider: audioHistoryProvider,
                 collapseAction: collapseAction,
+                hideSheetAction: hideSheetAction,
+                revealSheetAction: revealSheetAction,
                 companionManager: companionManager
             )
         } else if panelModel.expansionProgress > 0.01 {
@@ -807,6 +861,8 @@ struct NotchExpandedSheetView: View {
     @ObservedObject var panelModel: NotchPanelModel
     var audioHistoryProvider: () -> [CGFloat]
     var collapseAction: () -> Void
+    var hideSheetAction: () -> Void
+    var revealSheetAction: () -> Void
     var companionManager: CompanionManager
 
     /// 参考页 01 中心缩放的内容入场（'line' 模式）：窗口本体沿 frame 驱动
@@ -832,6 +888,8 @@ struct NotchExpandedSheetView: View {
                 panelModel: panelModel,
                 companionManager: companionManager,
                 collapseAction: collapseAction,
+                hideSheetAction: hideSheetAction,
+                revealSheetAction: revealSheetAction,
                 audioHistoryProvider: audioHistoryProvider
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -845,10 +903,16 @@ struct NotchExpandedSheetView: View {
                     hasContentSettledIn = true
                     return
                 }
-                // 参考页配对 02 幕布垂落时给的入场延迟就是 140ms（见
-                // NotchSupport.curtainContentEntranceDelay）——幕布刚落到
-                // 三分之一时内容开始浮现，两者叠着走，不是先落完再入。
-                withAnimation(.easeOut(duration: 0.45).delay(NotchSupport.curtainContentEntranceDelay)) {
+                // 延迟跟着用户选的窗口样式走：参考页里 02 幕布垂落配 140ms、
+                // 01 中心缩放配 230ms，各自跟自己的窗口动画成对
+                // （见 NotchSupport.expansionContentEntranceDelay）。用幕布那
+                // 个延迟配缩放，内容会在板子还只有一半大的时候就完整画出来，
+                // 两个动画看起来是两件事。样式在这里现读一次：它跟
+                // `beginExpansion` 读的是同一个值，而中间没有人能改设置。
+                let entranceDelay = NotchSupport.expansionContentEntranceDelay(
+                    for: AppSettingsStore.snapshot().windowExpansionStyle
+                )
+                withAnimation(.easeOut(duration: 0.45).delay(entranceDelay)) {
                     hasContentSettledIn = true
                 }
             }

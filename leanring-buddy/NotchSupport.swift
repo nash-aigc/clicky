@@ -56,11 +56,72 @@ nonisolated enum NotchSupport {
     /// 时给的 delay 就是 140ms（01 中心缩放配的是 230ms）。
     static let curtainContentEntranceDelay: TimeInterval = 0.14
 
+    // MARK: - 中心缩放展开（参考：同一份 HTML 的 01 中心缩放）
+    //
+    // 同一份参考页里的 01，2026-09-23 按用户要求补成可选项：
+    // 「参考我提供的 HTML 页面，分析它的展开方式和动画效果。它的动画非常流畅，是从
+    // 中心弹开的效果；当前项目是从上到下逐个展开显示。我希望增加一个弹开的效果。」
+    //
+    // 参考页 01 中心缩放的三个数（`.08` / `.34s` / `cubic-bezier(.22,.9,.3,1)` /
+    // `transform-origin:50% 0`）在第一次移植时就量过并记在 AGENTS.md 里，这里沿用
+    // 同一组；**没有**连带把透明度也做成动画——动画只有 scale 一个变量，纯 transform，
+    // 多一个变量就多一处会和合成的倍率对不上的地方。
+    //
+    // **和 02 幕布垂落共用同一条铁律：窗口 frame 一次性到最终位置，动的是内容层
+    // 的图层。** 这条不是风格偏好——第一版把中心缩放做成了逐帧 `NSWindow.setFrame`
+    // （scale 沿「顶边中点固定」的路径每帧改 x/y/w/h），用户当场否掉：「你刚才的
+    // 效果比之前还要卡顿…现在是从左到右展开，展开过程中非常卡顿」，还伴随着同一行
+    // 文字十个字变十一个字的重排。参考页十二种窗口动画全是 `transform` /
+    // `clip-path`，**没有一种改元素尺寸**，就是因为这两类属性在合成器上重画即可，
+    // 而改窗口尺寸等于每帧重建绘制表面 + 整张面板重排 + 文字重算换行。
+    //
+    // 所以这里的 scale 是 `CALayer.transform`（一个 `CATransform3DMakeScale` 加一段
+    // 补偿平移，见 `NotchWindowController.startScaleReveal`），窗口尺寸从第一帧
+    // 起就是最终值，换行同样不可能变。
+
+    /// 边缘缩放：内容层从 8% 弹到 100%。参考页 winScale 的起点。（中心缩放
+    /// 2026-09-23 起改用遮罩扩张，不再用这套 transform 常量。）
+    static let centerPopInitialScale: CGFloat = 0.08
+    /// 参考页给的时长：`.34s`。
+    static let centerPopRevealDuration: TimeInterval = 0.34
+    /// 参考页 `cubic-bezier(.22,.9,.3,1)`——先快后缓、尾部几乎平掉，这就是那个
+    /// 「弹开」的手感。
+    static let centerPopTimingControlPoints: (Float, Float, Float, Float) = (0.22, 0.9, 0.3, 1.0)
+    /// 内容入场比缩放晚多少起步。参考页 01 配的是 230ms（02 幕布垂落配 140ms），
+    /// 两个数各自跟自己的窗口动画成对，不能混用。
+    static let centerPopContentEntranceDelay: TimeInterval = 0.23
+
     /// 收起 = 参考页的 winClose：scale(.92) + 整窗淡出，160ms ease-in。
     static let centerScaleCollapseDuration: TimeInterval = 0.16
     static let centerScaleCollapseFinalScale: CGFloat = 0.92
     /// CSS ease-in（0.42, 0, 1, 1）——参考页 winClose 的 animation-timing-function。
     static let centerScaleCollapseTimingControlPoints: (Float, Float, Float, Float) = (0.42, 0.0, 1.0, 1.0)
+
+    /// 展开动画要多长，按用户选的窗口样式取。
+    ///
+    /// `NotchWindowController` 用它排那两个截止点（撤掉揭示的遮罩 / 收敛到展开态）
+    /// 和看门狗。**两套时长必须从这一个函数出**：控制器里再写一个 switch，等于把
+    /// 「动画多久」这件事说两遍，改一处就会留下一处永远等不到的定时器。
+    static func expansionRevealDuration(for style: WindowExpansionStyle) -> TimeInterval {
+        switch style {
+        // 中心缩放（notchBloom）是遮罩扩张，和幕布垂落同族（同一个 0.43s ease-out），
+        // 时长同源；边缘缩放是参考页 winScale 的 0.34s。
+        case .notchBloom, .curtain: return curtainRevealDuration
+        case .edgeScale: return centerPopRevealDuration
+        }
+    }
+
+    /// 内容入场（`.unit.line` 那三件套）比窗口动画晚多少起步。
+    ///
+    /// 参考页里两个窗口动画各配各的延迟：02 幕布垂落配 140ms、01 中心缩放配
+    /// 230ms。配错的后果是内容在窗口还没长到能盖住它的时候就画出来——幕布/缩放
+    /// 刚走三分之一，文字已经完整可见，两个动画看起来是两件事。
+    static func expansionContentEntranceDelay(for style: WindowExpansionStyle) -> TimeInterval {
+        switch style {
+        case .notchBloom, .curtain: return curtainContentEntranceDelay
+        case .edgeScale: return centerPopContentEntranceDelay
+        }
+    }
 
     /// CSS cubic-bezier(x1,y1,x2,y2) timing-function 的 Swift 求值。
     ///
@@ -120,6 +181,33 @@ nonisolated enum NotchSupport {
     /// notch's left and right edges), never downward.
     static let restingPillAnimationHeadroom: CGFloat = 22
 
+    // MARK: - Window levels
+
+    /// The notch panel's level: just above the menu bar, because the pill has to
+    /// sit ON the menu bar band rather than under it.
+    static let notchPanelWindowLevel: NSWindow.Level = .mainMenu + 1
+
+    /// The level a modal file dialog has to take to be visible at all.
+    ///
+    /// `NSOpenPanel`'s own level is `.modalPanel` (8), and the notch panel sits
+    /// at 25 — so with the sheet open, the folder picker opened BEHIND it and
+    /// the user could not click anything in it. That is the 2026-09-23 report
+    /// 「用户在 Agent 页面点击加号时，悬浮窗口会遮盖文件夹选择弹窗，导致用户无法
+    /// 选择文件夹。需要调整窗口顺序：点击加号后，把文件夹选择放在前面」.
+    ///
+    /// Raising the picker rather than lowering the notch panel is deliberate:
+    /// the panel's level is toggled in several places (`beginExpansion`,
+    /// `collapse`, `convergeOnRestingState`) and there are one or more of them
+    /// (one per notched screen), so "drop them all for the duration of a modal
+    /// loop" would have to be undone on every exit path — including the
+    /// cancellation one. The picker lives for exactly one `runModal()` call,
+    /// so pushing it one step above the panel cannot be left behind.
+    ///
+    /// Written as `notchPanelWindowLevel + 1` rather than a literal 26 so the
+    /// two can never drift into equality, which would silently put the picker
+    /// back behind the sheet for however long it took someone to notice.
+    static let modalFileDialogWindowLevel: NSWindow.Level = notchPanelWindowLevel + 1
+
     // MARK: - Content column geometry (对话 / Agent / 语音聊天)
 
     /// How far the content column's header sits below the sheet's top edge.
@@ -140,6 +228,43 @@ nonisolated enum NotchSupport {
     /// of a content column — header, message flow, error line and composer —
     /// share this one number and stay flush with each other.
     static let contentColumnHorizontalMargin: CGFloat = 12
+
+    // MARK: - The rule shared by the two columns
+
+    /// 侧栏「对话 / Agent / 语音聊天」切换器那颗按钮的高度。
+    ///
+    /// 从 `HomeSpaceSidebarView` 提上来，因为右列那条线要跟它算出的分割线对齐 ——
+    /// 同一条线由两列各自画，两处各存一份数字就一定会漂。
+    static let sidebarSectionSwitcherButtonHeight: CGFloat = 30
+
+    /// 切换器与它下面那条分割线之间的间距。
+    ///
+    /// 用户 2026-09-23 定的「跟分割线的间距小一点」：按钮从 25 长到 30 之后，这
+    /// 5pt 正好把多出来的高度还回去，所以那条线一动不动。也就是说这个数字是**由那条
+    /// 线的位置决定的**，不能单独改。
+    static let sidebarSectionSwitcherBottomPadding: CGFloat = 5
+
+    /// 左右两列共用的那条横线的 y（从面板顶边量起）。
+    ///
+    /// 左边是侧栏自己那条分割线所在的位置：让开刘海的 `sheetHeaderTopInset`，加上
+    /// 切换器按钮的高度，加上按钮与线之间的间距。右边必须**在同一个 y 上**画一条
+    /// 贯穿的线——用户 2026-09-23：「我觉得应该在每一个页面的右侧增加一条线。左侧边
+    /// 最上面有一条线，就在对话 agent 的语音聊天下面。这条线应该从左到右贯穿，而且
+    /// 必须是一条直线，所以应该适当调整左侧和右侧的按钮或文字位置，让它们对齐成一条
+    /// 线。右侧的正文内容显示在这条线下面，线上面是相关的参数部分」。
+    ///
+    /// 写成三项之和而不是一个数字：这条线的全部意义就是两边对齐，任何一边的间距改
+    /// 动都必须同时反映到另一边，而这个和是唯一能保证这件事的写法。
+    static let contentColumnHeaderRuleY: CGFloat =
+        sheetHeaderTopInset + sidebarSectionSwitcherButtonHeight + sidebarSectionSwitcherBottomPadding
+
+    /// 右列页头**内容**能用的高度：从 `sheetHeaderTopInset` 的下沿到那条线。
+    ///
+    /// 三页的页头（对话页是顶栏，另两页是它们自己的标题行）都按这个高度排版，内容在
+    /// 这条带子里垂直居中，于是每页的页头都恰好在那条线上结束、正文恰好从线下开始。
+    static var contentColumnHeaderBandHeight: CGFloat {
+        contentColumnHeaderRuleY - sheetHeaderTopInset
+    }
 
     /// The expanded sheet's size — HeyClicky's expanded sheet is *large*, a
     /// real main-window-sized surface (measured off the reference screenshot:

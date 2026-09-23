@@ -164,7 +164,7 @@ private struct ClickySettingsRootView: View {
 
             // 分组导航：组与组之间用大写小标签隔开——HeyClicky 的侧栏是
             // 「General / 对话 / 看与操作」三段，不是一列平铺。
-            sidebarSection(title: nil, pages: [.general, .cardStyle, .model, .agent])
+            sidebarSection(title: nil, pages: [.general, .interactionStyle, .model, .agent])
             sidebarSection(title: "对话", pages: [.memory, .listen, .speak, .shortcuts])
             sidebarSection(title: "看与操作", pages: [.vision, .action])
 
@@ -333,11 +333,16 @@ struct GeneralSettingsActionBar: View {
             .background(DS.Colors.background)
 
         case .headerInline:
+            // 只有 恢复默认 / 保存。用户在 2026-09-23 先把标题右侧的 ✕ 删掉，
+            // 随后又要求「把右上角的关闭按钮删掉，只保留恢复默认和保存」——
+            // 于是这一档连「关闭」也不画了。收起面板仍然有三条路：Esc、点面板
+            // 外、失活，加上侧栏左下角那颗绿色的「返回」；底下那一档
+            // （`.bottomBar`，独立设置窗口在用）保留「关闭」，那个窗口没有
+            // 上述任何一条退路，删了它就只能靠窗口的红绿灯按钮。
             HStack(alignment: .center, spacing: 8) {
                 resetToDefaultsButton
                 saveStatusText
                 saveButton
-                closeButton
             }
         }
     }

@@ -125,11 +125,16 @@ struct HomeSpaceSidebarView: View {
         .padding(.bottom, Self.sectionSwitcherBottomPadding)
     }
 
-    /// 30（原来 25）——用户要求的「按钮高度调大一点」。
-    private static let sectionSwitcherButtonHeight: CGFloat = 30
+    /// 30（原来 25）——用户要求的「按钮高度调大一点」。值本身在 `NotchSupport`
+    /// 里：右列那条贯穿的横线要跟它算出来的分割线对齐，两处各存一份就一定会漂。
+    private static var sectionSwitcherButtonHeight: CGFloat {
+        NotchSupport.sidebarSectionSwitcherButtonHeight
+    }
     /// 5（原来 10）——用户要求的「跟分割线的间距小一点」，正好把按钮长高的那
-    /// 5pt 还回去，分割线因此不动。
-    private static let sectionSwitcherBottomPadding: CGFloat = 5
+    /// 5pt 还回去，分割线因此不动。同样在 `NotchSupport` 里，理由同上。
+    private static var sectionSwitcherBottomPadding: CGFloat {
+        NotchSupport.sidebarSectionSwitcherBottomPadding
+    }
 
     // MARK: - Pieces
 
@@ -629,14 +634,24 @@ struct HomeSpaceSidebarView: View {
             }
         } label: {
             Text(title)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(tint)
                 .lineLimit(1)
-                .frame(height: 28)
-                .padding(.horizontal, 12)
+                // 固定尺寸，不是按文字撑开：三个文案（连接 / 挂断 / 取消）都是两个字，
+                // 写死之后切换状态时按钮一动不动，左边的角色名也不会跟着抖。
+                .frame(
+                    width: Self.roleConnectButtonWidth,
+                    height: Self.roleConnectButtonHeight
+                )
                 .background(
                     RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                        .fill(tint.opacity(0.14))
+                        .fill(tint.opacity(0.16))
+                )
+                // 一圈同色的边：这是整页里唯一一个"开始一件事"的按钮，纯色底在深色
+                // 侧栏上还不够像可点的东西。
+                .overlay(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                        .strokeBorder(tint.opacity(0.38), lineWidth: 1)
                 )
                 .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
         }
@@ -646,6 +661,15 @@ struct HomeSpaceSidebarView: View {
             ? "挂断「\(role.name)」"
             : "用「\(role.name)」开始语音聊天")
     }
+
+    /// 连接 / 挂断按钮的尺寸。原先是 28 高、横向 12 内边距（宽度跟着文字走，约
+    /// 48pt）。用户 2026-09-23 连着两次要求做大：「把连接按钮放在左侧边角色卡片的
+    /// 右侧部分，做成大一点的长方形圆角形式…鼠标移动距离会非常小」，第二天又说
+    /// 「把连接按钮做大。这样用户挂断时也能点击挂断按钮…连接按钮应该做大一点，方便
+    /// 用户点击」。66×34 是侧栏 245pt 宽度下能给出的最大舒适值：再宽就要从角色名的
+    /// 那一列里拿。
+    private static let roleConnectButtonWidth: CGFloat = 66
+    private static let roleConnectButtonHeight: CGFloat = 34
 
     /// What a role row says under its name. Four states, and only the first
     /// two mention a connection — the others describe selection, so a row the
@@ -712,6 +736,10 @@ struct HomeSpaceSidebarView: View {
         folderPicker.canCreateDirectories = true
         folderPicker.message = "选择 Agent 工作的项目文件夹"
         folderPicker.prompt = "新建 Agent"
+        // Without this the picker opens BEHIND the expanded sheet: the notch
+        // panel sits at `.mainMenu + 1` and an NSOpenPanel's default level is
+        // `.modalPanel`, nine steps below it. See `modalFileDialogWindowLevel`.
+        folderPicker.level = NotchSupport.modalFileDialogWindowLevel
         if let defaultFolderPath = AppSettingsStore.snapshot().agentDefaultProjectFolder {
             folderPicker.directoryURL = URL(fileURLWithPath: defaultFolderPath)
         }
