@@ -155,6 +155,9 @@ final class VoicePlaybackEngine {
     /// `ensureEngineStarted` can be re-entered (which it now must be, whenever
     /// the engine stopped without telling `isEngineStarted`) without re-attaching.
     private var hasAttachedPlaybackNodes = false
+
+    /// The `AVAudioEngineConfigurationChange` registration — see `init`.
+    private var configurationChangeObserver: NSObjectProtocol?
     /// True while the capture-only engine is running. It is started by
     /// `installInputTap` (with the tap already on it, the order the own-engine
     /// path uses) and stopped by whichever caller takes the tap away.
@@ -259,6 +262,33 @@ final class VoicePlaybackEngine {
         // still reads its own format at install time, so an input device
         // swapped between replies is picked up as it always was.
         _ = captureOnlyEngine.inputNode.outputFormat(forBus: 0)
+
+        // Apple's own requirement, and the trigger for everything above.
+        // `AVAudioEngine.h:1036-1062`: "When the engine's I/O unit observes a
+        // change to the audio input or output hardware's channel count or sample
+        // rate, **the engine stops itself** … and issues this notification …
+        // the app must reestablish connections." Nothing here observed it, and
+        // this app GENERATES these notifications itself — enabling voice
+        // processing reconfigures the whole IO (the file's own measurement,
+        // 44.1 kHz / 1 ch → 48 kHz / 9 ch), which is exactly a channel-count and
+        // sample-rate change. So every reply stopped the engine on purpose and
+        // then never restarted it.
+        //
+        // Only the bookkeeping is cleared here; `ensureEngineStarted` rebuilds
+        // lazily, immediately before the next chunk is scheduled. The header
+        // warns against deallocating the engine inside the handler, and this
+        // does not touch it.
+        configurationChangeObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.isEngineStarted, !self.engine.isRunning else { return }
+                print("🔊 VoicePlaybackEngine: the audio configuration changed and the engine stopped itself (voice processing toggles do this on purpose) — it will be rebuilt before the next chunk")
+                self.isEngineStarted = false
+            }
+        }
     }
 
     // MARK: - Capture surface (continuous listening)
@@ -699,10 +729,13 @@ final class VoicePlaybackEngine {
     /// Stops the current chunk immediately (interruption path). The engine
     /// itself keeps running — a listening tap may live on it.
     func stopChunk() {
-        guard isEngineStarted else {
-            isChunkPlaying = false
-            return
-        }
+        // `playerNode.stop()` runs UNCONDITIONALLY. Skipping it while the engine
+        // is down leaves `isPlaying` stale-true, and `playWAVData` skips
+        // `play()` whenever it reads true — so the next reply schedules its
+        // buffer onto a node that never renders, and since the node is never
+        // recreated the state never clears on its own. Stopping a stopped node
+        // costs nothing; a stale `isPlaying` is permanent (found by the
+        // adversarial audit, 2026-09-24).
         playerNode.stop()
         isChunkPlaying = false
     }
@@ -894,7 +927,12 @@ final class VoicePlaybackEngine {
         }
 
         installPlaybackRenderProbe()
-        isEngineStarted = true
+        // NEVER claim the engine is up when it is not. This flag is what makes
+        // `ensureEngineStarted` skip its own work, so a false `true` set here —
+        // which this line did unconditionally, including on the "still not
+        // running after a rebuild" branch below — is the latch that silences
+        // every later reply and only a relaunch clears.
+        isEngineStarted = engine.isRunning
         if engine.isRunning {
             print("🔊 [probe] connectGraphAndStart done: isRunning=true outputFormat=\(engine.outputNode.outputFormat(forBus: 0).sampleRate)Hz/\(engine.outputNode.outputFormat(forBus: 0).channelCount)ch")
         } else {
