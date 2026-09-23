@@ -120,6 +120,14 @@ nonisolated enum CompanionAction: Sendable {
     /// arrives on the *next* turn, which is what makes a multi-step action
     /// possible: look at the interface, then act on what is really there.
     case readAccessibilityTree
+    /// Hand a task to the fourth exit — the desktop file agent, a Python
+    /// subprocess whose whole world is `~/Desktop` (view / read / write /
+    /// edit files there). The task text is the only free part: the executor
+    /// is one fixed script, so this stays a "model picks from a menu" action,
+    /// never arbitrary command generation. Its result rides back as a data
+    /// block on the next turn, which is what lets the model answer questions
+    /// about the files ("这个文件夹里有什么") through the agent too.
+    case runDesktopFileAgent(task: String)
 }
 
 nonisolated struct ActionParseResult: Sendable {
@@ -199,6 +207,12 @@ nonisolated enum ActionTagParser {
     private static let openingPattern = #"\[OPEN:([^\]]+)\]"#
     private static let accessibilityTreePattern = #"\[AX_TREE\]"#
     private static let waitingPattern = #"\[WAIT:([^\]]+)\]"#
+
+    /// `[PY_AGENT:把 todo.txt 的内容改成……]` — hand a task to the desktop file
+    /// agent (the fourth exit). The task is the whole rest of the tag.
+    ///
+    /// Capture group: 1 = task text.
+    private static let desktopAgentPattern = #"\[PY_AGENT:([^\]]+)\]"#
 
     /// `[SHAPE:circle:500,300;560,300:a label:screen2]` — kind, then two or more
     /// ";"-separated points, then an optional label and an optional screen.
@@ -386,6 +400,13 @@ nonisolated enum ActionTagParser {
             }
             let clampedSeconds = max(1, min(10, requestedSeconds.rounded()))
             actions.append(.wait(seconds: Int(clampedSeconds)))
+        }
+
+        forEachMatch(in: responseText, pattern: desktopAgentPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let taskText = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !taskText.isEmpty else { return }
+            actions.append(.runDesktopFileAgent(task: taskText))
         }
 
         forEachMatch(in: responseText, pattern: shapePattern) { match, tagRange in
@@ -609,7 +630,7 @@ nonisolated enum ActionTagParser {
     /// a keyword added to the parser above must be added here too, or the
     /// streaming speech would read the tag aloud instead of removing it.
     private static let streamingTagKeywords =
-        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE|AGENT_SPAWN|AGENT_SEND"
+        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE|AGENT_SPAWN|AGENT_SEND|PY_AGENT"
 
     /// A complete tag, however far the reply has streamed: `[TYPE:北京新闻]`.
     private static let streamingCompleteTagPattern =
