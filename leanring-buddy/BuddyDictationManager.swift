@@ -272,12 +272,22 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private static let recordedAudioPowerHistorySampleIntervalSeconds: TimeInterval = 0.07
 
     // Continuous listening (回答时持续监听) tuning. The layering mirrors what
-    // the VoiceWeb reference measured (浏览器 AEC 承重 + VAD 阈值/时长防误触发):
-    // ① system AEC (VPIO) cancels the app's own TTS out of the mic signal,
-    // ② a smoothed-RMS threshold rejects background hiss,
-    // ③ a sustained-speech debounce rejects clicks and door slams,
-    // ④ a minimum transcript length keeps an echo artefact from being sent
-    //    as a question even if ①-③ all let something through.
+    // the VoiceWeb reference measured (浏览器 AEC 承重 + VAD 阈值/时长防误触发),
+    // and since 2026-09-23 it matches it again — the load-bearing layer is a
+    // real AEC once more.
+    // ① the system AEC (Apple voice processing, on the shared playback engine
+    //    — see VoicePlaybackEngine's header) removes the app's own answer from
+    //    the microphone BEFORE the recognizer sees it. This is the layer that
+    //    matters: without it the answer arrives as perfectly real words and no
+    //    later layer can tell them apart from the user's.
+    // ② the recording mute (SystemSpeakerMuteCoordinator) keeps system audio
+    //    out of the mic while nothing is playing — it is what covers the
+    //    windows in which ① is not running, and it is why AEC is only needed
+    //    while an answer is actually being read aloud.
+    // ③ a smoothed-RMS threshold rejects background hiss,
+    // ④ a sustained-speech debounce rejects clicks and door slams,
+    // ⑤ a minimum transcript length keeps a short artefact from being sent
+    //    as a question even if ①-④ all let something through.
     //
     // The threshold is on the waveform's boosted scale (RMS × 10.2), and it
     // was calibrated 2026-09-23 against this machine's built-in mic with a
@@ -292,7 +302,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // release, NOT by an unbroken run of it.
     //
     // Why (measured 2026-09-23, probe: a real Chinese voice played through the
-    // system speakers into this same tap+VPIO topology): the smoothed level
+    // system speakers into this same tap topology, while VPIO was still in
+    // place): the smoothed level
     // during continuous speech reads peak 0.772 / p95 0.556 but p50 0.159 —
     // natural articulation dips below 0.25 roughly half the time, and the
     // smoothing decays at 0.72 per tap buffer, so the level is already down
@@ -347,7 +358,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     ///
     /// Why the guard is not optional, measured 2026-09-23: the Bailian realtime
     /// recognizer, fed the microphone audio recorded while this app was reading
-    /// an answer aloud (AEC active and working — the echo measured BELOW the
+    /// an answer aloud (VPIO's AEC was still active then and working — the
+    /// echo measured BELOW the
     /// room's own noise floor, peak 0.111 against a 0.167 floor), returned a
     /// FINAL transcript of 「。」. `String.split()` scores that one "word", so
     /// pipecat's rule at min_words=1 accepts it — and an unguarded trigger would
@@ -364,6 +376,56 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         transcriptText.reduce(into: 0) { contentCharacterCount, character in
             if character.isLetter || character.isNumber { contentCharacterCount += 1 }
         }
+    }
+    /// Whether a listening transcript is the app's OWN answer coming back
+    /// through the microphone, not the user speaking.
+    ///
+    /// This is a BACKSTOP, not the defence. The defence is the system AEC on
+    /// the shared playback engine (VoicePlaybackEngine's header): it removes
+    /// the answer from the microphone before the recognizer ever sees it, and
+    /// the 「回声消除」 setting is what turns it off. This filter covers the
+    /// cases where the AEC is off, could not be enabled, or did not fully
+    /// converge — a Bluetooth route with no usable reference signal, a device
+    /// that refuses voice processing.
+    ///
+    /// Why a backstop is worth keeping, measured 2026-09-23: while an answer
+    /// plays the recording mute lifts (so the user can hear it), and without
+    /// AEC the answer's own audio reaches the microphone raw — the recognizer
+    /// transcribes it as perfectly real words. Those words clear the
+    /// ≥4-character content bar, and pipecat's `MinWordsUserTurnStartStrategy`
+    /// rule cannot help, because echo of speech IS words — so the ASR
+    /// barge-in path (the only path allowed to interrupt while the bot speaks)
+    /// fires on them. What the framework's rule cannot know, this filter does:
+    /// the app knows exactly what it is reading aloud. A transcript contained
+    /// in that text is our own voice.
+    ///
+    /// **It cannot be the only defence, and that is the point.** The recognizer
+    /// hears a MIX of our answer and the user's voice, and the transcript of a
+    /// mix is unreliable in both directions: heard cleanly, our words match and
+    /// are refused — which the user experiences as "it took three or four
+    /// sentences to stop"; mis-heard by one character, the same words fail the
+    /// containment test, are taken for the user's, and the answer interrupts
+    /// itself. Both were reported on 2026-09-23, from this one filter. Un-mix
+    /// the signal and neither happens.
+    ///
+    /// Containment, not equality: the recognizer delivers the CUMULATIVE
+    /// utterance, and an echo utterance is a run of the spoken answer's own
+    /// text. Both sides are reduced to letters and digits first — the
+    /// recognizer's punctuation of our own voice never matches the text that
+    /// was spoken mark for mark.
+    static func continuousListeningTranscriptIsEchoOfSpokenAnswer(
+        _ transcriptText: String,
+        spokenAnswerText: String
+    ) -> Bool {
+        let normalizedTranscriptText = transcriptText.filter { $0.isLetter || $0.isNumber }
+        // Below the interrupt bar the transcript cannot barge in on its own,
+        // so there is nothing for the filter to protect against.
+        guard normalizedTranscriptText.count >= continuousListeningMinimumInterruptContentCharacters else {
+            return false
+        }
+        let normalizedSpokenAnswerText = spokenAnswerText.filter { $0.isLetter || $0.isNumber }
+        guard !normalizedSpokenAnswerText.isEmpty else { return false }
+        return normalizedSpokenAnswerText.contains(normalizedTranscriptText)
     }
     private static let continuousListeningSessionRetryCount = 5
     // How long the final-fallback waits after requestFinalTranscript before
@@ -463,11 +525,10 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private var continuousListeningCallbacks: BuddyContinuousListeningCallbacks?
     private var continuousListeningVADTask: Task<Void, Never>?
     /// Provides the shared TTS playback engine (injected by CompanionManager,
-    /// which owns the lazy TTS client). When that engine's voice processing is
-    /// active, the listening tap installs on IT — the AEC reference signal is
-    /// the audio the engine itself renders, so the mic tap must live on the
-    /// same engine the TTS plays through or the app hears its own replies and
-    /// interrupts itself. nil → the own-engine fallback below runs instead.
+    /// which owns the lazy TTS client). The listening tap installs on IT —
+    /// one engine serves both halves of the voice conversation (the same-engine
+    /// rule; see VoicePlaybackEngine's header). nil → the own-engine fallback
+    /// below runs instead.
     var sharedVoicePlaybackEngineProvider: (() -> VoicePlaybackEngine?)?
     /// Whether the app is reading an answer aloud right now (injected by
     /// CompanionManager, which owns the lazy TTS client). `isPlaying` is true
@@ -477,9 +538,21 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// accepting a transcript as the user speaking. See
     /// `continuousListeningMinimumInterruptContentCharacters`.
     var isBotSpeakingProvider: (() -> Bool)?
+    /// The tag-stripped text of the answer currently being read aloud — or the
+    /// most recent one, because an echo transcript can arrive after the
+    /// barge-in has already stopped playback. Injected by CompanionManager,
+    /// which holds the exact text every TTS path feeds. The echo filter
+    /// (`continuousListeningTranscriptIsEchoOfSpokenAnswer`) compares what the
+    /// microphone heard against this text. The real defence is the shared
+    /// engine's AEC (VoicePlaybackEngine's header); this is the backstop for
+    /// when it is off or did not fully converge — on those paths the answer's
+    /// own audio reaches the input while it plays (the mute lifts so the user
+    /// can hear it), and the recognizer transcribes it as real words.
+    var spokenAnswerTextProvider: (() -> String)?
     /// Whether the current listening window's tap lives on the shared engine
-    /// (endContinuousListening must then NOT stop that engine or toggle its
-    /// voice processing — playback and later windows still need both).
+    /// (endContinuousListening must then NOT stop that engine — playback and
+    /// later windows still need it, and its voice processing can only be
+    /// reconfigured while it is stopped).
     private var isContinuousListeningOnSharedEngine = false
     /// Leaky accumulator of above-threshold mic level for the current
     /// window-with-no-utterance state, in seconds. Replaces a "how long has it
@@ -570,9 +643,10 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
     // MARK: - Continuous listening (回答时持续监听)
 
-    /// Opens the continuous-listening window: starts the audio engine with the
-    /// system's voice-processing unit (AEC) on the input, opens one streaming
-    /// ASR session, and runs a local VAD loop that watches the mic level.
+    /// Opens the continuous-listening window: starts the audio engine (whose
+    /// voice processing is managed by the engine itself — see
+    /// VoicePlaybackEngine's header), opens one streaming ASR session, and
+    /// runs a local VAD loop that watches the mic level.
     ///
     /// Unlike push-to-talk, the engine KEEPS RUNNING across utterances: the
     /// tap feeds whatever `activeTranscriptionSession` currently points at, so
@@ -636,14 +710,11 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         }
     }
 
-    /// Closes the listening window: stops the VAD loop, the engine, the ASR
-    /// session, and turns the input's voice processing (AEC) back off. Safe to
-    /// call when no window is open.
+    /// Closes the listening window: stops the VAD loop, the engine, and the
+    /// ASR session. Safe to call when no window is open.
     ///
     /// On the shared TTS engine the engine is only RELEASED if idle (never
-    /// stopped unconditionally — a follow-up reply may need it a moment later),
-    /// and its voice processing stays ON: it is the property future windows
-    /// and every future reply's AEC depend on.
+    /// stopped unconditionally — a follow-up reply may need it a moment later).
     func endContinuousListening() {
         guard isContinuousListening else { return }
 
@@ -663,10 +734,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         } else {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)
-
-            // The engine is stopped first, which is what
-            // setVoiceProcessingEnabled requires to run.
-            try? audioEngine.inputNode.setVoiceProcessingEnabled(false)
         }
 
         currentAudioPowerLevel = 0
@@ -679,17 +746,18 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         print("🎙️ BuddyDictationManager: continuous listening ended")
     }
 
-    /// Enables system AEC on the input BEFORE the engine runs (the API throws
-    /// on a running engine), then opens the first ASR session of the window
-    /// and installs the tap. A VPIO failure here is not fatal: it logs and the
-    /// window continues on the threshold/debounce/length defences alone.
+    /// Opens the first ASR session of the window and installs the tap.
     ///
-    /// The tap's HOME is the shared TTS playback engine whenever that engine's
-    /// voice processing is active — that is what makes the app's own TTS get
-    /// cancelled out of the mic signal (same-engine rule; see
-    /// VoicePlaybackEngine's header). Only when the shared engine is missing
-    /// or its AEC failed does the window fall back to this manager's own
-    /// engine, which hears raw echo and relies on the level defences alone.
+    /// Voice processing is NOT enabled here: it belongs to the engine and is
+    /// applied by the engine at start-up, gated on the settings
+    /// (VoicePlaybackEngine's header). The tap's HOME is the shared TTS
+    /// playback engine whenever that engine is available — which is exactly
+    /// what makes its AEC able to cancel the answer out of the mic, since AEC
+    /// only works on audio rendered through the same engine. Only when the
+    /// shared engine is missing does the window fall back to this manager's
+    /// own engine, and that fallback runs without AEC; the echo filter in
+    /// `continuousListeningTranscriptIsEchoOfSpokenAnswer` is the backstop
+    /// there.
     private func openContinuousListeningEngineAndSession() async throws {
         activeTranscriptionSession?.cancel()
         activeTranscriptionSession = nil
@@ -710,30 +778,17 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                 // already be running — ensureStarted is a no-op then.
                 try sharedEngine.ensureStartedForCapture()
 
-                // The AEC verdict only exists AFTER the engine has started:
-                // voice processing is attempted lazily at engine start (the
-                // macOS 27 ordering bug makes a VPIO-first start fail with
-                // -10875; see VoicePlaybackEngine's init comment). Checking
-                // the flag before this call would always read false and send
-                // every window to the own-engine fallback.
-                if sharedEngine.isVoiceProcessingActive {
-                    activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
+                activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
 
-                    // The format is read AFTER voice processing is enabled — VPIO
-                    // may force a different sample rate than the raw input, and
-                    // the tap has to match what the node now produces.
-                    let sharedInputNode = sharedEngine.engineInputNode
-                    let inputFormat = sharedInputNode.outputFormat(forBus: 0)
-                    sharedEngine.installInputTap(bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
-                        self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
-                        self?.updateAudioPowerLevel(from: buffer)
-                    }
-                    isContinuousListeningOnSharedEngine = true
-                    print("🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine (AEC reference = our own playback)")
-                    return
-                } else {
-                    print("⚠️ BuddyDictationManager: shared engine's voice processing is inactive — using the own engine (self-echo possible)")
+                let sharedInputNode = sharedEngine.engineInputNode
+                let inputFormat = sharedInputNode.outputFormat(forBus: 0)
+                sharedEngine.installInputTap(bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
+                    self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
+                    self?.updateAudioPowerLevel(from: buffer)
                 }
+                isContinuousListeningOnSharedEngine = true
+                print("🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine")
+                return
             } catch {
                 // Falling back must not leave the shared engine half-configured.
                 sharedEngine.removeInputTap()
@@ -744,20 +799,11 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
         isContinuousListeningOnSharedEngine = false
         let inputNode = audioEngine.inputNode
-        do {
-            try inputNode.setVoiceProcessingEnabled(true)
-            print("🎙️ BuddyDictationManager: input voice processing (AEC) enabled for the listening window")
-        } catch {
-            print("⚠️ BuddyDictationManager: voice processing unavailable, relying on level thresholds only: \(error)")
-        }
 
         activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
 
-        // The format is read AFTER voice processing is enabled — VPIO may force
-        // a different sample rate than the raw input, and the tap has to match
-        // what the node now produces. BuddyPCM16AudioConverter rebuilds itself
-        // whenever the incoming format description changes, so no extra work
-        // is needed downstream.
+        // BuddyPCM16AudioConverter rebuilds itself whenever the incoming
+        // format description changes, so no extra work is needed downstream.
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
         inputNode.removeTap(onBus: 0)
@@ -794,24 +840,44 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                     // 「。」 into silence, and without this an answer would cut
                     // itself off the moment that landed.
                     let isBotSpeaking = self.isBotSpeakingProvider?() ?? false
-                    let minimumContentCharacters = isBotSpeaking
-                        ? Self.continuousListeningMinimumInterruptContentCharacters
-                        : 1
-                    if Self.continuousListeningContentCharacterCount(in: transcriptText)
-                        >= minimumContentCharacters {
-                        self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
-                        // New words are still arriving, so the user is still
-                        // talking — restart the silence countdown. This is the
-                        // reference's 「有文本」 turn-end rule (pipecat's
-                        // SpeechTimeoutUserTurnStopStrategy only ends a turn
-                        // once text has stopped coming AND silence has
-                        // sustained), and it is what keeps a voice below the
-                        // energy threshold from being cut off mid-sentence by
-                        // the backstop that exists to catch exactly that voice.
-                        // Keyed on a CHANGE, not on every callback: a repeated
-                        // identical transcript is not evidence of speech.
-                        if didTranscriptChange, self.continuousListeningUtteranceActive {
-                            self.continuousListeningSilenceStartedAt = nil
+                    // Echo of our own answer, checked BEFORE the content bar:
+                    // while the answer plays (mute lifted) the recognizer can
+                    // still transcribe it as real words — the AEC is what stops
+                    // that, and this covers the paths where it is off or did not
+                    // fully converge. Words are exactly what the content bar
+                    // accepts. A transcript contained in the text being read is
+                    // our own voice — it may neither interrupt nor keep an
+                    // utterance's silence countdown open. See
+                    // `continuousListeningTranscriptIsEchoOfSpokenAnswer`.
+                    let transcriptIsOwnAnswerEcho = isBotSpeaking && Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
+                        transcriptText,
+                        spokenAnswerText: self.spokenAnswerTextProvider?() ?? ""
+                    )
+                    if transcriptIsOwnAnswerEcho {
+                        if didTranscriptChange {
+                            print("🎙️ BuddyDictationManager: listening transcript is our own answer's echo — not treating it as the user (transcript: \"\(transcriptText)\")")
+                        }
+                    } else {
+                        let minimumContentCharacters = isBotSpeaking
+                            ? Self.continuousListeningMinimumInterruptContentCharacters
+                            : 1
+                        if Self.continuousListeningContentCharacterCount(in: transcriptText)
+                            >= minimumContentCharacters {
+                            self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
+                            // New words are still arriving, so the user is still
+                            // talking — restart the silence countdown. This is the
+                            // reference's 「有文本」 turn-end rule (pipecat's
+                            // SpeechTimeoutUserTurnStopStrategy only ends a turn
+                            // once text has stopped coming AND silence has
+                            // sustained), and it is what keeps a voice below
+                            // the energy threshold from being cut off mid-sentence
+                            // by the backstop that exists to catch exactly that
+                            // voice. Keyed on a CHANGE, not on every callback: a
+                            // repeated identical transcript is not evidence of
+                            // speech.
+                            if didTranscriptChange, self.continuousListeningUtteranceActive {
+                                self.continuousListeningSilenceStartedAt = nil
+                            }
                         }
                     }
                     self.continuousListeningCallbacks?.onTranscriptUpdate(transcriptText)
@@ -858,10 +924,20 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         resetContinuousListeningUtteranceState()
 
         let contentCharacterCount = Self.continuousListeningContentCharacterCount(in: trimmedTranscriptText)
-        if contentCharacterCount >= Self.continuousListeningMinimumTranscriptCharacters {
-            continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
-        } else {
+        if contentCharacterCount < Self.continuousListeningMinimumTranscriptCharacters {
             print("🎙️ BuddyDictationManager: listening transcript too short to send (\(contentCharacterCount) content chars: \"\(trimmedTranscriptText)\")")
+        } else if Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
+            trimmedTranscriptText,
+            spokenAnswerText: spokenAnswerTextProvider?() ?? "") {
+            // The echo check is NOT gated on the bot still speaking, on
+            // purpose: an utterance opened on echo can outlive the answer (the
+            // answer finishes, the level drops, the silence-send fires) and its
+            // final then lands after playback stopped — by then
+            // `isBotSpeakingProvider` is false and the content bar alone would
+            // submit our own sentence as the user's next question.
+            print("🎙️ BuddyDictationManager: listening final transcript is our own answer's echo — dropped (\"\(trimmedTranscriptText)\")")
+        } else {
+            continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
         }
 
         Task {
@@ -922,14 +998,13 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// built-in mic + speakers, from the app's own log across 13 replies:
     /// **all 11 level-triggered barge-ins carried an EMPTY transcript**, and 6
     /// of the 13 replies were silenced by one (46%, against the 40% the user
-    /// reported). The mechanism is the echo canceller, not the threshold: the
-    /// shared playback engine is started fresh for every reply, so VPIO's
-    /// adaptive filter has to converge from zero on each one, and during that
-    /// window the speaker's own output reaches the microphone nearly
-    /// unattenuated. Once converged the same echo measures 0.111 peak — BELOW
-    /// the room's 0.167 noise floor — so no fixed threshold can separate "our
-    /// own voice, not yet cancelled" from "the user's voice". Content is the
-    /// only discriminator that survives that: words mean a person spoke.
+    /// reported). The mechanism is that a level rise while the answer plays is
+    /// our own audio — either the AEC's adaptive filter converging from zero
+    /// at the start of a reply, or (with AEC off, or defeated by a device with
+    /// no usable reference signal) the raw playback itself. In every one of
+    /// those worlds a fixed threshold cannot separate "our own voice" from
+    /// "the user's voice" — content is the only discriminator that survives:
+    /// words mean a person spoke.
     ///
     /// This is the framework's own rule, not a local invention. pipecat's
     /// `MinWordsUserTurnStartStrategy` (user_start/min_words_user_turn_start_
@@ -981,8 +1056,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     ///
     /// The transcript is logged WITH the trigger because the two paths fail
     /// differently and the text is what tells them apart: an energy fire with
-    /// empty text means our own audio leaked back through an engine whose AEC
-    /// had not converged yet, while an ASR fire carrying a lone 「。」 or a
+    /// empty text means our own audio leaked back into the mic (echo), while
+    /// an ASR fire carrying a lone 「。」 or a
     /// couple of echoed characters is the recognizer's own noise.
     private func requestContinuousListeningBargeIn(trigger: String) {
         guard isContinuousListening,
@@ -1078,6 +1153,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // A final is already in flight (the silence window expired, or an
         // earlier press asked for one): the press means "send it now".
         if isContinuousListeningAwaitingFinal { return true }
+        // Echo of our own answer must not count as pending, or the press goes
+        // into a send the final handler drops one line later while playback
+        // keeps running — the 「按两次快捷键才能停止播放」 shape again, this time
+        // fed by the recognizer transcribing our own voice.
+        if Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
+            continuousListeningLatestInterimTranscript,
+            spokenAnswerText: spokenAnswerTextProvider?() ?? "") {
+            return false
+        }
         return Self.continuousListeningContentCharacterCount(
             in: continuousListeningLatestInterimTranscript
         ) >= Self.continuousListeningMinimumTranscriptCharacters
@@ -1150,8 +1234,13 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             self.activeTranscriptionSession?.cancel()
             self.activeTranscriptionSession = nil
 
-            if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters {
+            if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters,
+               !Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
+                    fallbackTranscriptText,
+                    spokenAnswerText: self.spokenAnswerTextProvider?() ?? "") {
                 self.continuousListeningCallbacks?.onUtteranceFinalized(fallbackTranscriptText)
+            } else if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters {
+                print("🎙️ BuddyDictationManager: fallback interim transcript is our own answer's echo — dropped (\"\(fallbackTranscriptText)\")")
             } else {
                 print("🎙️ BuddyDictationManager: fallback interim transcript too short to send (\(fallbackTranscriptText.count) chars)")
             }

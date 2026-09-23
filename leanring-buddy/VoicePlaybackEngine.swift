@@ -4,25 +4,74 @@
 //
 //  The shared audio engine for BOTH halves of the voice conversation: TTS
 //  playback (AVAudioPlayerNode) and continuous-listening capture (the input
-//  tap), with the system's voice-processing unit (VPIO — echo cancellation)
-//  enabled on its input node.
+//  tap).
 //
-//  Why one engine: Apple's voice processing AEC only ever references audio
-//  rendered through the same voice-processing chain (WWDC23 "What's new in
-//  voice processing": everything else is "other audio" — ducked, never used
-//  as the reference). VoiceWeb's own README records the same law for the
-//  browser: capture and playback must both stay inside the WebRTC transport,
-//  because the moment playback moves out (WebAudio/Python), AEC goes blind
-//  and the AI starts interrupting itself. The first 持续监听 build failed for
-//  exactly that reason: the mic ran on a VPIO-enabled engine while TTS played
-//  through a separate `AVAudioPlayer`, so the AEC had no reference signal and
-//  every reply triggered the VAD. Playing the TTS through THIS engine — the
-//  one the listening tap is installed on — is the macOS equivalent of
-//  VoiceWeb's "same page, same WebRTC transport" rule.
+//  WHY THE TTS AND THE MICROPHONE SHARE ONE ENGINE — the AEC, and it is the
+//  reason this class exists at all. Voice processing cancels "any of the audio
+//  that is played from the device at a given time from the incoming audio"
+//  (AVAudioIONode.h, setVoiceProcessingEnabled:error:), and it can only do that
+//  for audio rendered through the SAME engine. Playing the answer through one
+//  engine while listening on another leaves the answer in the microphone — for
+//  the recognizer to transcribe as if the user had said it.
 //
-//  The engine is started on demand (first playback or first listening tap)
-//  and stopped again when both go idle, so the microphone route is not held
-//  open permanently between replies.
+//  VOICE PROCESSING WAS REMOVED EARLIER ON 2026-09-23 AND IS BACK THE SAME DAY,
+//  this time with the ducking turned down. The removal was never about the AEC
+//  being wrong: enabling VPIO marks the app as a "communication" app and macOS
+//  then DUCKS every other application's audio for as long as the engine runs
+//  (the FaceTime behaviour; third-party utilities like Unduck-Pro exist purely
+//  to fight it), and with 持续监听 holding the engine up for whole listening
+//  windows every other app on the machine was attenuated to a whisper — the
+//  user's 「任何一个软件的音量都被降到了非常低的程度」.
+//
+//  What the removal cost, measured 2026-09-23 and reported by the user the same
+//  day: with no AEC the answer reaches the microphone raw while it plays (the
+//  recording mute has to lift so the user can hear it), and the recognizer
+//  transcribes OUR OWN ANSWER as perfectly real words. That one fact produced
+//  BOTH reported failures, in opposite directions:
+//
+//    * heard correctly, our words matched the text-level echo filter
+//      (BuddyDictationManager.continuousListeningTranscriptIsEchoOfSpokenAnswer)
+//      and were correctly refused as a barge-in — so the answer kept playing
+//      over the user's real speech, and interrupting seemed to need three or
+//      four sentences;
+//    * mis-heard by a single character, the same words failed that filter's
+//      containment test, were taken for the user's, and the answer interrupted
+//      itself — the self-interruption the user reported twice.
+//
+//  No text filter can win that: on a mixed signal the transcript is unreliable
+//  in both directions. The fix is to un-mix the signal, and the ducking that
+//  forced the removal is CONFIGURABLE on macOS 14 — which is what makes it
+//  possible to have the AEC back without the volume complaint:
+//
+//      inputNode.voiceProcessingOtherAudioDuckingConfiguration =
+//          AVAudioVoiceProcessingOtherAudioDuckingConfiguration(
+//              enableAdvancedDucking: false,   // never duck harder on voice activity
+//              duckingLevel: .min)             // the mildest base ducking offered
+//
+//  Apple's own sample for this is `setVoiceProcessingEnabled(true)` followed by
+//  a ducking configuration (WWDC23 session 10235, "What's new in voice
+//  processing"), and the header documents the default as "disable advanced
+//  ducking, with a ducking level set to
+//  AVAudioVoiceProcessingOtherAudioDuckingLevelDefault" — the level that caused
+//  the complaint was therefore the DEFAULT level, and `.min` is strictly below
+//  it. 「回声消除」 (AppSettings.echoCancellationEnabled, default on) is the
+//  user's way back out if their music dips.
+//
+//  TWO ORDERING RULES COME WITH IT, and both are measured rather than assumed.
+//  Voice processing can only be toggled while the engine is stopped
+//  (AVAudioIONode.h), so it is applied at every engine start — which is also
+//  what makes a settings change land on the next reply instead of mid-answer,
+//  since the engine is released whenever it goes idle. And the main mixer node
+//  has to be touched BEFORE voice processing is enabled, or the engine will not
+//  start at all: see `warmUpMainMixerNode` for the four-variant measurement and
+//  for the -10875 that used to cost every reply its first spoken segment.
+//
+//  Voice processing is applied only when it is actually wanted
+//  (`isEchoCancellationWantedProvider`): with 持续监听 off this engine never
+//  carries a microphone tap, so there is nothing for an AEC to do and no reason
+//  to pay its price. The engine is started on demand (first playback or first
+//  listening tap) and stopped again when both go idle, so neither the
+//  microphone route nor the ducking is held open permanently between replies.
 //
 
 import AVFoundation
@@ -57,17 +106,29 @@ final class VoicePlaybackEngine {
     /// the engine must never be released underneath a live tap.
     private var isInputTapped = false
 
+    /// Whether the system AEC should be enabled the next time the engine
+    /// starts. Injected by CompanionManager, which reads it from the settings:
+    /// it is wanted while 持续监听 is on (the only case in which this engine
+    /// carries a microphone tap, and therefore the only case with an echo
+    /// problem at all) and while the user has not switched 「回声消除」 off.
+    ///
+    /// Evaluated at every engine start rather than cached, and voice processing
+    /// can only be toggled while the engine is STOPPED (AVAudioIONode.h), so a
+    /// settings change takes effect at the next start — which is the next
+    /// reply, since the engine is released whenever it goes idle.
+    var isEchoCancellationWantedProvider: (() -> Bool)?
+
+    /// True when the engine currently running has voice processing on. Not the
+    /// same question as the setting: enabling it can fail (no microphone
+    /// permission, a device that does not support it), and the log line has to
+    /// say which of the two actually happened.
+    private var isEchoCancellationActive = false
+
     /// True when the chunk currently scheduled on the player node is being
     /// played back. The analogue of `AVAudioPlayer.isPlaying` for the chunk
     /// level; the client's `isSpeakingChunkSequence` covers the gaps between
     /// chunks exactly as it did before.
     private(set) var isChunkPlaying = false
-
-    /// Whether the input's voice processing (AEC) could be enabled at all.
-    /// When false, continuous listening CANNOT cancel the app's own TTS out
-    /// of the mic signal, so it must not ride this engine — the caller falls
-    /// back and the feature stays off rather than self-interrupting.
-    private(set) var isVoiceProcessingActive = false
 
     /// The engine-side format playback buffers are converted into. Read once
     /// when the graph is first connected; every chunk after that converts to
@@ -76,15 +137,10 @@ final class VoicePlaybackEngine {
     private var canonicalPlaybackFormat: AVAudioFormat?
 
     init() {
-        // Voice processing is NOT enabled here. Measured 2026-09-23 on this
-        // machine (macOS 27): enabling VPIO before the playback graph is
-        // connected makes `engine.start()` fail with -10875
-        // (PerformCommand(*outputNode, kAUInitialize) — a standalone probe
-        // reproduced it in every "VPIO first, graph second" ordering, and
-        // cleared it in every "graph first, VPIO second" ordering). The input
-        // node is therefore touched in `ensureEngineStarted`, after the graph
-        // is connected. No tap and no connection exist at init, so nothing
-        // captures the microphone now.
+        // Voice processing is not enabled here — it is applied per engine run
+        // in `ensureEngineStarted`, and only when the settings ask for it. See
+        // the file header for why it exists, why it was removed earlier on
+        // 2026-09-23, and why it is back with a ducking level of `.min`.
     }
 
     // MARK: - Capture surface (continuous listening)
@@ -172,47 +228,138 @@ final class VoicePlaybackEngine {
     private func ensureEngineStarted() throws {
         guard !isEngineStarted else { return }
 
+        // Attached exactly once, and outside the retry below: the header
+        // documents `attachNode:` as taking ownership of a NEW node and gives
+        // no meaning to attaching the same one twice.
+        engine.attach(playerNode)
+        engine.attach(timePitchNode)
+
+        // LOAD-BEARING, and it has to happen BEFORE voice processing is turned
+        // on — see `warmUpMainMixerNode`. Without it the engine cannot start at
+        // all with voice processing on, which is what used to cost the first
+        // TTS chunk of every reply.
+        warmUpMainMixerNode()
+
+        // Voice processing goes BEFORE the playback graph's format is read: it
+        // can only be configured while the engine is stopped (AVAudioIONode.h),
+        // and it reconfigures the IO — so the formats below have to be read from
+        // the voice-processing hardware, not from whatever it was before.
+        //
+        // Enabling it on the input node is enough on its own: the header says
+        // voice processing "requires both input and output nodes to be in the
+        // voice processing mode", and then that "enabling this mode on either
+        // of the IO nodes automatically enables it on the other IO node" — the
+        // same line covers disabling.
+        let inputNode = engine.inputNode
+        isEchoCancellationActive = enableEchoCancellationIfWanted(on: inputNode)
+
+        do {
+            try connectGraphAndStart()
+        } catch where isEchoCancellationActive {
+            // The header also warns that "the output format of the input node
+            // and the input format of the output node have to be the same" —
+            // an input and output device pair that disagrees (a Bluetooth
+            // headset in a call profile is the usual one) fails HERE rather
+            // than at the setVoiceProcessingEnabled call above. Losing all
+            // speech to save the echo canceller would be a far worse trade
+            // than the echo, so voice processing is given up and the graph
+            // rebuilt without it.
+            print("⚠️ VoicePlaybackEngine: the engine would not start with voice processing on (\(error)) — retrying without echo cancellation")
+            try? inputNode.setVoiceProcessingEnabled(false)
+            isEchoCancellationActive = false
+            // Turned off, voice processing hands the IO back its own formats,
+            // so the connections made above are stale and have to be redone.
+            engine.disconnectNodeOutput(playerNode)
+            engine.disconnectNodeOutput(timePitchNode)
+            try connectGraphAndStart()
+        }
+
+        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(inputNode.outputFormat(forBus: 0).channelCount) ch)")
+    }
+
+    /// Forces the main mixer node into existence and connects it to the output
+    /// node — and it is the whole difference between an engine that starts with
+    /// voice processing on and one that dies with `-10875`.
+    ///
+    /// Measured 2026-09-23 on the built-in output device, four runs of one
+    /// probe that differed ONLY in which node's format was read before
+    /// `setVoiceProcessingEnabled(true)`:
+    ///
+    ///     nothing read        mixer after VPIO 44100 Hz   engine.start() -> -10875
+    ///     input node read     mixer after VPIO 44100 Hz   engine.start() -> -10875
+    ///     MAIN MIXER read     mixer after VPIO 48000 Hz   engine.start() -> OK
+    ///     both read           mixer after VPIO 48000 Hz   engine.start() -> OK
+    ///
+    /// Reading the mixer's output format is what instantiates it and wires it to
+    /// the output node, which is what creates the output audio unit. Turning
+    /// voice processing on then reconfigures the WHOLE IO — input *and* output —
+    /// to the voice-processing hardware format (48 kHz / 9 input channels on
+    /// this machine, against 44.1 kHz / 1 channel before). With the mixer
+    /// untouched, the output unit is instead created lazily *after* voice
+    /// processing, comes up at the stale 44.1 kHz, and `kAUInitialize` fails
+    /// against 48 kHz hardware:
+    ///
+    ///     Error Domain=com.apple.coreaudio.avfaudio Code=-10875
+    ///     UserInfo={failed call=err = PerformCommand(*outputNode, kAUInitialize, NULL, 0)}
+    ///
+    /// That is the error the app's own log recorded on the first TTS chunk of
+    /// every reply, and it is why the first segment used to be lost: the old
+    /// recovery dropped voice processing, which reconfigures the IO a second
+    /// time and fails the same way. The return value is deliberately discarded —
+    /// this is an ordered side effect, not a format to keep.
+    private func warmUpMainMixerNode() {
+        _ = engine.mainMixerNode.outputFormat(forBus: 0)
+    }
+
+    /// Connects the playback graph and starts the engine — the half that has
+    /// to be redone when a start with voice processing is retried without it,
+    /// which is also why the formats are read here rather than earlier:
+    /// toggling voice processing is exactly what changes them.
+    private func connectGraphAndStart() throws {
+        // Re-warmed here as well as in `ensureEngineStarted`, because the
+        // fallback path has just toggled voice processing OFF — which
+        // reconfigures the IO a second time, and leaves the mixer holding the
+        // format of a configuration that no longer exists. See
+        // `warmUpMainMixerNode` for the measurement.
+        warmUpMainMixerNode()
+
         let mixerOutputFormat = engine.mainMixerNode.outputFormat(forBus: 0)
         canonicalPlaybackFormat = mixerOutputFormat
 
-        engine.attach(playerNode)
-        engine.attach(timePitchNode)
         engine.connect(playerNode, to: timePitchNode, format: mixerOutputFormat)
         engine.connect(timePitchNode, to: engine.mainMixerNode, format: mixerOutputFormat)
 
-        // Voice processing goes AFTER the playback graph is connected — the
-        // ordering the -10875 probe settled on 2026-09-23 (see init's comment).
-        // The engine is still stopped here, which is what the API requires.
-        // A failure is not fatal to PLAYBACK: it only means no AEC, and the
-        // listening path checks `isVoiceProcessingActive` before installing
-        // its tap on this engine.
+        engine.prepare()
+        try engine.start()
+        isEngineStarted = true
+    }
+
+    /// Turns the system AEC on for this engine run when the settings ask for
+    /// it, and says so in the log either way.
+    ///
+    /// Deliberately never throws: a device that cannot do voice processing, or
+    /// a microphone permission that has not been granted, must degrade to "no
+    /// AEC" — the text-level echo filter in BuddyDictationManager is still
+    /// there underneath — rather than take playback down with it.
+    private func enableEchoCancellationIfWanted(on inputNode: AVAudioInputNode) -> Bool {
+        guard isEchoCancellationWantedProvider?() ?? false else { return false }
+
         do {
-            try engine.inputNode.setVoiceProcessingEnabled(true)
-            isVoiceProcessingActive = true
-            print("🔊 VoicePlaybackEngine: input voice processing (AEC) enabled")
+            try inputNode.setVoiceProcessingEnabled(true)
         } catch {
-            isVoiceProcessingActive = false
-            print("⚠️ VoicePlaybackEngine: voice processing unavailable (\(error)) — playback continues without AEC")
+            print("⚠️ VoicePlaybackEngine: voice processing could not be enabled (\(error.localizedDescription)) — continuing without echo cancellation")
+            return false
         }
 
-        engine.prepare()
-        do {
-            try engine.start()
-        } catch {
-            // Last-resort degradation: a failed VPIO start must never take
-            // playback down with it (the silent-TTS failure mode). Drop AEC
-            // and retry once; if that also throws, the caller sees the error.
-            if isVoiceProcessingActive {
-                print("⚠️ VoicePlaybackEngine: start failed (\(error.localizedDescription)) — retrying without AEC")
-                try? engine.inputNode.setVoiceProcessingEnabled(false)
-                isVoiceProcessingActive = false
-                try engine.start()
-            } else {
-                throw error
-            }
-        }
-        isEngineStarted = true
-        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, AEC input)")
+        // The mildest ducking macOS offers, and never the activity-driven
+        // extra: the ducking, not the AEC, is what took voice processing out
+        // of this app earlier today (see the file header).
+        inputNode.voiceProcessingOtherAudioDuckingConfiguration =
+            AVAudioVoiceProcessingOtherAudioDuckingConfiguration(
+                enableAdvancedDucking: false,
+                duckingLevel: .min
+            )
+        return inputNode.isVoiceProcessingEnabled
     }
 
     // MARK: - WAV decoding

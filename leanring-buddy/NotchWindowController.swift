@@ -16,13 +16,16 @@
 //  keyable, which is what lets the expanded sheet take keyboard focus without
 //  stealing the frontmost app's activation.
 //
-//  One panel does both roles: its frame morphs between the resting pill rect
+//  One panel does both roles: its frame moves between the resting pill rect
 //  and the expanded sheet rect (a single window resizing — rebuilding or
 //  swapping windows would flash and drop key status), while the SwiftUI
 //  content inside switches between pill and sheet, keyed off
 //  `expansionProgress` — which is DERIVED from the panel's live frame on
 //  every `windowDidResize`, not animated on its own. One animation source
-//  (the window frame morph, `NSAnimationContext`, 0.62 s 过冲曲线)：the
+//  (the window frame, driven frame-by-frame by `driveCenterScaleFrames` —
+//  2026-09-23 中心缩放：展开沿以刘海顶边中点为锚的等比缩放路径从 .08 长到
+//  1.0（340ms，cubic-bezier(.22,.9,.3,1)，参考页 01 中心缩放的 winScale），
+//  收起走参考页 winClose：scale .92 + 整窗淡出 160ms ease-in)：the
 //  silhouette cannot desync from it, and a stalled progress value is
 //  structurally impossible (the desync-stall class behind the 2026-09-23
 //  「刘海缩不回去」 bug — see 开发经验/10 G12).
@@ -107,9 +110,23 @@ final class NotchWindowController {
     /// mid-flight animation to rest.
     private var collapseGeneration = 0
 
+    /// Same guard for expansions: every beginExpansion bumps this, and its
+    /// completion/watchdog callbacks stand down when a newer expand has taken
+    /// over — without it, a watchdog firing after an expand→collapse→expand
+    /// cycle would snap the OLD screen's panel to that OLD expanded frame.
+    private var expansionGeneration = 0
+
     /// The screen whose sheet is currently expanded. At most one — expanding
     /// on a second screen collapses the first.
     private var expandedScreen: NSScreen?
+
+    /// 中心缩放展开/收起的逐帧驱动器（2026-09-23，参考
+    /// `刘海屏弹出窗口_12种动画对比.html` 01 中心缩放）。窗口 setFrame
+    /// 仍然是唯一动画源——只是每一帧的 frame 由缩放路径算出（以刘海
+    /// 顶边中点为锚的等比缩放），不能再交给 NSAnimationContext，因为它
+    /// 只会做两端 frame 的线性拉伸（「由小变大」而不是「等比放大」）。
+    /// 每次新的展开/收起先 invalidate 上一个，防两个驱动器抢同一个面板。
+    private var centerScaleAnimationTimer: Timer?
 
     init(companionManager: CompanionManager, audioHistoryProvider: @escaping () -> [CGFloat]) {
         self.companionManager = companionManager
@@ -413,36 +430,70 @@ final class NotchWindowController {
     }
 
     /// Starts the sheet growing on `presence` and commits it in the same
-    /// breath — the window morphs out, the silhouette reaches full size, and
-    /// the sheet becomes real (content, activation, key status, shadow,
-    /// chime). Hover no longer has a path here: expansion is click-only, so
-    /// there is no slow creep to commit later.
+    /// breath — the window scales up from the notch's top-centre anchor, the
+    /// silhouette reaches full size, and the sheet becomes real (content,
+    /// activation, key status, shadow, chime). Hover no longer has a path
+    /// here: expansion is click-only, so there is no slow creep to commit
+    /// later.
     private func beginExpansion(on presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
         let expandedFrame = NotchSupport.expandedSheetFrame(on: presence.screen)
 
+        expansionGeneration += 1
+        let expansionGenerationAtStart = expansionGeneration
         expandedScreen = presence.screen
 
-        let timing = NotchSupport.morphTimingControlPoints
-        let duration = NotchSupport.expansionAnimationDuration
-
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = duration
-            // 与窗口动画同一条曲线只此一份：SwiftUI 侧没有自己的动画了，
-            // expansionProgress 由 windowDidResize 从实时 frame 推导。
-            context.timingFunction = CAMediaTimingFunction(
-                controlPoints: timing.0,
-                timing.1,
-                timing.2,
-                timing.3
-            )
-            context.allowsImplicitAnimation = true
-            presence.panel.setFrame(expandedFrame, display: true)
-        }
+        // 01 中心缩放：window frames driven along a top-centre-anchored
+        // SCALE path — scale .08 → 1.0, 340 ms, cubic-bezier(.22,.9,.3,1),
+        // exactly the reference page's winScale keyframes. One animation
+        // source is preserved: the frame is still what everything derives
+        // from, it just follows a scale curve instead of a two-point stretch.
+        driveCenterScaleFrames(
+            panel: presence.panel,
+            targetFrame: expandedFrame,
+            startScale: NotchSupport.centerScaleInitialScale,
+            endScale: 1.0,
+            duration: NotchSupport.centerScaleExpansionDuration,
+            controlPoints: NotchSupport.centerScaleTimingControlPoints,
+            fadesToTransparent: false,
+            completion: { [weak self] in
+                guard let self,
+                      self.expansionGeneration == expansionGenerationAtStart,
+                      self.panelModel.isExpanded else { return }
+                self.convergeOnExpandedState(presence, targetFrame: expandedFrame)
+            }
+        )
 
         presence.panel.ignoresMouseEvents = false
         panelModel.isExpanded = true
         finishExpansionCommit(on: presence)
+
+        // Expansion watchdog: a skipped timer tick cannot strand the sheet
+        // at a partial scale — past the curve's deadline, force the frame to
+        // full unless a newer expand/collapse owns the panel. Progress
+        // follows the frame, so one snap covers both.
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.centerScaleExpansionDuration + 0.25) { [weak self] in
+            guard let self,
+                  self.expansionGeneration == expansionGenerationAtStart,
+                  self.panelModel.isExpanded else { return }
+            self.convergeOnExpandedState(presence, targetFrame: expandedFrame)
+        }
+    }
+
+    /// Forces the panel's frame to the full expanded frame with no animation
+    /// — the frame-driven counterpart of `convergeOnRestingState`. Idempotent
+    /// at every normal completion.
+    private func convergeOnExpandedState(_ presence: ScreenPresence, targetFrame: CGRect) {
+        guard panelModel.isExpanded else { return }
+        let frame = presence.panel.frame
+        let isFrameAtTarget =
+            abs(frame.minX - targetFrame.minX) < 0.5 &&
+            abs(frame.minY - targetFrame.minY) < 0.5 &&
+            abs(frame.width - targetFrame.width) < 0.5 &&
+            abs(frame.height - targetFrame.height) < 0.5
+        if !isFrameAtTarget {
+            presence.panel.setFrame(targetFrame, display: true)
+        }
     }
 
     /// Everything "the sheet is now open" means: content, shadow, activation,
@@ -488,62 +539,116 @@ final class NotchWindowController {
         companionManager.isNotchSheetExpanded = false
         removeEscapeMonitor()
 
-        // Morph back to the WIDE resting frame (restingWindowFrame), not the
-        // pill rect: the window was created at the wide frame so the flanks
-        // have a 150pt canvas per side, and shrinking to the pill rect here
-        // clipped that canvas away permanently — after the first expand the
-        // flank animations could never draw again. The pill rect remains the
-        // hit-test geometry (click-to-expand above); only the window frame has
-        // to come back wide.
-        guard expandBackToPill,
-              let collapsingPresence,
-              let restingFrame = NotchSupport.restingWindowFrame(on: collapsingPresence.screen) else {
-            // Teardown path: the panel is ordered out right after this, so
-            // nobody sees a morph — and there is nothing to animate anyway
-            // (progress is derived from the frame, which stays put here).
-            return
-        }
-
         // Every collapse bumps the generation; a pending convergence callback
         // from an earlier collapse sees the bump and stands down instead of
         // snapping this collapse's mid-flight animation to rest.
         collapseGeneration += 1
         let collapseGenerationAtStart = collapseGeneration
 
-        NSAnimationContext.runAnimationGroup({ context in
-            context.duration = NotchSupport.collapseAnimationDuration
-            // 收起专用的先缓后快曲线（demo 定稿），退场不跟展开抢戏。
-            context.timingFunction = CAMediaTimingFunction(
-                controlPoints: NotchSupport.collapseTimingControlPoints.0,
-                NotchSupport.collapseTimingControlPoints.1,
-                NotchSupport.collapseTimingControlPoints.2,
-                NotchSupport.collapseTimingControlPoints.3
-            )
-            context.allowsImplicitAnimation = true
-            collapsingPresence.panel.setFrame(restingFrame, display: true)
-        }, completionHandler: { [weak self] in
-            // A newer expand/collapse owns the panel now — its own completion
-            // path handles the shadow, and snapping mid-flight would be visible.
-            guard let self, self.collapseGeneration == collapseGenerationAtStart else { return }
-            // Shadow off only once the morph lands — dropping it at the
-            // start would make the sheet's silhouette pop mid-animation.
-            collapsingPresence.panel.hasShadow = false
-            self.convergeOnRestingState(collapsingPresence)
-        })
+        guard expandBackToPill,
+              let collapsingPresence,
+              let restingFrame = NotchSupport.restingWindowFrame(on: collapsingPresence.screen) else {
+            // Teardown path: the panel is ordered out right after this, so
+            // nobody sees an animation — stop any running scale driver and
+            // leave the panel opaque at rest for the next install.
+            centerScaleAnimationTimer?.invalidate()
+            centerScaleAnimationTimer = nil
+            if let collapsingPresence {
+                collapsingPresence.panel.alphaValue = 1
+            }
+            return
+        }
+
+        // winClose (reference page 01): scale .92 + fade the whole window
+        // out over 160 ms ease-in — the sheet shrinks a touch and vanishes
+        // rather than shrinking all the way back into the notch. alphaValue
+        // multiplies the window's shadow too, so the silhouette and its
+        // shadow fade together.
+        driveCenterScaleFrames(
+            panel: collapsingPresence.panel,
+            targetFrame: NotchSupport.expandedSheetFrame(on: collapsingPresence.screen),
+            startScale: 1.0,
+            endScale: NotchSupport.centerScaleCollapseFinalScale,
+            duration: NotchSupport.centerScaleCollapseDuration,
+            controlPoints: NotchSupport.centerScaleCollapseTimingControlPoints,
+            fadesToTransparent: true,
+            completion: { [weak self] in
+                guard let self, self.collapseGeneration == collapseGenerationAtStart else { return }
+                // While fully transparent, drop the shadow and put the frame
+                // back at the WIDE resting frame (restingWindowFrame, not the
+                // pill rect): the window was created wide so the flanks have
+                // a 150 pt canvas per side — shrinking to the pill rect here
+                // clipped that canvas away permanently (measured 2026-09-23).
+                collapsingPresence.panel.hasShadow = false
+                collapsingPresence.panel.setFrame(restingFrame, display: false)
+                collapsingPresence.panel.alphaValue = 1
+                self.convergeOnRestingState(collapsingPresence)
+            }
+        )
         // Back to the inert resting state — see the panel creation comment.
         collapsingPresence.panel.ignoresMouseEvents = true
 
         // Convergence watchdog: the completion handler above can be skipped
-        // when the frame animation is replaced or dropped. After the morph's
-        // deadline, force the frame to rest unless a newer expand/collapse
+        // when the frame animation is replaced or dropped. After the fade's
+        // deadline, force the resting state unless a newer expand/collapse
         // owns it — the published progress follows the frame, so one snap
         // covers both.
-        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.collapseAnimationDuration + 0.25) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.centerScaleCollapseDuration + 0.25) { [weak self] in
             guard let self,
                   self.collapseGeneration == collapseGenerationAtStart,
                   !self.panelModel.isExpanded else { return }
             self.convergeOnRestingState(collapsingPresence)
         }
+    }
+
+    /// The 中心缩放 frame driver — the one animation source for expand and
+    /// collapse. Each tick evaluates the reference page's CSS cubic-bezier
+    /// timing function, scales `targetFrame` about its top-centre anchor
+    /// (transform-origin: 50% 0), and setFrame's the result. `fadesToTransparent`
+    /// additionally drives the window's alphaValue down with the same curve —
+    /// winClose's opacity leg.
+    private func driveCenterScaleFrames(
+        panel: NSPanel,
+        targetFrame: CGRect,
+        startScale: CGFloat,
+        endScale: CGFloat,
+        duration: TimeInterval,
+        controlPoints: (Float, Float, Float, Float),
+        fadesToTransparent: Bool,
+        completion: @escaping () -> Void
+    ) {
+        centerScaleAnimationTimer?.invalidate()
+        let startDate = Date()
+        let anchorMidX = targetFrame.midX
+        let anchorTopY = targetFrame.maxY
+
+        let timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self, weak panel] timer in
+            guard let panel else {
+                timer.invalidate()
+                return
+            }
+            let linearProgress = min(Date().timeIntervalSince(startDate) / duration, 1)
+            let eased = NotchSupport.timingCurveValue(atProgress: linearProgress, controlPoints: controlPoints)
+            let scale = startScale + (endScale - startScale) * CGFloat(eased)
+            panel.setFrame(
+                CGRect(
+                    x: anchorMidX - targetFrame.width * scale / 2,
+                    y: anchorTopY - targetFrame.height * scale,
+                    width: targetFrame.width * scale,
+                    height: targetFrame.height * scale
+                ),
+                display: true
+            )
+            if fadesToTransparent {
+                panel.alphaValue = 1 - CGFloat(eased)
+            }
+            if linearProgress >= 1 {
+                timer.invalidate()
+                self?.centerScaleAnimationTimer = nil
+                completion()
+            }
+        }
+        centerScaleAnimationTimer = timer
     }
 
     /// Forces the panel's frame to the resting state with no animation — the
@@ -553,6 +658,16 @@ final class NotchWindowController {
     /// normal completion this is a no-op.
     private func convergeOnRestingState(_ presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
+
+        // Defensive alpha restore: the winClose fade leaves the window fully
+        // transparent until the frame snap brings it back. If the fade's
+        // completion was skipped and only this watchdog ran, an unrestored
+        // alpha would strand an invisible, unclickable pill.
+        presence.panel.alphaValue = 1
+        // Same defensive reasoning as the alpha: the resting pill must never
+        // cast a shadow (it halos under the menu bar), and a skipped
+        // completion would otherwise leave the expanded-state shadow on.
+        presence.panel.hasShadow = false
 
         if let restingFrame = NotchSupport.restingWindowFrame(on: presence.screen) {
             let frame = presence.panel.frame

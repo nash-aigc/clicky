@@ -21,45 +21,55 @@ enum DS {
     enum Colors {
 
         // ── Backgrounds ──────────────────────────────────────────────
-        // Layered surfaces from deepest to most elevated.
-        // Higher surfaces are lighter, creating a sense of depth.
-
-        // Neutral dark palette (no green/grey cast) — hues are pure neutral,
-        // elevation steps are small so cards read as one family.
+        // 2026-09-23 UI 化改造：整套色板换成参考页
+        // （刘海屏弹出窗口_12种动画对比.html）的设计语言。注意这里的
+        // 层级和旧版相反——参考页的卡片比窗口底更暗（--card #0C0C0E 落在
+        // 窗口 rgba(24,24,28,.94) 上），悬停地面是它自己的 #101014。
+        //
+        //   --bg:#050506  --card:#0C0C0E  --line:#1D1D21  --faint:#2A2A2E
+        //   --txt:#F2F2F4  --dim:#8A8A93  --accent:#0A84FF  hover:#101014
 
         /// The deepest background — used for the main app window fill.
-        static let background = Color(hex: "#0D0D0E")
+        static let background = Color(hex: "#050506")
 
-        /// First elevation layer — used for cards, sidebar, top bar backgrounds.
-        static let surface1 = Color(hex: "#141416")
+        /// First elevation layer — window/panel ground (the reference
+        /// window's rgba(24,24,28,.94), stored opaque).
+        static let surface1 = Color(hex: "#18181C")
 
-        /// Second elevation layer — used for input fields, elevated cards, chat bubbles.
-        static let surface2 = Color(hex: "#1B1B1E")
+        /// Second elevation layer — card fill (the reference `--card`).
+        /// Darker than `surface1`: cards on this palette read as darker
+        /// plates on a lighter ground, not lighter cards on a darker one.
+        static let surface2 = Color(hex: "#0C0C0E")
 
-        /// Third elevation layer — used for hover backgrounds on interactive elements.
-        static let surface3 = Color(hex: "#232326")
+        /// Third elevation layer — hover ground (the reference page's own
+        /// button-hover background, #101014).
+        static let surface3 = Color(hex: "#101014")
 
-        /// Fourth elevation layer — used for active/pressed states on interactive elements.
-        static let surface4 = Color(hex: "#2C2C30")
+        /// Fourth elevation layer — active/pressed states on interactive elements.
+        static let surface4 = Color(hex: "#1A1A1E")
 
         // ── Borders ──────────────────────────────────────────────────
 
-        /// Subtle border — used for card outlines, dividers, input field borders.
-        static let borderSubtle = Color(hex: "#2A2A2E")
+        /// Subtle border — card outlines, dividers, input field borders
+        /// (the reference `--line`).
+        static let borderSubtle = Color(hex: "#1D1D21")
 
-        /// Strong border — used for focused inputs, hovered card outlines.
-        static let borderStrong = Color(hex: "#3A3A3F")
+        /// Strong border — focused inputs, hovered card outlines
+        /// (the reference `--faint`).
+        static let borderStrong = Color(hex: "#2A2A2E")
 
         // ── Text ─────────────────────────────────────────────────────
 
-        /// Primary text — main body text, titles, headings.
+        /// Primary text — main body text, titles, headings (the reference `--txt`).
         static let textPrimary = Color(hex: "#F2F2F4")
 
-        /// Secondary text — descriptions, hints, muted labels.
-        static let textSecondary = Color(hex: "#A8A8AD")
+        /// Secondary text — descriptions, hints, muted labels
+        /// (the reference `.opt` secondary text).
+        static let textSecondary = Color(hex: "#B9B9C2")
 
-        /// Tertiary text — very muted, used for section labels, timestamps, disabled text.
-        static let textTertiary = Color(hex: "#6C6C72")
+        /// Tertiary text — very muted, used for section labels, timestamps, disabled text
+        /// (the reference `--dim`).
+        static let textTertiary = Color(hex: "#8A8A93")
 
         /// Text used on top of the accent fill (#2563eb blue), like the primary button label.
         /// White on #2563eb achieves ~5.1:1 contrast — WCAG AA compliant.
@@ -91,25 +101,32 @@ enum DS {
         static let blue900 = Color(hex: "#1e3a8a")
         static let blue950 = Color(hex: "#172554")
 
-        // ── Accent (derived from blue scale) ───────────────────────
-        // The primary fill is Blue 600; hover darkens to Blue 700.
+        // ── Accent ───────────────────────────────────────────────────
+        // The reference page's accent is iOS system blue #0A84FF, and the
+        // 2026-09-23 UI 化改造 adopts it as THE accent everywhere.
 
-        /// Accent fill — used for solid button backgrounds.
-        /// #2563eb → ~5.1:1 contrast with white text (WCAG AA).
-        static let accent = blue600
+        /// Accent fill — solid buttons, toggles, the user bubble fill.
+        /// #0A84FF on the dark cards reads like the reference's own blue.
+        static let accent = Color(hex: "#0A84FF")
 
-        /// Accent hover — slightly darker blue for hover state.
-        /// #1d4ed8 → ~6.5:1 contrast with white text (WCAG AA+).
-        static let accentHover = blue700
+        /// Accent hover — a step darker for hover state.
+        static let accentHover = Color(hex: "#0873DB")
 
-        /// Accent text — bright blue used for accent-colored text and icons
-        /// on dark backgrounds (links, active nav items, highlighted labels).
-        static let accentText = blue400
+        /// Accent text — accent-colored text and icons on dark backgrounds
+        /// (links, active nav items, highlighted labels).
+        static let accentText = Color(hex: "#3D9DFF")
 
-        /// Very subtle accent tint — used for selected item backgrounds (e.g. current step
-        /// in the sidebar). Neutral white rather than blue: selection is a "you are
-        /// here" state, not an action — blue is reserved for toggles and focus.
-        static let accentSubtle = Color.white.opacity(0.08)
+        /// The reference page's icon-tile gradient — `.unit.ai .dot` and the
+        /// header avatar's `linear-gradient(135deg,#0A84FF,#7A5CFF)`.
+        static let accentGradient = LinearGradient(
+            colors: [Color(hex: "#0A84FF"), Color(hex: "#7A5CFF")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+
+        /// Very subtle accent tint — selected item backgrounds
+        /// (the reference `.opt.sel`'s rgba(10,132,255,.10)).
+        static let accentSubtle = Color(hex: "#0A84FF").opacity(0.10)
 
         // ── Pill Button (the light capsule in HeyClicky screenshots) ──
 
@@ -154,10 +171,11 @@ enum DS {
 
         // ── Overlay Cursor ───────────────────────────────────────────
 
-        /// The blue cursor/bubble color used in OverlayWindow.
-        /// Kept distinct from the accent since it serves a different purpose
-        /// (screen overlay vs in-app UI).
-        static let overlayCursorBlue = Color(hex: "#3380FF")
+        /// The blue cursor/bubble color used in OverlayWindow. Aligned to the
+        /// reference accent (#0A84FF) by the 2026-09-23 UI 化改造 so the
+        /// on-screen cursor, its transcript bubble and the in-app UI share
+        /// one blue.
+        static let overlayCursorBlue = Color(hex: "#0A84FF")
 
         // ── Floating Button Gradient ─────────────────────────────────
 
@@ -214,14 +232,14 @@ enum DS {
     // MARK: - Corner Radii
 
     enum CornerRadius {
-        /// Small elements like tags, badges.
-        static let small: CGFloat = 6
-        /// Buttons, input fields, small cards.
-        static let medium: CGFloat = 8
-        /// Cards, dialogs, chat bubbles.
-        static let large: CGFloat = 10
-        /// Large panels, permission cards.
-        static let extraLarge: CGFloat = 12
+        /// Small elements like tags, badges, icon tiles (the reference's 7).
+        static let small: CGFloat = 7
+        /// Buttons, input fields, small cards (the reference button radius).
+        static let medium: CGFloat = 10
+        /// Cards, dialogs, chat bubbles (the reference grid-card radius).
+        static let large: CGFloat = 12
+        /// Large panels, permission cards, option rows (the reference .opt).
+        static let extraLarge: CGFloat = 14
         /// Pill-shaped buttons (the continue button).
         static let pill: CGFloat = .infinity
     }
@@ -229,8 +247,9 @@ enum DS {
     // MARK: - Animation Durations
 
     enum Animation {
-        /// Quick state changes — hover in/out, press feedback.
-        static let fast: Double = 0.15
+        /// Quick state changes — hover in/out, press feedback
+        /// (the reference page's own 0.18 s button transitions).
+        static let fast: Double = 0.18
         /// Standard transitions — content reveal, button state changes.
         static let normal: Double = 0.25
         /// Slower, more dramatic — fade-ins, celebration screen elements.
@@ -362,10 +381,8 @@ struct DSSecondaryButtonStyle: ButtonStyle {
             .frame(maxWidth: isFullWidth ? .infinity : nil)
             .padding(.vertical, 12)
             .padding(.horizontal, isFullWidth ? 0 : 16)
-            .background(
-                Capsule()
-                    .fill(buttonBackgroundColor(isPressed: configuration.isPressed))
-            )
+            .background(buttonShape.fill(buttonBackgroundColor(isPressed: configuration.isPressed)))
+            .overlay(buttonShape.stroke(borderColor(isPressed: configuration.isPressed), lineWidth: 1))
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .animation(.easeOut(duration: DS.Animation.fast), value: configuration.isPressed)
             .animation(.easeOut(duration: DS.Animation.fast), value: isHovered)
@@ -375,6 +392,9 @@ struct DSSecondaryButtonStyle: ButtonStyle {
             }
     }
 
+    /// The reference page's button shape — rounded rect, radius 10, not a capsule.
+    private var buttonShape: some Shape { RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous) }
+
     private func buttonBackgroundColor(isPressed: Bool) -> Color {
         if isPressed {
             return DS.Colors.surface4
@@ -382,6 +402,17 @@ struct DSSecondaryButtonStyle: ButtonStyle {
             return DS.Colors.surface3
         } else {
             return DS.Colors.surface2
+        }
+    }
+
+    private func borderColor(isPressed: Bool) -> Color {
+        if isPressed {
+            return DS.Colors.borderStrong
+        } else if isHovered {
+            // The reference's hover reads the border in the accent.
+            return DS.Colors.accent.opacity(0.6)
+        } else {
+            return DS.Colors.borderSubtle
         }
     }
 }
@@ -405,7 +436,7 @@ struct DSTertiaryButtonStyle: ButtonStyle {
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
             .background(
-                Capsule()
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
                     .fill(buttonBackgroundColor(isPressed: configuration.isPressed))
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
@@ -471,11 +502,11 @@ struct DSOutlinedButtonStyle: ButtonStyle {
             .padding(.vertical, 12)
             .padding(.horizontal, isFullWidth ? 0 : 16)
             .background(
-                Capsule()
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
                     .fill(buttonBackgroundColor(isPressed: configuration.isPressed))
             )
             .overlay(
-                Capsule()
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
                     .stroke(
                         borderColor(isPressed: configuration.isPressed),
                         lineWidth: 1
@@ -501,8 +532,11 @@ struct DSOutlinedButtonStyle: ButtonStyle {
     }
 
     private func borderColor(isPressed: Bool) -> Color {
-        if isPressed || isHovered {
+        if isPressed {
             return DS.Colors.borderStrong
+        } else if isHovered {
+            // The reference's hover reads the border in the accent.
+            return DS.Colors.accent.opacity(0.6)
         } else {
             return DS.Colors.borderSubtle
         }
@@ -586,17 +620,19 @@ struct DSIconButtonStyle: ButtonStyle {
             .foregroundColor(iconColor(isPressed: configuration.isPressed))
             .frame(width: size, height: size)
             .background(
-                Circle()
+                // The reference `.close` is a rounded SQUARE (24×24, radius 7),
+                // not a circle — same treatment here.
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(circleBackgroundColor(isPressed: configuration.isPressed))
             )
             .overlay(
-                Circle()
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .stroke(circleBorderColor(isPressed: configuration.isPressed), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.93 : 1.0)
             .animation(.easeOut(duration: DS.Animation.fast), value: configuration.isPressed)
             .animation(.easeOut(duration: DS.Animation.fast), value: isHovered)
-            .contentShape(Circle())
+            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             // Cursor change via AppKit cursor rects — more reliable than NSCursor.push/pop
             // because cursor rects are managed at the window level and don't conflict
             // with SwiftUI's internal cursor handling.

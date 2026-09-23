@@ -93,6 +93,15 @@ final class CompanionManager: ObservableObject {
 
     private lazy var bailianTTSClient = BailianTTSClient()
 
+    /// 「录制期间自动静音系统扬声器」: mutes the default output device while
+    /// the mic is recording (and no answer is playing), restores it after.
+    /// The echo defence is the shared engine's voice processing (see
+    /// VoicePlaybackEngine's header); this mute is what covers the windows in
+    /// which the answer is NOT playing, and it is why AEC is only needed while
+    /// an answer is actually being read aloud. Built in `start()`, once both
+    /// signal providers it reads exist.
+    private var systemSpeakerMuteCoordinator: SystemSpeakerMuteCoordinator?
+
     /// Conversation history so the companion remembers prior exchanges. Each entry
     /// is the user's transcript, the assistant's response, and — when
     /// 「历史里带截图」 is on — the screenshots the answer was based on.
@@ -312,6 +321,29 @@ final class CompanionManager: ObservableObject {
     /// which is what keeps the setting to one gate, in the pipeline that fills this.
     @Published private(set) var streamingAnswerText: String = ""
 
+    /// Whether the reply is still streaming in right now. False the moment the
+    /// vision call returns, and stays false through the TTS swap to
+    /// `finalSpokenText` and the linger.
+    ///
+    /// The cursor-side answer card keeps its blurred writing tail only while
+    /// this is true — the tail means "more words are coming". The bubble's text
+    /// alone cannot tell the card that: after the stream ends the same text
+    /// stays on screen for the whole reading, and a permanently blurred tail
+    /// would sit there for seconds looking like the answer never finished.
+    @Published private(set) var isAnswerStreamLive = false
+
+    /// The tag-stripped text of the answer currently being read aloud — or the
+    /// most recent one, because an echo transcript can arrive after the barge-in
+    /// has already stopped playback. Written by every TTS path (逐句快答's
+    /// streaming feed and 整段合成's whole-reply speakText) and cleared by
+    /// `clearAnswerBubble()`, so a stale answer can never mask a new question.
+    /// The continuous-listening echo filter compares what the microphone heard
+    /// against this text. The real defence is the shared engine's AEC (see
+    /// VoicePlaybackEngine's header); this text is the backstop for when it is
+    /// off or did not fully converge — the answer still reaches the input on
+    /// those paths, and the recognizer transcribes it.
+    private var spokenAnswerTextForEchoFilter = ""
+
     /// Whether the notch sheet is expanded right now. `NotchWindowController`
     /// sets it in `expand(on:)` / `collapse(expandBackToPill:)`.
     ///
@@ -467,6 +499,46 @@ final class CompanionManager: ObservableObject {
         // 就能把 AI 自己的回答打断。TTS 客户端同样是 lazy 的，所以注入闭包。
         buddyDictationManager.isBotSpeakingProvider = { [weak self] in
             self?.bailianTTSClient.isPlaying ?? false
+        }
+
+        // The shared engine's echo canceller. Apple's voice processing is the
+        // only real AEC on macOS, and it is the structural fix for both of the
+        // barge-in failures (2026-09-23): it keeps the app's OWN spoken answer
+        // out of the microphone, which is the single source of both the
+        // self-interruption and the "interrupting takes three sentences"
+        // reports — see VoicePlaybackEngine's header for the measurement.
+        //
+        // Wanted only while 持续监听 is on (with it off, this engine carries no
+        // microphone tap, so there is nothing to cancel and no reason to pay
+        // VPIO's price) and while the user has not switched 「回声消除」 off —
+        // that switch exists because the price is macOS ducking every other
+        // application's audio, which is what made this app remove AEC earlier
+        // today.
+        bailianTTSClient.voicePlaybackEngine.isEchoCancellationWantedProvider = {
+            let appSettings = AppSettingsStore.snapshot()
+            return appSettings.continuousListeningEnabled && appSettings.echoCancellationEnabled
+        }
+
+        // The echo filter's reference signal: what the app is reading aloud.
+        // A listening transcript contained in it is our own voice, not the
+        // user's — the backstop for whenever the AEC is off or defeated.
+        buddyDictationManager.spokenAnswerTextProvider = { [weak self] in
+            self?.spokenAnswerTextForEchoFilter ?? ""
+        }
+
+        // 录制期间静音系统扬声器：录音中且没有播报时把系统扬声器静音，既避免
+        // 录入其他应用的声音，也覆盖「没有播报、AEC 未运行」的那些窗口（见
+        // VoicePlaybackEngine 头注释）。轮询循环每 0.5 s 收敛一次目标状态。
+        if systemSpeakerMuteCoordinator == nil {
+            systemSpeakerMuteCoordinator = SystemSpeakerMuteCoordinator(
+                recordingActiveProvider: { [weak self] in
+                    guard let self else { return false }
+                    return self.buddyDictationManager.isDictationInProgress
+                        || self.buddyDictationManager.isContinuousListening
+                },
+                playbackActiveProvider: { [weak self] in
+                    self?.bailianTTSClient.isPlaying ?? false
+                })
         }
 
         // Restore the conversation before anything can be asked, so the first
@@ -630,6 +702,8 @@ final class CompanionManager: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
+                // 恢复被录制静音挡住的扬声器 —— 退出时轮询循环不能保证再跑一次。
+                self?.systemSpeakerMuteCoordinator?.restoreAllMutesNow()
                 self?.voiceWebSessionController.disconnectOnTermination()
             }
         }
@@ -2036,6 +2110,9 @@ final class CompanionManager: ObservableObject {
                             if !announcedAnswerStart, !accumulatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 announcedAnswerStart = true
                                 SoundEffectPlayer.shared.play(.answerStarted)
+                                // The stream is live — the cursor-side answer card
+                                // may show its blurred writing tail from here on.
+                                self?.isAnswerStreamLive = true
                             }
 
                             // 逐句快答: hand the tag-stripped cumulative text to the
@@ -2046,6 +2123,9 @@ final class CompanionManager: ObservableObject {
                             if let streamingSpeechSession {
                                 let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
                                 streamingSpeechSession.feed(cumulativeSpeakableText: speakableText)
+                                // The echo filter compares mic transcripts
+                                // against exactly what is being read aloud.
+                                self?.spokenAnswerTextForEchoFilter = speakableText
                             }
 
                             guard showsResponseText else { return }
@@ -2054,6 +2134,11 @@ final class CompanionManager: ObservableObject {
                     )
 
                     guard !Task.isCancelled else { return }
+
+                    // The stream just ended — the whole reply is in. The cursor-side
+                    // card's blurred tail settles to sharp from here; the text itself
+                    // stays on screen through the TTS swap and the linger.
+                    isAnswerStreamLive = false
 
                     // The raw reply becomes the assistant half of this step, so the
                     // continuation request — and only it, this array is local to the
@@ -2324,6 +2409,10 @@ final class CompanionManager: ObservableObject {
                         streamingSpeechSession.finishStreaming()
                     } else {
                         do {
+                            // The echo filter's reference signal for the
+                            // whole-reply path (逐句快答 records its text at the
+                            // streaming feed above).
+                            spokenAnswerTextForEchoFilter = finalSpokenText
                             try await bailianTTSClient.speakText(finalSpokenText)
                             // speakText returns after player.play() — audio is now playing
                             voiceState = .responding
@@ -2483,6 +2572,10 @@ final class CompanionManager: ObservableObject {
         answerBubbleClearTask?.cancel()
         answerBubbleClearTask = nil
         streamingAnswerText = ""
+        isAnswerStreamLive = false
+        // The next question must not be judged against the previous answer:
+        // a real question that happens to quote it would be filtered as echo.
+        spokenAnswerTextForEchoFilter = ""
     }
 
     /// Stops everything the companion is doing, right now.

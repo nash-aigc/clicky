@@ -134,13 +134,7 @@ private struct ClickySettingsRootView: View {
             // HeyClicky 式头部：应用身份卡在导航之上。
             HStack(spacing: 10) {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [DS.Colors.overlayCursorBlue.opacity(0.85), DS.Colors.overlayCursorBlue.opacity(0.45)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(DS.Colors.accentGradient)
                     .frame(width: 34, height: 34)
                     .overlay(
                         Triangle()
@@ -170,7 +164,7 @@ private struct ClickySettingsRootView: View {
 
             // 分组导航：组与组之间用大写小标签隔开——HeyClicky 的侧栏是
             // 「General / 对话 / 看与操作」三段，不是一列平铺。
-            sidebarSection(title: nil, pages: [.general, .model, .agent])
+            sidebarSection(title: nil, pages: [.general, .cardStyle, .model, .agent])
             sidebarSection(title: "对话", pages: [.memory, .listen, .speak, .shortcuts])
             sidebarSection(title: "看与操作", pages: [.vision, .action])
 

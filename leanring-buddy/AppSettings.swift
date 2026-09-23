@@ -48,6 +48,25 @@ nonisolated enum AnswerLengthStyle: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// The visual style of the card that renders the assistant's reply in the
+/// conversation view. Values, borders and default follow the user-supplied
+/// reference spec (「clip 卡片样式」): blue card #0B57D0 with a 30% white border,
+/// black card #000 with a 16% white border, paper card #F7F2E7 with an 18%
+/// black border and ink text — blue is the default.
+nonisolated enum AnswerCardStyle: String, Codable, CaseIterable, Sendable {
+    case blue
+    case black
+    case paper
+
+    var displayName: String {
+        switch self {
+        case .blue: return "蓝色"
+        case .black: return "黑色"
+        case .paper: return "宣纸"
+        }
+    }
+}
+
 /// Which language the streaming transcription is told to expect.
 nonisolated enum TranscriptionLanguage: String, Codable, CaseIterable, Sendable {
     case chinese
@@ -394,6 +413,10 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// Prompt-side answer length control.
     var answerLengthStyle: AnswerLengthStyle = .oneOrTwoSentences
 
+    /// The card theme that renders the assistant's reply in the conversation
+    /// view. Blue is the default, per the user's reference spec.
+    var answerCardStyle: AnswerCardStyle = .blue
+
     /// Free-form instructions appended verbatim to the system prompt.
     var extraSystemPromptInstructions: String = ""
 
@@ -444,6 +467,38 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// the 听 page so it can be pushed out of the way of the user's own pauses.
     /// Clamped to 1...5.
     var continuousListeningSilenceSendSeconds: Double = 2.0
+
+    /// 「回声消除」: whether Apple's voice processing (the system AEC) runs on
+    /// the shared playback engine, cancelling the app's OWN spoken answer out
+    /// of the microphone before the recognizer ever sees it.
+    ///
+    /// This is the structural half of the barge-in fix (2026-09-23). The
+    /// text-level echo filter below it cannot hold on a mixed signal: with the
+    /// answer audible in the microphone the recognizer transcribes our own
+    /// words, and a filter then errs in BOTH directions — refusing a real
+    /// interruption when it reads our words as echo (the answer talks over the
+    /// user for sentences), and self-interrupting when it mis-hears one
+    /// character (the AI cutting itself off). Un-mixing the signal is the only
+    /// fix that holds, and AEC is what un-mixes it.
+    ///
+    /// Why it is a setting at all: while voice processing runs, macOS ducks
+    /// every other application's audio (the FaceTime behaviour), which is what
+    /// made this app remove AEC earlier on 2026-09-23. The ducking level is
+    /// configurable from macOS 14 on — the app asks for the mildest one and
+    /// never the activity-driven extra — and this switch is the user's way back
+    /// out if their music still dips. Turning it off restores the old
+    /// behaviour exactly: the text echo filter is still in place underneath.
+    var echoCancellationEnabled: Bool = true
+
+    /// 「录制期间自动静音系统扬声器，避免录入系统声音」: while the microphone
+    /// is recording (push-to-talk or continuous listening) and no answer is
+    /// being played back, the system's default output device is muted — music,
+    /// video and every other application's audio stay out of the transcript —
+    /// and un-muted again when the recording ends or playback starts. Never
+    /// silences the app's own spoken replies. The echo defence while an answer
+    /// IS playing is 「回声消除」 (echoCancellationEnabled, the shared engine's
+    /// voice processing); this mute is what covers every other window.
+    var mutesSystemSpeakersDuringRecording: Bool = true
 
     /// 「追问时自动截屏」: when a follow-up speaker is detected during the
     /// continuous-listening window, capture one screenshot of the screen at
@@ -733,6 +788,7 @@ nonisolated extension AppSettings {
         case autoCompressesHistory
         case includesScreenshotsInHistory
         case answerLengthStyle
+        case answerCardStyle
         case extraSystemPromptInstructions
         case customSystemPrompt
         case transcriptionLanguage
@@ -742,6 +798,8 @@ nonisolated extension AppSettings {
         case continuousListeningEnabled
         case continuousListeningWindowSeconds
         case continuousListeningSilenceSendSeconds
+        case echoCancellationEnabled
+        case mutesSystemSpeakersDuringRecording
         case autoScreenshotOnFollowUpSpeech
         case autoScreenshotOnScreenKeyword
         case speechPlaybackRate
@@ -801,6 +859,7 @@ nonisolated extension AppSettings {
         autoCompressesHistory = try container.decodeIfPresent(Bool.self, forKey: .autoCompressesHistory) ?? defaults.autoCompressesHistory
         includesScreenshotsInHistory = try container.decodeIfPresent(Bool.self, forKey: .includesScreenshotsInHistory) ?? defaults.includesScreenshotsInHistory
         answerLengthStyle = try container.decodeIfPresent(AnswerLengthStyle.self, forKey: .answerLengthStyle) ?? defaults.answerLengthStyle
+        answerCardStyle = try container.decodeIfPresent(AnswerCardStyle.self, forKey: .answerCardStyle) ?? defaults.answerCardStyle
         extraSystemPromptInstructions = try container.decodeIfPresent(String.self, forKey: .extraSystemPromptInstructions) ?? defaults.extraSystemPromptInstructions
         // Optional on purpose, and no `?? defaults` fallback: "no key" and "key set
         // to null" both have to land on nil, because nil is the value that means
@@ -814,6 +873,8 @@ nonisolated extension AppSettings {
         continuousListeningEnabled = try container.decodeIfPresent(Bool.self, forKey: .continuousListeningEnabled) ?? defaults.continuousListeningEnabled
         continuousListeningWindowSeconds = try container.decodeIfPresent(Int.self, forKey: .continuousListeningWindowSeconds) ?? defaults.continuousListeningWindowSeconds
         continuousListeningSilenceSendSeconds = try container.decodeIfPresent(Double.self, forKey: .continuousListeningSilenceSendSeconds) ?? defaults.continuousListeningSilenceSendSeconds
+        echoCancellationEnabled = try container.decodeIfPresent(Bool.self, forKey: .echoCancellationEnabled) ?? defaults.echoCancellationEnabled
+        mutesSystemSpeakersDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .mutesSystemSpeakersDuringRecording) ?? defaults.mutesSystemSpeakersDuringRecording
         autoScreenshotOnFollowUpSpeech = try container.decodeIfPresent(Bool.self, forKey: .autoScreenshotOnFollowUpSpeech) ?? defaults.autoScreenshotOnFollowUpSpeech
         autoScreenshotOnScreenKeyword = try container.decodeIfPresent(Bool.self, forKey: .autoScreenshotOnScreenKeyword) ?? defaults.autoScreenshotOnScreenKeyword
         speechPlaybackRate = try container.decodeIfPresent(Double.self, forKey: .speechPlaybackRate) ?? defaults.speechPlaybackRate

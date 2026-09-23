@@ -109,17 +109,8 @@ struct SizePreferenceKey: PreferenceKey {
     }
 }
 
-/// Size of the answer / live-transcript bubble. A key of its own because that
-/// bubble wraps to several lines while the welcome and onboarding bubbles are
-/// single-line, and sharing one measurement between them would make each one
-/// reposition itself to the other's width.
-struct ConversationBubbleSizePreferenceKey: PreferenceKey {
-    static var defaultValue: CGSize = .zero
-    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-        value = nextValue()
-    }
-}
-
+/// Size of the navigation pointer bubble (the buddy's one-line remark when it
+/// arrives at a pointed-at element).
 struct NavigationBubbleSizePreferenceKey: PreferenceKey {
     static var defaultValue: CGSize = .zero
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
@@ -150,6 +141,11 @@ struct BlueCursorView: View {
     @ObservedObject var companionManager: CompanionManager
 
     @State private var cursorPosition: CGPoint
+    /// The raw mouse position in this screen's SwiftUI coordinates, with no
+    /// follow offset added. The conversation bubble anchors its TOP-LEFT corner
+    /// here so the card sits next to the pointer itself and grows downward from
+    /// a point that never moves when the card's own size changes.
+    @State private var mouseAnchorPosition: CGPoint
     @State private var isCursorOnThisScreen: Bool
 
     init(screenFrame: CGRect, isFirstAppearance: Bool, companionManager: CompanionManager) {
@@ -164,13 +160,15 @@ struct BlueCursorView: View {
         let localY = screenFrame.height - (mouseLocation.y - screenFrame.origin.y)
         let followOffset = companionManager.cursorFollowDistance.offsetFromMouse
         _cursorPosition = State(initialValue: CGPoint(x: localX + followOffset.width, y: localY + followOffset.height))
+        // The mouse WITHOUT the follow offset — the conversation bubble anchors
+        // to the pointer itself, not to the buddy floating ahead of it.
+        _mouseAnchorPosition = State(initialValue: CGPoint(x: localX, y: localY))
         _isCursorOnThisScreen = State(initialValue: screenFrame.contains(mouseLocation))
     }
     @State private var timer: Timer?
     @State private var welcomeText: String = ""
     @State private var showWelcome: Bool = true
     @State private var bubbleSize: CGSize = .zero
-    @State private var conversationBubbleSize: CGSize = .zero
     @State private var bubbleOpacity: Double = 1.0
     @State private var cursorOpacity: Double = 0.0
 
@@ -198,6 +196,47 @@ struct BlueCursorView: View {
         }
         return companionManager.liveTranscriptText
     }
+
+    /// The model's answer as the 「卡片样式」 card. Streams straight in: the same
+    /// published text the conversation page receives, rendered per-unit with the
+    /// blur-focus writing tail while `isAnswerStreamLive`, then settling to one
+    /// sharp finished card for the reading and the linger. The style is read
+    /// fresh from the settings store on every render, so a change in 设置 takes
+    /// effect on the next card without any restart.
+    ///
+    /// The width cap (340) sits between the old transcript bubble's 280 and the
+    /// conversation page's 460: a card floating beside the cursor must never
+    /// span the screen, but a narrower cap would wrap every sentence into
+    /// slivers.
+    private var answerCardBubble: some View {
+        AnswerCardView(
+            text: conversationBubbleText,
+            isStreaming: companionManager.isAnswerStreamLive,
+            style: AppSettingsStore.snapshot().answerCardStyle
+        )
+        .frame(maxWidth: 340, alignment: .leading)
+        // The card carries its own theme fill and border; the shadow only lifts
+        // it off whatever is behind — a card floating over arbitrary windows
+        // needs to read as one object, not as text painted on the desktop.
+        .shadow(color: Color.black.opacity(0.30), radius: 10, x: 0, y: 4)
+    }
+
+    /// The user's live recognition text, in the original small blue bubble.
+    private var liveTranscriptBubble: some View {
+        Text(conversationBubbleText)
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.white)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: 280, alignment: .leading)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(DS.Colors.overlayCursorBlue)
+                    .shadow(color: DS.Colors.overlayCursorBlue.opacity(0.5), radius: 6, x: 0, y: 0)
+            )
+    }
+
     @State private var navigationBubbleOpacity: Double = 0.0
     @State private var navigationBubbleSize: CGSize = .zero
 
@@ -315,50 +354,62 @@ struct BlueCursorView: View {
                     }
             }
 
-            // Conversation bubble — the model's answer as it streams, or what the
-            // user is saying while they speak. Both arrive from CompanionManager
-            // already gated by 通用 → 「回答时显示文字」 / 「实时显示识别文字」, so an
-            // empty string here means "the user turned this off" and this view
-            // never has to ask. Sits under the navigation bubble: when the buddy
-            // has flown somewhere to point, the pointer's own words matter more.
-            // Held back entirely while the notch sheet is expanded: the sheet's
-            // conversation flow is showing the very same text, and the duplicate
-            // beside the cursor is what the user reported as 「返回的结果先是两个，
-            // 后来又合并成一个」 — the bubble cleared at the end of the turn and the
-            // two copies "merged" into one.
+            // Conversation bubble — two forms, by phase:
+            //
+            // The model's answer renders as the 「卡片样式」 card (AnswerCardView —
+            // same themes, same blur-focus writing tail, same geometry as the
+            // conversation page), streamed straight into the card: the text the
+            // pipeline publishes lands in the view on the same frame it arrives,
+            // so the card is on screen the instant the first characters come
+            // back — zero added latency; the animation is per-unit blur/opacity,
+            // never a gate on showing text.
+            //
+            // The user's live transcript keeps the original small blue bubble —
+            // it is fleeting recognition feedback, not a reply, and the card
+            // design belongs to what the model says.
+            //
+            // PLACEMENT — anchored at the mouse, top-left corner FIXED (the
+            // user's requirement 2026-09-23: 「左上角是固定的…卡片再逐渐向下渲染」).
+            // The old placement positioned the bubble's CENTRE from a
+            // preference-measured size, so every streamed character moved the
+            // centre and the card visibly jumped up and down; anchoring the
+            // top-left makes the card grow downward from a point that never
+            // moves, no matter how its own height changes. The anchor is the
+            // MOUSE (not the buddy, which floats 35/25 pt ahead of it) so the
+            // card sits next to the pointer instead of trailing behind it; the
+            // +12/+32 offset clears the companion drawn at the pointer.
+            //
+            // Both arrive from CompanionManager already gated by 通用 →
+            // 「回答时显示文字」 / 「实时显示识别文字」, so an empty string here means
+            // "the user turned this off" and this view never has to ask. Sits
+            // under the navigation bubble: when the buddy has flown somewhere to
+            // point, the pointer's own words matter more. Held back entirely
+            // while the notch sheet is expanded: the sheet's conversation flow
+            // is showing the very same text, and the duplicate beside the cursor
+            // is what the user reported as 「返回的结果先是两个，后来又合并成一个」.
             if isCursorOnThisScreen
                 && buddyNavigationMode != .pointingAtTarget
                 && !companionManager.isNotchSheetExpanded
                 && !conversationBubbleText.isEmpty {
-                Text(conversationBubbleText)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white)
-                    // Wraps instead of `.fixedSize()`: an answer runs to a couple of
-                    // sentences, and one unwrapped line would stretch across the
-                    // whole screen.
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: 280, alignment: .leading)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(DS.Colors.overlayCursorBlue)
-                            .shadow(color: DS.Colors.overlayCursorBlue.opacity(0.5), radius: 6, x: 0, y: 0)
-                    )
-                    .overlay(
-                        GeometryReader { geo in
-                            Color.clear
-                                .preference(key: ConversationBubbleSizePreferenceKey.self, value: geo.size)
+                // A full-screen clear base with the bubble overlaid at its
+                // top-leading corner: the overlay never contributes to layout,
+                // so the bubble is measured and drawn at its natural size while
+                // its position — the offset below — stays independent of it.
+                Color.clear
+                    .overlay(alignment: .topLeading) {
+                        Group {
+                            if !companionManager.streamingAnswerText.isEmpty {
+                                answerCardBubble
+                            } else {
+                                liveTranscriptBubble
+                            }
                         }
-                    )
-                    .position(
-                        x: cursorPosition.x + 10 + (conversationBubbleSize.width / 2),
-                        y: cursorPosition.y + 18 + (conversationBubbleSize.height / 2)
-                    )
-                    .animation(.spring(response: 0.2, dampingFraction: 0.6, blendDuration: 0), value: cursorPosition)
-                    .onPreferenceChange(ConversationBubbleSizePreferenceKey.self) { newSize in
-                        conversationBubbleSize = newSize
                     }
+                    .offset(
+                        x: mouseAnchorPosition.x + Self.conversationBubbleAnchorOffset.width,
+                        y: mouseAnchorPosition.y + Self.conversationBubbleAnchorOffset.height
+                    )
+                    .animation(.spring(response: 0.2, dampingFraction: 0.6, blendDuration: 0), value: mouseAnchorPosition)
             }
 
             // Navigation pointer bubble — shown when buddy arrives at a detected element.
@@ -475,6 +526,7 @@ struct BlueCursorView: View {
             isCursorOnThisScreen = screenFrame.contains(mouseLocation)
 
             let swiftUIPosition = convertScreenPointToSwiftUICoordinates(mouseLocation)
+            self.mouseAnchorPosition = swiftUIPosition
             self.cursorPosition = CGPoint(
                 x: swiftUIPosition.x + cursorFollowOffset.width,
                 y: swiftUIPosition.y + cursorFollowOffset.height
@@ -518,6 +570,13 @@ struct BlueCursorView: View {
             startNavigatingToElement(screenLocation: screenLocation)
         }
     }
+
+    /// How far the mouse anchor sits from the pointer, in screen points. The
+    /// conversation bubble's top-left corner lands here: +12 clears the
+    /// pointer itself, +32 drops the card just below the companion drawn at
+    /// the pointer (which spans roughly the 16–34 pt band below the mouse
+    /// under the default 「稍远」 follow distance) so neither covers the other.
+    private static let conversationBubbleAnchorOffset = CGSize(width: 12, height: 32)
 
     /// Whether the buddy triangle should be visible on this screen.
     /// True when cursor is on this screen during normal following, or
@@ -620,6 +679,7 @@ struct BlueCursorView: View {
 
             // Normal cursor following
             let swiftUIPosition = self.convertScreenPointToSwiftUICoordinates(mouseLocation)
+            self.mouseAnchorPosition = swiftUIPosition
             let followOffset = self.cursorFollowOffset
             self.cursorPosition = CGPoint(
                 x: swiftUIPosition.x + followOffset.width,

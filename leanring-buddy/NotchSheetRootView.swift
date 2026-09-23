@@ -280,7 +280,7 @@ struct NotchSettingsArea: View {
     /// first block is HeyClicky's 「通用 / 模型」 pair, the same grouping the
     /// titled window's sidebar uses.
     private static let sidebarSections: [(label: String?, pages: [SettingsPage])] = [
-        (label: nil, pages: [.general, .model, .agent]),
+        (label: nil, pages: [.general, .cardStyle, .model, .agent]),
         (label: "对话", pages: [.memory, .listen, .speak, .shortcuts]),
         (label: "看与操作", pages: [.vision, .action]),
     ]

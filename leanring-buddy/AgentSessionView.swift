@@ -359,8 +359,10 @@ struct AgentSessionView: View {
         )
     }
 
-    private static let bubbleCornerRadius: CGFloat = 16
-    private static let bubbleTailCornerRadius: CGFloat = 5
+    // 参考页 `.unit.user` 的气泡几何：圆角 14，尾巴角 4（与 NotchHomeView
+    // 同一套，2026-09-23 UI 化改造）。
+    private static let bubbleCornerRadius: CGFloat = 14
+    private static let bubbleTailCornerRadius: CGFloat = 4
 
     private func outgoingBubble(_ text: String) -> some View {
         HStack(alignment: .bottom) {
@@ -374,20 +376,7 @@ struct AgentSessionView: View {
                 .padding(.vertical, 9)
                 .background(
                     bubbleShape(isOutgoing: true)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.53, green: 0.36, blue: 0.98),
-                                    Color(red: 0.42, green: 0.24, blue: 0.90)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                )
-                .overlay(
-                    bubbleShape(isOutgoing: true)
-                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.5)
+                        .fill(DS.Colors.accent)
                 )
         }
     }

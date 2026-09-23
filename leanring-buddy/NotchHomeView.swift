@@ -32,6 +32,11 @@ struct NotchHomeView: View {
     @FocusState private var composerFieldIsFocused: Bool
     @State private var composerDraft: String = ""
 
+    /// The reply-card theme (对话与记忆 → 卡片样式). Snapshotted into state
+    /// so a settings save (`.clickyAppSettingsChanged`) re-renders the flow's
+    /// cards without waiting for some other published change to trigger it.
+    @State private var answerCardStyle: AnswerCardStyle = AppSettingsStore.snapshot().answerCardStyle
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isEmptySession {
@@ -203,7 +208,7 @@ struct NotchHomeView: View {
                     // 2026-09-22.
                     if companionManager.pendingQuestionText != nil,
                        !companionManager.streamingAnswerText.isEmpty {
-                        assistantBubble(companionManager.streamingAnswerText)
+                        assistantBubble(companionManager.streamingAnswerText, isStreaming: true)
                             .id("streaming")
                     }
                 }
@@ -222,6 +227,9 @@ struct NotchHomeView: View {
             }
             .onAppear {
                 scrollToBottom(proxy)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .clickyAppSettingsChanged)) { _ in
+                answerCardStyle = AppSettingsStore.snapshot().answerCardStyle
             }
         }
     }
@@ -256,7 +264,7 @@ struct NotchHomeView: View {
             )
         }
 
-        assistantBubble(entry.assistantResponse)
+        assistantBubble(entry.assistantResponse, isStreaming: false)
 
         turnFooter(entry)
     }
@@ -329,10 +337,13 @@ struct NotchHomeView: View {
         )
     }
 
-    private static let bubbleCornerRadius: CGFloat = 16
-    private static let bubbleTailCornerRadius: CGFloat = 5
+    // 参考页 `.unit.user` 的气泡几何：圆角 14，右下（尾巴角）4。
+    private static let bubbleCornerRadius: CGFloat = 14
+    private static let bubbleTailCornerRadius: CGFloat = 4
 
-    /// The user's words: a solid violet bubble on the right.
+    /// The user's words: the reference page's solid-accent bubble on the right
+    /// (`#0A84FF`, white text) — 2026-09-23 UI 化改造 replaced the violet
+    /// gradient.
     private func outgoingBubble(_ text: String) -> some View {
         HStack(alignment: .bottom) {
             Spacer(minLength: 56)
@@ -345,44 +356,23 @@ struct NotchHomeView: View {
                 .padding(.vertical, 9)
                 .background(
                     bubbleShape(isOutgoing: true)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.53, green: 0.36, blue: 0.98),
-                                    Color(red: 0.42, green: 0.24, blue: 0.90)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                )
-                .overlay(
-                    bubbleShape(isOutgoing: true)
-                        .strokeBorder(Color.white.opacity(0.16), lineWidth: 0.5)
+                        .fill(DS.Colors.accent)
                 )
         }
     }
 
-    /// Clicky's reply: the same bubble geometry and padding on the left, but a
-    /// translucent *dark* card instead of the accent fill — over the purple
-    /// sheet it reads as a card sunk into the surface, which is what makes the
-    /// two bubbles tell apart at a glance while still looking like one family.
-    private func assistantBubble(_ text: String) -> some View {
+    /// Clicky's reply: the card themed by 对话与记忆 → 卡片样式 (blue is the
+    /// default; black and paper are the other two), replacing the old
+    /// translucent dark bubble. The streaming reply renders with the card's
+    /// blur-focus per-character animation; a finished reply renders as one
+    /// plain Text inside the same card. See AnswerCardView.
+    private func assistantBubble(_ text: String, isStreaming: Bool) -> some View {
         HStack(alignment: .top) {
-            Text(stripActionTagsForDisplay(text))
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.92))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 13)
-                .padding(.vertical, 9)
-                .background(
-                    bubbleShape(isOutgoing: false)
-                        .fill(Color.black.opacity(0.26))
-                )
-                .overlay(
-                    bubbleShape(isOutgoing: false)
-                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
-                )
+            AnswerCardView(
+                text: stripActionTagsForDisplay(text),
+                isStreaming: isStreaming,
+                style: answerCardStyle
+            )
             Spacer(minLength: 56)
         }
     }

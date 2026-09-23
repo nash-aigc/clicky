@@ -41,6 +41,67 @@ nonisolated enum NotchSupport {
     static let collapseAnimationDuration: TimeInterval = 0.5
     static let collapseTimingControlPoints: (Float, Float, Float, Float) = (0.6, 0.04, 0.36, 1.0)
 
+    // MARK: - 中心缩放展开（参考：刘海屏弹出窗口_12种动画对比.html 01 中心缩放）
+
+    /// 展开 = 01 中心缩放：窗口 frame 不再做两端 frame 的线性拉伸，而是沿
+    /// 「以刘海顶边中点为锚」的**等比缩放路径**从 .08 长到 1.0——参考页
+    /// winScale 关键帧（scale(.08) → scale(1)，transform-origin: 50% 0）。
+    /// 窗口 setFrame 仍然是唯一动画源，只是每一帧的 frame 由这条缩放曲线
+    /// 算出（NotchWindowController 的 scale 驱动器逐帧 setFrame）。
+    static let centerScaleInitialScale: CGFloat = 0.08
+    static let centerScaleExpansionDuration: TimeInterval = 0.34
+    /// 参考页指定的 cubic-bezier(.22,.9,.3,1)——快起步、缓落位，无过冲。
+    static let centerScaleTimingControlPoints: (Float, Float, Float, Float) = (0.22, 0.9, 0.3, 1.0)
+
+    /// 收起 = 参考页的 winClose：scale(.92) + 整窗淡出，160ms ease-in。
+    static let centerScaleCollapseDuration: TimeInterval = 0.16
+    static let centerScaleCollapseFinalScale: CGFloat = 0.92
+    /// CSS ease-in（0.42, 0, 1, 1）——参考页 winClose 的 animation-timing-function。
+    static let centerScaleCollapseTimingControlPoints: (Float, Float, Float, Float) = (0.42, 0.0, 1.0, 1.0)
+
+    /// CSS cubic-bezier(x1,y1,x2,y2) timing-function 的 Swift 求值。
+    ///
+    /// 参考页的曲线是 CSS 写法，而手驱动的逐帧 setFrame 没有
+    /// CAMediaTimingFunction 可以交曲线过去，所以在这里自己解：先用
+    /// Newton–Raphson 解 bezier-x(t) = progress 得参数 t（平坦段退化为
+    /// 小步推进），再取 bezier-y(t)。端点直接透传，y 控制点 > 1（过冲
+    /// 曲线）也能算——morphTimingControlPoints 的弹簧曲线走同一条路。
+    static func timingCurveValue(
+        atProgress progress: Double,
+        controlPoints: (Float, Float, Float, Float)
+    ) -> Double {
+        let clamped = min(max(progress, 0), 1)
+        if clamped == 0 || clamped == 1 { return clamped }
+
+        let x1 = Double(controlPoints.0), y1 = Double(controlPoints.1)
+        let x2 = Double(controlPoints.2), y2 = Double(controlPoints.3)
+
+        var parameter = clamped
+        for _ in 0..<8 {
+            let xError = cubicBezierValue(parameter, x1, x2) - clamped
+            if abs(xError) < 1e-6 { break }
+            let derivative = cubicBezierDerivative(parameter, x1, x2)
+            if abs(derivative) < 1e-6 { parameter += 0.005; continue }
+            parameter -= xError / derivative
+        }
+        let solvedParameter = min(max(parameter, 0), 1)
+        return cubicBezierValue(solvedParameter, y1, y2)
+    }
+
+    private static func cubicBezierValue(_ t: Double, _ firstControl: Double, _ secondControl: Double) -> Double {
+        let oneMinusT = 1 - t
+        return 3 * oneMinusT * oneMinusT * t * firstControl
+            + 3 * oneMinusT * t * t * secondControl
+            + t * t * t
+    }
+
+    private static func cubicBezierDerivative(_ t: Double, _ firstControl: Double, _ secondControl: Double) -> Double {
+        let oneMinusT = 1 - t
+        return 3 * oneMinusT * oneMinusT * firstControl
+            + 6 * oneMinusT * t * (secondControl - firstControl)
+            + 3 * t * t * (1 - secondControl)
+    }
+
 
     /// The resting pill is the hardware notch widened by this much on each
     /// side — enough that the pill's bottom rounded corners read as a

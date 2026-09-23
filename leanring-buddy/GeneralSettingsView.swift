@@ -18,6 +18,7 @@ import SwiftUI
 /// One page of the settings window. The sidebar renders these in order.
 enum SettingsPage: String, CaseIterable, Identifiable {
     case general
+    case cardStyle
     case model
     case agent
     case memory
@@ -32,6 +33,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     var sidebarTitle: String {
         switch self {
         case .general: return "通用"
+        case .cardStyle: return "卡片样式"
         case .model: return "模型"
         case .agent: return "Agent"
         case .memory: return "对话与记忆"
@@ -48,6 +50,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     var sidebarSymbol: String {
         switch self {
         case .general: return "gearshape.fill"
+        case .cardStyle: return "paintbrush.fill"
         case .model: return "cpu"
         case .agent: return "hammer"
         case .memory: return "bubble.left.fill"
@@ -90,6 +93,7 @@ struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 switch page {
                 case .general: generalPage
+                case .cardStyle: cardStylePage
                 case .agent: agentPage
                 case .memory: memoryPage
                 case .listen: listenPage
@@ -238,6 +242,55 @@ struct GeneralSettingsView: View {
     }
 
     // MARK: 对话与记忆
+
+    // MARK: 卡片样式
+
+    /// The AI-reply card's dedicated page. Lived inside 对话与记忆 first and
+    /// the user could not find it there — the sidebar entry is the whole point
+    /// of this page. The picker is the same binding as before (moved, not
+    /// duplicated: one setting, one home), and the preview below it renders the
+    /// chosen theme with real card code, so the choice is visible before saving.
+    private var cardStylePage: some View {
+        Group {
+            SettingsPageHeader(
+                title: "卡片样式",
+                subtitle: "AI 回复卡片长什么样。对话页和鼠标旁边的气泡用同一套样式，改完点右下角「保存」生效。"
+            )
+
+            SettingsGroupLabel("样式")
+            SettingsCard {
+                SettingsRow(
+                    label: "卡片颜色",
+                    description: "蓝色是默认；黑色适合深色桌面；宣纸是米黄底、墨色字、带横线。流式回答带逐字模糊聚焦动画（新字先模糊，再逐渐变清晰）。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.answerCardStyle),
+                        options: AnswerCardStyle.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+            }
+
+            SettingsGroupLabel("预览")
+            SettingsCard {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("回复卡片预览 — 当前所选样式的真实渲染效果")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.4))
+                    AnswerCardView(
+                        text: "好的，已经帮你点开了设置页面。窗口右上角的关闭按钮可以把面板收起来。",
+                        isStreaming: false,
+                        style: generalSettingsViewModel.draftSettings.answerCardStyle
+                    )
+                    .frame(maxWidth: 300, alignment: .leading)
+                    .shadow(color: Color.black.opacity(0.25), radius: 8, x: 0, y: 3)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
+            }
+        }
+    }
 
     private var memoryPage: some View {
         Group {
@@ -474,6 +527,13 @@ struct GeneralSettingsView: View {
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.usesAutomaticSpeechSegmentation))
                 }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "录制期间自动静音系统扬声器，避免录入系统声音",
+                    description: "录音时把系统扬声器静音，音乐、视频和其他软件的声音不会录进识别；开始播放回答或录音结束就恢复。录音结束、退出 Clicky 时都会自动解除。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.mutesSystemSpeakersDuringRecording))
+                }
             }
 
             SettingsGroupLabel("持续监听")
@@ -505,6 +565,13 @@ struct GeneralSettingsView: View {
                         value: generalSettingsViewModel.binding(\.continuousListeningWindowSeconds),
                         range: 10...120
                     )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "回声消除",
+                    description: "让系统把 Clicky 自己正在朗读的声音从麦克风里消掉。开着才分得清「你在说话」和「它在说话」——关掉容易出现它自己打断自己、或者你说了好几句话它才停。代价是说话期间其他软件的声音会略微变轻，关掉即可恢复。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.echoCancellationEnabled))
                 }
             }
         }

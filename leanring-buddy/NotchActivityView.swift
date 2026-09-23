@@ -154,8 +154,9 @@ struct HomeSpaceSheetShape: Shape {
     var stemWidth: CGFloat = 150
 
     /// Corner radius of the sheet body's bottom corners — the top two stay
-    /// square because the sheet hangs from the screen's top edge.
-    var cornerRadius: CGFloat = 20
+    /// square because the sheet hangs from the screen's top edge. 16 per the
+    /// reference window's bottom radius (2026-09-23 UI 化改造).
+    var cornerRadius: CGFloat = 16
 
     /// The resting pill's drawn size — what the body lerps from.
     var restingNotchSize: CGSize = CGSize(width: 190, height: 32)
@@ -714,9 +715,10 @@ private enum NotchExpandedSheetStyle {
         (0x08, 0x91, 0xB2), // #0891B2 深青
     ]
 
-    /// 面板皮肤的深色底——demo `.skin` 的 `rgba(14,14,13,.92)` 原值。
-    /// 保留 8% 透明和文件一致；面板后面是什么就透一点什么。
-    static let surfaceColor = Color(red: 14 / 255, green: 14 / 255, blue: 13 / 255, opacity: 0.92)
+    /// 面板皮肤的深色底——2026-09-23 UI 化改造换成参考页 `.window` 的
+    /// `rgba(24,24,28,.94)` 原值（旧值 rgba(14,14,13,.92) 是另一份 demo
+    /// 的 `.skin`）。保留 6% 透明和文件一致；面板后面是什么就透一点什么。
+    static let surfaceColor = Color(red: 24 / 255, green: 24 / 255, blue: 28 / 255, opacity: 0.94)
 
     /// 三边边光的取色——同一条渐变，不打折（它是「光」，保持满饱和才亮
     /// 得起来）。
@@ -728,9 +730,10 @@ private enum NotchExpandedSheetStyle {
     static let gradientStartPoint = UnitPoint(x: 0.18, y: 0)
     static let gradientEndPoint = UnitPoint(x: 0.82, y: 1)
 
-    /// 面板底角的圆角半径。内层表面比外层小一个边光宽度，两层的圆角才是
-    /// 同心弧——内层若用直角，圆角里会露出一块方形亮边。
-    static let sheetCornerRadius: CGFloat = 20
+    /// 面板底角的圆角半径——参考页 `.window` 的下底角是 16（上底角 30，
+    /// 这里上面两角因与刘海熔接保持直角）。内层表面比外层小一个边光宽度，
+    /// 两层的圆角才是同心弧——内层若用直角，圆角里会露出一块方形亮边。
+    static let sheetCornerRadius: CGFloat = 16
 
     /// 边光露出的宽度（demo 的 1.5px padding）。
     static let edgeGlowInset: CGFloat = 1.5
@@ -745,6 +748,14 @@ struct NotchExpandedSheetView: View {
     var audioHistoryProvider: () -> [CGFloat]
     var collapseAction: () -> Void
     var companionManager: CompanionManager
+
+    /// 参考页 01 中心缩放的内容入场（'line' 模式）：窗口本体沿 frame 驱动
+    /// 器的缩放路径长出来，内容块则延迟 230ms、从「+8pt 下移 + 8pt 模糊 +
+    /// 全透明」浮现到清晰（0.45s ease）——「内容整块错峰浮现」。视图在
+    /// 每次展开时重新插入（root 切换分支），所以 @State 每次都从入场态
+    /// 重新走一遍；折叠期间不驻留，不会中途触发。
+    @State private var hasContentSettledIn = false
+    @Environment(\.accessibilityReduceMotion) private var shouldReduceMotion
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -790,6 +801,21 @@ struct NotchExpandedSheetView: View {
                 bottom: NotchExpandedSheetStyle.edgeGlowInset,
                 trailing: NotchExpandedSheetStyle.edgeGlowInset
             ))
+            // 内容入场三件套（参考页 .unit.line → .unit.in）：透明、模糊、
+            // 下移 8pt，同时归零。reduceMotion 时直接落在清晰态。
+            .opacity(hasContentSettledIn ? 1 : 0)
+            .blur(radius: hasContentSettledIn ? 0 : 8)
+            .offset(y: hasContentSettledIn ? 0 : 8)
+            .onAppear {
+                guard !shouldReduceMotion else {
+                    hasContentSettledIn = true
+                    return
+                }
+                // 参考页的错峰：内容比窗口慢 230ms 起步。
+                withAnimation(.easeOut(duration: 0.45).delay(0.23)) {
+                    hasContentSettledIn = true
+                }
+            }
         }
         // 整块内容裁进面板轮廓：底部操作条等自绘背景若不裁剪，会画到
         // 形状的圆角之上，把面板的下面两角顶成方角。
