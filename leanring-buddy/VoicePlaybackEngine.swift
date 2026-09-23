@@ -158,6 +158,11 @@ final class VoicePlaybackEngine {
 
     /// The `AVAudioEngineConfigurationChange` registration — see `init`.
     private var configurationChangeObserver: NSObjectProtocol?
+
+    /// Consecutive TTS chunks this engine could not play because it was not
+    /// running. See the threshold's use in `playWAVData`.
+    private var consecutiveUnplayableChunkCount = 0
+    private static let consecutiveUnplayableChunkThreshold = 3
     /// True while the capture-only engine is running. It is started by
     /// `installInputTap` (with the tap already on it, the order the own-engine
     /// path uses) and stopped by whichever caller takes the tap away.
@@ -694,9 +699,28 @@ final class VoicePlaybackEngine {
         // is the worse one.
         guard engine.isRunning else {
             isChunkPlaying = false
-            print("⚠️ VoicePlaybackEngine: skipping a TTS chunk — the engine is not running, so this chunk could never finish playing")
+            consecutiveUnplayableChunkCount += 1
+            print("⚠️ VoicePlaybackEngine: skipping a TTS chunk — the engine is not running, so this chunk could never finish playing (\(consecutiveUnplayableChunkCount) in a row)")
+            // pipecat counts the same thing — `max_consecutive_zero_audio_contexts`,
+            // tts_service.py:170 — but its escalation is to write the TTS service
+            // off (`is_usable = False`, tts_service.py:1851-1857), which mutes
+            // EVERY later reply until a settings delta arrives. That is the
+            // reference's own version of "once it stops speaking it keeps not
+            // speaking", and the 三段式 picks `ProcessorUnusablePolicy.CONTINUE`
+            // (server.py:3830), so it only logs. This app counts it and RECOVERS:
+            // past the threshold the whole IO is torn down and rebuilt from
+            // scratch, which is the one action that has actually cleared this
+            // state in the measurements above.
+            if consecutiveUnplayableChunkCount >= Self.consecutiveUnplayableChunkThreshold {
+                print("⚠️ VoicePlaybackEngine: \(consecutiveUnplayableChunkCount) chunks in a row could not play — tearing the audio path down and rebuilding it")
+                consecutiveUnplayableChunkCount = 0
+                engine.stop()
+                isEngineStarted = false
+                try? ensureEngineStarted()
+            }
             return
         }
+        consecutiveUnplayableChunkCount = 0
 
         guard let canonicalPlaybackFormat else {
             throw BailianTTSClientError(message: "播放引擎没有可用的输出格式。")
