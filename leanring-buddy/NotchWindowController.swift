@@ -1354,7 +1354,11 @@ final class NotchWindowController {
         activityPhaseHoldIsSuppressed = true
         activityPhaseHoldTask?.cancel()
         activityPhaseHoldTask = nil
-        refreshActivityPhase()
+        // Set it here rather than waiting for the voice state to catch up. The
+        // stop is the user's, and it must be visible on this run-loop turn —
+        // the voice state's own arrival is a separate hop that may not land for
+        // another cycle, and the whole complaint is about that gap.
+        panelModel.activityPhase = .idle
     }
 
     private func refreshActivityPhase() {
@@ -1364,7 +1368,19 @@ final class NotchWindowController {
                 : NotchActivityPhase(from: latestVoiceState))
 
         guard derivedPhase == .idle else {
-            activityPhaseHoldIsSuppressed = false
+            // Clear the suppression only when a NEW turn starts — never on
+            // `.responding`, which is precisely the phase in force when the user
+            // presses stop.
+            //
+            // This was this change's own bug, and it is the whole of the
+            // remaining ~3 s: `interruptActiveResponse` calls
+            // `forceActivityPhaseIdle()` while the voice state is still
+            // `.responding`, so the derived phase here is `.responding`, the
+            // flag was wiped on the spot, and by the time the idle arrived the
+            // hold applied exactly as before.
+            if derivedPhase == .listening || derivedPhase == .thinking {
+                activityPhaseHoldIsSuppressed = false
+            }
             activityPhaseHoldTask?.cancel()
             activityPhaseHoldTask = nil
             panelModel.activityPhase = derivedPhase
