@@ -321,6 +321,34 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // brief pause cannot undo it.
     private static let continuousListeningSpeechAccumulationSeconds: TimeInterval = 0.20
     private static let continuousListeningSpeechAccumulatorReleaseRatio: Double = 0.25
+    // Barge-in cooldown at the START of each reply's playback.
+    //
+    // The AEC's adaptive filter has no far-end signal between replies, so
+    // every time playback begins it must re-converge against a NEW reference —
+    // and for the first fraction of a second of every answer, our OWN voice
+    // leaks into the microphone at speech level (the same convergence
+    // transient measured 2026-09-23 when voice processing was first removed).
+    // Once the level path was allowed to interrupt an answer (2026-09-24,
+    // pipecat's VADUserTurnStartStrategy fast path), that leak trips the
+    // 0.20 s accumulator and the reply is killed the instant it starts — the
+    // user's 「回复的时候为什么不发音…偶尔发声，偶尔不读」 report (2026-09-24).
+    // Whether the leak sustains past the accumulator is a race against the
+    // canceller's convergence speed, which is exactly why it was intermittent.
+    // VoiceWeb never pays this because its AEC lives in the browser and stays
+    // converged against the whole session; here the reference restarts per
+    // reply, so the grace window is the local stand-in.
+    //
+    // During the grace: the level path may NOT interrupt (a leak is not the
+    // user), and the corroborated 1-character fast bar is withdrawn (the leak
+    // is exactly what gets transcribed as words — the echo filter only catches
+    // clean containment, not a mis-heard copy). Real speech still interrupts
+    // within the grace via the ≥4-character bar, and both fast paths return
+    // the moment it expires. 0.8 s is a starting figure bounded by the failure
+    // shape — the answer died within its first second — not a measured
+    // convergence time; if a reply is still being cut, lengthen it from the
+    // log lines (「detected speech (mic level …」 with an empty transcript at
+    // reply onset).
+    private static let continuousListeningPlaybackOnsetGraceSeconds: TimeInterval = 0.8
     // The silence that ends an utterance is now a USER SETTING
     // (「静音多久自动发送」, AppSettings.continuousListeningSilenceSendSeconds,
     // default 2.0 s, clamped 1–5) — human thinking pauses are unbounded (the
@@ -647,6 +675,20 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private var continuousListeningRecentPeakAudioLevel: CGFloat {
         continuousListeningRecentAudioLevels.max() ?? 0
     }
+    /// When the currently-playing reply's playback began, observed by the VAD
+    /// loop (the one place polling on a fixed cadence while the window is
+    /// open). Feeds the barge-in grace window — see
+    /// `continuousListeningPlaybackOnsetGraceSeconds`.
+    private var continuousListeningBotSpeakingStartedAt: Date?
+    /// Whether the reply currently playing is inside its onset grace window —
+    /// the AEC's re-convergence transient, during which a level rise is our
+    /// own answer leaking into the microphone, not the user. See
+    /// `continuousListeningPlaybackOnsetGraceSeconds`.
+    private var isContinuousListeningWithinPlaybackOnsetGrace: Bool {
+        guard let botSpeakingStartedAt = continuousListeningBotSpeakingStartedAt else { return false }
+        return Date().timeIntervalSince(botSpeakingStartedAt)
+            < Self.continuousListeningPlaybackOnsetGraceSeconds
+    }
     private var continuousListeningUtteranceStartedAt: Date?
     private var continuousListeningSilenceStartedAt: Date?
     /// The latest interim transcript of the current utterance. The fallback
@@ -947,10 +989,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                         // no-evidence bar used to cost. Without the level the
                         // long bar still applies, so a quiet speaker keeps
                         // exactly the old behaviour. Both constants carry their
-                        // measurements.
+                        // measurements — and the corroboration itself is
+                        // withdrawn during the reply's onset grace, because
+                        // there the loud thing is our own answer leaking back
+                        // (the leak is what gets transcribed, and a mis-heard
+                        // copy defeats the echo filter's containment test).
                         let isCorroboratedByVoiceLevel =
                             self.continuousListeningRecentPeakAudioLevel
                                 >= Self.continuousListeningSpeechLevelThreshold
+                            && !self.isContinuousListeningWithinPlaybackOnsetGrace
                         let minimumContentCharacters: Int
                         if isBotSpeaking {
                             minimumContentCharacters = isCorroboratedByVoiceLevel
@@ -1135,6 +1182,14 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     ///     yes            yes      mic level          opened      yes  ← VAD path, the reference's fast path
     ///     yes            yes      ASR transcript     opened      yes  ← real speech
     ///
+    /// Both "yes" barge-in rows carry one exception: the reply's onset grace
+    /// (`continuousListeningPlaybackOnsetGraceSeconds`). Inside it the level
+    /// path's "yes" becomes "no" (the convergence leak is what is being
+    /// measured), and the ASR path's corroborated 1-character fast bar is
+    /// withdrawn in `openContinuousListeningTranscriptionSession` (the leak
+    /// is what gets transcribed) — a genuine barge-in inside the grace still
+    /// goes through on the ≥4-character bar.
+    ///
     /// Silence is the right trade for the third row: without a canceller, if
     /// the recognizer cannot produce words then stopping the answer buys
     /// nothing, because there is no follow-up question to answer — the
@@ -1151,8 +1206,13 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // The AEC-gated VAD path: with the canceller running, a sustained
         // level rise is the user (echo measures below the room floor once
         // converged — see the truth table above). Without it, wait for words.
+        // And inside the reply's onset grace the answer's own convergence
+        // leak is exactly what clears the 0.25 threshold, so the level path
+        // stands down there too (see
+        // `continuousListeningPlaybackOnsetGraceSeconds`).
         let isCorroboratedByEchoCancellation = trigger == "mic level"
             && (isEchoCancellationActiveProvider?() ?? false)
+            && !isContinuousListeningWithinPlaybackOnsetGrace
         if isBotSpeaking && !isCorroboratedByTranscript && !isCorroboratedByEchoCancellation {
             print("🎙️ BuddyDictationManager: continuous listening heard a level rise while speaking — waiting for words before interrupting (transcript: \"\(continuousListeningLatestInterimTranscript)\")")
         } else {
@@ -1201,6 +1261,17 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
             let now = Date()
             let audioLevel = currentAudioPowerLevel
+
+            // Watch the playback boundary for the barge-in grace window:
+            // level barge-ins are refused for the first moments of every
+            // reply (the AEC re-convergence transient), so the moment
+            // playback starts has to be known here.
+            let isBotSpeakingNow = isBotSpeakingProvider?() ?? false
+            if isBotSpeakingNow, continuousListeningBotSpeakingStartedAt == nil {
+                continuousListeningBotSpeakingStartedAt = now
+            } else if !isBotSpeakingNow {
+                continuousListeningBotSpeakingStartedAt = nil
+            }
 
             // Refresh the rolling level window the short-transcript
             // corroboration reads. Sampled here rather than in the tap so the
