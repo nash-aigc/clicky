@@ -2693,6 +2693,10 @@ final class CompanionManager: ObservableObject {
     /// cancelled-but-still-assigned task would keep the cursor on screen for
     /// good in the 「只在指位置时出现」 mode.
     func interruptActiveResponse() {
+        // Tell the panel this idle is an ENDING, not the gap between two phases
+        // of a running turn. It cannot tell those apart on its own — see
+        // `forceActivityPhaseIdle` — so the stop is stated rather than inferred.
+        notchWindowController?.forceActivityPhaseIdle()
         currentResponseTask?.cancel()
         currentResponseTask = nil
         bailianTTSClient.stopPlayback()

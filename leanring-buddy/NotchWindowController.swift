@@ -1342,6 +1342,21 @@ final class NotchWindowController {
     private var activityPhaseHoldTask: Task<Void, Never>?
     private static let activityPhaseHoldSeconds: TimeInterval = 2.5
 
+    /// Set by an explicit stop, consumed by the next `refreshActivityPhase`:
+    /// the idle that follows is an ENDING, so the phase drops at once instead of
+    /// being held. See the comment inside `refreshActivityPhase`.
+    private var activityPhaseHoldIsSuppressed = false
+
+    /// The way in for the stop path — `CompanionManager.interruptActiveResponse`
+    /// is the one funnel every stop goes through, and this is the panel being
+    /// told rather than having to infer it.
+    func forceActivityPhaseIdle() {
+        activityPhaseHoldIsSuppressed = true
+        activityPhaseHoldTask?.cancel()
+        activityPhaseHoldTask = nil
+        refreshActivityPhase()
+    }
+
     private func refreshActivityPhase() {
         let derivedPhase = panelModel.externalSessionOverride
             ?? (isDictationFinalizing
@@ -1349,24 +1364,29 @@ final class NotchWindowController {
                 : NotchActivityPhase(from: latestVoiceState))
 
         guard derivedPhase == .idle else {
+            activityPhaseHoldIsSuppressed = false
             activityPhaseHoldTask?.cancel()
             activityPhaseHoldTask = nil
             panelModel.activityPhase = derivedPhase
             return
         }
 
-        // Idle — but only HOLD IT while a listening window is still open, because
-        // that is the only situation in which an idle instant is a GAP rather
-        // than an ending. The user's stop closes the window first
-        // (`endContinuousListeningWindow` runs before `interruptActiveResponse`
-        // sets the voice state idle), so a stop now retracts the wings at once.
-        // With the hold unconditional the panel sat there for the whole 2.5 s
-        // after a stop, which the user reported as 「按下快捷键之后大概等了 3 秒，
-        // 刘海屏才消失。我希望它瞬间消失」.
-        guard companionManager.buddyDictationManager.isContinuousListening else {
+        // An explicit stop is an ENDING and takes effect at once; any other idle
+        // instant is a GAP between two phases of the same turn and is held.
+        //
+        // Those two cannot be told apart from the signals available here — the
+        // listening window arms on the first TTS audio, i.e. AFTER the gap it
+        // would have to cover, and the brief idle of the gap looks exactly like
+        // the idle of a stop. Two attempts to infer it (an unconditional hold,
+        // then a hold keyed on the window) each broke the other case, which is
+        // what the user saw. So the stop is now stated rather than inferred:
+        // `forceActivityPhaseIdle()` is called from `interruptActiveResponse`,
+        // the one funnel every stop goes through.
+        if activityPhaseHoldIsSuppressed {
+            activityPhaseHoldIsSuppressed = false
             activityPhaseHoldTask?.cancel()
             activityPhaseHoldTask = nil
-            panelModel.activityPhase = derivedPhase
+            panelModel.activityPhase = .idle
             return
         }
 
