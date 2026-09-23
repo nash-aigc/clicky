@@ -176,10 +176,9 @@ final class FigureBoardController {
 }
 
 /// The figure itself: the SVG scaled to fit, floating directly on the
-/// transparent window (no card, no surface) at `boardFrame` in display-local
-/// points — the coordinate space the hosting view's content draws in. Two
-/// stacked white halo shadows outline the SVG's dark strokes so they stay
-/// readable against any wallpaper without adding a visible panel.
+/// transparent window (no card, no surface, no shadow) at `boardFrame` in
+/// display-local points — the coordinate space the hosting view's content
+/// draws in. Crisp strokes, the same look as the system's green marks.
 private struct FigureBoardView: View {
     let boardFrame: CGRect
     let svgImage: NSImage
@@ -197,19 +196,14 @@ private struct FigureBoardView: View {
 
     // The board is deliberately TRANSPARENT (2026-09-24, the user's 「我要的是
     // 一个透明的，然后在透明的位置上去显示，这样可能会更加原生一点，你这样的话就
-    // 太格格不入了」 — the white card was rejected outright). The figure floats
-    // directly over the desktop the way the green marks do. The only thing
-    // standing between that and an invisible figure is the SVG's own stroke
-    // colour: geometry-dsl strokes are black, so over a dark wallpaper they
-    // would vanish. A soft white halo shadow on the image's non-transparent
-    // pixels keeps the strokes readable on ANY background without adding a
-    // surface — the halo belongs to the strokes, not to a card.
+    // 太格格不入了」 — the white card was rejected outright) and the strokes
+    // are drawn CRISP, with no halo: an earlier white shadow halo was rejected
+    // as 发虚 (2026-09-24, 「非常高亮的绿色线，边线或文字字母等没有周围的阴影」) —
+    // the system's green marks are clean bright strokes and so is the figure.
     private var board: some View {
         Image(nsImage: svgImage)
             .resizable()
             .scaledToFit()
             .padding(12)
-            .shadow(color: Color.white.opacity(0.9), radius: 2.5)
-            .shadow(color: Color.white.opacity(0.5), radius: 5)
     }
 }
