@@ -1006,22 +1006,25 @@ final class VoicePlaybackEngine {
     /// Prints at most twice a second — a per-buffer print from the audio thread
     /// would bury the log it exists to explain.
     private func installPlaybackRenderProbe() {
-        playbackRenderProbeCounter = 0
-        engine.mainMixerNode.removeTap(onBus: 0)
-        engine.mainMixerNode.installTap(onBus: 0, bufferSize: 4096, format: nil) { [weak self] buffer, _ in
-            guard let channelData = buffer.floatChannelData else { return }
-            var peak: Float = 0
-            for frameIndex in 0..<Int(buffer.frameLength) {
-                peak = max(peak, abs(channelData[0][frameIndex]))
-            }
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.playbackRenderProbeCounter += 1
-                if self.playbackRenderProbeCounter % 20 == 0 {
-                    print("🔊 [probe] render peak over last 20 mixer buffers: \(String(format: "%.5f", peak))")
-                }
-            }
-        }
+        // REMOVED 2026-09-24, permanently — a diagnostic must never be part of
+        // the thing it measures.
+        //
+        // What stood here installed a tap on the main mixer whose closure
+        // created a `Task { @MainActor }` for EVERY buffer, i.e. ~12 hops onto
+        // the main actor per second for the whole time audio played, plus a
+        // 4096-sample scan on the audio thread. Its question — is audio actually
+        // being RENDERED, or is the engine merely claiming to run — has been
+        // answered, and the answer is now carried by things that cost nothing on
+        // the audio path: every engine start is verified against
+        // `engine.isRunning`, `playWAVData` refuses to schedule onto a dead
+        // engine, and `consecutiveUnplayableChunkCount` counts the refusals.
+        //
+        // It is a suspect for the stutter the user reports as new (2026-09-24),
+        // and it is the newest per-buffer work on the audio path, so it goes.
+        // If the render question ever needs asking again, ask it with a tap that
+        // does its work ON the audio thread and publishes a value, never with one
+        // that hops actors.
+        _ = playbackRenderProbeCounter
     }
 
     /// Turns the system AEC on for this engine run when the settings ask for
