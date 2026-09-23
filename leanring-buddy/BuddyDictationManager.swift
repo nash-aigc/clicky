@@ -336,6 +336,21 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// the accumulator maths and the sleep can never disagree about it.
     private static let continuousListeningVADPollSeconds: TimeInterval = 0.05
     private static var continuousListeningVADPollInterval: Duration { .seconds(continuousListeningVADPollSeconds) }
+    /// How far back the microphone-level corroboration looks, and how many VAD
+    /// ticks that is.
+    ///
+    /// Half a second, because the level is SPIKY, not because half a second is
+    /// a round number: continuous speech on this machine reads peak 0.772 /
+    /// p95 0.556 but only p50 0.159 (measured 2026-09-23), so at any single
+    /// 50 ms tick the level is as likely as not to be sitting under the 0.25
+    /// threshold. Asking "is the level high right now" would answer no about
+    /// half the time and lose the corroboration for no reason; asking "has the
+    /// microphone been loud recently" is the question that matches what a
+    /// person speaking into it actually produces.
+    private static let continuousListeningRecentLevelWindowSeconds: TimeInterval = 0.5
+    private static var continuousListeningRecentLevelSampleCount: Int {
+        max(1, Int((continuousListeningRecentLevelWindowSeconds / continuousListeningVADPollSeconds).rounded()))
+    }
     // 4 characters of REAL content (up from 2, 2026-09-23): an interjection the
     // user hums while listening to an answer (「嗯。」) transcribes to 1–3
     // characters and must not be submitted as a brand-new question — that was
@@ -365,6 +380,33 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// pipecat's rule at min_words=1 accepts it — and an unguarded trigger would
     /// stop the answer mid-sentence. Counting content characters scores it 0.
     private static let continuousListeningMinimumInterruptContentCharacters = 4
+    /// How much real content a transcript must carry to interrupt an answer
+    /// when the microphone LEVEL independently confirms the user is speaking.
+    ///
+    /// 2, against the no-evidence bar's 4, because that bar IS the latency the
+    /// user reported. Measured 2026-09-23 against the live recognizer with the
+    /// app's own model (`qwen3-asr-flash-realtime`), streaming a 14-character
+    /// Chinese question in the app's own 100 ms cadence: the FIRST interim
+    /// lands at t=0.52 s already carrying 2 content characters (「帮我」), the
+    /// next at t=0.74 s carries 3, and the first one to clear 4 arrives at
+    /// t=1.44 s (「帮我看一下」) — by which time the user has spoken about 7
+    /// characters, which is precisely the 「说到第 7～8 个字的时候，它才会自动
+    /// 停止」 they reported. The recognizer was never the bottleneck; the bar
+    /// was.
+    ///
+    /// What the bar exists to reject is the recognizer's OWN noise, and that
+    /// noise is quiet. Measured the same day: fed a silent room, the
+    /// recognizer volunteered 「嗯。」 — 1 content character — at a microphone
+    /// level of 0.046, and 0.078 on another run. The app's speech threshold is
+    /// 0.25 on the same boosted scale and real speech measures 0.3–1.0, so 1–2
+    /// characters arriving with a corroborating level is the user, and 1–2
+    /// characters arriving quietly is the recognizer inventing something.
+    ///
+    /// The two bars cover each other's blind spot, which is why BOTH stay: 2
+    /// characters + level is the fast path, and 4 characters with no level
+    /// evidence remains the fallback, so a quiet speaker degrades to exactly
+    /// today's behaviour rather than to nothing.
+    private static let continuousListeningMinimumCorroboratedInterruptContentCharacters = 2
     /// Characters that are actual linguistic content — letters (CJK included)
     /// and digits — with punctuation, whitespace, symbols and emoji excluded.
     ///
@@ -573,6 +615,22 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// must still be able to interrupt that same utterance afterwards. One
     /// flag for both would make whichever path fired first veto the other.
     private var continuousListeningDidRequestBargeIn = false
+    /// The microphone levels of the last
+    /// `continuousListeningRecentLevelWindowSeconds`, refreshed by the VAD loop
+    /// on its own 50 ms cadence. Read only to corroborate a SHORT transcript
+    /// while an answer is being read aloud — see
+    /// `continuousListeningMinimumCorroboratedInterruptContentCharacters`.
+    ///
+    /// Deliberately NOT cleared per utterance: the window is self-refreshing by
+    /// construction, and emptying it would blind the corroboration for the half
+    /// second it takes to refill, which is exactly the half second a barge-in
+    /// has to fire in. It is cleared when the listening WINDOW opens and closes.
+    private var continuousListeningRecentAudioLevels: [CGFloat] = []
+    /// The loudest the microphone has been inside that window — the
+    /// corroborating evidence a short interrupt transcript is judged against.
+    private var continuousListeningRecentPeakAudioLevel: CGFloat {
+        continuousListeningRecentAudioLevels.max() ?? 0
+    }
     private var continuousListeningUtteranceStartedAt: Date?
     private var continuousListeningSilenceStartedAt: Date?
     /// The latest interim transcript of the current utterance. The fallback
@@ -691,6 +749,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             onUtteranceFinalized: onUtteranceFinalized
         )
         resetContinuousListeningUtteranceState()
+        continuousListeningRecentAudioLevels.removeAll()
         currentAudioPowerLevel = 0
         recordedAudioPowerHistory = Array(
             repeating: Self.recordedAudioPowerHistoryBaselineLevel,
@@ -723,6 +782,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         continuousListeningVADTask = nil
         continuousListeningCallbacks = nil
         resetContinuousListeningUtteranceState()
+        continuousListeningRecentAudioLevels.removeAll()
 
         activeTranscriptionSession?.cancel()
         activeTranscriptionSession = nil
@@ -858,9 +918,26 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                             print("🎙️ BuddyDictationManager: listening transcript is our own answer's echo — not treating it as the user (transcript: \"\(transcriptText)\")")
                         }
                     } else {
-                        let minimumContentCharacters = isBotSpeaking
-                            ? Self.continuousListeningMinimumInterruptContentCharacters
-                            : 1
+                        // While the bot is speaking a SHORT transcript is
+                        // trusted when the microphone independently agrees the
+                        // room was loud — that is the fast path, and it fires on
+                        // the recognizer's very FIRST interim (~0.5 s in, ~2
+                        // characters spoken) instead of the ~1.4 s the
+                        // no-evidence bar used to cost. Without the level the
+                        // long bar still applies, so a quiet speaker keeps
+                        // exactly the old behaviour. Both constants carry their
+                        // measurements.
+                        let isCorroboratedByVoiceLevel =
+                            self.continuousListeningRecentPeakAudioLevel
+                                >= Self.continuousListeningSpeechLevelThreshold
+                        let minimumContentCharacters: Int
+                        if isBotSpeaking {
+                            minimumContentCharacters = isCorroboratedByVoiceLevel
+                                ? Self.continuousListeningMinimumCorroboratedInterruptContentCharacters
+                                : Self.continuousListeningMinimumInterruptContentCharacters
+                        } else {
+                            minimumContentCharacters = 1
+                        }
                         if Self.continuousListeningContentCharacterCount(in: transcriptText)
                             >= minimumContentCharacters {
                             self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
@@ -1065,7 +1142,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
               !continuousListeningDidRequestBargeIn else { return }
 
         continuousListeningDidRequestBargeIn = true
-        print("🎙️ BuddyDictationManager: continuous listening detected speech (\(trigger), transcript: \"\(continuousListeningLatestInterimTranscript)\")")
+        print("🎙️ BuddyDictationManager: continuous listening detected speech (\(trigger), recent mic peak \(String(format: "%.3f", continuousListeningRecentPeakAudioLevel)), transcript: \"\(continuousListeningLatestInterimTranscript)\")")
         continuousListeningCallbacks?.onSpeechDetected()
     }
 
@@ -1082,6 +1159,17 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
             let now = Date()
             let audioLevel = currentAudioPowerLevel
+
+            // Refresh the rolling level window the short-transcript
+            // corroboration reads. Sampled here rather than in the tap so the
+            // window means wall-clock time — "the last half second" — instead
+            // of "however many tap buffers happened to arrive".
+            continuousListeningRecentAudioLevels.append(audioLevel)
+            let recentLevelSampleCount = Self.continuousListeningRecentLevelSampleCount
+            if continuousListeningRecentAudioLevels.count > recentLevelSampleCount {
+                continuousListeningRecentAudioLevels.removeFirst(
+                    continuousListeningRecentAudioLevels.count - recentLevelSampleCount)
+            }
 
             if continuousListeningUtteranceActive {
                 let utteranceDuration = now.timeIntervalSince(continuousListeningUtteranceStartedAt ?? now)
