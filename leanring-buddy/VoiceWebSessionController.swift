@@ -1,0 +1,757 @@
+//
+//  VoiceWebSessionController.swift
+//  leanring-buddy
+//
+//  The orchestrator behind the three VoiceWeb mode shortcuts (三段式 /
+//  全双工语音 / 全双工全模态) AND the notch sheet's 语音聊天 sidebar section.
+//  Pressing a shortcut ≈ the user walking over to the VoiceWeb page and
+//  clicking 「连接」; clicking a role preset in the sidebar does the same
+//  after first making that role the active one. This controller detects the
+//  VoiceWeb server, launches it when it is down, opens or reuses its Chrome
+//  window, posts one connect command, and watches the session — but the
+//  voice, video and playback themselves stay entirely in VoiceWeb's own
+//  pipeline. Nothing here ports any of that; this file is only HTTP, one
+//  subprocess launch and one AppleScript.
+//
+//  The path the commands travel is the external bridge built into VoiceWeb
+//  for exactly this purpose (server.py 2026-09-23):
+//
+//      Clicky --POST /external/command--> server.py --page polls--> window.client
+//      Clicky <--GET /external/state-----  page reports   <-- window.client
+//
+//  The browser is where `window.client` and the WebRTC mic live (AEC
+//  constraint), so the page, not this controller, executes connect, device
+//  toggles and text sends; this controller only reads the reported state.
+//
+//  Deliberately out of scope: streaming the reply word by word (the reply
+//  appears whole, when VoiceWeb's history writes it), running two external
+//  sessions at once (one at a time), and killing the VoiceWeb server on
+//  teardown — the service is a resident the user may be using outside Clicky.
+//
+
+import AppKit
+import Combine
+import Foundation
+
+@MainActor
+final class VoiceWebSessionController: ObservableObject {
+
+    enum VoiceWebMode: Int, CaseIterable {
+        /// 三段式: pipeline (Bailian ASR → LLM → TTS).
+        case threeStage = 0
+        /// 全双工语音: duplex realtime audio.
+        case duplexVoice = 1
+        /// 全双工全模态: omni realtime audio + optional camera + screen.
+        case omni = 2
+
+        /// The `chat_engine` value VoiceWeb's config stores for this mode.
+        var engineName: String {
+            switch self {
+            case .threeStage: return "pipeline"
+            case .duplexVoice: return "duplex"
+            case .omni: return "omni"
+            }
+        }
+
+        var displayName: String {
+            switch self {
+            case .threeStage: return "三段式"
+            case .duplexVoice: return "全双工语音"
+            case .omni: return "全双工全模态"
+            }
+        }
+    }
+
+    /// Where the currently watched VoiceWeb session is, from the UI's point
+    /// of view. `.connecting` covers the whole launch-connect flow (server
+    /// probe, page, command); `.connected` is the page's own `ready` report.
+    enum VoiceWebConnectionPhase: Equatable {
+        case idle
+        case connecting
+        case connected
+    }
+
+    /// One VoiceWeb role preset — the roles already configured in VoiceWeb
+    /// (config.json `roles`), surfaced as the 语音聊天 sidebar's list. Only
+    /// the fields the list renders are carried; VoiceWeb owns the rest.
+    struct VoiceWebRolePreset: Identifiable, Equatable {
+        let id: String
+        let name: String
+    }
+
+    /// One line of the voice chat's live transcript, mirrored from VoiceWeb's
+    /// per-role history file. `isUser` picks the bubble side in the view.
+    struct VoiceWebTranscriptEntry: Identifiable, Equatable {
+        let id = UUID()
+        let isUser: Bool
+        let text: String
+    }
+
+    // MARK: - Published state (the 语音聊天 view reads these)
+
+    /// The mode the active session was started with — nil when the session
+    /// was started from the sidebar's role presets instead of a shortcut.
+    @Published private(set) var activeMode: VoiceWebMode?
+
+    /// The session lifecycle the 挂断/连接 button and the status capsule show.
+    @Published private(set) var connectionPhase: VoiceWebConnectionPhase = .idle
+
+    /// VoiceWeb's own role presets, refreshed when the 语音聊天 sidebar opens.
+    @Published private(set) var rolePresets: [VoiceWebRolePreset] = []
+
+    /// Why the preset list is empty, when it is — usually the server being
+    /// down (the connect flow will start it, so the message is a hint, not a
+    /// refusal).
+    @Published private(set) var rolesErrorMessage: String?
+
+    /// The role preset the sidebar has highlighted. Selecting is separate
+    /// from connecting: the connect only happens on click-through of a row,
+    /// which also sets this.
+    @Published var selectedRoleID: String?
+
+    /// The live transcript of the session's conversation — VoiceWeb writes
+    /// each turn to a per-role history file, and the 1 s poll mirrors every
+    /// message here (both sides, so the view shows the user's own words too).
+    @Published private(set) var transcriptEntries: [VoiceWebTranscriptEntry] = []
+
+    // MARK: - Injected bridges (the AgentSessionManager closure precedent)
+
+    /// Shows a finished reply in the cursor-side answer bubble.
+    private let presentAnswer: (String) -> Void
+    /// Records a failure where the user can see it (`lastErrorMessage`).
+    private let presentFailure: (String) -> Void
+    /// Drives the notch pill's 「聊天中」 override.
+    private let setNotchOverride: (NotchActivityPhase?) -> Void
+
+    private let voiceWebBaseURL = URL(string: "http://localhost:8890")!
+
+    // MARK: - Session state
+
+    /// The whole connect-and-watch flow for the current session. Cancelled on
+    /// disconnect and on a mode switch — every `Task.sleep` in it throws and
+    /// the loop ends cooperatively, the same cancellation shape the voice
+    /// pipeline's `currentResponseTask` relies on.
+    private var sessionTask: Task<Void, Never>?
+
+    /// The VoiceWeb server this controller launched (nil when the server was
+    /// already running). Deliberately NOT terminated on teardown: the server
+    /// is a resident service the user may use outside Clicky.
+    private var launchedServerProcess: Process?
+
+    /// The role preset the active session was started with — nil when it was
+    /// started by a mode shortcut (those keep whatever role VoiceWeb itself
+    /// has active; switching roles is the sidebar's job). Published so the
+    /// sidebar can mark the row that is REALLY connected.
+    @Published private(set) var activeRoleID: String?
+
+    /// Which VoiceWeb history conversation the session's replies come from.
+    /// Everything already in the conversation's history file loads into the
+    /// transcript at first sight; only messages past that baseline reach the
+    /// answer bubble.
+    private var observedHistoryID: String?
+    private var mirroredTranscriptMessageCount = 0
+    /// A consecutive-disconnected tally so one transient page report cannot
+    /// end the session.
+    private var consecutiveDisconnectedPolls = 0
+
+    /// The text this controller just sent into the session via the input box.
+    /// VoiceWeb's history will eventually carry the same message as a user
+    /// turn; the first history user message matching it is skipped so the
+    /// transcript does not show the sent line twice.
+    private var pendingOwnSentText: String?
+
+    private static let serverProbeTimeoutSeconds: TimeInterval = 1
+    private static let serverLaunchWaitSeconds: TimeInterval = 20
+    private static let connectionWaitSeconds: TimeInterval = 30
+
+    init(presentAnswer: @escaping (String) -> Void,
+         presentFailure: @escaping (String) -> Void,
+         setNotchOverride: @escaping (NotchActivityPhase?) -> Void) {
+        self.presentAnswer = presentAnswer
+        self.presentFailure = presentFailure
+        self.setNotchOverride = setNotchOverride
+    }
+
+    // MARK: - Shortcut entry
+
+    /// One press of a VoiceWeb mode shortcut. Toggle semantics: the mode's own
+    /// shortcut disconnects while connected; another mode's switches over
+    /// (disconnect the old, connect the new). A session started from the
+    /// 语音聊天 sidebar has no mode — any of the three shortcuts hangs it up
+    /// (the user's rule: 第二次触发 = 自动挂断).
+    func handleShortcutPress(modeIndex: Int) {
+        guard let mode = VoiceWebMode(rawValue: modeIndex) else { return }
+        if activeMode == nil, connectionPhase != .idle {
+            disconnectCurrentSession()
+            return
+        }
+        if activeMode == mode {
+            disconnectCurrentSession()
+            return
+        }
+        startSession(mode: mode, roleID: nil)
+    }
+
+    /// The 语音聊天 sidebar's role row action: make the role active in
+    /// VoiceWeb, then connect. Clicking the already-connected role again is a
+    /// no-op; clicking a different one while a session runs hangs up the old
+    /// session first (the single-bridge command slot cannot carry both).
+    func connectToRole(_ roleID: String) {
+        selectedRoleID = roleID
+        if connectionPhase == .connected, activeRoleID == roleID { return }
+        startSession(mode: nil, roleID: roleID)
+    }
+
+    /// Best-effort disconnect at app termination — the server keeps running.
+    func disconnectOnTermination() {
+        sessionTask?.cancel()
+        sessionTask = nil
+        if connectionPhase != .idle {
+            sendBridgeCommand(["action": "disconnect"])
+        }
+        activeMode = nil
+        activeRoleID = nil
+        connectionPhase = .idle
+    }
+
+    // MARK: - Role presets (sidebar list)
+
+    /// Refreshes the VoiceWeb role presets for the sidebar list. Runs on the
+    /// section's every appearance — cheap (one GET), and it heals the list
+    /// after the server comes up.
+    func refreshRolePresets() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let data = try await self.httpGET(path: "/config")
+                guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let config = object["config"] as? [String: Any],
+                      let rawRoles = config["roles"] as? [[String: Any]] else {
+                    self.rolesErrorMessage = "VoiceWeb 返回的配置里没有角色列表"
+                    return
+                }
+                let presets = rawRoles.compactMap { role -> VoiceWebRolePreset? in
+                    guard let roleID = role["id"] as? String, !roleID.isEmpty else { return nil }
+                    let roleName = (role["name"] as? String) ?? ""
+                    return VoiceWebRolePreset(id: roleID, name: roleName.isEmpty ? "未命名角色" : roleName)
+                }
+                self.rolePresets = presets
+                self.rolesErrorMessage = presets.isEmpty ? "VoiceWeb 还没有配置任何角色预设" : nil
+                if self.selectedRoleID == nil {
+                    self.selectedRoleID = presets.first?.id
+                }
+            } catch {
+                // The server being down is the normal case — the connect flow
+                // starts it. The message is a hint about why the list is empty.
+                self.rolesErrorMessage = "VoiceWeb 服务没有响应，点击角色会自动启动它"
+            }
+        }
+    }
+
+    // MARK: - Text input (the composer)
+
+    /// Sends a typed line into the connected session. The page executes
+    /// `client.sendText` (the official RTVI text-input path, already wired
+    /// through VoiceWeb's silent-reply wrapper); VoiceWeb echoes the message
+    /// into its history, and the transcript poll mirrors it — the pending
+    /// marker below keeps that echo from doubling the line on screen.
+    func sendText(_ rawText: String) {
+        let trimmedText = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        guard connectionPhase == .connected else {
+            presentFailure("还没有连接语音聊天，先连上再打字。")
+            return
+        }
+        pendingOwnSentText = trimmedText
+        sendBridgeCommand(["action": "text", "text": trimmedText])
+    }
+
+    // MARK: - Session flow
+
+    private func startSession(mode: VoiceWebMode?, roleID: String?) {
+        sessionTask?.cancel()
+        sessionTask = nil
+        if connectionPhase != .idle {
+            // Switching modes/roles while connected: the page must actually
+            // drop the old connection before the new engine connects (single
+            // command slot — a disconnect sent right before the connect would
+            // be overwritten unread), so it is sent now and the flow below
+            // sleeps past the page's 500 ms poll before connecting.
+            sendBridgeCommand(["action": "disconnect"])
+        }
+        activeMode = mode
+        activeRoleID = roleID
+        connectionPhase = .connecting
+        // A new session watches a new conversation; the transcript poll
+        // repopulates from the history baseline at its first tick.
+        observedHistoryID = nil
+        mirroredTranscriptMessageCount = 0
+        pendingOwnSentText = nil
+        liveMirroredLineCount = 0
+        presentedLiveBotLineCount = 0
+        transcriptEntries = []
+        // 「聊天中」 persists for the WHOLE session — connecting included
+        // (the user's requirement: 连接过程中就持续显示，直到挂断).
+        setNotchOverride(.externalChatting)
+        sessionTask = Task { [weak self] in
+            await self?.runSession(mode: mode)
+        }
+    }
+
+    private func runSession(mode: VoiceWebMode?) async {
+        do {
+            try await ensureVoiceWebServerIsReachable()
+            try await ensureVoiceWebPageIsAvailable()
+            // The mode switch disconnect above needs one page poll (500 ms) to
+            // have been consumed before the connect overwrites the slot.
+            try await Task.sleep(nanoseconds: 700_000_000)
+            if let roleID = activeRoleID {
+                // The role row's promise: connect AS this role. `active_role`
+                // is VoiceWeb's own editable key (the page's role picker
+                // writes the same one); the running bot reads it at session
+                // start, so writing it right before the connect is enough.
+                try await postJSONObject(["active_role": roleID], path: "/config")
+            }
+            try await sendConnectCommand(mode: mode)
+            try await waitForConnection()
+            connectionPhase = .connected
+            try await pollSessionUntilDisconnected()
+        } catch is CancellationError {
+            return
+        } catch {
+            presentFailure("VoiceWeb 连接失败：\(error.localizedDescription)")
+            SoundEffectPlayer.shared.play(.errorSurprised)
+            endSession()
+        }
+    }
+
+    /// Hangs up and returns the notch to idle. The transcript stays on screen
+    /// — the user may still be reading it; the next connect replaces it.
+    func disconnectCurrentSession() {
+        sessionTask?.cancel()
+        sessionTask = nil
+        sendBridgeCommand(["action": "disconnect"])
+        endSession()
+    }
+
+    private func endSession() {
+        activeMode = nil
+        activeRoleID = nil
+        connectionPhase = .idle
+        observedHistoryID = nil
+        mirroredTranscriptMessageCount = 0
+        pendingOwnSentText = nil
+        consecutiveDisconnectedPolls = 0
+        setNotchOverride(nil)
+    }
+
+    // MARK: - Server reachability
+
+    private func ensureVoiceWebServerIsReachable() async throws {
+        if await isServerReachable() { return }
+
+        // Down → launch it. A resident the user started themselves would be
+        // reachable here, so reaching this line means Clicky owns this process.
+        try launchVoiceWebServer()
+        let pollDeadline = Date().addingTimeInterval(Self.serverLaunchWaitSeconds)
+        while Date() < pollDeadline {
+            try Task.checkCancellation()
+            if await isServerReachable() { return }
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
+        throw VoiceWebSessionError.serverDidNotStart
+    }
+
+    private func isServerReachable() async -> Bool {
+        do {
+            var request = URLRequest(url: voiceWebBaseURL.appendingPathComponent("status"))
+            request.timeoutInterval = Self.serverProbeTimeoutSeconds
+            let (_, response) = try await URLSession.shared.data(for: request)
+            return (response as? HTTPURLResponse)?.statusCode == 200
+        } catch {
+            return false
+        }
+    }
+
+    private func launchVoiceWebServer() throws {
+        let projectFolderPath = AppSettingsStore.snapshot().voiceWebProjectFolderPath
+        let pythonExecutablePath = projectFolderPath + "/.venv/bin/python"
+        guard FileManager.default.fileExists(atPath: pythonExecutablePath) else {
+            throw VoiceWebSessionError.pythonEnvironmentNotFound(projectFolderPath)
+        }
+
+        let serverProcess = Process()
+        serverProcess.executableURL = URL(fileURLWithPath: pythonExecutablePath)
+        serverProcess.arguments = ["-u", "server.py"]
+        serverProcess.currentDirectoryURL = URL(fileURLWithPath: projectFolderPath)
+
+        // stdout/stderr append to one log next to the app's own files — pure
+        // intermediate output, only wanted when something goes wrong.
+        let logFilePath = VoiceWebSessionController.serverLogFilePath
+        if !FileManager.default.fileExists(atPath: logFilePath) {
+            FileManager.default.createFile(atPath: logFilePath, contents: nil)
+        }
+        if let logHandle = FileHandle(forWritingAtPath: logFilePath) {
+            logHandle.seekToEndOfFile()
+            serverProcess.standardOutput = logHandle
+            serverProcess.standardError = logHandle
+        }
+
+        try serverProcess.run()
+        launchedServerProcess = serverProcess
+    }
+
+    /// Where the launched server's output lands. Kept beside the app's own
+    /// files so it survives and can be inspected after a failure.
+    static var serverLogFilePath: String {
+        let applicationSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return applicationSupportURL
+            .appendingPathComponent("Clicky", isDirectory: true)
+            .appendingPathComponent("voice-web-server.log")
+            .path
+    }
+
+    // MARK: - Chrome window
+
+    /// Makes sure a VoiceWeb page is loaded somewhere in Chrome.
+    ///
+    /// The live-report check IS the page check: any page that loaded reports
+    /// to the bridge (state changes + a 10 s heartbeat), so a report within
+    /// the server's 35 s expiry proves a page is open — no window/tab work at
+    /// all. Opening used to be decided by an in-app AppleScript raise, but
+    /// Clicky lacks the Chrome-automation TCC grant, so the script always
+    /// failed and the `open -a` fallback fired on EVERY press, stacking up
+    /// one duplicate VoiceWeb tab per press (three tabs from three presses —
+    /// measured 2026-09-23). The AppleScript is kept only as the
+    /// bring-to-front courtesy for a fresh open; a one-time "Clicky wants to
+    /// control Chrome" prompt is its price.
+    private func ensureVoiceWebPageIsAvailable() async {
+        if let state = await fetchBridgeState(), state.phase != nil {
+            return
+        }
+        let raiseScript = """
+        tell application "Google Chrome"
+            repeat with w in windows
+                set tabIndex to 0
+                repeat with t in tabs of w
+                    set tabIndex to tabIndex + 1
+                    -- ":8890" rather than "localhost:8890" — Chrome also
+                    -- surfaces the page as http://127.0.0.1:8890
+                    if URL of t contains ":8890" then
+                        set index of w to 1
+                        set active tab index of w to tabIndex
+                        return
+                    end if
+                end repeat
+            end repeat
+        end tell
+        """
+        if let appleScript = NSAppleScript(source: raiseScript) {
+            var scriptError: NSDictionary?
+            appleScript.executeAndReturnError(&scriptError)
+        }
+        // No live page report means no VoiceWeb page is loaded anywhere, so
+        // opening a tab here cannot duplicate an existing one.
+        let openProcess = Process()
+        openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        openProcess.arguments = ["-a", "Google Chrome", "http://localhost:8890/client/"]
+        try? openProcess.run()
+    }
+
+    // MARK: - Bridge commands and polling
+
+    private func sendConnectCommand(mode: VoiceWebMode?) async throws {
+        let settings = AppSettingsStore.snapshot()
+        var payload: [String: Any] = ["action": "connect"]
+        if let mode {
+            // A mode shortcut names the engine; a role-preset connect leaves
+            // the engine alone — the page keeps the one it loaded with (an
+            // omitted `engine` never triggers the reload path in the page).
+            payload["engine"] = mode.engineName
+        }
+        payload["mic"] = true
+        if mode == .threeStage {
+            payload["screen_vision"] = settings.voiceWebThreeStageSendsScreen
+        }
+        if mode == .omni {
+            payload["mic"] = settings.voiceWebOmniVoiceEnabled
+            payload["cam"] = settings.voiceWebOmniCameraEnabled
+            payload["screen"] = settings.voiceWebOmniScreenEnabled
+        }
+        try await postBridgeCommand(payload)
+    }
+
+    /// The page's `connState()`-derived phase: ready / connecting /
+    /// disconnected / failed. nil when the page has never reported (patch not
+    /// loaded, page never opened). The server's `server_phase`/`running_engine`
+    /// fields in the merged payload are deliberately not carried — they say
+    /// nothing about whether the page itself is connected.
+    private struct BridgeState {
+        var phase: String?
+        var mic: Bool?
+        var cam: Bool?
+        var screen: Bool?
+        /// The page's LIVE transcript of the running session (`live` in the
+        /// page's report: `[{r:"u"|"b", t:text}]`) — VoiceWeb's history file
+        /// is only written at disconnect, so this is the only source that
+        /// shows turns while the session is still up.
+        var liveLines: [(isUser: Bool, text: String)] = []
+    }
+
+    private func fetchBridgeState() async -> BridgeState? {
+        guard let data = try? await httpGET(path: "/external/state") else { return nil }
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        var liveLines: [(isUser: Bool, text: String)] = []
+        if let live = object["live"] as? [[String: Any]] {
+            for line in live {
+                guard let text = (line["t"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      !text.isEmpty else { continue }
+                liveLines.append((isUser: (line["r"] as? String) == "u", text: text))
+            }
+        }
+        return BridgeState(
+            phase: object["phase"] as? String,
+            mic: object["mic"] as? Bool,
+            cam: object["cam"] as? Bool,
+            screen: object["screen"] as? Bool,
+            liveLines: liveLines
+        )
+    }
+
+    /// Waits until the page itself reports ready. The server's own READY
+    /// snapshot is deliberately NOT accepted here: it says "ready" the moment
+    /// the server is merely up, so accepting it declared victory while the
+    /// page was still connecting — and the fresh page's "disconnected" report
+    /// then ended the session two polls later.
+    private func waitForConnection() async throws {
+        let deadline = Date().addingTimeInterval(Self.connectionWaitSeconds)
+        while Date() < deadline {
+            try Task.checkCancellation()
+            if let state = await fetchBridgeState() {
+                if state.phase == "failed" {
+                    throw VoiceWebSessionError.connectionFailed
+                }
+                if state.phase == "ready" {
+                    return
+                }
+            }
+            try await Task.sleep(nanoseconds: 500_000_000)
+        }
+        throw VoiceWebSessionError.connectionTimedOut
+    }
+
+    /// The connected session's watch loop: the transcript mirror (which also
+    /// feeds the bubble), the page's LIVE transcript lines, and the user
+    /// disconnecting from the VoiceWeb page itself ends the session.
+    private func pollSessionUntilDisconnected() async throws {
+        while true {
+            try Task.checkCancellation()
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+
+            let state = await fetchBridgeState()
+            if let state {
+                if state.phase == "disconnected" || state.phase == "failed" {
+                    consecutiveDisconnectedPolls += 1
+                    if consecutiveDisconnectedPolls >= 2 {
+                        endSession()
+                        return
+                    }
+                } else {
+                    consecutiveDisconnectedPolls = 0
+                }
+            }
+            // The history file only changes at disconnect, so the mirror is a
+            // no-op while the session runs; the live lines are what moves.
+            await refreshTranscriptIfPossible()
+            if let state, state.phase == "ready" {
+                mergeLiveTranscript(state.liveLines)
+            }
+        }
+    }
+
+    // MARK: - Live transcript (the page's report while the session runs)
+
+    /// How many entries at the tail of `transcriptEntries` came from the page's
+    /// live report — they are replaced wholesale on every poll (the last bot
+    /// line grows as it streams), unlike the history mirror which only appends.
+    private var liveMirroredLineCount = 0
+    /// How many bot lines the bubble has already presented this session — a
+    /// new bot line reaches the bubble exactly once.
+    private var presentedLiveBotLineCount = 0
+
+    /// Replaces the live tail of `transcriptEntries` with the page's current
+    /// live transcript. The lines STAY on screen after hang-up (endSession
+    /// deliberately leaves `transcriptEntries` alone) — the next connect
+    /// resets them, and the saved history covers the long term.
+    private func mergeLiveTranscript(_ liveLines: [(isUser: Bool, text: String)]) {
+        if liveMirroredLineCount > 0, liveMirroredLineCount <= transcriptEntries.count {
+            transcriptEntries.removeLast(liveMirroredLineCount)
+        }
+        liveMirroredLineCount = 0
+
+        var botLineCount = 0
+        var appendedEntries: [VoiceWebTranscriptEntry] = []
+        for line in liveLines {
+            if line.isUser {
+                // NOTE: the echo of a typed line is NOT skipped here — the
+                // live lines are the only place the typed line appears (the
+                // optimistic append doesn't exist, and the history file is
+                // written at disconnect when polling has already stopped).
+            } else {
+                botLineCount += 1
+            }
+            appendedEntries.append(VoiceWebTranscriptEntry(isUser: line.isUser, text: line.text))
+        }
+        transcriptEntries.append(contentsOf: appendedEntries)
+        liveMirroredLineCount = appendedEntries.count
+
+        if botLineCount > presentedLiveBotLineCount,
+           let newestBotLine = appendedEntries.last(where: { !$0.isUser }), !newestBotLine.text.isEmpty {
+            presentAnswer(newestBotLine.text)
+        }
+        presentedLiveBotLineCount = botLineCount
+    }
+
+    // MARK: - Transcript mirror (view + bubble)
+
+    /// Mirrors the session's VoiceWeb history into `transcriptEntries`, and
+    /// pushes every NEW assistant message into the answer bubble. The
+    /// conversation is the active role's own history file (VoiceWeb keeps one
+    /// per role); a mode-shortcut session follows the most recently modified
+    /// conversation, since it does not name a role.
+    private func refreshTranscriptIfPossible() async {
+        let conversationID: String?
+        if let activeRoleID {
+            conversationID = activeRoleID
+        } else {
+            conversationID = await newestHistoryConversationID()
+        }
+        guard let conversationID else { return }
+
+        guard let data = try? await httpGET(path: "/history/\(conversationID)"),
+              let detail = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let messages = detail["messages"] as? [[String: Any]] else { return }
+
+        if observedHistoryID != conversationID {
+            // First sight of this conversation: everything already in the
+            // history file is the record the user asked to see (load it
+            // whole), but the bubble only presents messages from now on.
+            observedHistoryID = conversationID
+            transcriptEntries = messages.compactMap(Self.transcriptEntry(fromMessage:))
+            mirroredTranscriptMessageCount = messages.count
+            return
+        }
+
+        guard messages.count > mirroredTranscriptMessageCount else { return }
+
+        var appendedEntries: [VoiceWebTranscriptEntry] = []
+        for message in messages[mirroredTranscriptMessageCount...] {
+            let isUserMessage = (message["role"] as? String) == "user"
+            let messageText = Self.transcriptText(fromMessage: message)
+            if isUserMessage, messageText == pendingOwnSentText {
+                // The echo of a line this controller just sent — the
+                // optimistic entry is already on screen; skip the duplicate.
+                pendingOwnSentText = nil
+                continue
+            }
+            if let entry = Self.transcriptEntry(fromMessage: message) {
+                appendedEntries.append(entry)
+            }
+            // Every new assistant message reaches the bubble exactly once —
+            // the loop only ever sees each history position one time, because
+            // `mirroredTranscriptMessageCount` jumps past it right below.
+            if !isUserMessage, !messageText.isEmpty {
+                presentAnswer(messageText)
+            }
+        }
+        mirroredTranscriptMessageCount = messages.count
+        transcriptEntries.append(contentsOf: appendedEntries)
+    }
+
+    /// A mode-shortcut session does not name a role, so its conversation is
+    /// the most recently modified one in VoiceWeb's history list.
+    private func newestHistoryConversationID() async -> String? {
+        guard let historyList = try? await httpGET(path: "/history"),
+              let listObject = try? JSONSerialization.jsonObject(with: historyList) as? [String: Any],
+              let conversations = listObject["history"] as? [[String: Any]] else { return nil }
+        return conversations
+            .max(by: { ($0["mtime"] as? Double ?? 0) < ($1["mtime"] as? Double ?? 0) })?["id"] as? String
+    }
+
+    /// One history message → one transcript entry, or nil for a message with
+    /// nothing readable.
+    private static func transcriptEntry(fromMessage message: [String: Any]) -> VoiceWebTranscriptEntry? {
+        let text = transcriptText(fromMessage: message)
+        guard !text.isEmpty else { return nil }
+        return VoiceWebTranscriptEntry(isUser: (message["role"] as? String) == "user", text: text)
+    }
+
+    /// VoiceWeb's history detail route has already flattened multimodal
+    /// content to text server-side, so a plain string is the normal shape;
+    /// an array of content parts is tolerated anyway.
+    private static func transcriptText(fromMessage message: [String: Any]) -> String {
+        if let text = message["content"] as? String { return text.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if let parts = message["content"] as? [[String: Any]] {
+            let joined = parts.compactMap { $0["text"] as? String }.joined(separator: " ")
+            return joined.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return ""
+    }
+
+    // MARK: - HTTP plumbing
+
+    private func httpGET(path: String) async throws -> Data {
+        var request = URLRequest(url: voiceWebBaseURL.appendingPathComponent(path))
+        request.timeoutInterval = 3
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw VoiceWebSessionError.httpStatus
+        }
+        return data
+    }
+
+    private func sendBridgeCommand(_ payload: [String: Any]) {
+        Task { [weak self] in
+            try? await self?.postBridgeCommand(payload)
+        }
+    }
+
+    private func postBridgeCommand(_ payload: [String: Any]) async throws {
+        try await postJSONObject(payload, path: "external/command")
+    }
+
+    private func postJSONObject(_ payload: [String: Any], path: String) async throws {
+        var request = URLRequest(url: voiceWebBaseURL.appendingPathComponent(path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 3
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw VoiceWebSessionError.httpStatus
+        }
+    }
+}
+
+enum VoiceWebSessionError: LocalizedError {
+    case serverDidNotStart
+    case pythonEnvironmentNotFound(String)
+    case connectionFailed
+    case connectionTimedOut
+    case httpStatus
+
+    var errorDescription: String? {
+        switch self {
+        case .serverDidNotStart:
+            return "服务启动超时（20 秒内没有就绪）"
+        case .pythonEnvironmentNotFound(let projectFolderPath):
+            return "在 \(projectFolderPath) 下没有找到 .venv/bin/python，请在设置的快捷键页核对 VoiceWeb 项目文件夹"
+        case .connectionFailed:
+            return "连接失败（页面回报 failed，详情见 VoiceWeb 窗口）"
+        case .connectionTimedOut:
+            return "连接超时（30 秒内没有就绪）"
+        case .httpStatus:
+            return "服务返回了非 200 状态"
+        }
+    }
+}

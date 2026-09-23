@@ -475,6 +475,38 @@ struct GeneralSettingsView: View {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.usesAutomaticSpeechSegmentation))
                 }
             }
+
+            SettingsGroupLabel("持续监听")
+            SettingsCard {
+                SettingsRow(
+                    label: "回答时持续监听",
+                    description: "回答播报期间继续听你说话：一开口就打断播报，说完自动作为新问题发送；按一下说话快捷键则立刻发送，不用等静音。没开口时按快捷键退出监听。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.continuousListeningEnabled))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "静音多久自动发送",
+                    description: "说完停下后等这么久没声音，就自动把这句话作为新问题发送。中间要想一想就按一下说话快捷键，立刻发送，不用等。"
+                ) {
+                    SettingsSlider(
+                        value: generalSettingsViewModel.binding(\.continuousListeningSilenceSendSeconds),
+                        range: 1...5,
+                        step: 0.5,
+                        valueLabel: { String(format: "%.1f 秒", $0) }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "监听时长",
+                    description: "每次回答播报开始后持续监听多久。超时且没在说话时自动收工，回到按快捷键说话。"
+                ) {
+                    SettingsStepper(
+                        value: generalSettingsViewModel.binding(\.continuousListeningWindowSeconds),
+                        range: 10...120
+                    )
+                }
+            }
         }
     }
 
@@ -606,6 +638,20 @@ struct GeneralSettingsView: View {
                             SettingsPickerOption(label: "仅光标所在屏", value: false)
                         ]
                     )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "追问时自动截屏",
+                    description: "回答播报中你一开口，就立刻截下此刻的画面，随这句追问一起发给模型 —— 模型看到的是你开口那一刻的屏幕，不是它答完之后的样子。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.autoScreenshotOnFollowUpSpeech))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "说到“屏幕”立即截屏",
+                    description: "识别到你说出「屏幕」两个字的瞬间就截一张（话没说完也截），随这次提问发送。对所有提问生效，包括按快捷键说话的普通提问。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.autoScreenshotOnScreenKeyword))
                 }
             }
 
@@ -852,6 +898,67 @@ struct GeneralSettingsView: View {
                     label: "怎么打断",
                     description: "Clicky 在思考、回答或操作电脑时，三种方法随时打断：① 按住说话快捷键不放 —— 立刻停止当前任务，并直接开始听你说新的话；② 按一下快捷键马上松开、不说话 —— 只停止，不发送任何内容；③ 点菜单栏面板里的「停止」按钮 —— 它只在 Clicky 忙的时候自动出现。打断在两步动作之间生效：正在执行中的那一步会做完，之后的不再继续，打断后不会有任何语音或提示。停止是内置行为：没有开关、不用单独设置，任何时刻都有效。"
                 )
+            }
+
+            SettingsGroupLabel("VoiceWeb 语音模式")
+            SettingsCard {
+                SettingsRow(
+                    label: "三段式",
+                    description: "按下连接 VoiceWeb 的三段式语音（识别 → 思考 → 播报，克隆音色），再按一下断开。连接中刘海显示「连接中…」，成功后短暂显示「已连接」，回复显示在鼠标旁的气泡里。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: AppSettings.voiceWebDefaultShortcutBindings[0],
+                        recordedShortcut: generalSettingsViewModel.binding(\.voiceWebThreeStageShortcut)
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "三段式 · 发送屏幕内容",
+                    description: "开启后 VoiceWeb 会持续读屏，你开口时它把最近的屏幕画面一起送给模型回答（适合「屏幕上这是什么」）。关闭只发语音。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebThreeStageSendsScreen))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "全双工语音",
+                    description: "按下连接 VoiceWeb 的全双工实时语音，你可以随时打断它说话，再按一下断开。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: AppSettings.voiceWebDefaultShortcutBindings[1],
+                        recordedShortcut: generalSettingsViewModel.binding(\.voiceWebDuplexShortcut)
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "全双工全模态",
+                    description: "按下连接 VoiceWeb 的全模态实时会话（语音 + 摄像头 + 屏幕），再按一下断开。下面三项决定连接时打开哪些设备。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: AppSettings.voiceWebDefaultShortcutBindings[2],
+                        recordedShortcut: generalSettingsViewModel.binding(\.voiceWebOmniShortcut)
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "全模态 · 语音",
+                    description: "连接后自动打开麦克风。关掉则连接后不开麦（可以在 VoiceWeb 窗口里手动打开）。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniVoiceEnabled))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "全模态 · 摄像头",
+                    description: "连接后自动打开摄像头（首次会走系统摄像头授权）。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniCameraEnabled))
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "全模态 · 屏幕",
+                    description: "连接后提示共享屏幕。macOS 的系统选择窗口必须由人点一次 —— 勾选后 VoiceWeb 窗口里的「屏幕」胶囊会闪烁提醒你点它。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniScreenEnabled))
+                }
             }
         }
     }

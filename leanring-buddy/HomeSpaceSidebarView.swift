@@ -17,6 +17,9 @@ struct HomeSpaceSidebarView: View {
 
     @ObservedObject var sessionsModel: ConversationSessionsModel
     @ObservedObject var agentSessionManager: AgentSessionManager
+    /// The VoiceWeb subsystem — the 语音聊天 section's role-preset list reads
+    /// its published presets and connection phase, and its rows connect.
+    @ObservedObject var voiceWebSessionController: VoiceWebSessionController
     @Binding var showsSettings: Bool
 
     @State private var hoveringSessionID: UUID?
@@ -41,6 +44,8 @@ struct HomeSpaceSidebarView: View {
                 sessionList
             case .agents:
                 agentList
+            case .voiceChat:
+                voiceChatRoleList
             }
             Spacer(minLength: 0)
         }
@@ -49,8 +54,9 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - Section switcher
 
-    /// 「对话 / Agent」二选一的小切换器——Agent 是独立于会话的一套列表
-    /// （用户定的取舍：侧栏加 Agent 区，不走对话自动升级）。
+    /// 「对话 / Agent / 语音聊天」三选一——长方形圆角的按钮（用户定的样式），
+    /// 三颗按钮平分整行。语音聊天是 VoiceWeb 的角色预设列表，与上面两个
+    /// 列表一样是独立的半区。
     private var sidebarSectionSwitcher: some View {
         HStack(spacing: 4) {
             ForEach(SidebarSection.allCases, id: \.self) { section in
@@ -59,19 +65,21 @@ struct HomeSpaceSidebarView: View {
                     Text(section.displayName)
                         .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
                         .foregroundColor(isSelected ? .white : .white.opacity(0.45))
-                        .padding(.horizontal, 12)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 5)
                         .background(
-                            Capsule().fill(isSelected ? Color.white.opacity(0.12) : Color.clear)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(isSelected ? Color.white.opacity(0.12) : Color.clear)
                         )
-                        .contentShape(Capsule())
+                        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .pointerCursor()
             }
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.bottom, 8)
     }
 
@@ -387,6 +395,102 @@ struct HomeSpaceSidebarView: View {
                 agentSessionManager.deleteAgent(agent.id)
             }
         }
+    }
+
+    // MARK: - Voice chat role presets
+
+    /// The 语音聊天 section's list: VoiceWeb's own role presets. Clicking a
+    /// row makes that role active in VoiceWeb and starts the session; the
+    /// connected role shows a green dot instead of the selection dot.
+    private var voiceChatRoleList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                if voiceWebSessionController.rolePresets.isEmpty {
+                    voiceChatEmptyHint
+                } else {
+                    ForEach(Array(voiceWebSessionController.rolePresets.enumerated()), id: \.element.id) { rowIndex, role in
+                        voiceChatRoleRow(role)
+                        if rowIndex < voiceWebSessionController.rolePresets.count - 1 {
+                            Divider()
+                                .overlay(Color.white.opacity(0.08))
+                                .padding(.leading, 46)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.top, 2)
+        }
+        .onAppear { voiceWebSessionController.refreshRolePresets() }
+    }
+
+    private func voiceChatRoleRow(_ role: VoiceWebSessionController.VoiceWebRolePreset) -> some View {
+        let isSelected = role.id == voiceWebSessionController.selectedRoleID
+        let isConnectedToThisRole = voiceWebSessionController.connectionPhase != .idle
+            && voiceWebSessionController.activeRoleID == role.id
+
+        return Button(action: {
+            voiceWebSessionController.connectToRole(role.id)
+            showsSettings = false
+        }) {
+            HStack(alignment: .center, spacing: 10) {
+                // 连接中的角色亮绿点；未连接时当前选中行亮蓝点——与
+                // 会话/Agent 列表同一个小点语言。
+                Circle()
+                    .fill(isConnectedToThisRole
+                        ? Color(red: 0.35, green: 0.85, blue: 0.55)
+                        : Color(red: 0.25, green: 0.52, blue: 1.0))
+                    .frame(width: 5, height: 5)
+                    .opacity(isConnectedToThisRole || isSelected ? 1 : 0)
+
+                Image(systemName: "waveform")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.6))
+                    .frame(width: 38, height: 38)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(role.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+
+                    Text(isConnectedToThisRole ? "聊天中" : "点击连接语音聊天")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(isConnectedToThisRole ? 0.7 : 0.45))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isSelected ? Color.white.opacity(0.05) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+    }
+
+    /// Empty / unreachable states for the preset list — a hint, not a wall:
+    /// the connect flow starts the server itself, so nothing here blocks.
+    private var voiceChatEmptyHint: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "waveform.circle")
+                .font(.system(size: 30))
+                .foregroundColor(.white.opacity(0.25))
+            Text(voiceWebSessionController.rolesErrorMessage ?? "正在读取 VoiceWeb 角色预设…")
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.45))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 14)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 40)
+        .padding(.bottom, 20)
     }
 
     private func agentStatusColor(_ status: AgentSessionStatus) -> Color {

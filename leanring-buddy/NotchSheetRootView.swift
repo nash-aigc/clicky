@@ -22,6 +22,10 @@ struct NotchSheetRootView: View {
     /// column and the top-bar chip on its state, so the switching view must
     /// be the one observing it, not only the subviews.
     @ObservedObject private var agentSessionManager: AgentSessionManager
+    /// The VoiceWeb subsystem, held by `CompanionManager` (one instance for
+    /// the app) — observed because both the 语音聊天 sidebar list and the
+    /// content column read its published presets / phase / transcript.
+    @ObservedObject private var voiceWebSessionController: VoiceWebSessionController
     var collapseAction: () -> Void
     var audioHistoryProvider: () -> [CGFloat]
 
@@ -45,6 +49,7 @@ struct NotchSheetRootView: View {
         // the same store, and only the manager the app holds owns the
         // subprocesses.
         self.agentSessionManager = companionManager.agentSessionManager
+        self.voiceWebSessionController = companionManager.voiceWebSessionController
         self.collapseAction = collapseAction
         self.audioHistoryProvider = audioHistoryProvider
     }
@@ -66,6 +71,7 @@ struct NotchSheetRootView: View {
                     HomeSpaceSidebarView(
                         sessionsModel: sessionsModel,
                         agentSessionManager: agentSessionManager,
+                        voiceWebSessionController: voiceWebSessionController,
                         showsSettings: $showsSettings
                     )
                     .frame(width: 245)
@@ -86,6 +92,8 @@ struct NotchSheetRootView: View {
                             )
                         case .agents:
                             AgentSessionView(agentSessionManager: agentSessionManager)
+                        case .voiceChat:
+                            VoiceChatSessionView(controller: voiceWebSessionController)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,9 +127,11 @@ struct NotchSheetRootView: View {
             Spacer()
 
             // Agent 页顶栏只显示当前 Agent 的名字（会话切换 Menu 跟会话
-            // 无关，不能混进 Agent 视图）。
+            // 无关，不能混进 Agent 视图）；语音聊天页同理只显示角色名。
             if agentSessionManager.selectedSidebarSection == .agents {
                 agentChip
+            } else if agentSessionManager.selectedSidebarSection == .voiceChat {
+                voiceChatChip
             } else {
                 sessionChip
             }
@@ -209,6 +219,33 @@ struct NotchSheetRootView: View {
 
             if let selectedAgent = agentSessionManager.selectedAgent {
                 Text(selectedAgent.status.displayName)
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundColor(.white.opacity(0.45))
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(Color.white.opacity(0.07)))
+        .fixedSize()
+    }
+
+    /// The 语音聊天 counterpart of `agentChip` — the active voice role's name
+    /// plus its connection state, a plain capsule like the Agent one.
+    private var voiceChatChip: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "waveform")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(.white.opacity(0.5))
+
+            Text(voiceWebSessionController.activeRoleID.flatMap { roleID in
+                voiceWebSessionController.rolePresets.first(where: { $0.id == roleID })?.name
+            } ?? "语音聊天")
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundColor(.white.opacity(0.8))
+                .lineLimit(1)
+
+            if voiceWebSessionController.connectionPhase != .idle {
+                Text(voiceWebSessionController.connectionPhase == .connected ? "聊天中" : "连接中…")
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundColor(.white.opacity(0.45))
             }

@@ -45,9 +45,12 @@ struct SpeechPlaybackConfiguration {
 final class BailianTTSClient {
     private let session: URLSession
 
-    /// The player for the chunk currently being spoken. Kept as a property so the
-    /// audio outlives the local scope of whichever method started it.
-    private var audioPlayer: AVAudioPlayer?
+    /// The playback engine every chunk is spoken through. Shared with the
+    /// continuous-listening capture path: the system AEC only cancels audio
+    /// rendered through the same voice-processing chain as the mic, so the
+    /// TTS MUST come out of this engine for 持续监听 not to hear its own
+    /// voice (see VoicePlaybackEngine's header).
+    let voicePlaybackEngine = VoicePlaybackEngine()
 
     /// Drives playback of chunks after the first one. The first chunk is spoken
     /// before `speakText` returns; the rest continue here in the background so a
@@ -179,6 +182,7 @@ final class BailianTTSClient {
                     // than leaving the companion stuck in a speaking state.
                     print("⚠️ Bailian TTS: stopped after chunk \(offset + 1) of \(remainingChunks.count): \(error.localizedDescription)")
                     self.isSpeakingChunkSequence = false
+                    self.voicePlaybackEngine.releaseEngineWhenIdle()
                     return
                 }
             }
@@ -188,6 +192,7 @@ final class BailianTTSClient {
             // one as finished while its audio is still playing.
             guard !Task.isCancelled else { return }
             self.isSpeakingChunkSequence = false
+            self.voicePlaybackEngine.releaseEngineWhenIdle()
         }
     }
 
@@ -196,7 +201,7 @@ final class BailianTTSClient {
     /// and `StreamingSpeechSession.isSynthesizingBeforeFirstAudio` for why the
     /// synthesis window before the *first* audio counts too.
     var isPlaying: Bool {
-        if audioPlayer?.isPlaying == true { return true }
+        if voicePlaybackEngine.isChunkPlaying { return true }
         if isSpeakingChunkSequence { return true }
         return activeStreamingSession?.isSynthesizingBeforeFirstAudio ?? false
     }
@@ -236,8 +241,7 @@ final class BailianTTSClient {
         activeStreamingSession = nil
         remainingChunksPlaybackTask?.cancel()
         remainingChunksPlaybackTask = nil
-        audioPlayer?.stop()
-        audioPlayer = nil
+        voicePlaybackEngine.stopChunk()
         isSpeakingChunkSequence = false
     }
 
@@ -354,14 +358,11 @@ final class BailianTTSClient {
         playbackConfiguration: SpeechPlaybackConfiguration
     ) {
         do {
-            let player = try AVAudioPlayer(data: audioData)
-            // `enableRate` must be set before the player starts; `rate` below 1.0
-            // or above 1.0 has no effect without it. Volume is independent.
-            player.enableRate = true
-            player.rate = playbackConfiguration.rate
-            player.volume = playbackConfiguration.volume
-            self.audioPlayer = player
-            player.play()
+            try voicePlaybackEngine.playWAVData(
+                audioData,
+                rate: playbackConfiguration.rate,
+                volume: playbackConfiguration.volume
+            )
             // `speakText` knows the chunk count up front; a streaming session
             // does not (the reply is still being written), so it passes 0.
             let chunkDescription = chunkCount > 0 ? "chunk \(chunkIndex)/\(chunkCount)" : "segment \(chunkIndex)"
@@ -401,7 +402,7 @@ final class BailianTTSClient {
     /// 200 ms after the long-pauses-at-joins complaint) is silent to the ear
     /// and costs one boolean check.
     func waitUntilPlaybackFinishes() async {
-        while audioPlayer?.isPlaying == true {
+        while voicePlaybackEngine.isChunkPlaying {
             try? await Task.sleep(nanoseconds: 30_000_000)
             guard !Task.isCancelled else { return }
         }
@@ -943,10 +944,12 @@ final class BailianTTSClient {
                         // sequence rather than leaving the companion stuck in a
                         // speaking state (same rule as `speakText`'s chunk loop).
                         owner.isSpeakingChunkSequence = false
+                        owner.voicePlaybackEngine.releaseEngineWhenIdle()
                         return
                     }
                 } else if hasFinishedStreaming, pendingSegments.isEmpty {
                     owner.isSpeakingChunkSequence = false
+                    owner.voicePlaybackEngine.releaseEngineWhenIdle()
                     return
                 } else {
                     try? await Task.sleep(nanoseconds: 100_000_000)
@@ -954,6 +957,7 @@ final class BailianTTSClient {
             }
             if isStopped {
                 owner.isSpeakingChunkSequence = false
+                owner.voicePlaybackEngine.releaseEngineWhenIdle()
             }
         }
     }

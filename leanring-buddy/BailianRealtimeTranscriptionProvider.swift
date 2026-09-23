@@ -658,6 +658,17 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
 
     private func resolveReadyContinuationIfNeeded(with result: Result<Void, Error>) {
         stateQueue.async {
+            // The wait is over whichever way it ended, so the confirmation
+            // timer must not stay scheduled: when `session.updated` DID arrive
+            // promptly, the leftover work item still fired three seconds later
+            // and printed "⚠️ No session.updated within 3.0s" over a handshake
+            // that had in fact succeeded — 20 such false alarms in one 47000-byte
+            // log, and they read exactly like a real service problem while
+            // diagnosing the barge-in defect of 2026-09-23. (Cancelling from
+            // inside the work item itself is a no-op; it is already running.)
+            self.sessionUpdateTimeoutWorkItem?.cancel()
+            self.sessionUpdateTimeoutWorkItem = nil
+
             guard !self.hasResolvedReadyContinuation else { return }
             self.hasResolvedReadyContinuation = true
 

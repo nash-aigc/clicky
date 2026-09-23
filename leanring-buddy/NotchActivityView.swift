@@ -47,6 +47,9 @@ enum NotchActivityPhase: Equatable {
     case thinking
     case speaking
     case transcribing
+    /// VoiceWeb 外部语音会话进行中——从发起连接到挂断的**整个会话**持续显示
+    /// 「聊天中」（用户的要求：连接过程中两翼就持续显示，而不是短暂一闪）。
+    case externalChatting
 }
 
 /// The bold state word the leading wing carries, and each phase's animation
@@ -61,6 +64,7 @@ extension NotchActivityPhase {
         case .thinking: return "Thinking"
         case .speaking: return "Speaking"
         case .transcribing: return "Typing…"
+        case .externalChatting: return "聊天中"
         }
     }
 
@@ -71,6 +75,7 @@ extension NotchActivityPhase {
         case .thinking: return Color(red: 0.77, green: 0.49, blue: 0.94)    // #C47CF0
         case .speaking: return Color(red: 0.98, green: 0.57, blue: 0.24)    // #FB923C
         case .transcribing: return Color(red: 0.72, green: 0.75, blue: 0.80) // #B7C0CC
+        case .externalChatting: return Color(red: 0.29, green: 0.87, blue: 0.50)  // #4ADE80 绿
         }
     }
 
@@ -99,6 +104,7 @@ extension NotchActivityPhase {
         case .thinking: return Color(red: 0.33, green: 0.00, blue: 0.40)     // #540067
         case .speaking: return Color(red: 0.27, green: 0.14, blue: 0.06)     // #45230F
         case .transcribing: return Color(red: 0.20, green: 0.22, blue: 0.25) // #333840
+        case .externalChatting: return Color(red: 0.04, green: 0.27, blue: 0.15)  // #0B4627 深绿
         }
     }
 
@@ -544,6 +550,11 @@ struct NotchActivityView: View {
         case .transcribing:
             TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { timeline in
                 NotchTypingDashesView(timelineDate: timeline.date, tint: tint)
+            }
+        case .externalChatting:
+            // 整个会话持续显示：绿色等化器比静止图形更像「在聊着」
+            TimelineView(.animation(minimumInterval: 1.0 / 36.0)) { timeline in
+                NotchSpeakingEqualizerView(timelineDate: timeline.date, tint: tint)
             }
         }
     }

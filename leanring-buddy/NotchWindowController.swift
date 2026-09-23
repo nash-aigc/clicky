@@ -58,6 +58,12 @@ final class NotchPanelModel: ObservableObject {
     /// state, and the sheet must not re-enter settings on every unrelated
     /// panel-model publish.
     @Published var requestedSettingsPage: SettingsPage?
+    /// The VoiceWeb external session's phase override (「连接中…」/「已连接」).
+    /// nil = no override — the same nil-means-unset shape as
+    /// `requestedSettingsPage`, and the same override precedent as
+    /// `isDictationFinalizing`: `refreshActivityPhase` consults it first.
+    /// Set through `NotchWindowController.setExternalSessionOverride`.
+    @Published var externalSessionOverride: NotchActivityPhase?
 }
 
 @MainActor
@@ -653,9 +659,18 @@ final class NotchWindowController {
     private var isDictationFinalizing = false
 
     private func refreshActivityPhase() {
-        panelModel.activityPhase = isDictationFinalizing
-            ? .transcribing
-            : NotchActivityPhase(from: latestVoiceState)
+        panelModel.activityPhase = panelModel.externalSessionOverride
+            ?? (isDictationFinalizing
+                ? .transcribing
+                : NotchActivityPhase(from: latestVoiceState))
+    }
+
+    /// The VoiceWeb session controller's way in — `panelModel` is private, and
+    /// the override only means anything when the derived phase is recomputed
+    /// with it in place.
+    func setExternalSessionOverride(_ phase: NotchActivityPhase?) {
+        panelModel.externalSessionOverride = phase
+        refreshActivityPhase()
     }
 }
 

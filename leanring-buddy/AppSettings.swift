@@ -426,6 +426,36 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// commit mode the pipeline was built around.
     var usesAutomaticSpeechSegmentation: Bool = false
 
+    /// 「回答时持续监听」: while the answer is being spoken (and for the window
+    /// that follows it), keep the microphone listening so a follow-up question
+    /// needs no shortcut at all — speaking up interrupts the TTS and the
+    /// finished utterance is sent as a brand-new question.
+    var continuousListeningEnabled: Bool = false
+
+    /// How long, in seconds, the continuous-listening window stays open after
+    /// the answer's playback starts. Clamped to 10...120.
+    var continuousListeningWindowSeconds: Int = 30
+
+    /// 「静音多久自动发送」: during the continuous-listening window, how long
+    /// the microphone must stay quiet after the user stops speaking before the
+    /// utterance is auto-sent as a new question. Human thinking pauses are
+    /// unbounded (the user's framing, 2026-09-23), so the shortcut press is the
+    /// reliable send marker and this wait is only the auto path — surfaced in
+    /// the 听 page so it can be pushed out of the way of the user's own pauses.
+    /// Clamped to 1...5.
+    var continuousListeningSilenceSendSeconds: Double = 2.0
+
+    /// 「追问时自动截屏」: when a follow-up speaker is detected during the
+    /// continuous-listening window, capture one screenshot of the screen at
+    /// that instant (not continuously) and send it with the follow-up.
+    var autoScreenshotOnFollowUpSpeech: Bool = true
+
+    /// 「说到"屏幕"立即截屏」: whenever the recognized speech contains the
+    /// word 屏幕 (or "screen"), capture one screenshot the moment the word is
+    /// heard — before the sentence finishes — and use it for the question.
+    /// Applies to every question, shortcut-triggered ones included.
+    var autoScreenshotOnScreenKeyword: Bool = true
+
     // MARK: - 说（语音播报）
 
     /// AVAudioPlayer playback rate for the spoken answer. 1.0 = normal.
@@ -549,6 +579,65 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// sends it, holding the key again re-records over it.
     var sendsTranscriptImmediatelyOnRelease: Bool = true
 
+    // MARK: - VoiceWeb 语音模式
+
+    /// The three VoiceWeb mode shortcuts' factory defaults: ⌃⌥1 / ⌃⌥2 / ⌃⌥3
+    /// (key codes 18/19/20 are the top number row's 1/2/3). The modifier raw
+    /// value is control (0x40000) + option (0x80000) — the same two modifiers
+    /// the talk shortcut's preset uses, so the whole family sits under one
+    /// hand. Indexed by `VoiceWebMode`'s raw value.
+    static let voiceWebDefaultShortcutBindings: [RecordedKeyboardShortcut] = [
+        RecordedKeyboardShortcut(modifierFlagsRawValue: 786432, keyCode: 18),
+        RecordedKeyboardShortcut(modifierFlagsRawValue: 786432, keyCode: 19),
+        RecordedKeyboardShortcut(modifierFlagsRawValue: 786432, keyCode: 20),
+    ]
+
+    /// The shortcut that connects/disconnects the 三段式 (pipeline) voice mode.
+    /// `nil` means the factory default ⌃⌥1 — same nil-means-preset shape as
+    /// `customPushToTalkShortcut`.
+    var voiceWebThreeStageShortcut: RecordedKeyboardShortcut?
+
+    /// The shortcut for the 全双工语音 (duplex) voice mode. `nil` means ⌃⌥2.
+    var voiceWebDuplexShortcut: RecordedKeyboardShortcut?
+
+    /// The shortcut for the 全双工全模态 (omni) mode. `nil` means ⌃⌥3.
+    var voiceWebOmniShortcut: RecordedKeyboardShortcut?
+
+    /// Where the VoiceWeb project lives — the folder whose `.venv/bin/python
+    /// server.py` is launched when the service is not reachable, and whose
+    /// `cwd` that launch runs under. A stored default rather than a computed
+    /// constant so a user who moved the project can fix it in settings without
+    /// a rebuild.
+    var voiceWebProjectFolderPath: String = "/Users/mjm/Documents/SuperAgent/APP/Test/voice-web"
+
+    /// 三段式: send screen content along with the conversation (VoiceWeb's
+    /// role-level screen recognition). Off = voice only. Written into the
+    /// active role's `screen_vision_enabled` at connect time by the bridge.
+    var voiceWebThreeStageSendsScreen: Bool = false
+
+    /// 全双工全模态: whether voice participates. Voice is the point of the
+    /// mode, so it defaults on; the two toggles below are the optional extras.
+    var voiceWebOmniVoiceEnabled: Bool = true
+
+    /// 全双工全模态: open the camera after connecting. Off by default — the
+    /// camera light coming on uninvited would be the wrong default.
+    var voiceWebOmniCameraEnabled: Bool = false
+
+    /// 全双工全模态: ask for screen sharing after connecting. The macOS
+    /// picker always needs one human click in the VoiceWeb window; the row's
+    /// description says so.
+    var voiceWebOmniScreenEnabled: Bool = false
+
+    /// The shortcut actually in effect for VoiceWeb mode `modeIndex`
+    /// (0 = 三段式, 1 = 全双工语音, 2 = 全双工全模态): the user's recorded
+    /// one when present, otherwise the factory default — the same
+    /// recorded-wins-over-preset rule as `pushToTalkShortcutBinding`.
+    func voiceWebShortcutBinding(modeIndex: Int) -> RecordedKeyboardShortcut {
+        let storedShortcuts = [voiceWebThreeStageShortcut, voiceWebDuplexShortcut, voiceWebOmniShortcut]
+        let index = max(0, min(modeIndex, storedShortcuts.count - 1))
+        return storedShortcuts[index] ?? Self.voiceWebDefaultShortcutBindings[index]
+    }
+
     // MARK: - Agent
 
     /// Master switch for the agent subsystem — spawning claude subprocesses
@@ -616,6 +705,8 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.screenshotCompressionQuality = min(max(settings.screenshotCompressionQuality, 0.5), 0.95)
         settings.visionMaxCompletionTokens = min(max(settings.visionMaxCompletionTokens, 256), 32768)
         settings.maximumConcurrentAgents = min(max(settings.maximumConcurrentAgents, 1), 6)
+        settings.continuousListeningWindowSeconds = min(max(settings.continuousListeningWindowSeconds, 10), 120)
+        settings.continuousListeningSilenceSendSeconds = min(max(settings.continuousListeningSilenceSendSeconds, 1.0), 5.0)
         return settings
     }
 }
@@ -648,6 +739,11 @@ nonisolated extension AppSettings {
         case extraTranscriptionKeyterms
         case finalTranscriptGracePeriodSeconds
         case usesAutomaticSpeechSegmentation
+        case continuousListeningEnabled
+        case continuousListeningWindowSeconds
+        case continuousListeningSilenceSendSeconds
+        case autoScreenshotOnFollowUpSpeech
+        case autoScreenshotOnScreenKeyword
         case speechPlaybackRate
         case speechPlaybackVolumePercent
         case interruptsPlaybackOnNewQuestion
@@ -667,6 +763,14 @@ nonisolated extension AppSettings {
         case customPushToTalkShortcut
         case pushToTalkTriggerModeRawValue
         case sendsTranscriptImmediatelyOnRelease
+        case voiceWebThreeStageShortcut
+        case voiceWebDuplexShortcut
+        case voiceWebOmniShortcut
+        case voiceWebProjectFolderPath
+        case voiceWebThreeStageSendsScreen
+        case voiceWebOmniVoiceEnabled
+        case voiceWebOmniCameraEnabled
+        case voiceWebOmniScreenEnabled
         case visionMaxCompletionTokens
         case allowsAgentSubsystem
         case agentClaudeExecutablePath
@@ -707,6 +811,11 @@ nonisolated extension AppSettings {
         extraTranscriptionKeyterms = try container.decodeIfPresent(String.self, forKey: .extraTranscriptionKeyterms) ?? defaults.extraTranscriptionKeyterms
         finalTranscriptGracePeriodSeconds = try container.decodeIfPresent(Double.self, forKey: .finalTranscriptGracePeriodSeconds) ?? defaults.finalTranscriptGracePeriodSeconds
         usesAutomaticSpeechSegmentation = try container.decodeIfPresent(Bool.self, forKey: .usesAutomaticSpeechSegmentation) ?? defaults.usesAutomaticSpeechSegmentation
+        continuousListeningEnabled = try container.decodeIfPresent(Bool.self, forKey: .continuousListeningEnabled) ?? defaults.continuousListeningEnabled
+        continuousListeningWindowSeconds = try container.decodeIfPresent(Int.self, forKey: .continuousListeningWindowSeconds) ?? defaults.continuousListeningWindowSeconds
+        continuousListeningSilenceSendSeconds = try container.decodeIfPresent(Double.self, forKey: .continuousListeningSilenceSendSeconds) ?? defaults.continuousListeningSilenceSendSeconds
+        autoScreenshotOnFollowUpSpeech = try container.decodeIfPresent(Bool.self, forKey: .autoScreenshotOnFollowUpSpeech) ?? defaults.autoScreenshotOnFollowUpSpeech
+        autoScreenshotOnScreenKeyword = try container.decodeIfPresent(Bool.self, forKey: .autoScreenshotOnScreenKeyword) ?? defaults.autoScreenshotOnScreenKeyword
         speechPlaybackRate = try container.decodeIfPresent(Double.self, forKey: .speechPlaybackRate) ?? defaults.speechPlaybackRate
         speechPlaybackVolumePercent = try container.decodeIfPresent(Double.self, forKey: .speechPlaybackVolumePercent) ?? defaults.speechPlaybackVolumePercent
         interruptsPlaybackOnNewQuestion = try container.decodeIfPresent(Bool.self, forKey: .interruptsPlaybackOnNewQuestion) ?? defaults.interruptsPlaybackOnNewQuestion
@@ -730,6 +839,14 @@ nonisolated extension AppSettings {
         customPushToTalkShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .customPushToTalkShortcut) ?? defaults.customPushToTalkShortcut
         pushToTalkTriggerModeRawValue = try container.decodeIfPresent(String.self, forKey: .pushToTalkTriggerModeRawValue) ?? defaults.pushToTalkTriggerModeRawValue
         sendsTranscriptImmediatelyOnRelease = try container.decodeIfPresent(Bool.self, forKey: .sendsTranscriptImmediatelyOnRelease) ?? defaults.sendsTranscriptImmediatelyOnRelease
+        voiceWebThreeStageShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .voiceWebThreeStageShortcut) ?? defaults.voiceWebThreeStageShortcut
+        voiceWebDuplexShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .voiceWebDuplexShortcut) ?? defaults.voiceWebDuplexShortcut
+        voiceWebOmniShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .voiceWebOmniShortcut) ?? defaults.voiceWebOmniShortcut
+        voiceWebProjectFolderPath = try container.decodeIfPresent(String.self, forKey: .voiceWebProjectFolderPath) ?? defaults.voiceWebProjectFolderPath
+        voiceWebThreeStageSendsScreen = try container.decodeIfPresent(Bool.self, forKey: .voiceWebThreeStageSendsScreen) ?? defaults.voiceWebThreeStageSendsScreen
+        voiceWebOmniVoiceEnabled = try container.decodeIfPresent(Bool.self, forKey: .voiceWebOmniVoiceEnabled) ?? defaults.voiceWebOmniVoiceEnabled
+        voiceWebOmniCameraEnabled = try container.decodeIfPresent(Bool.self, forKey: .voiceWebOmniCameraEnabled) ?? defaults.voiceWebOmniCameraEnabled
+        voiceWebOmniScreenEnabled = try container.decodeIfPresent(Bool.self, forKey: .voiceWebOmniScreenEnabled) ?? defaults.voiceWebOmniScreenEnabled
         visionMaxCompletionTokens = try container.decodeIfPresent(Int.self, forKey: .visionMaxCompletionTokens) ?? defaults.visionMaxCompletionTokens
         allowsAgentSubsystem = try container.decodeIfPresent(Bool.self, forKey: .allowsAgentSubsystem) ?? defaults.allowsAgentSubsystem
         agentClaudeExecutablePath = try container.decodeIfPresent(String.self, forKey: .agentClaudeExecutablePath) ?? defaults.agentClaudeExecutablePath

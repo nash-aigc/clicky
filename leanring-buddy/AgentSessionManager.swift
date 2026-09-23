@@ -21,17 +21,19 @@ import Foundation
 import SwiftUI
 
 /// Which half of the notch sheet's sidebar list is showing — the conversation
-/// sessions or the agent roster. UI state, held here because both the sidebar
-/// (which renders it) and the sheet root (which switches the content column)
-/// read the same manager.
+/// sessions, the agent roster, or the VoiceWeb voice-chat role presets. UI
+/// state, held here because both the sidebar (which renders it) and the sheet
+/// root (which switches the content column) read the same manager.
 nonisolated enum SidebarSection: String, CaseIterable, Sendable {
     case conversations
     case agents
+    case voiceChat
 
     var displayName: String {
         switch self {
         case .conversations: return "对话"
         case .agents: return "Agent"
+        case .voiceChat: return "语音聊天"
         }
     }
 }

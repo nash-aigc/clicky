@@ -156,6 +156,37 @@ final class CompanionManager: ObservableObject {
         return controller
     }()
 
+    /// The VoiceWeb external-session subsystem — the orchestrator behind the
+    /// three VoiceWeb mode shortcuts (三段式 / 全双工语音 / 全双工全模态).
+    /// Same one-way decoupling as `agentSessionManager`: it never touches
+    /// `voiceState` or `currentResponseTask` — the notch pill is driven
+    /// through an override phase, and replies reach the bubble through the
+    /// same `streamingAnswerText` gate the native answers use.
+    lazy var voiceWebSessionController: VoiceWebSessionController = {
+        let controller = VoiceWebSessionController(
+            presentAnswer: { [weak self] answerText in
+                guard let self else { return }
+                // Same gates the native answer bubble reads: 「回答时显示文字」
+                // off means no bubble at all, and the linger is the same
+                // 「回答文字多留一会儿」. VoiceWeb speaks through its own
+                // Chrome audio, so `scheduleAnswerBubbleClear`'s TTS poll is
+                // immediately false here and the clear fires after the linger.
+                let settings = AppSettingsStore.snapshot()
+                guard settings.showsResponseText else { return }
+                self.clearAnswerBubble()
+                self.streamingAnswerText = answerText
+                self.scheduleAnswerBubbleClear(lingerSeconds: settings.answerBubbleLingerSeconds)
+            },
+            presentFailure: { [weak self] failureText in
+                self?.lastErrorMessage = failureText
+            },
+            setNotchOverride: { [weak self] overridePhase in
+                self?.notchWindowController?.setExternalSessionOverride(overridePhase)
+            }
+        )
+        return controller
+    }()
+
     /// A HUD chip tap: switch the sidebar to the Agent section, select that
     /// agent, and expand the notch sheet. The sheet's content column reads
     /// `selectedSidebarSection` live, so an already-expanded sheet just
@@ -169,6 +200,7 @@ final class CompanionManager: ObservableObject {
     }
 
     private var shortcutTransitionCancellable: AnyCancellable?
+    private var externalShortcutTransitionsCancellable: AnyCancellable?
     private var voiceStateCancellable: AnyCancellable?
     private var audioPowerCancellable: AnyCancellable?
     /// While the 快捷键 page's shortcut recorder is armed, the global event tap
@@ -298,6 +330,30 @@ final class CompanionManager: ObservableObject {
     /// has elapsed. Cancelled whenever a new answer takes the bubble over.
     private var answerBubbleClearTask: Task<Void, Never>?
 
+    // MARK: - 回答时持续监听 + 自动截屏
+
+    /// Screenshots captured the instant the user started speaking (追问时自动
+    /// 截屏) or the instant the recognizer heard 屏幕 (说到“屏幕”立即截屏).
+    /// The question's own pipeline capture happens after the sentence has
+    /// finished — this is the "what the user was looking at when they spoke"
+    /// version, consumed by that pipeline if it is still fresh.
+    private var pendingPreCapturedScreens: [CompanionScreenCapture]?
+    private var pendingPreCaptureDate: Date?
+
+    /// How long a pre-captured screenshot stays eligible to be sent with a
+    /// question. Deliberately a constant, not a setting: a stale "the screen
+    /// the user was looking at" is worse than none, and 3 s is already
+    /// generous for "the moment they spoke".
+    private static let preCaptureFreshnessSeconds: TimeInterval = 3
+
+    /// The continuous-listening window's expiry timer. Re-armed when a new
+    /// answer's playback starts and when a follow-up is submitted.
+    private var continuousListeningWindowTask: Task<Void, Never>?
+
+    /// Counts 屏幕 mentions in streaming interim transcripts so each spoken
+    /// mention fires exactly one pre-capture (edge, not level).
+    private var screenKeywordDetector = BuddyScreenKeywordDetector()
+
     /// What the user is saying right now, shown in a bubble beside the cursor.
     ///
     /// Empty when 通用 → 「说话时实时显示识别文字」 is off, or when the transcript is
@@ -314,6 +370,7 @@ final class CompanionManager: ObservableObject {
     private var conversationHistoryClearedObserver: NSObjectProtocol?
     private var sessionsChangeObserver: NSObjectProtocol?
     private var appSettingsChangedObserver: NSObjectProtocol?
+    private var willTerminateObserver: NSObjectProtocol?
 
     /// Whether the blue cursor companion is currently drawn.
     ///
@@ -396,6 +453,21 @@ final class CompanionManager: ObservableObject {
         bindVoiceStateObservation()
         bindAudioPowerLevel()
         bindShortcutTransitions()
+
+        // 持续监听的采集必须落在 TTS 播放同一个引擎上，AEC 才有参考信号
+        //（否则 AI 会听到自己的播报、自己打断自己）。TTS 客户端是 lazy 的，
+        // 所以注入的是取值闭包，首次开监听窗口时才实例化。
+        buddyDictationManager.sharedVoicePlaybackEngineProvider = { [weak self] in
+            self?.bailianTTSClient.voicePlaybackEngine
+        }
+
+        // 「播报中」和 pipecat 的 BotStartedSpeaking / BotStoppedSpeaking 是同一个
+        // 状态：播报期间，转写文字要够多才算用户开口（官方
+        // MinWordsUserTurnStartStrategy），否则识别器往静音里吐的一个「。」
+        // 就能把 AI 自己的回答打断。TTS 客户端同样是 lazy 的，所以注入闭包。
+        buddyDictationManager.isBotSpeakingProvider = { [weak self] in
+            self?.bailianTTSClient.isPlaying ?? false
+        }
 
         // Restore the conversation before anything can be asked, so the first
         // question of a launch is answered with the memory of the last one.
@@ -535,10 +607,32 @@ final class CompanionManager: ObservableObject {
                 // The cursor settings are the one group that changes something the
                 // overlay draws, so they have to be pushed through to it live.
                 self.applyCursorSettings(settings)
+
+                // A re-recorded VoiceWeb shortcut must be matched by the live
+                // event tap immediately, not after a restart.
+                self.refreshExternalShortcutBindings()
+
+                // 「回答时持续监听」关掉时立即退出当前窗口——设置生效不等下一次提问。
+                if !settings.continuousListeningEnabled {
+                    self.endContinuousListeningWindow()
+                }
             }
         }
 
         applyCursorSettings(AppSettingsStore.snapshot())
+
+        // On quit, tell an active VoiceWeb session to disconnect (best effort —
+        // the app is going down anyway). The VoiceWeb server process itself is
+        // deliberately left running: it is a resident service.
+        willTerminateObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.voiceWebSessionController.disconnectOnTermination()
+            }
+        }
 
         // First launch (the menu bar panel that used to host this flow is
         // gone): raise the permission prompts right away — they are what the
@@ -739,6 +833,7 @@ final class CompanionManager: ObservableObject {
         currentResponseTask?.cancel()
         currentResponseTask = nil
         shortcutTransitionCancellable?.cancel()
+        externalShortcutTransitionsCancellable?.cancel()
         voiceStateCancellable?.cancel()
         audioPowerCancellable?.cancel()
         if let shortcutRecorderStateObserver {
@@ -935,6 +1030,46 @@ final class CompanionManager: ObservableObject {
             .sink { [weak self] transition in
                 self?.handleShortcutTransition(transition)
             }
+        // The three VoiceWeb mode shortcuts share the same event tap; their
+        // presses never reach the talk-shortcut matcher (the monitor consumes
+        // them first). Only the press edge matters — the toggle lives in
+        // `handleShortcutPress`, so reacting to the release edge too would
+        // connect on press and disconnect it again on release.
+        externalShortcutTransitionsCancellable = globalPushToTalkShortcutMonitor
+            .externalShortcutTransitionsPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] transition in
+                guard let self else { return }
+                guard transition.pressed else { return }
+
+                // The VoiceWeb shortcuts share the talk shortcut's ⌃⌥ modifiers,
+                // and modifiers reach the tap before the digit — the ⌃⌥
+                // flagsChanged already started a native recording by the time
+                // the "1" keyDown arrives. That recording is an artifact of the
+                // shared modifiers, not something the user asked for: cancel it
+                // and hand the interaction to VoiceWeb. (The talk shortcut keeps
+                // its zero-latency start; only the overlapping press pays for a
+                // recording that gets cancelled a beat later.)
+                if globalPushToTalkShortcutMonitor.isShortcutCurrentlyPressed {
+                    pendingKeyboardShortcutStartTask?.cancel()
+                    pendingKeyboardShortcutStartTask = nil
+                    buddyDictationManager.cancelCurrentDictation(preserveDraftText: false)
+                    // Same rule as the interrupt path: the release must not be
+                    // able to misfire the confirmation-tap send.
+                    shortcutPressBeganAt = nil
+                }
+                voiceWebSessionController.handleShortcutPress(modeIndex: transition.index)
+            }
+        refreshExternalShortcutBindings()
+    }
+
+    /// Copies the current VoiceWeb shortcut bindings into the monitor's match
+    /// snapshot. Called at start and on every settings save — a re-recorded
+    /// shortcut has to take effect without a restart.
+    private func refreshExternalShortcutBindings() {
+        globalPushToTalkShortcutMonitor.externalShortcutBindings = (0...2).map {
+            AppSettingsStore.snapshot().voiceWebShortcutBinding(modeIndex: $0)
+        }
     }
 
     private func handleShortcutTransition(_ transition: BuddyPushToTalkShortcut.ShortcutTransition) {
@@ -965,7 +1100,39 @@ final class CompanionManager: ObservableObject {
             // 回到待命，**不开麦**——再按一次才开始收听。之前的做法是打断和开麦
             // 同一步完成：旧回答被取消的同一瞬间新录音就开始了，用户看到的是
             // 「按了没打断，只是重新听我说了一遍」，于是永远打不断。
-            if voiceState == .processing || voiceState == .responding {
+            //
+            // 正在播放音频是第三个「忙」状态，而且是最要紧的一个：回答任务在
+            // 自己的结尾把 voiceState 放回 .idle，可那之后音频还在读——播放期间
+            // 按下在这里看到的是 .idle，会跳过打断直接开麦，用户看到的就是
+            // 「想让它闭嘴，它却又开始听我说话」。isPlaying 覆盖两种播报方式
+            // （整段合成的 AVAudioPlayer 和逐句快答的段间空隙、首段合成窗口），
+            // 所以播报还出声（或马上要出声）时，第一次按下永远是终止。
+            // 持续监听开着也算「忙」，但按下分两种（见分支内注释）：开口了 =
+            // 发送这句话；没开口 = 打断 AI 回答 + 退出监听，不开麦——否则用户
+            // 没法安静下来去操作其他软件。第二按才是正常录音（走到下面的
+            // guard !isDictationInProgress 时监听已结束）。
+            if voiceState == .processing
+                || voiceState == .responding
+                || bailianTTSClient.isPlaying
+                || buddyDictationManager.isContinuousListening {
+                // 持续监听中且用户已经说出可发送的内容：同一快捷键的按下 =
+                // 「我说完了，发送」。人类思考的停顿没有上限，静音计时判不住
+                // 「说完了」——这是用户 2026-09-23 定下的设计：开口之后的按下就是
+                // 发送标记，静音等待只是兜底路径（可在设置页调）。此刻不开麦、不打断，
+                // 按下本身就把正在说的这句话送去提问。
+                //
+                // 判据是「有没有够发送的内容」，不是「有没有开口」——因为 AI 自己
+                // 的残留回声既能把能量 VAD 顶起来，也能让识别器吐出一两个字。
+                // 只有够发送的内容才算开口，否则按下就是纯打断（2026-09-23 修：
+                // 播报中没说话按一次必须能停，用户报的是「按两次才能停止播放」）。
+                if buddyDictationManager.isContinuousListening
+                    && buddyDictationManager.isContinuousListeningUtterancePending {
+                    buddyDictationManager.finishContinuousListeningUtteranceByShortcutSend()
+                    // 同上：release 不能把这次按下当成有效按压。
+                    shortcutPressBeganAt = nil
+                    return
+                }
+                endContinuousListeningWindow()
                 interruptActiveResponse()
                 // 让 release 把这次按下当成一次没有时长的按压：既不能触发确认
                 // 轻点的「发送暂存的话」，也不能留下一个陈旧的计时。
@@ -977,6 +1144,8 @@ final class CompanionManager: ObservableObject {
             // hold (say something new). See `handleFinalTranscript`.
             shortcutPressBeganAt = Date()
             didSendPendingConfirmationThisPress = false
+            // 新录音新句子：「屏幕」计数从零开始，上一句的命中不重放。
+            screenKeywordDetector.reset()
 
             // Cancel any pending fade-out so the companion stays up for this
             // interaction, and bring it back on screen if the current mode had it
@@ -1050,6 +1219,10 @@ final class CompanionManager: ObservableObject {
                 await buddyDictationManager.startPushToTalkFromKeyboardShortcut(
                     currentDraftText: "",
                     updateDraftText: { [weak self] partialTranscript in
+                        // 「说到“屏幕”立即截屏」对普通提问同样生效：一听到
+                        // 关键词就截，不等句子说完。必须放在波形开关的 guard
+                        // 之前——波形的开关只管要不要显示文字，不管截不截屏。
+                        self?.handleInterimTranscriptForScreenDetection(partialTranscript)
                         // The waveform is the default UI; the words are optional.
                         // Leaving this empty is what keeps the overlay waveform-only,
                         // which is why the setting needs no other support.
@@ -1186,9 +1359,12 @@ final class CompanionManager: ObservableObject {
     - if you receive multiple screen images, the one labeled "primary focus" is where the cursor is — prioritize that one but reference others if relevant.
 
     element pointing:
-    you have a small blue triangle cursor that can fly to and point at things on screen. use it whenever pointing would genuinely help the user — if they're asking how to do something, looking for a menu, trying to find a button, or need help navigating an app, point at the relevant element. err on the side of pointing rather than not pointing, because it makes your help way more useful and concrete.
+    you have a small blue triangle cursor that can fly to and point at things on screen. it flies ONLY in two situations, and never in any other:
 
-    don't point at things when it would be pointless — like if the user asks a general knowledge question, or the conversation has nothing to do with what's on screen, or you'd just be pointing at something obvious they're already looking at. but if there's a specific UI element, menu, button, or area on screen that's relevant to what you're helping with, point at it.
+    1. the user is asking WHERE something is, or to locate/show something on screen — "在哪里", "哪个按钮", "怎么找到设置", "点给我看".
+    2. the question is genuinely about what's on the screen right now, and pointing at one specific element makes the answer concrete — the user is asking how to do something in the app in front of them, looking for a menu, or asking what a specific thing on screen is or does.
+
+    in every other case the cursor stays put. a general knowledge question, a coding question, a writing task, small talk — even if your answer happens to mention a word that also appears somewhere on the screen, the cursor does not move, and you do not go hunting for something to point at. when there is nothing on screen worth pointing at, the right answer is always [POINT:none], and that is the normal case.
 
     when you point, append a coordinate tag at the very end of your response, AFTER your spoken text.
 
@@ -1242,7 +1418,7 @@ final class CompanionManager: ObservableObject {
     [AGENT_SEND:name:message] — hand a follow-up instruction to a background agent that already exists (yours, or one created earlier). the name matches by containment, so "调研" reaches 「调研员」.
     the agent works in its own project folder and reports back when finished; a small floating icon appears on the desktop while it runs. the dispatch itself needs no screenshot loop — the result of your dispatch arrives in an <agent_dispatch_results> block with your next message. after dispatching, tell the user in one short sentence who you sent the job to and what it will do. spawn at most ONE agent per reply, and only for a real background job — a question, or anything that needs to look at the screen right now, is answered or acted on directly as always. never dispatch something destructive; the same "the user asked for that exact thing this turn" rule applies to background work.
 
-    only act when the user actually asked you to do the thing. the test is whether their words tell you to do something: "click the send button for me", "open the calculator", "type that in there", "帮我点一下 7" are requests, and you act on them. "where's the send button", "how do i get to settings", "what does this one do" are questions, and the answer is [POINT:…], not a click. an instruction about the screen is always a request — never answer one by pointing at the thing the user just told you to click, and never turn it into a question. "when in doubt, point" is for a sentence you genuinely cannot tell apart from a question, not for a request you have decided to be careful with. pointing is always safe and clicking is not, which is exactly why the sentence that says "帮我点一下" has to end in a click.
+    only act when the user actually asked you to do the thing. the test is whether their words tell you to do something: "click the send button for me", "open the calculator", "type that in there", "帮我点一下 7" are requests, and you act on them. "where's the send button", "how do i get to settings", "what does this one do" are questions, and the answer is [POINT:…], not a click. an instruction about the screen is always a request — never answer one by pointing at the thing the user just told you to click, and never turn it into a question. a sentence you genuinely cannot tell apart from a question is answered with [POINT:…], not a click — pointing is always safe and clicking is not, which is exactly why the sentence that says "帮我点一下" has to end in a click.
 
     NEVER describe an action without emitting its tag in the same reply. if you are going to click something, [CLICK:…] goes in this reply — saying "i'll click that now" or "let me put the cursor there first" and emitting nothing is the worst answer you can give, because the user hears a promise and watches nothing happen. there is no third option where you talk about acting: either act in this turn, or ask one question and act on the next one. narrating the steps you are about to take is never an answer.
 
@@ -1425,6 +1601,185 @@ final class CompanionManager: ObservableObject {
         sendTranscriptToVisionChatWithScreenshot(transcript: trimmed)
     }
 
+    // MARK: - 回答时持续监听（连续追问）
+
+    /// Arms the continuous-listening window the moment an answer's playback
+    /// starts — the configured 计时起点. Called from both 播报方式 paths. When
+    /// the window is already open (a follow-up's own answer just started
+    /// speaking) it only re-arms the deadline.
+    private func armContinuousListeningWindow() {
+        let appSettings = AppSettingsStore.snapshot()
+        guard appSettings.continuousListeningEnabled else { return }
+
+        if buddyDictationManager.isContinuousListening {
+            scheduleContinuousListeningWindowExpiry(seconds: appSettings.continuousListeningWindowSeconds)
+            return
+        }
+
+        guard !buddyDictationManager.isDictationInProgress else { return }
+
+        screenKeywordDetector.reset()
+        Task { [weak self] in
+            guard let self else { return }
+            await self.buddyDictationManager.startContinuousListening(
+                utteranceEndSilenceSeconds: appSettings.continuousListeningSilenceSendSeconds,
+                onSpeechDetected: { [weak self] in
+                    self?.handleContinuousListeningSpeechDetected()
+                },
+                onTranscriptUpdate: { [weak self] interimTranscriptText in
+                    self?.handleInterimTranscriptForScreenDetection(interimTranscriptText)
+                },
+                onUtteranceFinalized: { [weak self] finalTranscriptText in
+                    self?.submitFollowUpQuestion(finalTranscriptText)
+                }
+            )
+            guard self.buddyDictationManager.isContinuousListening else { return }
+            self.scheduleContinuousListeningWindowExpiry(seconds: appSettings.continuousListeningWindowSeconds)
+            if self.voiceState == .idle {
+                // Playback had already drained by the time the window opened —
+                // show that the companion is still listening rather than idle.
+                self.voiceState = .listening
+            }
+        }
+    }
+
+    /// The window's deadline. Counts from when it was armed (playback start /
+    /// follow-up submit), and — at expiry — waits for a still-playing answer
+    /// to finish rather than cutting the user's own reply off mid-word.
+    private func scheduleContinuousListeningWindowExpiry(seconds: Int) {
+        continuousListeningWindowTask?.cancel()
+        continuousListeningWindowTask = Task { [weak self] in
+            guard let self else { return }
+
+            let expiryDeadline = Date().addingTimeInterval(TimeInterval(seconds))
+
+            // Sleep in slices so a re-arm (which cancels this task) takes effect
+            // promptly instead of after the whole window.
+            while Date() < expiryDeadline {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+                guard self.buddyDictationManager.isContinuousListening else { return }
+            }
+
+            // The window is up, but the answer still being read is not cut off:
+            // listening ends when the voice does.
+            while self.bailianTTSClient.isPlaying {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                guard !Task.isCancelled else { return }
+                guard self.buddyDictationManager.isContinuousListening else { return }
+            }
+
+            self.endContinuousListeningWindow()
+        }
+    }
+
+    /// Closes the listening window quietly: engine off, AEC off, session off,
+    /// back to idle. The shortcut's first press and the window expiry both
+    /// land here.
+    private func endContinuousListeningWindow() {
+        continuousListeningWindowTask?.cancel()
+        continuousListeningWindowTask = nil
+        buddyDictationManager.endContinuousListening()
+        if voiceState == .listening {
+            voiceState = .idle
+            scheduleTransientHideIfNeeded()
+        }
+    }
+
+    /// 「一开口就停」: the mic level crossed the speech threshold and held. The
+    /// speaker is silenced here and now — before the utterance has even been
+    /// recognized — which is the entire point of barge-in.
+    private func handleContinuousListeningSpeechDetected() {
+        if bailianTTSClient.isPlaying {
+            bailianTTSClient.stopPlayback()
+        }
+
+        guard AppSettingsStore.snapshot().autoScreenshotOnFollowUpSpeech else { return }
+
+        // The interrupted answer's green marks were drawn for it, not for the
+        // follow-up — they must not ride into the new question's screenshot.
+        screenAnnotationManager.clear()
+        Task { [weak self] in
+            await self?.capturePendingPreScreenshots(reason: "follow-up speech detected")
+        }
+    }
+
+    /// 「说到“屏幕”立即截屏」 on streaming interim transcripts — shared by the
+    /// continuous-listening window and the normal push-to-talk recording, so
+    /// the setting applies to every question. Each spoken mention of a keyword
+    /// captures exactly one screenshot, the moment the word is heard rather
+    /// than when the sentence finishes.
+    private func handleInterimTranscriptForScreenDetection(_ interimTranscriptText: String) {
+        guard AppSettingsStore.snapshot().autoScreenshotOnScreenKeyword else { return }
+        guard screenKeywordDetector.detectNewMention(in: interimTranscriptText) else { return }
+
+        print("📸 Companion: heard 屏幕 — capturing the screen immediately")
+        Task { [weak self] in
+            await self?.capturePendingPreScreenshots(reason: "screen keyword")
+        }
+    }
+
+    private func capturePendingPreScreenshots(reason: String) async {
+        let appSettings = AppSettingsStore.snapshot()
+        do {
+            let screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG(
+                maximumDimension: appSettings.screenshotMaxDimension == 0
+                    ? nil
+                    : appSettings.screenshotMaxDimension,
+                compressionQuality: appSettings.screenshotCompressionQuality,
+                capturesAllDisplays: appSettings.capturesAllDisplays
+            )
+            // A later trigger replaces an earlier capture: the newest "what the
+            // user was looking at" is the one the question is about.
+            pendingPreCapturedScreens = screenCaptures
+            pendingPreCaptureDate = Date()
+            print("📸 Companion: pre-captured \(screenCaptures.count) screen(s) — \(reason)")
+        } catch {
+            // A failed pre-capture is not an error the user can act on; the
+            // pipeline's own capture covers the question.
+            print("⚠️ Companion: pre-capture failed (\(reason)): \(error)")
+        }
+    }
+
+    /// Consumes the pre-captured screenshot if one is waiting and still fresh.
+    /// One-shot: whatever it returns is cleared, so a pre-capture can never be
+    /// sent with two different questions.
+    private func takePendingPreCapturedScreensIfFresh() -> [CompanionScreenCapture]? {
+        guard let preCapturedScreens = pendingPreCapturedScreens,
+              let capturedAt = pendingPreCaptureDate else { return nil }
+
+        pendingPreCapturedScreens = nil
+        pendingPreCaptureDate = nil
+
+        guard Date().timeIntervalSince(capturedAt) <= Self.preCaptureFreshnessSeconds else {
+            print("📸 Companion: pre-captured screen discarded (stale)")
+            return nil
+        }
+        return preCapturedScreens
+    }
+
+    /// A follow-up heard during the listening window. It is a BRAND-NEW
+    /// question: the full pipeline runs — previous response cancelled, fresh
+    /// screenshot (the pre-captured one if it is waiting), agent loop, TTS,
+    /// history — exactly as if the user had pressed the shortcut and spoken.
+    private func submitFollowUpQuestion(_ finalTranscriptText: String) {
+        let trimmedTranscriptText = finalTranscriptText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTranscriptText.isEmpty else { return }
+
+        print("🗣️ Companion: follow-up question from continuous listening: \(trimmedTranscriptText)")
+        lastTranscript = trimmedTranscriptText
+        liveTranscriptText = ""
+
+        // Re-arm the deadline now: the new answer's playback start re-arms it
+        // again, but a slow model must not be able to eat the whole window in
+        // the gap between submit and first audio.
+        scheduleContinuousListeningWindowExpiry(
+            seconds: AppSettingsStore.snapshot().continuousListeningWindowSeconds
+        )
+
+        sendTranscriptToVisionChatWithScreenshot(transcript: trimmedTranscriptText)
+    }
+
     private func sendTranscriptToVisionChatWithScreenshot(transcript: String) {
         currentResponseTask?.cancel()
         bailianTTSClient.stopPlayback()
@@ -1502,6 +1857,8 @@ final class CompanionManager: ObservableObject {
                         switch outcome {
                         case .firstAudioStarted:
                             self.voiceState = .responding
+                            // 计时起点 = 播报开始：第一段出声的瞬间开窗。
+                            self.armContinuousListeningWindow()
                         case .failed(let synthesisError):
                             self.speakCreditsErrorFallback(failure: synthesisError)
                         case .nothingToSpeak:
@@ -1586,13 +1943,25 @@ final class CompanionManager: ObservableObject {
                     } else {
                         screenAnnotationManager.clear()
                     }
-                    let screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG(
-                        maximumDimension: appSettings.screenshotMaxDimension == 0
-                            ? nil
-                            : appSettings.screenshotMaxDimension,
-                        compressionQuality: appSettings.screenshotCompressionQuality,
-                        capturesAllDisplays: appSettings.capturesAllDisplays
-                    )
+                    // 预截屏消费：「追问时自动截屏 / 说到“屏幕”立即截屏」在
+                    // 开口或关键词命中的瞬间抓的那张，就用在它所服务的那句
+                    // 提问上（3 秒内新鲜）。只在 step 1 消费，且圈选优先——
+                    // 预截图里没有用户的圈，圈着提问时宁可用现截。
+                    let screenCaptures: [CompanionScreenCapture]
+                    if stepCount == 1,
+                       circleToAskController.pendingMarkedRegion == nil,
+                       let preCapturedScreens = takePendingPreCapturedScreensIfFresh() {
+                        print("📸 Companion: using the pre-captured screen for this question")
+                        screenCaptures = preCapturedScreens
+                    } else {
+                        screenCaptures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG(
+                            maximumDimension: appSettings.screenshotMaxDimension == 0
+                                ? nil
+                                : appSettings.screenshotMaxDimension,
+                            compressionQuality: appSettings.screenshotCompressionQuality,
+                            capturesAllDisplays: appSettings.capturesAllDisplays
+                        )
+                    }
 
                     guard !Task.isCancelled else { return }
 
@@ -1958,6 +2327,8 @@ final class CompanionManager: ObservableObject {
                             try await bailianTTSClient.speakText(finalSpokenText)
                             // speakText returns after player.play() — audio is now playing
                             voiceState = .responding
+                            // 计时起点 = 播报开始：整段合成路径在 audio 起播时开窗。
+                            armContinuousListeningWindow()
                         } catch {
                             print("⚠️ Bailian TTS error: \(error)")
                             speakCreditsErrorFallback(failure: error)
@@ -2050,7 +2421,9 @@ final class CompanionManager: ObservableObject {
                     currentResponseTask = nil
                 }
                 if !buddyDictationManager.isDictationInProgress {
-                    voiceState = .idle
+                    // 追问打断了上一个回答：监听窗口还开着的话回到 .listening
+                    // 波形，而不是把它连同状态一起压回 .idle。
+                    voiceState = buddyDictationManager.isContinuousListening ? .listening : .idle
                 }
             } catch {
                 print("⚠️ Companion response error: \(error)")
@@ -2080,14 +2453,21 @@ final class CompanionManager: ObservableObject {
                         currentResponseTask = nil
                     }
                     if !buddyDictationManager.isDictationInProgress {
-                        voiceState = .idle
+                        // 同上：被打断的旧任务退场时，监听窗口还开着就保持 .listening。
+                        voiceState = buddyDictationManager.isContinuousListening ? .listening : .idle
                     }
                 }
             }
 
             if !Task.isCancelled {
-                voiceState = .idle
-                scheduleTransientHideIfNeeded()
+                if buddyDictationManager.isContinuousListening {
+                    // 追问成功送出、新任务已经接管时，旧任务正常收尾不该把
+                    // 「还在听」的波形压成待命。
+                    voiceState = .listening
+                } else {
+                    voiceState = .idle
+                    scheduleTransientHideIfNeeded()
+                }
             }
         }
     }

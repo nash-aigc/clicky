@@ -236,6 +236,29 @@ private enum BuddyDictationStartSource {
     case keyboardShortcut
 }
 
+/// Callbacks the continuous-listening window (回答时持续监听) installs so
+/// CompanionManager can react to what the microphone hears while the answer
+/// is still being spoken. Deliberately a separate shape from
+/// `BuddyDictationDraftCallbacks`: a listening session never writes into the
+/// composer draft — its transcripts are whole new questions.
+struct BuddyContinuousListeningCallbacks {
+    /// The user really is speaking over the answer (the barge-in moment: the
+    /// caller stops TTS playback and takes the follow-up screenshot here).
+    ///
+    /// Fires at most ONCE per utterance, and — while the answer is being read
+    /// aloud — only once the recognizer has produced real words. A rise in the
+    /// microphone level is not enough on its own: see
+    /// `markContinuousListeningUtteranceActive` for the measurement that made
+    /// the level path non-authoritative while the bot is speaking.
+    let onSpeechDetected: () -> Void
+    /// Cumulative interim transcript of the utterance currently being spoken.
+    let onTranscriptUpdate: (String) -> Void
+    /// The utterance ended (silence long enough) and the recognizer delivered
+    /// its final transcript. Empty/echo-short transcripts are filtered before
+    /// this fires.
+    let onUtteranceFinalized: (String) -> Void
+}
+
 private struct BuddyDictationDraftCallbacks {
     let updateDraftText: (String) -> Void
     let submitDraftText: (String) -> Void
@@ -248,11 +271,132 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private static let recordedAudioPowerHistoryBaselineLevel: CGFloat = 0.02
     private static let recordedAudioPowerHistorySampleIntervalSeconds: TimeInterval = 0.07
 
+    // Continuous listening (回答时持续监听) tuning. The layering mirrors what
+    // the VoiceWeb reference measured (浏览器 AEC 承重 + VAD 阈值/时长防误触发):
+    // ① system AEC (VPIO) cancels the app's own TTS out of the mic signal,
+    // ② a smoothed-RMS threshold rejects background hiss,
+    // ③ a sustained-speech debounce rejects clicks and door slams,
+    // ④ a minimum transcript length keeps an echo artefact from being sent
+    //    as a question even if ①-③ all let something through.
+    //
+    // The threshold is on the waveform's boosted scale (RMS × 10.2), and it
+    // was calibrated 2026-09-23 against this machine's built-in mic with a
+    // 15 s quiet-room probe: the ambient floor peaked at 0.167 (typical
+    // 0.09–0.11), so the original 0.06 sat BELOW the noise floor and the VAD
+    // fired constantly in silence — every answer triggered a garbage follow-up
+    // (「嗯。」) and the whole runaway-loop failure. Normal speech measures
+    // 0.3–1.0 on the same scale, so 0.25 clears the floor with margin while
+    // staying under quiet speech.
+    private static let continuousListeningSpeechLevelThreshold: CGFloat = 0.25
+    // Speech is confirmed by ACCUMULATED above-threshold time with a slow
+    // release, NOT by an unbroken run of it.
+    //
+    // Why (measured 2026-09-23, probe: a real Chinese voice played through the
+    // system speakers into this same tap+VPIO topology): the smoothed level
+    // during continuous speech reads peak 0.772 / p95 0.556 but p50 0.159 —
+    // natural articulation dips below 0.25 roughly half the time, and the
+    // smoothing decays at 0.72 per tap buffer, so the level is already down
+    // between syllables. The previous rule asked for 0.35 s of CONTINUOUS
+    // above-threshold time, which normal speech never delivers, so
+    // `continuousListeningUtteranceActive` never became true: nothing to send
+    // after 2–3 s of silence (「等待了两秒、三秒，它还是没有发送」) and a
+    // shortcut press found nothing pending, fell through to the stop branch
+    // and exited listening (「我按住快捷键的话，它还是自动退出」).
+    //
+    // A leaky accumulator tolerates those dips the way pipecat's neural VAD
+    // tolerates them, while still demanding real speech rather than one loud
+    // click. Rising costs the full poll interval, falling returns only a
+    // quarter of it, so ~0.2 s of net speech confirms the utterance and a
+    // brief pause cannot undo it.
+    private static let continuousListeningSpeechAccumulationSeconds: TimeInterval = 0.20
+    private static let continuousListeningSpeechAccumulatorReleaseRatio: Double = 0.25
+    // The silence that ends an utterance is now a USER SETTING
+    // (「静音多久自动发送」, AppSettings.continuousListeningSilenceSendSeconds,
+    // default 2.0 s, clamped 1–5) — human thinking pauses are unbounded (the
+    // user's framing, 2026-09-23), so no single silence value can be the
+    // "finished speaking" verdict; the talk shortcut is the reliable send
+    // marker and this wait is only the auto path. Held as an instance
+    // property fed in at window start, not read from the store mid-window,
+    // so changing the setting only affects the NEXT window (the live VAD loop
+    // must not have its threshold move under it).
+    private var continuousListeningUtteranceEndSilenceSeconds: TimeInterval = 2.0
+    private static let continuousListeningMaximumUtteranceSeconds: TimeInterval = 15
+    /// The VAD loop's tick. Held in seconds and derived into a `Duration` so
+    /// the accumulator maths and the sleep can never disagree about it.
+    private static let continuousListeningVADPollSeconds: TimeInterval = 0.05
+    private static var continuousListeningVADPollInterval: Duration { .seconds(continuousListeningVADPollSeconds) }
+    // 4 characters of REAL content (up from 2, 2026-09-23): an interjection the
+    // user hums while listening to an answer (「嗯。」) transcribes to 1–3
+    // characters and must not be submitted as a brand-new question — that was
+    // the "循环一个全新的东西" loop's fuel. A real follow-up question is a
+    // sentence. Counted through `continuousListeningContentCharacterCount`, so
+    // punctuation can never add up to a sentence (「。。。。」 is 0, not 4).
+    private static let continuousListeningMinimumTranscriptCharacters = 4
+    /// How much real content a transcript must carry to be allowed to INTERRUPT
+    /// an answer that is being read aloud.
+    ///
+    /// This is pipecat's official `MinWordsUserTurnStartStrategy`, adopted
+    /// rather than reinvented — it is the framework's answer to exactly this
+    /// failure. Its rule (user_start/min_words_user_turn_start_strategy.py:118)
+    /// is `word_count >= (min_words if bot_speaking else 1)`: a single word may
+    /// start a turn while the bot is SILENT, but while the bot is SPEAKING a
+    /// transcription must clear a higher bar before it may interrupt it.
+    /// VoiceWeb runs the same transcription-driven turn start — its 三段式
+    /// passes `TranscriptionUserTurnStartStrategy` verbatim (server.py:3725) —
+    /// so this is the shipping framework design, not a local heuristic.
+    ///
+    /// Why the guard is not optional, measured 2026-09-23: the Bailian realtime
+    /// recognizer, fed the microphone audio recorded while this app was reading
+    /// an answer aloud (AEC active and working — the echo measured BELOW the
+    /// room's own noise floor, peak 0.111 against a 0.167 floor), returned a
+    /// FINAL transcript of 「。」. `String.split()` scores that one "word", so
+    /// pipecat's rule at min_words=1 accepts it — and an unguarded trigger would
+    /// stop the answer mid-sentence. Counting content characters scores it 0.
+    private static let continuousListeningMinimumInterruptContentCharacters = 4
+    /// Characters that are actual linguistic content — letters (CJK included)
+    /// and digits — with punctuation, whitespace, symbols and emoji excluded.
+    ///
+    /// Chinese has no spaces, so pipecat's `len(text.split())` cannot be ported
+    /// literally. This counts the same thing that test counts in English: how
+    /// many words the recognizer really heard, rather than how many marks it
+    /// emitted into a silent room.
+    private static func continuousListeningContentCharacterCount(in transcriptText: String) -> Int {
+        transcriptText.reduce(into: 0) { contentCharacterCount, character in
+            if character.isLetter || character.isNumber { contentCharacterCount += 1 }
+        }
+    }
+    private static let continuousListeningSessionRetryCount = 5
+    // How long the final-fallback waits after requestFinalTranscript before
+    // deciding the session is dead. Measured 2026-09-23: a failing Bailian
+    // websocket dies with "Socket is not connected" WITHOUT the error handler
+    // firing on the listening path every time — the final simply never
+    // arrives, and the window sits deaf forever (the 「说完它也不回复」
+    // complaint). When the deadline passes, the latest interim transcript is
+    // submitted as the final instead. Same grace figure as the push-to-talk
+    // fallback above.
+    // `nonisolated` because it is used as a DEFAULT ARGUMENT value, and default
+    // arguments are evaluated outside the actor — a main-actor-isolated static
+    // here is a warning today and an error under Swift 6.
+    nonisolated private static let continuousListeningFinalGraceSeconds: TimeInterval = 2.4
+    // The same fallback, for the EXPLICIT send (the talk shortcut pressed while
+    // an utterance is pending). Shorter because here the user is standing by
+    // waiting for the answer, and because the wait is known to be unnecessary
+    // in the healthy case: measured 2026-09-23 against the live service, the
+    // final lands 0.27 s after `input_audio_buffer.commit`. 2.4 s of silence
+    // after an explicit "send it" reads as the feature being broken again.
+    private static let continuousListeningShortcutSendGraceSeconds: TimeInterval = 0.8
+
     @Published private(set) var isRecordingFromMicrophoneButton = false
     @Published private(set) var isRecordingFromKeyboardShortcut = false
     @Published private(set) var isKeyboardShortcutSessionActiveOrFinalizing = false
     @Published private(set) var isFinalizingTranscript = false
     @Published private(set) var isPreparingToRecord = false
+    /// The 回答时持续监听 window is open: the engine and a streaming ASR
+    /// session run while the answer plays, watching for the user to speak.
+    /// Deliberately NOT part of `isDictationInProgress` — the shortcut guard
+    /// and the derived voice-state observation must not treat passive
+    /// listening as a real recording.
+    @Published private(set) var isContinuousListening = false
     @Published private(set) var currentAudioPowerLevel: CGFloat = 0
     @Published private(set) var recordedAudioPowerHistory = Array(
         repeating: BuddyDictationManager.recordedAudioPowerHistoryBaselineLevel,
@@ -315,6 +459,66 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// rapid follow-up requests that arrive before macOS updates its cache.
     private var lastPermissionRequestCompletedAt: Date?
 
+    // Continuous-listening state (see the constants block above for the design).
+    private var continuousListeningCallbacks: BuddyContinuousListeningCallbacks?
+    private var continuousListeningVADTask: Task<Void, Never>?
+    /// Provides the shared TTS playback engine (injected by CompanionManager,
+    /// which owns the lazy TTS client). When that engine's voice processing is
+    /// active, the listening tap installs on IT — the AEC reference signal is
+    /// the audio the engine itself renders, so the mic tap must live on the
+    /// same engine the TTS plays through or the app hears its own replies and
+    /// interrupts itself. nil → the own-engine fallback below runs instead.
+    var sharedVoicePlaybackEngineProvider: (() -> VoicePlaybackEngine?)?
+    /// Whether the app is reading an answer aloud right now (injected by
+    /// CompanionManager, which owns the lazy TTS client). `isPlaying` is true
+    /// for a whole spoken reply, segment gaps included, so it is the faithful
+    /// macOS equivalent of pipecat's `BotStartedSpeakingFrame` /
+    /// `BotStoppedSpeakingFrame` pair — and it is what raises the bar for
+    /// accepting a transcript as the user speaking. See
+    /// `continuousListeningMinimumInterruptContentCharacters`.
+    var isBotSpeakingProvider: (() -> Bool)?
+    /// Whether the current listening window's tap lives on the shared engine
+    /// (endContinuousListening must then NOT stop that engine or toggle its
+    /// voice processing — playback and later windows still need both).
+    private var isContinuousListeningOnSharedEngine = false
+    /// Leaky accumulator of above-threshold mic level for the current
+    /// window-with-no-utterance state, in seconds. Replaces a "how long has it
+    /// been continuously loud" timestamp: it fills at the full poll interval
+    /// while the level is up and drains at a quarter of it while the level is
+    /// down, so the inter-syllable dips of ordinary speech do not reset the
+    /// count (see `continuousListeningSpeechAccumulationSeconds`).
+    private var continuousListeningSpeechAccumulatorSeconds: TimeInterval = 0
+    /// An utterance is in progress (speech was detected, interim transcripts
+    /// are accumulating); the VAD loop is now watching for it to end.
+    private var continuousListeningUtteranceActive = false
+    /// The barge-in callback has already fired for the utterance in progress.
+    ///
+    /// Separate from `continuousListeningUtteranceActive` because the two are
+    /// decided by DIFFERENT evidence (see
+    /// `markContinuousListeningUtteranceActive`): the level path may open an
+    /// utterance without being allowed to interrupt, and the transcript path
+    /// must still be able to interrupt that same utterance afterwards. One
+    /// flag for both would make whichever path fired first veto the other.
+    private var continuousListeningDidRequestBargeIn = false
+    private var continuousListeningUtteranceStartedAt: Date?
+    private var continuousListeningSilenceStartedAt: Date?
+    /// The latest interim transcript of the current utterance. The fallback
+    /// for a dead session: if `requestFinalTranscript` produces no final
+    /// within the grace window, THIS text is submitted as the question
+    /// instead (measured failure: the websocket dies with "Socket is not
+    /// connected" and delivers neither a final nor an error event).
+    private var continuousListeningLatestInterimTranscript = ""
+    /// True between requestFinalTranscript and the final's arrival (or the
+    /// grace fallback firing). The shortcut-send branch must not treat a
+    /// "finalizing" utterance as speech-in-progress, and the fallback must
+    /// not fire once a real final has landed — this flag is both gates.
+    private var isContinuousListeningAwaitingFinal = false
+    /// Bumped on every requestContinuousListeningFinalTranscript and captured
+    /// by the grace task, so a STALE grace task (from an earlier request)
+    /// can never cancel a newer request's session or submit an older
+    /// interim — only the generation it was created for.
+    private var continuousListeningFinalRequestGeneration = 0
+
     override init() {
         let transcriptionProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
         self.transcriptionProvider = transcriptionProvider
@@ -362,6 +566,608 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
     func stopPushToTalkFromKeyboardShortcut() {
         stopPushToTalk(expectedStartSource: .keyboardShortcut)
+    }
+
+    // MARK: - Continuous listening (回答时持续监听)
+
+    /// Opens the continuous-listening window: starts the audio engine with the
+    /// system's voice-processing unit (AEC) on the input, opens one streaming
+    /// ASR session, and runs a local VAD loop that watches the mic level.
+    ///
+    /// Unlike push-to-talk, the engine KEEPS RUNNING across utterances: the
+    /// tap feeds whatever `activeTranscriptionSession` currently points at, so
+    /// swapping that reference after each final transcript moves the next
+    /// utterance onto a fresh websocket without touching the engine (one
+    /// Bailian connection carries exactly one final transcript).
+    func startContinuousListening(
+        utteranceEndSilenceSeconds: TimeInterval,
+        onSpeechDetected: @escaping () -> Void,
+        onTranscriptUpdate: @escaping (String) -> Void,
+        onUtteranceFinalized: @escaping (String) -> Void
+    ) async {
+        guard !isContinuousListening else { return }
+        guard !isDictationInProgress else { return }
+
+        print("🎙️ BuddyDictationManager: continuous listening requested")
+
+        // Snapshot the 「静音多久自动发送」 setting for THIS window — a change
+        // mid-window must not move the VAD loop's threshold under it.
+        continuousListeningUtteranceEndSilenceSeconds = utteranceEndSilenceSeconds
+
+        if needsInitialPermissionPrompt {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+
+            do {
+                try await Task.sleep(for: .milliseconds(200))
+            } catch {
+                // Same reasoning as the push-to-talk start: continue into the
+                // permission check even if this wait was cut short.
+            }
+        }
+
+        guard await requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts() else {
+            print("🎙️ BuddyDictationManager: continuous listening blocked (permissions missing)")
+            return
+        }
+
+        isContinuousListening = true
+        continuousListeningCallbacks = BuddyContinuousListeningCallbacks(
+            onSpeechDetected: onSpeechDetected,
+            onTranscriptUpdate: onTranscriptUpdate,
+            onUtteranceFinalized: onUtteranceFinalized
+        )
+        resetContinuousListeningUtteranceState()
+        currentAudioPowerLevel = 0
+        recordedAudioPowerHistory = Array(
+            repeating: Self.recordedAudioPowerHistoryBaselineLevel,
+            count: Self.recordedAudioPowerHistoryLength
+        )
+        lastRecordedAudioPowerSampleDate = .distantPast
+
+        do {
+            try await openContinuousListeningEngineAndSession()
+            continuousListeningVADTask = Task { [weak self] in
+                await self?.runContinuousListeningVADLoop()
+            }
+            print("🎙️ BuddyDictationManager: continuous listening started")
+        } catch {
+            print("❌ BuddyDictationManager: failed to start continuous listening: \(error)")
+            endContinuousListening()
+        }
+    }
+
+    /// Closes the listening window: stops the VAD loop, the engine, the ASR
+    /// session, and turns the input's voice processing (AEC) back off. Safe to
+    /// call when no window is open.
+    ///
+    /// On the shared TTS engine the engine is only RELEASED if idle (never
+    /// stopped unconditionally — a follow-up reply may need it a moment later),
+    /// and its voice processing stays ON: it is the property future windows
+    /// and every future reply's AEC depend on.
+    func endContinuousListening() {
+        guard isContinuousListening else { return }
+
+        isContinuousListening = false
+        continuousListeningVADTask?.cancel()
+        continuousListeningVADTask = nil
+        continuousListeningCallbacks = nil
+        resetContinuousListeningUtteranceState()
+
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        if isContinuousListeningOnSharedEngine {
+            isContinuousListeningOnSharedEngine = false
+            sharedVoicePlaybackEngineProvider?()?.removeInputTap()
+            sharedVoicePlaybackEngineProvider?()?.releaseEngineWhenIdle()
+        } else {
+            audioEngine.stop()
+            audioEngine.inputNode.removeTap(onBus: 0)
+
+            // The engine is stopped first, which is what
+            // setVoiceProcessingEnabled requires to run.
+            try? audioEngine.inputNode.setVoiceProcessingEnabled(false)
+        }
+
+        currentAudioPowerLevel = 0
+        recordedAudioPowerHistory = Array(
+            repeating: Self.recordedAudioPowerHistoryBaselineLevel,
+            count: Self.recordedAudioPowerHistoryLength
+        )
+        lastRecordedAudioPowerSampleDate = .distantPast
+
+        print("🎙️ BuddyDictationManager: continuous listening ended")
+    }
+
+    /// Enables system AEC on the input BEFORE the engine runs (the API throws
+    /// on a running engine), then opens the first ASR session of the window
+    /// and installs the tap. A VPIO failure here is not fatal: it logs and the
+    /// window continues on the threshold/debounce/length defences alone.
+    ///
+    /// The tap's HOME is the shared TTS playback engine whenever that engine's
+    /// voice processing is active — that is what makes the app's own TTS get
+    /// cancelled out of the mic signal (same-engine rule; see
+    /// VoicePlaybackEngine's header). Only when the shared engine is missing
+    /// or its AEC failed does the window fall back to this manager's own
+    /// engine, which hears raw echo and relies on the level defences alone.
+    private func openContinuousListeningEngineAndSession() async throws {
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        if !transcriptionProvider.isConfigured {
+            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
+            if reResolvedProvider.isConfigured {
+                print("🎙️ BuddyDictationManager: switching transcription provider \(transcriptionProvider.displayName) → \(reResolvedProvider.displayName)")
+                transcriptionProvider = reResolvedProvider
+                transcriptionProviderDisplayName = reResolvedProvider.displayName
+            }
+        }
+
+        if let sharedEngine = sharedVoicePlaybackEngineProvider?() {
+            do {
+                // The window can open right as the first TTS chunk starts
+                // (the arm happens on the first-audio hook), so the engine may
+                // already be running — ensureStarted is a no-op then.
+                try sharedEngine.ensureStartedForCapture()
+
+                // The AEC verdict only exists AFTER the engine has started:
+                // voice processing is attempted lazily at engine start (the
+                // macOS 27 ordering bug makes a VPIO-first start fail with
+                // -10875; see VoicePlaybackEngine's init comment). Checking
+                // the flag before this call would always read false and send
+                // every window to the own-engine fallback.
+                if sharedEngine.isVoiceProcessingActive {
+                    activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
+
+                    // The format is read AFTER voice processing is enabled — VPIO
+                    // may force a different sample rate than the raw input, and
+                    // the tap has to match what the node now produces.
+                    let sharedInputNode = sharedEngine.engineInputNode
+                    let inputFormat = sharedInputNode.outputFormat(forBus: 0)
+                    sharedEngine.installInputTap(bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
+                        self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
+                        self?.updateAudioPowerLevel(from: buffer)
+                    }
+                    isContinuousListeningOnSharedEngine = true
+                    print("🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine (AEC reference = our own playback)")
+                    return
+                } else {
+                    print("⚠️ BuddyDictationManager: shared engine's voice processing is inactive — using the own engine (self-echo possible)")
+                }
+            } catch {
+                // Falling back must not leave the shared engine half-configured.
+                sharedEngine.removeInputTap()
+                isContinuousListeningOnSharedEngine = false
+                print("⚠️ BuddyDictationManager: shared-engine listening failed (\(error)); falling back to the own engine")
+            }
+        }
+
+        isContinuousListeningOnSharedEngine = false
+        let inputNode = audioEngine.inputNode
+        do {
+            try inputNode.setVoiceProcessingEnabled(true)
+            print("🎙️ BuddyDictationManager: input voice processing (AEC) enabled for the listening window")
+        } catch {
+            print("⚠️ BuddyDictationManager: voice processing unavailable, relying on level thresholds only: \(error)")
+        }
+
+        activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
+
+        // The format is read AFTER voice processing is enabled — VPIO may force
+        // a different sample rate than the raw input, and the tap has to match
+        // what the node now produces. BuddyPCM16AudioConverter rebuilds itself
+        // whenever the incoming format description changes, so no extra work
+        // is needed downstream.
+        let inputFormat = inputNode.outputFormat(forBus: 0)
+
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
+            self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
+            self?.updateAudioPowerLevel(from: buffer)
+        }
+
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+
+    private func openContinuousListeningTranscriptionSession() async throws -> any BuddyStreamingTranscriptionSession {
+        try await transcriptionProvider.startStreamingSession(
+            keyterms: buildTranscriptionKeyterms(),
+            onTranscriptUpdate: { [weak self] transcriptText in
+                Task { @MainActor in
+                    guard let self, self.isContinuousListening else { return }
+                    // Keep the cumulative interim — the dead-session fallback
+                    // submits it as the final if the real final never lands.
+                    // Every utterance resets the state that clears this, so a
+                    // new utterance never inherits the old text.
+                    let didTranscriptChange = transcriptText
+                        != self.continuousListeningLatestInterimTranscript
+                    self.continuousListeningLatestInterimTranscript = transcriptText
+                    // Text means the user was speaking, whether or not the
+                    // energy VAD agreed (see markContinuousListeningUtteranceActive)
+                    // — but only once it carries real content, and while an
+                    // answer is being read aloud it must carry enough of it.
+                    // pipecat's rule, not a local one: a single word may open a
+                    // turn when the bot is silent, a higher bar applies while
+                    // the bot is speaking (MinWordsUserTurnStartStrategy). The
+                    // `else` branch is not a nicety — the recognizer emits
+                    // 「。」 into silence, and without this an answer would cut
+                    // itself off the moment that landed.
+                    let isBotSpeaking = self.isBotSpeakingProvider?() ?? false
+                    let minimumContentCharacters = isBotSpeaking
+                        ? Self.continuousListeningMinimumInterruptContentCharacters
+                        : 1
+                    if Self.continuousListeningContentCharacterCount(in: transcriptText)
+                        >= minimumContentCharacters {
+                        self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
+                        // New words are still arriving, so the user is still
+                        // talking — restart the silence countdown. This is the
+                        // reference's 「有文本」 turn-end rule (pipecat's
+                        // SpeechTimeoutUserTurnStopStrategy only ends a turn
+                        // once text has stopped coming AND silence has
+                        // sustained), and it is what keeps a voice below the
+                        // energy threshold from being cut off mid-sentence by
+                        // the backstop that exists to catch exactly that voice.
+                        // Keyed on a CHANGE, not on every callback: a repeated
+                        // identical transcript is not evidence of speech.
+                        if didTranscriptChange, self.continuousListeningUtteranceActive {
+                            self.continuousListeningSilenceStartedAt = nil
+                        }
+                    }
+                    self.continuousListeningCallbacks?.onTranscriptUpdate(transcriptText)
+                }
+            },
+            onFinalTranscriptReady: { [weak self] transcriptText in
+                Task { @MainActor in
+                    guard let self, self.isContinuousListening else { return }
+                    self.handleContinuousListeningFinalTranscript(transcriptText)
+                }
+            },
+            onError: { [weak self] error in
+                Task { @MainActor in
+                    guard let self, self.isContinuousListening else { return }
+                    print("❌ BuddyDictationManager: continuous listening session error: \(error)")
+                    Task {
+                        await self.restartListeningTranscriptionSession()
+                    }
+                }
+            }
+        )
+    }
+
+    /// One final transcript has landed for the current utterance. Short/empty
+    /// results (echo artefacts, a cough, nothing recognizable) are dropped;
+    /// real ones are handed to the caller as a new question. Either way the
+    /// next utterance needs a fresh websocket, so the session is replaced.
+    private func handleContinuousListeningFinalTranscript(_ transcriptText: String) {
+        // A final is only expected while a request is outstanding
+        // (isContinuousListeningAwaitingFinal). Without a request, this is a
+        // LATE final from a session the grace fallback already cancelled and
+        // replaced — its utterance was already submitted from the interim, so
+        // delivering it here would send the question twice.
+        guard isContinuousListeningAwaitingFinal else {
+            print("🎙️ BuddyDictationManager: ignoring a late final with no pending request (already handled by the fallback)")
+            Task {
+                await self.restartListeningTranscriptionSession()
+            }
+            return
+        }
+
+        let trimmedTranscriptText = transcriptText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        resetContinuousListeningUtteranceState()
+
+        let contentCharacterCount = Self.continuousListeningContentCharacterCount(in: trimmedTranscriptText)
+        if contentCharacterCount >= Self.continuousListeningMinimumTranscriptCharacters {
+            continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
+        } else {
+            print("🎙️ BuddyDictationManager: listening transcript too short to send (\(contentCharacterCount) content chars: \"\(trimmedTranscriptText)\")")
+        }
+
+        Task {
+            await self.restartListeningTranscriptionSession()
+        }
+    }
+
+    /// Replaces the ASR session after a final transcript was delivered (the
+    /// provider closes its websocket and stops accepting audio then). The
+    /// engine and tap keep running; only the session reference changes.
+    private func restartListeningTranscriptionSession() async {
+        guard isContinuousListening else { return }
+
+        resetContinuousListeningUtteranceState()
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        for attemptIndex in 1...Self.continuousListeningSessionRetryCount {
+            do {
+                let replacementSession = try await openContinuousListeningTranscriptionSession()
+                guard isContinuousListening else {
+                    replacementSession.cancel()
+                    return
+                }
+                activeTranscriptionSession = replacementSession
+                return
+            } catch {
+                print("❌ BuddyDictationManager: listening session restart failed (attempt \(attemptIndex)): \(error)")
+                guard attemptIndex < Self.continuousListeningSessionRetryCount else { return }
+                do {
+                    try await Task.sleep(for: .seconds(1))
+                } catch {
+                    return
+                }
+                guard isContinuousListening else { return }
+            }
+        }
+    }
+
+    /// The idle→utterance transition, in ONE place because there are two
+    /// independent ways to discover that the user is speaking.
+    ///
+    /// 1. `trigger == "mic level"` — the local energy VAD's accumulator
+    ///    reached its threshold. Fast.
+    /// 2. `trigger == "ASR transcript"` — the speech service produced text.
+    ///    This is pipecat's `TranscriptionUserTurnStartStrategy` doing the same
+    ///    job in the reference: a VAD will always miss a quiet or unusual
+    ///    voice, but if the recognizer heard words then the user was
+    ///    unambiguously speaking. Slower to fire, and the safety net when
+    ///    path 1 does not.
+    ///
+    /// Opening an utterance and INTERRUPTING the answer are two decisions with
+    /// two different bars, and this function is where the difference lives.
+    ///
+    /// While an answer is being read aloud, a microphone-level rise is not
+    /// evidence that the USER spoke — and treating it as evidence is what made
+    /// the companion cut itself off. Measured 2026-09-23 on this machine's
+    /// built-in mic + speakers, from the app's own log across 13 replies:
+    /// **all 11 level-triggered barge-ins carried an EMPTY transcript**, and 6
+    /// of the 13 replies were silenced by one (46%, against the 40% the user
+    /// reported). The mechanism is the echo canceller, not the threshold: the
+    /// shared playback engine is started fresh for every reply, so VPIO's
+    /// adaptive filter has to converge from zero on each one, and during that
+    /// window the speaker's own output reaches the microphone nearly
+    /// unattenuated. Once converged the same echo measures 0.111 peak — BELOW
+    /// the room's 0.167 noise floor — so no fixed threshold can separate "our
+    /// own voice, not yet cancelled" from "the user's voice". Content is the
+    /// only discriminator that survives that: words mean a person spoke.
+    ///
+    /// This is the framework's own rule, not a local invention. pipecat's
+    /// `MinWordsUserTurnStartStrategy` (user_start/min_words_user_turn_start_
+    /// strategy.py:108) is `min_words if bot_speaking else 1` — a low bar while
+    /// the bot is silent, a higher one while it is speaking — and the
+    /// transcription path in `openContinuousListeningTranscriptionSession`
+    /// already applies it. What was missing is that the LEVEL path bypassed it
+    /// entirely, because both paths used to share one `onSpeechDetected`.
+    ///
+    /// The truth table this produces:
+    ///
+    ///     bot speaking?  trigger            utterance   barge-in
+    ///     no             mic level          opened      yes
+    ///     no             ASR transcript     opened      yes
+    ///     yes            mic level          opened      no   ← echo, wait for words
+    ///     yes            ASR transcript     opened      yes  ← real speech
+    ///
+    /// Silence is the right trade for the third row: if the recognizer cannot
+    /// produce words, then stopping the answer buys nothing, because there is
+    /// no follow-up question to answer — the feature's whole point is the
+    /// question that comes after the interruption.
+    private func markContinuousListeningUtteranceActive(trigger: String) {
+        guard isContinuousListening, !isContinuousListeningAwaitingFinal else { return }
+
+        // Decision 1: may this interrupt? Judged BEFORE the utterance-active
+        // guard below, because the level path usually opens the utterance
+        // first and the transcript path must still be able to interrupt it.
+        let isBotSpeaking = isBotSpeakingProvider?() ?? false
+        let isCorroboratedByTranscript = trigger == "ASR transcript"
+        if isBotSpeaking && !isCorroboratedByTranscript {
+            print("🎙️ BuddyDictationManager: continuous listening heard a level rise while speaking — waiting for words before interrupting (transcript: \"\(continuousListeningLatestInterimTranscript)\")")
+        } else {
+            requestContinuousListeningBargeIn(trigger: trigger)
+        }
+
+        // Decision 2: open the utterance, once. The silence countdown and the
+        // maximum-utterance cap hang off this, and they apply to an
+        // echo-triggered utterance harmlessly: if the user never speaks, the
+        // final comes back empty and is dropped.
+        guard !continuousListeningUtteranceActive else { return }
+        continuousListeningUtteranceActive = true
+        continuousListeningSpeechAccumulatorSeconds = 0
+        continuousListeningUtteranceStartedAt = Date()
+        continuousListeningSilenceStartedAt = nil
+    }
+
+    /// Tells the caller to stop the answer and take the follow-up screenshot,
+    /// at most once per utterance.
+    ///
+    /// The transcript is logged WITH the trigger because the two paths fail
+    /// differently and the text is what tells them apart: an energy fire with
+    /// empty text means our own audio leaked back through an engine whose AEC
+    /// had not converged yet, while an ASR fire carrying a lone 「。」 or a
+    /// couple of echoed characters is the recognizer's own noise.
+    private func requestContinuousListeningBargeIn(trigger: String) {
+        guard isContinuousListening,
+              !isContinuousListeningAwaitingFinal,
+              !continuousListeningDidRequestBargeIn else { return }
+
+        continuousListeningDidRequestBargeIn = true
+        print("🎙️ BuddyDictationManager: continuous listening detected speech (\(trigger), transcript: \"\(continuousListeningLatestInterimTranscript)\")")
+        continuousListeningCallbacks?.onSpeechDetected()
+    }
+
+    /// The local VAD loop. 50 ms polling of the existing smoothed RMS level,
+    /// three states: idle (watching for speech to sustain long enough),
+    /// utterance active (watching for silence to sustain long enough, or the
+    /// maximum-utterance cap), and finalizing (handed to the session's
+    /// requestFinalTranscript). The engine is NEVER stopped here — that is the
+    /// one behavioural difference from the push-to-talk stop path.
+    private func runContinuousListeningVADLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: Self.continuousListeningVADPollInterval)
+            guard isContinuousListening else { return }
+
+            let now = Date()
+            let audioLevel = currentAudioPowerLevel
+
+            if continuousListeningUtteranceActive {
+                let utteranceDuration = now.timeIntervalSince(continuousListeningUtteranceStartedAt ?? now)
+
+                if utteranceDuration >= Self.continuousListeningMaximumUtteranceSeconds {
+                    requestContinuousListeningFinalTranscript()
+                    continue
+                }
+
+                if audioLevel < Self.continuousListeningSpeechLevelThreshold {
+                    if let silenceStartedAt = continuousListeningSilenceStartedAt,
+                       now.timeIntervalSince(silenceStartedAt) >= continuousListeningUtteranceEndSilenceSeconds {
+                        requestContinuousListeningFinalTranscript()
+                    } else if continuousListeningSilenceStartedAt == nil {
+                        continuousListeningSilenceStartedAt = now
+                    }
+                } else {
+                    continuousListeningSilenceStartedAt = nil
+                }
+            } else {
+                // Idle: accumulate above-threshold time rather than requiring
+                // an unbroken run of it (see the accumulator's declaration).
+                let pollSeconds = Self.continuousListeningVADPollSeconds
+                if audioLevel >= Self.continuousListeningSpeechLevelThreshold {
+                    continuousListeningSpeechAccumulatorSeconds += pollSeconds
+                } else {
+                    continuousListeningSpeechAccumulatorSeconds = max(
+                        0,
+                        continuousListeningSpeechAccumulatorSeconds
+                            - pollSeconds * Self.continuousListeningSpeechAccumulatorReleaseRatio
+                    )
+                }
+                if continuousListeningSpeechAccumulatorSeconds >= Self.continuousListeningSpeechAccumulationSeconds {
+                    markContinuousListeningUtteranceActive(trigger: "mic level")
+                }
+            }
+        }
+    }
+
+    /// Whether the press has something to send. True ONLY while the listening
+    /// window is open — it is the shortcut-send branch's gate: a press while
+    /// this is true means "I'm done, send it", a press while it is false means
+    /// "stop".
+    ///
+    /// The bar is the SEND path's own bar
+    /// (`continuousListeningMinimumTranscriptCharacters`), deliberately: a press
+    /// may only mean "send" when the send could accept the result, or the press
+    /// is spent on a delivery `handleContinuousListeningFinalTranscript` drops
+    /// one line later. That mismatch is the 「按两次快捷键才能停止播放」 defect
+    /// (measured 2026-09-23): the recognizer emits 「啊。」/「嗯。」/「中间。」 off the
+    /// assistant's own leaked audio — one or two content characters each — and
+    /// every one of them cleared the old `> 0` test, so the first press went
+    /// into a send that could never happen and the user had to press again to
+    /// get playback stopped.
+    ///
+    /// Content is the ONLY evidence counted here; a confirmed utterance is
+    /// deliberately not enough on its own. The energy VAD reads raw mic level,
+    /// so the assistant's own residual echo trips it as readily as the user's
+    /// voice — the same run logged "detected speech (mic level, transcript:
+    /// \"\")" with nobody speaking. So a triggered-but-empty utterance says
+    /// nothing about the user, while real speech is never empty by the time
+    /// they press: the recognizer streams partial results throughout the
+    /// utterance, and the press comes after the user has finished talking. Real
+    /// speech below the bar is the cheaper mistake of the two — the press still
+    /// does something the user can see, and they can say it again, whereas a
+    /// press that does nothing at all is what they reported.
+    var isContinuousListeningUtterancePending: Bool {
+        guard isContinuousListening else { return false }
+        // A final is already in flight (the silence window expired, or an
+        // earlier press asked for one): the press means "send it now".
+        if isContinuousListeningAwaitingFinal { return true }
+        return Self.continuousListeningContentCharacterCount(
+            in: continuousListeningLatestInterimTranscript
+        ) >= Self.continuousListeningMinimumTranscriptCharacters
+    }
+
+    /// The talk shortcut pressed mid-utterance is the explicit "I'm done —
+    /// send it" marker (the user's design, 2026-09-23): human thinking pauses
+    /// are unbounded, so no silence threshold can be the finished-speaking
+    /// verdict. The shortcut bypasses the silence wait entirely and requests
+    /// the final immediately.
+    func finishContinuousListeningUtteranceByShortcutSend() {
+        guard isContinuousListening, isContinuousListeningUtterancePending else { return }
+        print("🎙️ BuddyDictationManager: talk shortcut pressed mid-utterance — sending it now")
+
+        // Interim text with no confirmed utterance: promote it to a live
+        // utterance so the shared request path (final + grace fallback) runs.
+        if !continuousListeningUtteranceActive && !isContinuousListeningAwaitingFinal {
+            continuousListeningUtteranceActive = true
+            continuousListeningUtteranceStartedAt = Date()
+        }
+
+        // The shorter grace: the user is waiting on this send, and a healthy
+        // session answers a commit in ~0.27 s (see the constant).
+        requestContinuousListeningFinalTranscript(
+            graceSeconds: Self.continuousListeningShortcutSendGraceSeconds
+        )
+    }
+
+    /// Ends the current utterance and turns whatever audio is already in the
+    /// session into a final transcript.
+    ///
+    /// The grace fallback is load-bearing: a Bailian websocket can die with
+    /// "Socket is not connected" and deliver NEITHER a final NOR an error
+    /// event (measured 2026-09-23), and without a final the utterance is
+    /// never submitted and the window sits deaf — the 「说完它也不回复」
+    /// failure. If the final has not landed within
+    /// `continuousListeningFinalGraceSeconds`, the latest interim transcript
+    /// is submitted as the final instead.
+    private func requestContinuousListeningFinalTranscript(
+        graceSeconds: TimeInterval = BuddyDictationManager.continuousListeningFinalGraceSeconds
+    ) {
+        // Capture BEFORE the reset — resetContinuousListeningUtteranceState
+        // clears the interim, and the fallback may still need it.
+        let fallbackTranscriptText = continuousListeningLatestInterimTranscript
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        resetContinuousListeningUtteranceState()
+        isContinuousListeningAwaitingFinal = true
+        continuousListeningFinalRequestGeneration += 1
+        let requestGeneration = continuousListeningFinalRequestGeneration
+
+        // The engine and tap stay up; the provider turns the audio it has
+        // already received into a final transcript, whose delivery handler
+        // swaps in a fresh session.
+        activeTranscriptionSession?.requestFinalTranscript()
+
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(graceSeconds))
+            guard let self, self.isContinuousListening, self.isContinuousListeningAwaitingFinal else { return }
+            // A newer request superseded this one (or a final landed and a new
+            // request began) — this task's session is no longer the live one.
+            guard self.continuousListeningFinalRequestGeneration == requestGeneration else { return }
+
+            print("⚠️ BuddyDictationManager: no final transcript arrived in \(graceSeconds)s — submitting the interim transcript instead")
+            self.isContinuousListeningAwaitingFinal = false
+
+            // Cancel BEFORE submitting: a dead session delivering a late
+            // final would double-submit the utterance. The replacement
+            // session below is what the next utterance speaks into.
+            self.activeTranscriptionSession?.cancel()
+            self.activeTranscriptionSession = nil
+
+            if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters {
+                self.continuousListeningCallbacks?.onUtteranceFinalized(fallbackTranscriptText)
+            } else {
+                print("🎙️ BuddyDictationManager: fallback interim transcript too short to send (\(fallbackTranscriptText.count) chars)")
+            }
+
+            await self.restartListeningTranscriptionSession()
+        }
+    }
+
+    private func resetContinuousListeningUtteranceState() {
+        continuousListeningSpeechAccumulatorSeconds = 0
+        continuousListeningUtteranceActive = false
+        continuousListeningDidRequestBargeIn = false
+        continuousListeningUtteranceStartedAt = nil
+        continuousListeningSilenceStartedAt = nil
+        continuousListeningLatestInterimTranscript = ""
+        isContinuousListeningAwaitingFinal = false
     }
 
     func cancelCurrentDictation(preserveDraftText: Bool = true) {
@@ -416,6 +1222,10 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         submitDraftText: @escaping (String) -> Void,
         shouldAutomaticallySubmitFinalDraftOnStop: Bool
     ) async {
+        // Double insurance: CompanionManager ends the listening window before it
+        // starts a real recording, but a stray start arriving mid-window must
+        // not silently fight the listening session over the single engine.
+        guard !isContinuousListening else { return }
         guard !isDictationInProgress else { return }
 
         print("🎙️ BuddyDictationManager: start requested (\(startSource))")
