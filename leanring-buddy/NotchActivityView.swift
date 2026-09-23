@@ -47,7 +47,12 @@ enum NotchActivityPhase: Equatable {
     case thinking
     case speaking
     case transcribing
-    /// VoiceWeb 外部语音会话进行中——从发起连接到挂断的**整个会话**持续显示
+    /// VoiceWeb 外部语音会话**连接中**——从发起连接到页面回报 ready 之前。
+    /// 左翼显示 Connecting，右翼是连接动画；挂断图标只在连上之后出现
+    /// （用户 2026-09-23：「连接中的时候不知道……右侧不要有挂断按钮，而应该
+    /// 是一个连接中的动画效果。只有连接成功之后，右侧才是挂断按钮」）。
+    case externalConnecting
+    /// VoiceWeb 外部语音会话进行中——连接成功到挂断的整个会话持续显示
     /// 「聊天中」（用户的要求：连接过程中两翼就持续显示，而不是短暂一闪）。
     case externalChatting
 }
@@ -69,6 +74,7 @@ extension NotchActivityPhase {
         // 前四个状态本来就是英文，只有这一格是中文，在一排英文词里它自己就是那个
         // 不一致的东西。括号里把字母拆开写是在描述**字距拉开**的样子，所以真正
         // 要的不是 "C H A T T I N G" 这串字符，而是 `notchStateWordTracking`。
+        case .externalConnecting: return "Connecting"
         case .externalChatting: return "Chatting"
         }
     }
@@ -90,6 +96,7 @@ extension NotchActivityPhase {
         case .thinking: return Color(red: 0.77, green: 0.49, blue: 0.94)    // #C47CF0
         case .speaking: return Color(red: 0.98, green: 0.57, blue: 0.24)    // #FB923C
         case .transcribing: return Color(red: 0.72, green: 0.75, blue: 0.80) // #B7C0CC
+        case .externalConnecting: return Color(red: 0.98, green: 0.75, blue: 0.24)  // #FBBF24 琥珀
         case .externalChatting: return Color(red: 0.29, green: 0.87, blue: 0.50)  // #4ADE80 绿
         }
     }
@@ -119,6 +126,7 @@ extension NotchActivityPhase {
         case .thinking: return Color(red: 0.33, green: 0.00, blue: 0.40)     // #540067
         case .speaking: return Color(red: 0.27, green: 0.14, blue: 0.06)     // #45230F
         case .transcribing: return Color(red: 0.20, green: 0.22, blue: 0.25) // #333840
+        case .externalConnecting: return Color(red: 0.30, green: 0.20, blue: 0.05)  // #4D330D 深琥珀
         case .externalChatting: return Color(red: 0.04, green: 0.27, blue: 0.15)  // #0B4627 深绿
         }
     }
@@ -672,6 +680,12 @@ struct NotchActivityView: View {
         case .transcribing:
             TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { timeline in
                 NotchTypingDashesView(timelineDate: timeline.date, tint: tint)
+            }
+        case .externalConnecting:
+            // 连接中：琥珀色脉冲点。不用等化器（那是"已经在说话"的形状），
+            // 点的节律读作"正在握手"，和 thinking 的语义同族但颜色不同。
+            TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { timeline in
+                NotchThinkingDotsView(timelineDate: timeline.date, tint: tint)
             }
         case .externalChatting:
             // 整个会话持续显示：绿色等化器比静止图形更像「在聊着」

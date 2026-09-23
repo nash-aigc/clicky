@@ -412,9 +412,11 @@ final class VoiceWebSessionController: ObservableObject {
         liveMirroredLineCount = 0
         presentedLiveBotLineCount = 0
         transcriptEntries = []
-        // 「聊天中」 persists for the WHOLE session — connecting included
-        // (the user's requirement: 连接过程中就持续显示，直到挂断).
-        setNotchOverride(.externalChatting)
+        // 连接中先显示「Connecting + 连接动画」；页面回报 ready 之后（runSession
+        // 里 waitForConnection 通过的那一步）才换成「Chatting + 挂断图标」——
+        // 用户 2026-09-23：「连接中的时候不知道……右侧不要有挂断按钮，而应该是
+        // 一个连接中的动画效果。只有连接成功之后，右侧才是挂断按钮」。
+        setNotchOverride(.externalConnecting)
         sessionTask = Task { [weak self] in
             await self?.runSession(mode: sessionEngineMode)
         }
@@ -443,6 +445,15 @@ final class VoiceWebSessionController: ObservableObject {
             try await sendConnectCommand(mode: mode)
             try await waitForConnection()
             connectionPhase = .connected
+            // 连接成功才把右翼换成挂断图标 + 「Chatting」。
+            setNotchOverride(.externalChatting)
+            // 页头的 模式 菜单自动对齐这条会话真正用的引擎（用户 2026-09-23：
+            // 「快捷键连接的是全双工语音模式，点击面板展开后，右上角的模式没有被
+            // 自动切换成全双工语音模式。我希望它能自动切换」）。didSet 会连带
+            // 重读屏幕/摄像头开关——它们本来就是"下次连接生效"的草稿，对齐后
+            // 显示的就是当前模式的设置，语义一致。角色会话的 mode 本来就来自
+            // selectedMode，这一步是幂等的；shortcut 会话在这一步换过去。
+            selectedMode = mode
             try await pollSessionUntilDisconnected()
         } catch is CancellationError {
             return
@@ -738,9 +749,25 @@ final class VoiceWebSessionController: ObservableObject {
         transcriptEntries.append(contentsOf: appendedEntries)
         liveMirroredLineCount = appendedEntries.count
 
-        if botLineCount > presentedLiveBotLineCount,
-           let newestBotLine = appendedEntries.last(where: { !$0.isUser }), !newestBotLine.text.isEmpty {
-            presentAnswer(newestBotLine.text)
+        // 2026-09-23 修复「AI 回复只显示最后一句」：VoiceWeb 的 botTranscript
+        // 是按句末标点逐句上报的（pipecat observer.py 的 _handle_llm_text_frame
+        // 每句发一条），气泡不能再只取最新一句 —— 把"最近一条用户消息之后"
+        // 的所有 bot 行拼起来，作为**目前为止的整段回复**送进气泡。它随每句
+        // 落地而变长，结束时就是完整回复。
+        if botLineCount > presentedLiveBotLineCount {
+            var replySoFar: [String] = []
+            for line in appendedEntries {
+                if line.isUser {
+                    replySoFar.removeAll()
+                } else {
+                    replySoFar.append(line.text)
+                }
+            }
+            // 句与句之间不加空格：中文句末自带标点，补空格反而把气泡撑出缝隙。
+            let fullReplySoFar = replySoFar.joined()
+            if !fullReplySoFar.isEmpty {
+                presentAnswer(fullReplySoFar)
+            }
         }
         presentedLiveBotLineCount = botLineCount
     }
