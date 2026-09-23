@@ -193,8 +193,159 @@ final class CompanionManager: ObservableObject {
                 self?.notchWindowController?.setExternalSessionOverride(overridePhase)
             }
         )
+        // The external-brain companion session's four callbacks (2026-09-24,
+        // the VoiceWeb migration): the browser owns 听 and 说 — ASR, VAD,
+        // interruption and TTS all live in the Chrome page — and Clicky is
+        // only the brain that answers. The wiring is here, not inside the
+        // controller, so the controller stays an orchestrator that shares
+        // nothing with `currentResponseTask`/`voiceState`, same as before.
+        controller.onCompanionUtterance = { [weak self] utterance in
+            self?.handleCompanionUtterance(utterance)
+        }
+        controller.onCompanionUserSpeechState = { [weak self] isSpeaking in
+            self?.handleCompanionUserSpeechState(isSpeaking)
+        }
+        controller.onCompanionBotSpeechState = { [weak self] isSpeaking in
+            self?.handleCompanionBotSpeechState(isSpeaking)
+        }
+        controller.onCompanionSessionEnded = { [weak self] endReason in
+            self?.handleCompanionSessionEnded(endReason)
+        }
         return controller
     }()
+
+    // MARK: - External-brain companion voice session (VoiceWeb, 2026-09-24)
+
+    /// The answer's echo filter must NOT see the external session's answers:
+    /// the browser's AEC already removes them from the microphone before the
+    /// recognizer hears anything, and a containment test on top of that would
+    /// refuse a genuine user question that quotes the answer. This stays
+    /// empty for the whole companion session, which is what silences it.
+    ///
+    /// The trigger is 「回答时持续监听」: with it on, a talk-shortcut press
+    /// while idle starts a companion VoiceWeb session instead of the local
+    /// continuous-listening window. The browser's pipeline (Silero VAD +
+    /// ASR turn strategies) owns 听, its TTS owns 说, and its WebRTC AEC owns
+    /// the echo problem — the two failures the local path never stopped
+    /// paying for. When the setting is off, the local machinery is unchanged.
+    private var isExternalBotSpeaking = false
+    /// The reply text already sent to the browser's TTS (`/external/speak`),
+    /// used to drop the already-spoken prefix before the reply finishes.
+    private var externalReplySentText = ""
+    var isExternalVoiceSessionActive: Bool {
+        voiceWebSessionController.isCompanionSessionActive
+    }
+
+    /// Starts the companion VoiceWeb session (三段式 pipeline engine,
+    /// external brain). Fails softly: the controller reports through
+    /// `presentFailure`, and the pill override shows 连接中… / clears itself.
+    private func startExternalVoiceSession() {
+        guard !isExternalVoiceSessionActive else { return }
+        externalReplySentText = ""
+        isExternalBotSpeaking = false
+        voiceWebSessionController.startExternalBrainSession()
+    }
+
+    private func handleCompanionUtterance(_ utterance: String) {
+        guard isExternalVoiceSessionActive else { return }
+        let trimmed = utterance.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        // The question rides the SAME pipeline as a typed one — screenshot,
+        // vision call, agent loop, history. The browser is already speaking
+        // and listening; nothing here touches the mic.
+        submitTypedQuestion(trimmed)
+    }
+
+    /// The browser's own pipeline stops its TTS natively (enable_interruptions
+    /// turns it off the moment its VAD hears the user) — the only thing
+    /// Clicky must stop is GENERATING: cancel the reply task, keep the
+    /// session up so the user's next words come through.
+    private func handleCompanionUserSpeechState(_ isSpeaking: Bool) {
+        guard isSpeaking, isExternalVoiceSessionActive else { return }
+        if voiceState == .processing || voiceState == .responding || currentResponseTask != nil {
+            interruptActiveResponse()
+        }
+    }
+
+    private func handleCompanionBotSpeechState(_ isSpeaking: Bool) {
+        guard isExternalVoiceSessionActive else { return }
+        isExternalBotSpeaking = isSpeaking
+        if isSpeaking && voiceState == .idle {
+            voiceState = .responding
+        } else if !isSpeaking && voiceState == .responding && currentResponseTask == nil {
+            // The reply task is gone and the browser stopped reading —
+            // genuinely idle. `currentResponseTask == nil` keeps this from
+            // clashing with a newer question that already claimed the slot.
+            voiceState = .idle
+            scheduleTransientHideIfNeeded()
+        }
+    }
+
+    private func handleCompanionSessionEnded(_ endReason: String?) {
+        // A session that ended while a reply was still being generated (user
+        // hung up mid-answer) leaves a stale task and a stuck voice state
+        // behind — the same cleanup the shortcut's interrupt branch does.
+        interruptActiveResponse()
+        isExternalBotSpeaking = false
+        externalReplySentText = ""
+        if let endReason {
+            lastErrorMessage = endReason
+        }
+    }
+
+    /// Sends one completed sentence of the streaming reply to the browser's
+    /// TTS. Sentence boundaries are the model's OWN terminators — the same
+    /// cut points 逐句快答 uses locally — because a sentence the model wrote
+    /// as one is a pause the model intended.
+    private static let externalSentenceTerminators: Set<Character> = ["。", "！", "？", "；", "…", "!", "?", ";", "\n"]
+    private static let externalSentenceMaximumCharacters = 60
+
+    private func speakExternalReplySentence(upto newText: String) {
+        guard isExternalVoiceSessionActive else { return }
+        // Only text past what was already sent is eligible for cutting; a
+        // terminator inside the already-sent prefix is never re-sent.
+        let freshStart = externalReplySentText.count
+        guard freshStart < newText.count else { return }
+        let fresh = String(newText.dropFirst(freshStart))
+
+        // Scan for the LAST sentence terminator; everything up to and
+        // including it is one completed stretch to speak.
+        var cutIndex: String.Index?
+        var scan = fresh.startIndex
+        while scan < fresh.endIndex {
+            if Self.externalSentenceTerminators.contains(fresh[scan]) {
+                cutIndex = fresh.index(after: scan)
+            }
+            scan = fresh.index(after: scan)
+        }
+        // No terminator yet: a very long unpunctuated run is still sent so a
+        // chatty sentence never holds the whole answer hostage.
+        if cutIndex == nil && fresh.count >= Self.externalSentenceMaximumCharacters {
+            cutIndex = fresh.index(fresh.startIndex, offsetBy: Self.externalSentenceMaximumCharacters)
+        }
+        guard let cut = cutIndex, cut > fresh.startIndex else { return }
+        let sentence = String(fresh[..<cut])
+        externalReplySentText += sentence
+        let cleanSentence = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanSentence.isEmpty else { return }
+        Task { [weak self] in
+            _ = await self?.voiceWebSessionController.postExternalSpeak(cleanSentence)
+        }
+    }
+
+    /// Sends whatever the reply still holds past the last cut — called once,
+    /// when the reply stream ends. An empty remainder is the normal case for
+    /// a reply that ended on a sentence terminator.
+    private func flushExternalReplyRemainder(finalSpeakableText: String) {
+        guard isExternalVoiceSessionActive else { return }
+        let remainder = String(finalSpeakableText.dropFirst(externalReplySentText.count))
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        externalReplySentText = finalSpeakableText
+        guard !remainder.isEmpty else { return }
+        Task { [weak self] in
+            _ = await self?.voiceWebSessionController.postExternalSpeak(remainder)
+        }
+    }
 
     /// A HUD chip tap: switch the sidebar to the Agent section, select that
     /// agent, and expand the notch sheet. The sheet's content column reads
@@ -1177,6 +1328,24 @@ final class CompanionManager: ObservableObject {
             // Don't register push-to-talk while the onboarding video is playing
             guard !showOnboardingVideo else { return }
 
+            // External-brain companion session is live (the VoiceWeb
+            // migration, 2026-09-24): the same shortcut that started it runs
+            // it. A press while the reply is being generated is a stop (the
+            // browser keeps speaking until its own VAD hears the user — this
+            // cancels Clicky's GENERATION, not the session); a press while
+            // idle-connected hangs up. The session carries no mode, so no
+            // other branch can start a recording over it — this return is
+            // what keeps the local mic machinery out of the browser's way.
+            if isExternalVoiceSessionActive {
+                if voiceState == .processing || voiceState == .responding || currentResponseTask != nil {
+                    interruptActiveResponse()
+                } else {
+                    voiceWebSessionController.disconnectCurrentSession()
+                }
+                shortcutPressBeganAt = nil
+                return
+            }
+
             // 正在思考或回答时的第一次按下 = 纯打断，到此为止：停任务、停播报、
             // 回到待命，**不开麦**——再按一次才开始收听。之前的做法是打断和开麦
             // 同一步完成：旧回答被取消的同一瞬间新录音就开始了，用户看到的是
@@ -1217,6 +1386,20 @@ final class CompanionManager: ObservableObject {
                 interruptActiveResponse()
                 // 让 release 把这次按下当成一次没有时长的按压：既不能触发确认
                 // 轻点的「发送暂存的话」，也不能留下一个陈旧的计时。
+                shortcutPressBeganAt = nil
+                return
+            }
+
+            // 2026-09-24, the VoiceWeb migration: 「回答时持续监听」 ON turns
+            // the idle talk-shortcut press into the external-brain companion
+            // session's start key instead of the local continuous-listening
+            // window. The browser owns 听 (VAD + ASR + interruption) and 说
+            // (TTS) — the local mic machinery stays off for the whole
+            // session, which is what makes the interruption instant and
+            // immune to the level/AEC drift that kept breaking the local
+            // path. With the setting off, everything below is unchanged.
+            if AppSettingsStore.snapshot().continuousListeningEnabled {
+                startExternalVoiceSession()
                 shortcutPressBeganAt = nil
                 return
             }
@@ -1497,6 +1680,10 @@ final class CompanionManager: ObservableObject {
     [AGENT_SEND:name:message] — hand a follow-up instruction to a background agent that already exists (yours, or one created earlier). the name matches by containment, so "调研" reaches 「调研员」.
     the agent works in its own project folder and reports back when finished; a small floating icon appears on the desktop while it runs. the dispatch itself needs no screenshot loop — the result of your dispatch arrives in an <agent_dispatch_results> block with your next message. after dispatching, tell the user in one short sentence who you sent the job to and what it will do. spawn at most ONE agent per reply, and only for a real background job — a question, or anything that needs to look at the screen right now, is answered or acted on directly as always. never dispatch something destructive; the same "the user asked for that exact thing this turn" rule applies to background work.
 
+    desktop files:
+    when the user's request is about FILES on their desktop — 查看、读取、写入、修改、保存某个文件或文件夹 — hand it to the desktop file agent instead of clicking around the Finder:
+    [PY_AGENT:task] — the task as one complete self-contained instruction, e.g. [PY_AGENT:把桌面上 todo.txt 的内容读出来] or [PY_AGENT:在桌面新建 会议记录.md，写入这三条要点：……]. the agent can list folders, read files and write files, but ONLY inside the Desktop — it cannot touch anything else, open apps, or see the screen. its result comes back in a <desktop_agent_result> block on your next message; relay it to the user in your own words, and if the task needs another step (write, then confirm), emit another [PY_AGENT:…] tag. use this for file content work; use [OPEN:] and clicks for things that need the Finder window itself. do not use it for anything not about desktop files.
+
     only act when the user actually asked you to do the thing. the test is whether their words tell you to do something: "click the send button for me", "open the calculator", "type that in there", "帮我点一下 7" are requests, and you act on them. "where's the send button", "how do i get to settings", "what does this one do" are questions, and the answer is [POINT:…], not a click. an instruction about the screen is always a request — never answer one by pointing at the thing the user just told you to click, and never turn it into a question. a sentence you genuinely cannot tell apart from a question is answered with [POINT:…], not a click — pointing is always safe and clicking is not, which is exactly why the sentence that says "帮我点一下" has to end in a click.
 
     NEVER describe an action without emitting its tag in the same reply. if you are going to click something, [CLICK:…] goes in this reply — saying "i'll click that now" or "let me put the cursor there first" and emitting nothing is the worst answer you can give, because the user hears a promise and watches nothing happen. there is no third option where you talk about acting: either act in this turn, or ask one question and act on the next one. narrating the steps you are about to take is never an answer.
@@ -1689,6 +1876,11 @@ final class CompanionManager: ObservableObject {
     private func armContinuousListeningWindow() {
         let appSettings = AppSettingsStore.snapshot()
         guard appSettings.continuousListeningEnabled else { return }
+        // The VoiceWeb migration (2026-09-24): while the external-brain
+        // companion session is up, the browser owns listening — arming the
+        // local window would open the local mic next to the browser's own,
+        // and both would hear each other.
+        guard !isExternalVoiceSessionActive else { return }
 
         if buddyDictationManager.isContinuousListening {
             scheduleContinuousListeningWindowExpiry(seconds: appSettings.continuousListeningWindowSeconds)
@@ -1931,7 +2123,16 @@ final class CompanionManager: ObservableObject {
             // below re-throws the identical error, so the existing error
             // reporting covers both modes.
             var streamingSpeechSession: BailianTTSClient.StreamingSpeechSession?
-            if appSettings.speechSpeakMode == .sentenceFastReply {
+            if isExternalVoiceSessionActive {
+                // The external-brain companion session speaks NOTHING
+                // locally: the reply goes to the browser's TTS through
+                // /external/speak, sentence by sentence (speakExternalReply
+                // Sentence below), because the browser's WebRTC AEC needs
+                // its reference signal to be OUR audio through ITS output —
+                // a locally played answer is exactly the self-interrupt
+                // problem the migration exists to remove. No streaming
+                // session, no local synthesis, no local playback.
+            } else if appSettings.speechSpeakMode == .sentenceFastReply {
                 do {
                     let session = try bailianTTSClient.beginStreamingSpeech()
                     streamingSpeechSession = session
@@ -1967,6 +2168,10 @@ final class CompanionManager: ObservableObject {
             // signal that no tag came back at all.
             var allActionDescriptions: [String] = []
             lastActionDescription = nil
+            // The companion session's sentence cutter starts every reply from
+            // zero — the previous reply's sent prefix must not swallow this
+            // one's opening sentence.
+            externalReplySentText = ""
 
             do {
                 // Multi-step jobs run as an agent loop: after a reply's action tags
@@ -2148,7 +2353,12 @@ final class CompanionManager: ObservableObject {
                             // the reply is spoken even when the bubble is turned off.
                             // The session diffs internally, so feeding the whole
                             // accumulated text is the contract.
-                            if let streamingSpeechSession {
+                            if isExternalVoiceSessionActive {
+                                // The companion session's speech: cut the reply on
+                                // the model's own sentence terminators and POST
+                                // each completed stretch to the browser's TTS.
+                                speakExternalReplySentence(upto: ActionTagParser.speakableTextFromStreamedReply(accumulatedText))
+                            } else if let streamingSpeechSession {
                                 let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
                                 streamingSpeechSession.feed(cumulativeSpeakableText: speakableText)
                                 // The echo filter compares mic transcripts
@@ -2445,7 +2655,17 @@ final class CompanionManager: ObservableObject {
                         streamingAnswerText = settledDisplayText.isEmpty ? finalSpokenText : settledDisplayText
                     }
 
-                    if let streamingSpeechSession {
+                    if isExternalVoiceSessionActive {
+                        // The companion session: the sentence-by-sentence POSTs
+                        // already carried most of the reply to the browser's
+                        // TTS while it streamed; the flush speaks the tail the
+                        // cutter was still holding (empty for a reply that
+                        // ended on a terminator — the normal case). No local
+                        // synthesis, no local playback, no listening window:
+                        // the browser is already speaking and hearing.
+                        flushExternalReplyRemainder(finalSpeakableText: lastStreamedDisplayText)
+                        voiceState = .idle
+                    } else if let streamingSpeechSession {
                         // 逐句快答: the segments were already spoken while the reply
                         // streamed in; the flush speaks the tail the aggregator was
                         // still holding. `voiceState` went to .responding when the
@@ -2674,7 +2894,11 @@ final class CompanionManager: ObservableObject {
         answerBubbleClearTask = Task { [weak self] in
             guard let self else { return }
 
-            while self.bailianTTSClient.isPlaying {
+            // The companion session's answer is read by the browser, not by
+            // the local client — the wait covers its speaking window too, so
+            // the bubble does not clear while the user is still listening.
+            while self.bailianTTSClient.isPlaying
+                    || (self.isExternalVoiceSessionActive && self.isExternalBotSpeaking) {
                 try? await Task.sleep(nanoseconds: 200_000_000)
                 guard !Task.isCancelled else { return }
             }

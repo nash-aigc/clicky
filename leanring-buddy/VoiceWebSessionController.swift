@@ -192,6 +192,91 @@ final class VoiceWebSessionController: ObservableObject {
     private static let serverLaunchWaitSeconds: TimeInterval = 20
     private static let connectionWaitSeconds: TimeInterval = 30
 
+    /// 外部大脑会话的闲置挂断时长：这么久没有听到用户开口（也没有任何最终
+    /// 转写）就自动断开。监听不再占用本机麦克风，一个被忘记的会话会一直
+    /// 开着浏览器的音频管道 —— 这是它的安全绳。
+    private static let companionIdleDisconnectSeconds: TimeInterval = 180
+
+    /// The external-brain companion poll interval. Deliberately faster than
+    /// the transcript poll: the page's `user_speaking` report IS Clicky's
+    /// barge-in signal, and every 300 ms of latency is a syllable of the user
+    /// talking over the answer.
+    private static let companionPollIntervalNanoseconds: UInt64 = 300_000_000
+
+    // MARK: - External-brain companion session (VoiceWeb 方案, 2026-09-24)
+
+    /// True while the running session is the **external-brain** one: VoiceWeb's
+    /// pipeline owns listening (ASR + VAD + turn detection) and speaking
+    /// (TTS through the browser, where the AEC's reference signal is), and
+    /// Clicky is the LLM — questions arrive as final user transcript lines,
+    /// answers are pushed to `POST /external/speak`. Set by
+    /// `startExternalBrainSession`, cleared in `endSession`.
+    private(set) var isExternalBrainSession = false
+
+    /// A companion session is "live" from the moment it starts connecting, not
+    /// only when connected — a press during the handshake must not start a
+    /// local recording on top of it.
+    var isCompanionSessionActive: Bool {
+        isExternalBrainSession && connectionPhase != .idle
+    }
+
+    /// How many final user lines the companion poll has already handed to
+    /// `onCompanionUtterance` — each final line fires exactly once.
+    private var routedCompanionUserLineCount = 0
+
+    /// Last time the companion session saw the user speak (a `user_speaking`
+    /// report or a final transcript). Drives the idle auto-disconnect.
+    private var lastCompanionUserActivityAt = Date()
+
+    /// Set right before a companion session ends for a reason other than the
+    /// user's own hang-up, consumed by `endSession` so the callback can say why.
+    private var companionEndReason: String?
+
+    /// Callbacks CompanionManager installs after construction. Optional vars
+    /// rather than init parameters so the existing three-closure init keeps
+    /// its shape and the companion wiring reads as one block over there.
+    /// A final user utterance → the question pipeline.
+    var onCompanionUtterance: ((String) -> Void)?
+    /// The user started/stopped speaking (the page's RTVI report). `true`
+    /// while a reply is generating is Clicky's barge-in.
+    var onCompanionUserSpeechState: ((Bool) -> Void)?
+    /// The browser started/stopped reading Clicky's answer (drives the
+    /// cursor-side Speaking state and the answer bubble's linger).
+    var onCompanionBotSpeechState: ((Bool) -> Void)?
+    /// The session ended. The parameter carries a human-readable reason when
+    /// the end was not the user's own hang-up (idle timeout, page disconnect).
+    var onCompanionSessionEnded: ((String?) -> Void)?
+
+    /// Starts the external-brain companion session: VoiceWeb listens and
+    /// speaks, Clicky thinks. Quietly refused when one is already live — the
+    /// talk shortcut is the only entry, and it routes through the
+    /// active-session branch before ever reaching here.
+    func startExternalBrainSession() {
+        guard !isExternalBrainSession, connectionPhase == .idle else { return }
+        isExternalBrainSession = true
+        routedCompanionUserLineCount = 0
+        lastCompanionUserActivityAt = Date()
+        companionEndReason = nil
+        // 三段式（pipeline）是唯一带「听+说」帧管道的引擎，外部大脑就骑在
+        // 它上面——服务端用 `external_brain: true` 把 LLM 槽位换成透传 tap，
+        // 听（ASR+VAD+打断）和说（TTS）一帧不变。
+        startSession(mode: .threeStage, roleID: nil, externalBrain: true)
+    }
+
+    /// Pushes one piece of Clicky's answer into the running external-brain
+    /// session (server.py `POST /external/speak` → `TTSSpeakFrame`): spoken by
+    /// the pipeline's TTS through the browser, where the AEC can hear the
+    /// reference signal — the whole reason the answer must never go through
+    /// Clicky's local audio engine in this mode.
+    func postExternalSpeak(_ text: String) async -> Bool {
+        do {
+            try await postJSONObject(["text": text], path: "external/speak")
+            return true
+        } catch {
+            return false
+        }
+    }
+
     init(presentAnswer: @escaping (String) -> Void,
          presentFailure: @escaping (String) -> Void,
          setNotchOverride: @escaping (NotchActivityPhase?) -> Void) {
@@ -257,9 +342,9 @@ final class VoiceWebSessionController: ObservableObject {
         if connectionPhase != .idle {
             sendBridgeCommand(["action": "disconnect"])
         }
-        activeMode = nil
-        activeRoleID = nil
-        connectionPhase = .idle
+        // endSession (not a manual reset): a companion session has to fire its
+        // ended-callback so CompanionManager's own state unwinds with it.
+        endSession()
     }
 
     // MARK: - Role presets (sidebar list)
@@ -382,7 +467,7 @@ final class VoiceWebSessionController: ObservableObject {
 
     // MARK: - Session flow
 
-    private func startSession(mode: VoiceWebMode?, roleID: String?) {
+    private func startSession(mode: VoiceWebMode?, roleID: String?, externalBrain: Bool = false) {
         sessionTask?.cancel()
         sessionTask = nil
         if connectionPhase != .idle {
@@ -395,6 +480,10 @@ final class VoiceWebSessionController: ObservableObject {
         }
         activeMode = mode
         activeRoleID = roleID
+        // A companion session carries no mode: any of the three VoiceWeb mode
+        // shortcuts (or another talk-shortcut press) hangs it up, the same
+        // rule a sidebar-started session lives under.
+        if externalBrain { activeMode = nil }
         // 这一条连接真正要用的引擎。shortcut 会话用它自己的模式；sidebar 起的
         // 会话没有模式，用页头 模式 菜单选的那一个。
         //
@@ -418,7 +507,7 @@ final class VoiceWebSessionController: ObservableObject {
         // 一个连接中的动画效果。只有连接成功之后，右侧才是挂断按钮」。
         setNotchOverride(.externalConnecting)
         sessionTask = Task { [weak self] in
-            await self?.runSession(mode: sessionEngineMode)
+            await self?.runSession(mode: sessionEngineMode, externalBrain: externalBrain)
         }
     }
 
@@ -428,7 +517,7 @@ final class VoiceWebSessionController: ObservableObject {
     ///   一个值）。以前这里是 Optional，因为角色会话刻意不指定引擎、让页面
     ///   沿用自己加载时的那个；现在页头有了显式的模式选择，那个"不指定"的
     ///   分支就没有来源了。
-    private func runSession(mode: VoiceWebMode) async {
+    private func runSession(mode: VoiceWebMode, externalBrain: Bool) async {
         do {
             try await ensureVoiceWebServerIsReachable()
             try await ensureVoiceWebPageIsAvailable()
@@ -442,7 +531,7 @@ final class VoiceWebSessionController: ObservableObject {
                 // start, so writing it right before the connect is enough.
                 try await postJSONObject(["active_role": roleID], path: "/config")
             }
-            try await sendConnectCommand(mode: mode)
+            try await sendConnectCommand(mode: mode, externalBrain: externalBrain)
             try await waitForConnection()
             connectionPhase = .connected
             // 连接成功才把右翼换成挂断图标 + 「Chatting」。
@@ -454,7 +543,7 @@ final class VoiceWebSessionController: ObservableObject {
             // 显示的就是当前模式的设置，语义一致。角色会话的 mode 本来就来自
             // selectedMode，这一步是幂等的；shortcut 会话在这一步换过去。
             selectedMode = mode
-            try await pollSessionUntilDisconnected()
+            try await pollSessionUntilDisconnected(externalBrain: externalBrain)
         } catch is CancellationError {
             return
         } catch {
@@ -474,6 +563,12 @@ final class VoiceWebSessionController: ObservableObject {
     }
 
     private func endSession() {
+        // Captured before the reset: a companion session's observer learns why
+        // (nil = the user's own hang-up) alongside the fact itself.
+        let wasExternalBrainSession = isExternalBrainSession
+        let externalEndReason = companionEndReason
+        companionEndReason = nil
+
         activeMode = nil
         activeRoleID = nil
         connectionPhase = .idle
@@ -482,6 +577,14 @@ final class VoiceWebSessionController: ObservableObject {
         pendingOwnSentText = nil
         consecutiveDisconnectedPolls = 0
         setNotchOverride(nil)
+
+        if wasExternalBrainSession {
+            isExternalBrainSession = false
+            routedCompanionUserLineCount = 0
+            onCompanionUserSpeechState?(false)
+            onCompanionBotSpeechState?(false)
+            onCompanionSessionEnded?(externalEndReason)
+        }
     }
 
     // MARK: - Server reachability
@@ -609,7 +712,7 @@ final class VoiceWebSessionController: ObservableObject {
     /// 的不一样"这种情况（重新 POST 一次命令再 `location.reload()`，见
     /// 开发经验里那条实测——服务端切 `chat_engine` 对已经挂载的页面是不可见
     /// 的，它的连接会静默什么都不做）。
-    private func sendConnectCommand(mode: VoiceWebMode) async throws {
+    private func sendConnectCommand(mode: VoiceWebMode, externalBrain: Bool = false) async throws {
         let settings = AppSettingsStore.snapshot()
         var payload: [String: Any] = ["action": "connect"]
         payload["engine"] = mode.engineName
@@ -621,6 +724,12 @@ final class VoiceWebSessionController: ObservableObject {
             payload["mic"] = settings.voiceWebOmniVoiceEnabled
             payload["cam"] = settings.voiceWebOmniCameraEnabled
             payload["screen"] = settings.voiceWebOmniScreenEnabled
+        }
+        if externalBrain {
+            // server.py 认的就是这个键：把 LLM 槽位换成透传 tap，听（ASR+VAD+
+            // 打断）和说（TTS）留在 pipeline 里一帧不变，问题走最终用户转写
+            // 上来、回答经 /external/speak 送回去。
+            payload["external_brain"] = true
         }
         try await postBridgeCommand(payload)
     }
@@ -639,18 +748,31 @@ final class VoiceWebSessionController: ObservableObject {
         /// page's report: `[{r:"u"|"b", t:text}]`) — VoiceWeb's history file
         /// is only written at disconnect, so this is the only source that
         /// shows turns while the session is still up.
-        var liveLines: [(isUser: Bool, text: String)] = []
+        var liveLines: [(isUser: Bool, text: String, isInterim: Bool)] = []
+        /// The page's own speaking-state hooks (patch.js hooks
+        /// botStartedSpeaking / botStoppedSpeaking into `EXB.botSpeaking`).
+        /// The companion session's interrupt and voice-state machine reads
+        /// both — the interim transcript alone cannot distinguish "the user
+        /// is talking" from "the page is echoing the answer".
+        var botSpeaking: Bool = false
+        var userSpeaking: Bool = false
     }
 
     private func fetchBridgeState() async -> BridgeState? {
         guard let data = try? await httpGET(path: "/external/state") else { return nil }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        var liveLines: [(isUser: Bool, text: String)] = []
+        var liveLines: [(isUser: Bool, text: String, isInterim: Bool)] = []
         if let live = object["live"] as? [[String: Any]] {
             for line in live {
                 guard let text = (line["t"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
                       !text.isEmpty else { continue }
-                liveLines.append((isUser: (line["r"] as? String) == "u", text: text))
+                let isUser = (line["r"] as? String) == "u"
+                // The in-flight interim utterance rides the report tail; only
+                // a line the page itself tags `interim` may be dropped from
+                // final-line routing (a stale interim would otherwise fire
+                // the question twice).
+                let isInterim = (line["interim"] as? Bool) == true
+                liveLines.append((isUser: isUser, text: text, isInterim: isInterim))
             }
         }
         return BridgeState(
@@ -658,7 +780,9 @@ final class VoiceWebSessionController: ObservableObject {
             mic: object["mic"] as? Bool,
             cam: object["cam"] as? Bool,
             screen: object["screen"] as? Bool,
-            liveLines: liveLines
+            liveLines: liveLines,
+            botSpeaking: (object["bot_speaking"] as? Bool) == true,
+            userSpeaking: (object["user_speaking"] as? Bool) == true
         )
     }
 
@@ -687,16 +811,27 @@ final class VoiceWebSessionController: ObservableObject {
     /// The connected session's watch loop: the transcript mirror (which also
     /// feeds the bubble), the page's LIVE transcript lines, and the user
     /// disconnecting from the VoiceWeb page itself ends the session.
-    private func pollSessionUntilDisconnected() async throws {
+    private func pollSessionUntilDisconnected(externalBrain: Bool) async throws {
+        // The companion session polls at 300 ms instead of 1 s: the
+        // interrupt path (user starts speaking → Clicky stops generating)
+        // and the barge-in feel ride this loop, so a second of latency here
+        // is a second the user's first word costs. The non-companion session
+        // keeps 1 s — its only consumers are the transcript mirror and the
+        // bubble, both of which tolerate it.
+        let pollIntervalNanoseconds = externalBrain
+            ? Self.companionPollIntervalNanoseconds
+            : 1_000_000_000
+        let disconnectedPollThreshold = externalBrain ? 4 : 2
+
         while true {
             try Task.checkCancellation()
-            try await Task.sleep(nanoseconds: 1_000_000_000)
+            try await Task.sleep(nanoseconds: pollIntervalNanoseconds)
 
             let state = await fetchBridgeState()
             if let state {
                 if state.phase == "disconnected" || state.phase == "failed" {
                     consecutiveDisconnectedPolls += 1
-                    if consecutiveDisconnectedPolls >= 2 {
+                    if consecutiveDisconnectedPolls >= disconnectedPollThreshold {
                         endSession()
                         return
                     }
@@ -704,12 +839,61 @@ final class VoiceWebSessionController: ObservableObject {
                     consecutiveDisconnectedPolls = 0
                 }
             }
-            // The history file only changes at disconnect, so the mirror is a
-            // no-op while the session runs; the live lines are what moves.
-            await refreshTranscriptIfPossible()
-            if let state, state.phase == "ready" {
-                mergeLiveTranscript(state.liveLines)
+
+            if externalBrain {
+                guard let state, state.phase == "ready" else { continue }
+                processCompanionState(state)
+            } else {
+                // The history file only changes at disconnect, so the mirror
+                // is a no-op while the session runs; the live lines are what
+                // moves.
+                await refreshTranscriptIfPossible()
+                if let state, state.phase == "ready" {
+                    mergeLiveTranscript(state.liveLines)
+                }
             }
+        }
+    }
+
+    // MARK: - External-brain companion session state
+
+    /// Feeds one ready poll's page state into the companion machine: speech
+    /// callbacks for Clicky's interrupt/voice-state half, the transcript
+    /// mirror for the 语音聊天 view, final user lines up to
+    /// `CompanionManager` (its `submitTypedQuestion` pipeline), and the
+    /// 180 s idle watchdog.
+    private func processCompanionState(_ state: BridgeState) {
+        onCompanionUserSpeechState?(state.userSpeaking)
+        if state.userSpeaking {
+            lastCompanionUserActivityAt = Date()
+        }
+        onCompanionBotSpeechState?(state.botSpeaking)
+
+        mergeLiveTranscript(state.liveLines)
+        routeCompanionFinalUserLines(state.liveLines)
+
+        // Idle watchdog: nobody has spoken (and nothing has been asked) for
+        // the full window — hang up so a forgotten session does not hold the
+        // mic and the browser tab forever.
+        if Date().timeIntervalSince(lastCompanionUserActivityAt)
+            >= Self.companionIdleDisconnectSeconds {
+            companionEndReason = "闲置超时，语音会话已自动结束"
+            disconnectCurrentSession()
+        }
+    }
+
+    /// Fires `onCompanionUtterance` for each FINAL user line Clicky has not
+    /// yet routed. Interim lines are skipped (they are still being spoken —
+    /// the final replaces them), and a routed count rather than a content
+    /// check decides newness, because a user genuinely repeating a sentence
+    /// must still reach the model.
+    private func routeCompanionFinalUserLines(_ liveLines: [(isUser: Bool, text: String, isInterim: Bool)]) {
+        let finalUserLines = liveLines.filter { $0.isUser && !$0.isInterim }
+        guard finalUserLines.count > routedCompanionUserLineCount else { return }
+        for line in finalUserLines[routedCompanionUserLineCount...] {
+            routedCompanionUserLineCount += 1
+            guard !line.text.isEmpty else { continue }
+            onCompanionUtterance?(line.text)
         }
     }
 
@@ -727,7 +911,7 @@ final class VoiceWebSessionController: ObservableObject {
     /// live transcript. The lines STAY on screen after hang-up (endSession
     /// deliberately leaves `transcriptEntries` alone) — the next connect
     /// resets them, and the saved history covers the long term.
-    private func mergeLiveTranscript(_ liveLines: [(isUser: Bool, text: String)]) {
+    private func mergeLiveTranscript(_ liveLines: [(isUser: Bool, text: String, isInterim: Bool)]) {
         if liveMirroredLineCount > 0, liveMirroredLineCount <= transcriptEntries.count {
             transcriptEntries.removeLast(liveMirroredLineCount)
         }
@@ -754,7 +938,13 @@ final class VoiceWebSessionController: ObservableObject {
         // 每句发一条），气泡不能再只取最新一句 —— 把"最近一条用户消息之后"
         // 的所有 bot 行拼起来，作为**目前为止的整段回复**送进气泡。它随每句
         // 落地而变长，结束时就是完整回复。
-        if botLineCount > presentedLiveBotLineCount {
+        //
+        // The external-brain companion session deliberately SKIPS this: its
+        // answer travels through CompanionManager's reply pipeline (sentence
+        // → /external/speak), which already presents it in the cursor bubble
+        // — and there are no botTranscript lines to read anyway, because no
+        // LLM text frames flow through the external-brain tap.
+        if !isExternalBrainSession, botLineCount > presentedLiveBotLineCount {
             var replySoFar: [String] = []
             for line in appendedEntries {
                 if line.isUser {
