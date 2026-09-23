@@ -1239,9 +1239,30 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // A final is already in flight (the silence window expired, or an
         // earlier press asked for one): the press means "send it now".
         if isContinuousListeningAwaitingFinal { return true }
-        return Self.continuousListeningContentCharacterCount(
-            in: continuousListeningLatestInterimTranscript
-        ) >= Self.continuousListeningMinimumTranscriptCharacters
+
+        // THE BARGE-IN IS THE DISCRIMINATOR, not a content count. That is the
+        // user's own model of their shortcut, stated 2026-09-24:
+        //
+        //   「如果 AI 在回复的过程中，用户没有打断，按下了快捷键，这个时候的
+        //     快捷键就是终止播放…用户打断之后说了内容，再按住快捷键，它就是一个
+        //     发送的按钮」
+        //
+        // So: the user has interrupted this reply ⇒ the shortcut is SEND, and
+        // what they said goes. The user has NOT interrupted ⇒ it is STOP, and
+        // there is nothing of theirs to send.
+        //
+        // The `>= 4`-content-character bar that used to be here could not tell
+        // those two apart, and its failure was not symmetric. After a barge-in
+        // the interim only grows, so EVERY press took the send branch and the
+        // stop branch became unreachable — reported as 「没有增加这个停止运行的
+        // 快捷键，变成了一个永远都在循环」. The bar's original job (keeping a
+        // hallucinated 「嗯。」 from becoming a question) is done earlier now: the
+        // recognizer can no longer start a turn at all, so an utterance exists
+        // only because the VAD ruled the user spoke.
+        guard continuousListeningDidRequestBargeIn else { return false }
+        return !continuousListeningLatestInterimTranscript
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .isEmpty
     }
 
     /// Whether the user's speech is being captured RIGHT NOW inside a listening
