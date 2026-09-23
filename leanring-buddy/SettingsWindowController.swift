@@ -282,73 +282,120 @@ private struct SettingsSidebarItem: View {
 
 // MARK: - Action bar
 
-/// The 恢复默认 / 保存 bar under the general pages.
+/// The 恢复默认 / 保存 / 关闭 group.
 ///
-/// Sits outside the page's `ScrollView` so 保存 is reachable without scrolling,
-/// which matters most on the longest page (对话与记忆).
+/// Two hosts, one implementation. `.bottomBar` is the original shape: a
+/// full-width bar under the page's `ScrollView`, so 保存 is reachable without
+/// scrolling on the longest page (对话与记忆). `.headerInline` is the notch
+/// sheet's: the same three buttons with no chrome, dropped into the content
+/// page's title row — the user's 2026-09-23 「把右侧最下面这一行的『恢复默认』
+/// 『保存』『关闭』这些按钮放到右侧顶部标题的右侧，也就是标题这一行的靠右部分，
+/// 这样能减少一些右侧空间的占用」. Only the shell differs (divider, padding,
+/// background); the buttons themselves are the same views, so the two hosts
+/// cannot drift apart.
 // Internal rather than private: the notch sheet's embedded settings area
-// reuses the same save bar as the titled window (NotchSettingsArea).
+// reuses the same group as the titled window (NotchSettingsArea).
 struct GeneralSettingsActionBar: View {
+
+    enum Style {
+        case bottomBar
+        case headerInline
+    }
+
     @ObservedObject var generalSettingsViewModel: GeneralSettingsViewModel
+    var style: Style = .bottomBar
+
+    /// What 关闭 means. The two hosts genuinely differ: the titled window closes
+    /// itself, while the notch sheet must **collapse the panel**. It must NOT be
+    /// `NSApp.keyWindow?.close()` in the sheet — the expanded notch panel *is*
+    /// the key window, so `.close()` orders it out directly while
+    /// `NotchWindowController.isExpanded` stays true and `expansionProgress`
+    /// stays high, which leaves a notch pill that can neither be collapsed nor
+    /// clicked open again.
+    var closeAction: () -> Void = { NSApp.keyWindow?.close() }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            Divider().overlay(DS.Colors.borderSubtle)
+        switch style {
+        case .bottomBar:
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+                Divider().overlay(DS.Colors.borderSubtle)
 
-            HStack(alignment: .center, spacing: DS.Spacing.lg) {
-                Button("恢复默认") {
-                    generalSettingsViewModel.resetToDefaults()
+                HStack(alignment: .center, spacing: DS.Spacing.lg) {
+                    resetToDefaultsButton
+                    Spacer()
+                    saveStatusText
+                    saveButton
+                    closeButton
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(DS.Colors.textSecondary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 7)
-                .background(
-                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                        .fill(DS.Colors.surface2)
-                )
-                .pointerCursor()
-                .help("把这一页的所有设置改回初始值。点「保存」之前不会写入。")
-
-                Spacer()
-
-                if let saveErrorMessage = generalSettingsViewModel.saveErrorMessage {
-                    Text(saveErrorMessage)
-                        .font(.system(size: 11))
-                        .foregroundColor(DS.Colors.destructiveText)
-                        .lineLimit(2)
-                        .textSelection(.enabled)
-                } else if generalSettingsViewModel.lastSavedAt != nil
-                    && !generalSettingsViewModel.isDirty {
-                    Text("已保存，立即生效")
-                        .font(.system(size: 11))
-                        .foregroundColor(DS.Colors.success)
-                }
-
-                Button("保存") {
-                    generalSettingsViewModel.save()
-                }
-                .buttonStyle(DSPillButtonStyle(isEnabled: generalSettingsViewModel.isDirty))
-                .disabled(!generalSettingsViewModel.isDirty)
-
-                Button("关闭") {
-                    NSApp.keyWindow?.close()
-                }
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(DS.Colors.textSecondary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                        .fill(DS.Colors.surface2)
-                )
-                .pointerCursor()
+                .padding(.horizontal, 24)
+                .padding(.vertical, DS.Spacing.md)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, DS.Spacing.md)
+            .background(DS.Colors.background)
+
+        case .headerInline:
+            HStack(alignment: .center, spacing: 8) {
+                resetToDefaultsButton
+                saveStatusText
+                saveButton
+                closeButton
+            }
         }
-        .background(DS.Colors.background)
+    }
+
+    private var resetToDefaultsButton: some View {
+        Button("恢复默认") {
+            generalSettingsViewModel.resetToDefaults()
+        }
+        .buttonStyle(.plain)
+        .font(.system(size: 12, weight: .medium))
+        .foregroundColor(DS.Colors.textSecondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .fill(DS.Colors.surface2)
+        )
+        .pointerCursor()
+        .help("把这一页的所有设置改回初始值。点「保存」之前不会写入。")
+    }
+
+    @ViewBuilder
+    private var saveStatusText: some View {
+        if let saveErrorMessage = generalSettingsViewModel.saveErrorMessage {
+            Text(saveErrorMessage)
+                .font(.system(size: 11))
+                .foregroundColor(DS.Colors.destructiveText)
+                .lineLimit(2)
+                .textSelection(.enabled)
+        } else if generalSettingsViewModel.lastSavedAt != nil
+            && !generalSettingsViewModel.isDirty {
+            Text("已保存，立即生效")
+                .font(.system(size: 11))
+                .foregroundColor(DS.Colors.success)
+        }
+    }
+
+    private var saveButton: some View {
+        Button("保存") {
+            generalSettingsViewModel.save()
+        }
+        .buttonStyle(DSPillButtonStyle(isEnabled: generalSettingsViewModel.isDirty))
+        .disabled(!generalSettingsViewModel.isDirty)
+    }
+
+    private var closeButton: some View {
+        Button("关闭") {
+            closeAction()
+        }
+        .buttonStyle(.plain)
+        .font(.system(size: 12, weight: .medium))
+        .foregroundColor(DS.Colors.textSecondary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .fill(DS.Colors.surface2)
+        )
+        .pointerCursor()
     }
 }

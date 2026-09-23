@@ -268,6 +268,56 @@ nonisolated struct ConversationSession: Codable, Equatable, Identifiable {
     var summary: String
 
     var entries: [ConversationHistoryEntry]
+
+    /// When the user pinned this session to the top of the sidebar, or `nil`
+    /// while it is not pinned. A date rather than a flag so the sidebar can
+    /// order several pinned sessions by how recently each was pinned.
+    var pinnedAt: Date?
+
+    /// When the user deleted this session, or `nil` while it is still live.
+    ///
+    /// Deleting is a soft delete: the record stays in the file with this
+    /// stamped, and the 归档 page is the only place that shows it. Two things
+    /// follow from that, both deliberate — a turn that is in flight when the
+    /// user deletes its session still lands in a real record instead of being
+    /// dropped, and 彻底删除 (`purgeSession`) becomes the only path that
+    /// actually shrinks the file.
+    var archivedAt: Date?
+}
+
+/// Hand-written so a file written before `pinnedAt` / `archivedAt` existed
+/// still decodes — the synthesized `Codable` throws on a missing key, which
+/// would make every session in an existing file fail to load.
+///
+/// `CodingKeys` lists every stored property, because the still-synthesized
+/// `encode(to:)` writes exactly the keys named here. A field missing from the
+/// list is silently dropped on the next save, which only shows up after a
+/// restart — so the list has to be re-checked whenever a property is added.
+nonisolated extension ConversationSession {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case createdAt
+        case updatedAt
+        case summary
+        case entries
+        case pinnedAt
+        case archivedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        summary = try container.decode(String.self, forKey: .summary)
+        entries = try container.decode([ConversationHistoryEntry].self, forKey: .entries)
+        // Both are optional and so `decodeIfPresent`-shaped: absent means "not
+        // pinned" and "not archived", which is what every older file means.
+        pinnedAt = try container.decodeIfPresent(Date.self, forKey: .pinnedAt)
+        archivedAt = try container.decodeIfPresent(Date.self, forKey: .archivedAt)
+    }
 }
 
 /// What is stored on disk for sessions: the list plus which one is live.
@@ -332,32 +382,59 @@ nonisolated enum ConversationSessionsStore {
         return loadedSessions
     }
 
-    /// All sessions, oldest created first — sidebar display order.
+    /// Sessions the user can still see, oldest created first — sidebar display
+    /// order. Archived sessions are excluded; 归档 is the only view that shows
+    /// them.
     static func allSessions() -> [ConversationSession] {
+        snapshot().sessions.filter { $0.archivedAt == nil }
+    }
+
+    /// Every session in the file, archived ones included — what the 归档 page
+    /// lists, and what 清空对话记忆 really deletes.
+    static func allSessionsIncludingArchived() -> [ConversationSession] {
         snapshot().sessions
     }
 
-    /// The session the pipeline is currently recording into. A session always
-    /// exists — a store with none gets an empty default one — so the pipeline
-    /// never has to branch on "no active session".
+    /// The session the pipeline is currently recording into. A live session
+    /// always exists — one is made when there is none — so the pipeline never
+    /// has to branch on "no active session".
+    ///
+    /// An archived session is never returned, in either the primary lookup or
+    /// the fallback. Handing the pipeline a session the sidebar is not showing
+    /// is a silent failure: the answer would be written into a conversation the
+    /// user cannot see, with no row highlighted and no bubble appearing.
     static func activeSession() -> ConversationSession {
         let storedSessions = snapshot()
         if let activeSessionID = storedSessions.activeSessionID,
-           let matchingSession = storedSessions.sessions.first(where: { $0.id == activeSessionID }) {
+           let matchingSession = storedSessions.sessions.first(where: {
+               $0.id == activeSessionID && $0.archivedAt == nil
+           }) {
             return matchingSession
         }
-        // Falls back to the most recently touched session when the id is absent
-        // or stale (a hand-edited file, or an id whose session was deleted).
-        let mostRecentSession = storedSessions.sessions.max { $0.updatedAt < $1.updatedAt }
-            ?? ConversationSession(id: UUID(), title: defaultSessionTitle, createdAt: Date(), updatedAt: Date(), summary: "", entries: [])
-        return mostRecentSession
+
+        // Falls back to the most recently touched live session when the id is
+        // absent or stale (a hand-edited file, an id whose session was
+        // archived, or one that was just made). Deliberately never a freshly
+        // invented session: `mutate` posts a notification on every write, so a
+        // random id here would be a different one on every reload and no
+        // sidebar row could ever match it.
+        if let index = indexOfMostRecentlyUpdatedLiveSession(in: storedSessions) {
+            return storedSessions.sessions[index]
+        }
+
+        // Nothing live at all — every conversation archived, or the file empty.
+        // Make the pipeline somewhere to write and point the file at it, so
+        // what `activeSession()` reports and what the sidebar lists agree.
+        return createSession()
     }
 
-    /// Points the pipeline at another session. No-ops when the id is unknown,
-    /// so a stale sidebar cannot blank the live conversation.
+    /// Points the pipeline at another session. No-ops when the id is unknown or
+    /// archived, so a stale sidebar cannot blank the live conversation.
     static func setActiveSession(_ sessionID: UUID) {
         mutate { storedSessions in
-            guard storedSessions.sessions.contains(where: { $0.id == sessionID }) else { return }
+            guard storedSessions.sessions.contains(where: {
+                $0.id == sessionID && $0.archivedAt == nil
+            }) else { return }
             storedSessions.activeSessionID = sessionID
         }
     }
@@ -380,15 +457,95 @@ nonisolated enum ConversationSessionsStore {
         return newSession
     }
 
-    /// Deletes a session. Deleting the active one moves activity to the most
-    /// recently touched survivor, so the pipeline always has somewhere to write.
+    /// Archives a session — what the sidebar's 删除 does. The record stays in
+    /// the file with `archivedAt` stamped, so 归档 can offer it back; only
+    /// `purgeSession` really removes a conversation.
+    ///
+    /// Archiving the active session moves activity to the most recently touched
+    /// live survivor, and makes a new one when there is none: leaving
+    /// `activeSessionID` pointing at an archived session (or nil) would have the
+    /// pipeline write into a record no sidebar row is showing.
     static func deleteSession(_ sessionID: UUID) {
         mutate { storedSessions in
-            storedSessions.sessions.removeAll { $0.id == sessionID }
+            guard let index = storedSessions.sessions.firstIndex(where: { $0.id == sessionID }) else { return }
+            guard storedSessions.sessions[index].archivedAt == nil else { return }
+            storedSessions.sessions[index].archivedAt = Date()
+
             if storedSessions.activeSessionID == sessionID {
-                storedSessions.activeSessionID = nil
+                let takeoverIndex = liveSessionIndexToTakeOver(in: &storedSessions)
+                storedSessions.activeSessionID = storedSessions.sessions[takeoverIndex].id
             }
         }
+    }
+
+    /// Puts an archived session back in the sidebar, pinned state and all.
+    static func restoreSession(_ sessionID: UUID) {
+        mutate { storedSessions in
+            guard let index = storedSessions.sessions.firstIndex(where: { $0.id == sessionID }) else { return }
+            storedSessions.sessions[index].archivedAt = nil
+        }
+    }
+
+    /// Removes a session for good — 归档's 彻底删除, the only path that shrinks
+    /// the file.
+    static func purgeSession(_ sessionID: UUID) {
+        mutate { storedSessions in
+            let wasActive = storedSessions.activeSessionID == sessionID
+            storedSessions.sessions.removeAll { $0.id == sessionID }
+            if wasActive {
+                let takeoverIndex = liveSessionIndexToTakeOver(in: &storedSessions)
+                storedSessions.activeSessionID = storedSessions.sessions[takeoverIndex].id
+            }
+        }
+    }
+
+    /// Pins a session to the top of the sidebar, or releases it.
+    static func setPinned(_ isPinned: Bool, forSessionID sessionID: UUID) {
+        mutate { storedSessions in
+            guard let index = storedSessions.sessions.firstIndex(where: { $0.id == sessionID }) else { return }
+            storedSessions.sessions[index].pinnedAt = isPinned ? Date() : nil
+        }
+    }
+
+    /// Index of the live session whose turn happened most recently, or `nil`
+    /// when every session in the file is archived.
+    private static func indexOfMostRecentlyUpdatedLiveSession(
+        in storedSessions: StoredConversationSessions
+    ) -> Int? {
+        storedSessions.sessions.indices
+            .filter { storedSessions.sessions[$0].archivedAt == nil }
+            .max { storedSessions.sessions[$0].updatedAt < storedSessions.sessions[$1].updatedAt }
+    }
+
+    /// Where the pipeline's activity goes when the session it was pointed at
+    /// stops being live — the most recently touched live session, or a brand-new
+    /// empty one appended when there is none. Never `nil`: the caller is about to
+    /// point `activeSessionID` at the result, and the reasons it must not be nil
+    /// are in `activeSession()`'s note about inventing ids.
+    ///
+    /// Callers make their session non-live *first* (stamp `archivedAt`, or
+    /// remove it), so the filter below already excludes it.
+    private static func liveSessionIndexToTakeOver(
+        in storedSessions: inout StoredConversationSessions
+    ) -> Int {
+        indexOfMostRecentlyUpdatedLiveSession(in: storedSessions)
+            ?? appendEmptySession(to: &storedSessions)
+    }
+
+    /// Appends an empty untitled session and returns its index.
+    private static func appendEmptySession(to storedSessions: inout StoredConversationSessions) -> Int {
+        let now = Date()
+        storedSessions.sessions.append(
+            ConversationSession(
+                id: UUID(),
+                title: defaultSessionTitle,
+                createdAt: now,
+                updatedAt: now,
+                summary: "",
+                entries: []
+            )
+        )
+        return storedSessions.sessions.count - 1
     }
 
     static func renameSession(_ sessionID: UUID, to newTitle: String) {
@@ -405,8 +562,13 @@ nonisolated enum ConversationSessionsStore {
     /// is given, to that explicit session) and auto-titles a session that has
     /// never been titled: the first user message, truncated, is the name a
     /// sidebar can recognise — nobody names a conversation before saying
-    /// anything in it. A session deleted mid-response is recreated rather
-    /// than losing the turn.
+    /// anything in it.
+    ///
+    /// A session archived mid-response is not lost: the record is still there
+    /// (deleting is a soft delete), so the turn lands in the conversation the
+    /// user just deleted, and 恢复 in 归档 brings it back. Only 彻底删除
+    /// removes a conversation, and then the turn goes with it — which is what
+    /// asking for it to be gone means.
     ///
     /// The explicit-session form is what the response pipeline uses: a turn
     /// belongs to the session that was active when it started, so a session
@@ -414,29 +576,19 @@ nonisolated enum ConversationSessionsStore {
     /// finished turn in the conversation the user just left.
     static func appendEntry(_ entry: ConversationHistoryEntry, targetSessionID: UUID? = nil) {
         mutate { storedSessions in
-            if storedSessions.sessions.isEmpty {
-                let now = Date()
-                storedSessions.sessions.append(
-                    ConversationSession(
-                        id: UUID(),
-                        title: defaultSessionTitle,
-                        createdAt: now,
-                        updatedAt: now,
-                        summary: "",
-                        entries: []
-                    )
-                )
-            }
-
             let targetIndex: Int
             if let targetSessionID,
                let index = storedSessions.sessions.firstIndex(where: { $0.id == targetSessionID }) {
                 targetIndex = index
             } else if let activeSessionID = storedSessions.activeSessionID,
-               let index = storedSessions.sessions.firstIndex(where: { $0.id == activeSessionID }) {
+                      let index = storedSessions.sessions.firstIndex(where: {
+                          $0.id == activeSessionID && $0.archivedAt == nil
+                      }) {
                 targetIndex = index
+            } else if let mostRecentlyUpdatedLiveIndex = indexOfMostRecentlyUpdatedLiveSession(in: storedSessions) {
+                targetIndex = mostRecentlyUpdatedLiveIndex
             } else {
-                targetIndex = storedSessions.sessions.count - 1
+                targetIndex = appendEmptySession(to: &storedSessions)
             }
 
             if storedSessions.sessions[targetIndex].entries.isEmpty
@@ -460,9 +612,9 @@ nonisolated enum ConversationSessionsStore {
     ) {
         mutate { storedSessions in
             guard let index = storedSessions.sessions.firstIndex(where: { $0.id == targetSessionID }) else {
-                // The session was deleted while the turn ran — nothing sane
-                // to write back into; the appended entry was recreated by
-                // appendEntry, so re-sync from there instead of dropping.
+                // The session was purged (彻底删除) while the turn ran, so there
+                // is nothing left to write back into — the appended entry went
+                // with it, which is what deleting a conversation for good means.
                 return
             }
             storedSessions.sessions[index].entries = newEntries
@@ -478,8 +630,20 @@ nonisolated enum ConversationSessionsStore {
         summary newSummary: String
     ) {
         mutate { storedSessions in
-            let activeID = storedSessions.activeSessionID
-                ?? storedSessions.sessions.max { $0.updatedAt < $1.updatedAt }?.id
+            // Same two steps as `activeSession()`: the stored id when it still
+            // names a live session, else the most recently touched live one.
+            // An archived id here would rewrite a conversation the user cannot
+            // see, so it is treated as absent.
+            var activeID = storedSessions.activeSessionID
+            if let candidateID = activeID,
+               !storedSessions.sessions.contains(where: { $0.id == candidateID && $0.archivedAt == nil }) {
+                activeID = nil
+            }
+            if activeID == nil,
+               let mostRecentlyUpdatedLiveIndex = indexOfMostRecentlyUpdatedLiveSession(in: storedSessions) {
+                activeID = storedSessions.sessions[mostRecentlyUpdatedLiveIndex].id
+            }
+
             guard let activeID,
                   let index = storedSessions.sessions.firstIndex(where: { $0.id == activeID }) else { return }
             storedSessions.sessions[index].entries = newEntries
@@ -488,7 +652,10 @@ nonisolated enum ConversationSessionsStore {
         }
     }
 
-    /// Forgets every conversation, in memory and on disk — 清空对话记忆.
+    /// Forgets every conversation, archived ones included, in memory and on
+    /// disk — 清空对话记忆. This is the one path that skips 归档: the setting says
+    /// it clears the conversation memory, and leaving archives behind would mean
+    /// the user's own words were still on disk after they asked for them gone.
     /// Also removes the legacy flat file if a migration left it behind.
     static func clearAllSessions() {
         sessionsLock.lock()

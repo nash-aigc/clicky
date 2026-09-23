@@ -34,6 +34,7 @@ struct NotchSheetRootView: View {
     @StateObject private var modelSettingsViewModel = ModelSettingsViewModel()
 
     @State private var showsSettings = false
+    @State private var showsArchive = false
     @State private var selectedSettingsPage: SettingsPage = .general
 
     init(
@@ -58,6 +59,8 @@ struct NotchSheetRootView: View {
         Group {
             // 设置独占整窗——会话侧栏是对话主页的一部分，进了设置就整块
             // 让位给设置内容（用户的要求：点设置就应该只显示设置内容）。
+            // 「归档」照同一套整窗接管：它自带左列，所以侧栏里那些
+            // showsSettings 的互斥判断一处都不用动。设置优先于归档。
             if showsSettings {
                 NotchSettingsArea(
                     generalSettingsViewModel: generalSettingsViewModel,
@@ -66,13 +69,20 @@ struct NotchSheetRootView: View {
                     backAction: { showsSettings = false },
                     closeAction: collapseAction
                 )
+            } else if showsArchive {
+                NotchArchiveArea(
+                    sessionsModel: sessionsModel,
+                    backAction: { showsArchive = false },
+                    closeAction: collapseAction
+                )
             } else {
                 HStack(spacing: 0) {
                     HomeSpaceSidebarView(
                         sessionsModel: sessionsModel,
                         agentSessionManager: agentSessionManager,
                         voiceWebSessionController: voiceWebSessionController,
-                        showsSettings: $showsSettings
+                        showsSettings: $showsSettings,
+                        showsArchive: $showsArchive
                     )
                     .frame(width: 245)
 
@@ -81,7 +91,12 @@ struct NotchSheetRootView: View {
                         .frame(width: 1)
 
                     VStack(spacing: 0) {
-                        topBar
+                        // 顶栏只剩对话页有：Agent 与语音聊天页的内容视图
+                        // 自带标题，用户要求「两个标题保留一个」，并且那条
+                        // 栏上的 ✕ 也不要（点窗口外 / Esc 都能收起）。
+                        if agentSessionManager.selectedSidebarSection == .conversations {
+                            topBar
+                        }
                         // 侧栏顶部的「对话 / Agent」切换器决定右列显示哪一
                         // 个内容视图——两个视图共享同一个 sheet，不嵌套。
                         switch agentSessionManager.selectedSidebarSection {
@@ -100,10 +115,28 @@ struct NotchSheetRootView: View {
                 }
             }
         }
-        .onAppear { consumeRequestedSettingsPageIfNeeded() }
+        .onAppear {
+            consumeRequestedSettingsPageIfNeeded()
+            openVoiceChatSectionIfASessionIsLive()
+        }
         .onChange(of: panelModel.requestedSettingsPage) { _, _ in
             consumeRequestedSettingsPageIfNeeded()
         }
+    }
+
+    /// 用户 2026-09-23：「如果用户当前处于聊天状态，点击刘海屏后应首先自动切换
+    /// 到语音聊天界面，而不是对话界面」。
+    ///
+    /// 只在**展开这一下**切一次，靠的是 `onAppear` 的语义：面板每次展开都会重新
+    /// 插入这张视图，而展开之后用户自己点回「对话」不会再触发它 —— 所以人不会被
+    /// 反复拽回语音聊天页。会话不在跑就什么都不做，默认停在对话页仍然是对的。
+    ///
+    /// 放在 `consumeRequestedSettingsPageIfNeeded()` 之后：外部的设置请求优先，
+    /// 它刚把整窗让给设置页的时候不该被这一句抢回列表页。
+    private func openVoiceChatSectionIfASessionIsLive() {
+        guard !showsSettings, !showsArchive else { return }
+        guard voiceWebSessionController.connectionPhase != .idle else { return }
+        agentSessionManager.selectedSidebarSection = .voiceChat
     }
 
     /// The menu bar panel's 「更换…」 asks for settings from outside the
@@ -111,161 +144,62 @@ struct NotchSheetRootView: View {
     /// be consumed from both hooks — onAppear because the expand() that sets
     /// the flag is the same call that inserts this view (onChange never fires
     /// for a value the view did not exist to see change), onChange because the
-    /// sheet may already be open when the panel asks.
+    /// sheet may already be open when the panel asks. 归档 page 也要一起退出，
+    /// 否则外部的设置请求会停在归档页上、设置永远打不开。
     private func consumeRequestedSettingsPageIfNeeded() {
         guard let requestedPage = panelModel.requestedSettingsPage else { return }
         selectedSettingsPage = requestedPage
         showsSettings = true
+        showsArchive = false
         panelModel.requestedSettingsPage = nil
     }
 
-    /// 仿 HeyClicky 的内容区顶栏：正中一颗当前会话的胶囊（角色头像 + 会话
-    /// 名 + 下拉箭头），右上角是实时活动指示和关闭按钮。顶部留出茎带的
-    /// 高度，不与刘海相接的那段重叠。
+    /// 内容区顶栏：左边是当前会话的标题，右边只剩实时活动指示。顶部留出茎
+    /// 带的高度，不与刘海相接的那段重叠——这个数字是 `NotchSupport.sheetHeader
+    /// TopInset`，Agent / 语音聊天页的标题读同一个常量，所以三页的标题落在
+    /// 同一条基线上（面板顶边就是屏幕最上沿，写 0 会钻到菜单栏底下）。
+    ///
+    /// 2026-09-23 用户要求「右侧那个下拉菜单按钮改成标题，叉删掉」：这里原本
+    /// 是一颗可展开的会话胶囊 + 一颗 ✕。胶囊换成纯标题后，换会话只剩下侧栏
+    /// 一条路——那本来就是主路径，而且侧栏的列表能显示预览与时间，比这颗只
+    /// 放得下标题的胶囊好用。✕ 去掉不影响收起：Esc、点面板外、失活三条路都
+    /// 还在。
     private var topBar: some View {
         HStack(spacing: 14) {
-            Spacer()
+            Text(sessionsModel.activeSession?.title ?? "新对话")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
 
-            // Agent 页顶栏只显示当前 Agent 的名字（会话切换 Menu 跟会话
-            // 无关，不能混进 Agent 视图）；语音聊天页同理只显示角色名。
-            if agentSessionManager.selectedSidebarSection == .agents {
-                agentChip
-            } else if agentSessionManager.selectedSidebarSection == .voiceChat {
-                voiceChatChip
-            } else {
-                sessionChip
-            }
+            Spacer(minLength: 8)
 
             NotchActivityView(
                 phase: panelModel.activityPhase,
                 audioHistoryProvider: audioHistoryProvider
             )
             .frame(height: 14)
-
-            Button(action: collapseAction) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.55))
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-                    .pointerCursor()
-            }
-            .buttonStyle(.plain)
-            .help("收起（Esc）")
         }
-        .padding(.horizontal, 18)
-        .padding(.top, NotchSupport.restingPillAnimationHeadroom + 8)
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+        .padding(.top, NotchSupport.sheetHeaderTopInset)
         .padding(.bottom, 2)
-    }
-
-    /// The active session's identity in the header — HeyClicky's centered
-    /// chip, and a working switcher: clicking it drops the session list, and
-    /// picking one moves the live conversation there (the sidebar's dot, the
-    /// flow and the pipeline's write target all follow, since they read the
-    /// same store).
-    private var sessionChip: some View {
-        Menu {
-            ForEach(sessionsModel.sessions) { session in
-                Button(action: { sessionsModel.selectSession(session.id) }) {
-                    if session.id == sessionsModel.activeSessionID {
-                        Label(session.title, systemImage: "checkmark")
-                    } else {
-                        Text(session.title)
-                    }
-                }
-            }
-            Divider()
-            Button(action: { sessionsModel.createSession() }) {
-                Label("新建会话", systemImage: "plus")
-            }
-        } label: {
-            // 右侧不放小人（用户的要求：角色只在左侧会话列表出现）。
-            // 这里也绝不能放 MascotAvatarDisc：macOS 的 Menu 对 label 提议
-            // 不设上限，图会按素材原始 256pt 炸开、把整条顶栏撑高——
-            // 实测 2026-09-22，任何 overlay/clipShape/frame 都压不住。
-            HStack(spacing: 7) {
-                Text(sessionsModel.activeSession?.title ?? "新对话")
-                    .font(.system(size: 12.5, weight: .medium))
-                    .foregroundColor(.white.opacity(0.8))
-                    .lineLimit(1)
-
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.4))
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Capsule().fill(Color.white.opacity(0.07)))
-            .contentShape(Capsule())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .pointerCursor()
-    }
-    /// The Agent counterpart of `sessionChip` — a plain name capsule, not a
-    /// Menu: switching agents happens in the sidebar list, so there is
-    /// nothing to drop down here.
-    private var agentChip: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "hammer.fill")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(.white.opacity(0.5))
-
-            Text(agentSessionManager.selectedAgent?.name ?? "Agent")
-                .font(.system(size: 12.5, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
-                .lineLimit(1)
-
-            if let selectedAgent = agentSessionManager.selectedAgent {
-                Text(selectedAgent.status.displayName)
-                    .font(.system(size: 10.5, weight: .medium))
-                    .foregroundColor(.white.opacity(0.45))
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(Capsule().fill(Color.white.opacity(0.07)))
-        .fixedSize()
-    }
-
-    /// The 语音聊天 counterpart of `agentChip` — the active voice role's name
-    /// plus its connection state, a plain capsule like the Agent one.
-    private var voiceChatChip: some View {
-        HStack(spacing: 7) {
-            Image(systemName: "waveform")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(.white.opacity(0.5))
-
-            Text(voiceWebSessionController.activeRoleID.flatMap { roleID in
-                voiceWebSessionController.rolePresets.first(where: { $0.id == roleID })?.name
-            } ?? "语音聊天")
-                .font(.system(size: 12.5, weight: .medium))
-                .foregroundColor(.white.opacity(0.8))
-                .lineLimit(1)
-
-            if voiceWebSessionController.connectionPhase != .idle {
-                Text(voiceWebSessionController.connectionPhase == .connected ? "聊天中" : "连接中…")
-                    .font(.system(size: 10.5, weight: .medium))
-                    .foregroundColor(.white.opacity(0.45))
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(Capsule().fill(Color.white.opacity(0.07)))
-        .fixedSize()
     }
 }
 
 // MARK: - Settings area
 
 /// The settings pages embedded in the sheet, drawn to HeyClicky's reference
-/// screenshot: a ~245pt sidebar carrying the 「‹ 返回」 pill, a large bold
-/// 「设置」 title, the account card, and the page list grouped under uppercase
-/// section labels, with the app version pinned at its bottom; the content
-/// column opens with the page's title and carries the close button at its
-/// top right. The page views themselves are **reused unchanged** — embedding
-/// copies no page.
+/// screenshot: a ~245pt sidebar carrying a large bold 「设置」 title and the page
+/// list grouped under uppercase section labels, with 「返回」 (green) at its
+/// bottom-left, 「退出 Clicky」 at its bottom-right and a divider above the pair;
+/// the content column opens with the page's title and carries 恢复默认 / 保存 /
+/// 关闭 at that row's right — and **no ✕**, which the user removed on 2026-09-23.
+/// The page views themselves are **reused unchanged** — embedding copies no page.
+///
+/// 侧栏里原本还有一张账号卡（首字母圆盘 + 用户名 + 「免费版」），2026-09-23
+/// 用户要求「设置页面也把用户名删掉，第一个直接是通用」——本机没有账号服务
+/// 支撑那张卡，删掉后侧栏第一行就是 通用，第二行是 卡片样式。同一天稍后
+/// 顶部那颗「‹ 返回」胶囊和底部的版本行也按用户要求动了位置：「返回按钮放在
+/// 设置页面的左下角，退出按钮放在返回按钮的右侧。去掉版本号」。
 struct NotchSettingsArea: View {
 
     @ObservedObject var generalSettingsViewModel: GeneralSettingsViewModel
@@ -304,7 +238,12 @@ struct NotchSettingsArea: View {
                         generalSettingsViewModel: generalSettingsViewModel,
                         page: selectedPage
                     )
-                    GeneralSettingsActionBar(generalSettingsViewModel: generalSettingsViewModel)
+                    // 底部那条动作栏没有了——「恢复默认 / 保存 / 关闭」搬到
+                    // `contentHeader` 的右侧（用户 2026-09-23：「把右侧最下面
+                    // 这一行的恢复默认/保存/关闭这些按钮放到右侧顶部标题的
+                    // 右侧，也就是标题这一行的靠右部分，这样能减少一些右侧空间
+                    // 的占用」）。模型页不受影响：`ModelSettingsView` 自带
+                    // 保存栏，它的按钮本来就不在这条里。
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -315,39 +254,16 @@ struct NotchSettingsArea: View {
 
     private var settingsSidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // 「‹ 返回」 pill + the large bold page title, like the
-            // reference screenshot's settings entry.
-            Button(action: backAction) {
-                HStack(spacing: 6) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 11, weight: .semibold))
-                    Text("返回")
-                        .font(.system(size: 12.5, weight: .medium))
-                    Spacer(minLength: 2)
-                }
-                .foregroundColor(.white.opacity(0.7))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(
-                    Capsule().fill(Color.white.opacity(0.08))
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .padding(.horizontal, 16)
-            .padding(.top, NotchSupport.restingPillAnimationHeadroom + 8)
-            .padding(.bottom, 14)
-
+            // The large bold page title, like the reference screenshot's
+            // settings entry. 「‹ 返回」 used to sit above it; the user moved
+            // that pill down to this column's bottom-left (2026-09-23), so the
+            // title is now the first thing here.
             Text("设置")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 18)
+                .padding(.top, NotchSupport.sheetHeaderTopInset)
                 .padding(.bottom, 14)
-
-            accountCard
-                .padding(.horizontal, 14)
-                .padding(.bottom, 16)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 2) {
@@ -378,122 +294,95 @@ struct NotchSettingsArea: View {
 
             Spacer(minLength: 0)
 
-            // 退出按钮 + 版本行，固定在侧栏底部。菜单栏面板曾是应用唯一的
-            // 退出入口（NSApp.terminate），面板删掉后退出搬到这里。
-            HStack(spacing: 10) {
-                Button(action: { NSApp.terminate(nil) }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "power")
-                            .font(.system(size: 10, weight: .medium))
-                        Text("退出 Clicky")
-                            .font(.system(size: 11, weight: .medium))
-                    }
-                    .foregroundColor(.white.opacity(0.5))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 4)
-                    .background(Capsule().fill(Color.white.opacity(0.06)))
-                    .contentShape(Capsule())
+            // 底部一行：顶上一条分隔线，左「返回」右「退出 Clicky」。用户
+            // 2026-09-23 先定「返回按钮放在设置页面的左下角，退出按钮放在返回
+            // 按钮的右侧。去掉版本号」，随后又补了三条：「设置页面左下角也应该
+            // 有一条线」「返回按钮跟设置按钮必须样式完全相同，但返回按钮改成绿色，
+            // 让用户知道可以通过这个渠道返回」「退出按钮靠右对齐，返回按钮靠左
+            // 对齐」。
+            //
+            // 所以这一行不再是原来那种并排挤在左下角的小胶囊：分隔线与侧栏底部
+            // 那条同形，两颗按钮改用 `NotchBarActionButton`——和侧栏的「设置」
+            // 同一个结构体，样式不可能漂，返回只是把 tint 换成绿色。绿色的理由
+            // 是「返回」在这块深色面板里只有一个图标能提示它，染绿之后它和
+            // 「设置」在竖直方向正对、颜色又不同，来回一眼就找到。
+            //
+            // 版本行（原来是 "Clicky 1.4 (213)"）按同一句要求删掉了；退出按钮
+            // 留着 —— 菜单栏面板曾是这个应用唯一的退出入口（NSApp.terminate），
+            // 面板删掉后它是唯一还露在外面的那个。
+            HStack(spacing: 8) {
+                NotchBarActionButton(
+                    title: "返回",
+                    systemImage: "chevron.left",
+                    tint: DS.Colors.success,
+                    help: "返回对话"
+                ) {
+                    backAction()
                 }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help("退出 Clicky")
 
-                Spacer(minLength: 2)
+                Spacer(minLength: 8)
 
-                // The app version, pinned at the sidebar's bottom — the
-                // reference screenshot's footer line.
-                Text(Self.versionFooterText)
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.3))
+                NotchBarActionButton(
+                    title: "退出 Clicky",
+                    systemImage: "power",
+                    help: "退出 Clicky"
+                ) {
+                    NSApp.terminate(nil)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.bottom, 12)
+            .padding(.top, 12)
+            .overlay(alignment: .top) {
+                Divider()
+                    .overlay(Color.white.opacity(0.08))
+            }
         }
         .frame(width: 245)
-        .background(Color.black.opacity(0.35))
-    }
-
-    /// The account card: initial disc + account name + the 「免费版」 badge.
-    /// (The badge text mirrors the reference; there is no account service
-    /// behind it locally, so it reads as the plan row it looks like.)
-    private var accountCard: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .fill(Color.white.opacity(0.12))
-                Text(Self.accountInitial)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.9))
-            }
-            .frame(width: 36, height: 36)
-
-            Text(Self.accountDisplayName)
-                .font(.system(size: 13.5, weight: .medium))
-                .foregroundColor(.white)
-                .lineLimit(1)
-
-            Spacer(minLength: 4)
-
-            Text("免费版")
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundColor(.white.opacity(0.55))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Capsule().fill(Color.white.opacity(0.08)))
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.06))
-        )
+        // 不透明（用户 2026-09-23：「整个弹出窗口调整为完全不透明」）。原来
+        // 是 `Color.black.opacity(0.35)` 叠在面板地面上，合成即 surface3 的
+        // #101014，换成同一个色的不透明版，观感不变。
+        .background(DS.Colors.surface3)
     }
 
     // MARK: Content header
 
+    /// 内容页标题行：左边是这一页的名字，右边是这一页的动作按钮。
+    ///
+    /// 2026-09-23 这一行动了两处。**右上角那颗 ✕ 删掉了**（用户：「把设置页面
+    /// 右上角的叉号去掉」「另外，把标题右侧的叉X删掉」）——它不是唯一出口：Esc、
+    /// 点面板外、失活三条路都还在，侧栏底部的「返回」也刚补上。**「恢复默认 /
+    /// 保存 / 关闭」从页面底部搬到了这里**（用户：「把右侧最下面这一行的恢复
+    /// 默认/保存/关闭这些按钮放到右侧顶部标题的右侧……这样能减少一些右侧空间
+    /// 的占用」）——搬走之后右侧少了一整条 ~60pt 的固定栏，标题行本身长高
+    /// ~30pt，净省下一截。
+    ///
+    /// 模型页没有这一组：`ModelSettingsView` 的保存栏是它自己的一部分。
     private var contentHeader: some View {
         HStack(spacing: 12) {
             Text(selectedPage.sidebarTitle)
                 .font(.system(size: 19, weight: .bold))
                 .foregroundColor(.white)
+                .lineLimit(1)
 
             Spacer(minLength: 8)
 
-            Button(action: closeAction) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.55))
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-                    .pointerCursor()
+            if selectedPage != .model {
+                // 关闭的动作必须走 `closeAction`（收起面板），**不能**是
+                // `GeneralSettingsActionBar` 默认的 `NSApp.keyWindow?.close()`：
+                // 展开的刘海面板就是 key window，`.close()` 会把它直接 orderOut，
+                // 而 `NotchWindowController.isExpanded` 还停在 true、`expansionProgress`
+                // 还停在高位 —— 刘海会卡成一个既收不回去、也点不开的状态。
+                GeneralSettingsActionBar(
+                    generalSettingsViewModel: generalSettingsViewModel,
+                    style: .headerInline,
+                    closeAction: closeAction
+                )
             }
-            .buttonStyle(.plain)
-            .help("收起（Esc）")
         }
         .padding(.horizontal, 24)
-        .padding(.top, NotchSupport.restingPillAnimationHeadroom + 8)
+        .padding(.top, NotchSupport.sheetHeaderTopInset)
         .padding(.bottom, 10)
-    }
-
-    // MARK: Formatting
-
-    private static var accountDisplayName: String {
-        let fullName = NSFullUserName()
-        return fullName.isEmpty ? "用户" : fullName
-    }
-
-    private static var accountInitial: String {
-        String(accountDisplayName.prefix(1)).uppercased()
-    }
-
-    /// "Clicky 1.4 (213)" — short version + build, the footer's shape.
-    private static var versionFooterText: String {
-        let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
-        let buildVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
-        if shortVersion.isEmpty && buildVersion.isEmpty {
-            return "Clicky"
-        }
-        return "Clicky \(shortVersion) (\(buildVersion))"
     }
 }
 

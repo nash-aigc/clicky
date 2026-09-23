@@ -153,10 +153,18 @@ struct HomeSpaceSheetShape: Shape {
     /// Width of the stem connecting the sheet to the notch.
     var stemWidth: CGFloat = 150
 
-    /// Corner radius of the sheet body's bottom corners — the top two stay
-    /// square because the sheet hangs from the screen's top edge. 16 per the
-    /// reference window's bottom radius (2026-09-23 UI 化改造).
-    var cornerRadius: CGFloat = 16
+    /// Corner radius of the sheet body's TOP two corners. Larger than the
+    /// bottom pair at the user's request (「左上角和右上角的圆角再大一点，
+    /// 现在的圆角太小」). The sheet hangs from the screen's top edge, so the
+    /// top arcs show a sliver of the menu bar and wallpaper behind them — that
+    /// is the intended look, and the panel's shadow is what keeps the
+    /// silhouette readable against it.
+    var topCornerRadius: CGFloat = 36
+
+    /// Corner radius of the sheet body's BOTTOM two corners — the figure the
+    /// user gave directly on 2026-09-23 (「上下都是 24」), unchanged when the
+    /// top pair grew.
+    var bottomCornerRadius: CGFloat = 24
 
     /// The resting pill's drawn size — what the body lerps from.
     var restingNotchSize: CGSize = CGSize(width: 190, height: 32)
@@ -193,21 +201,36 @@ struct HomeSpaceSheetShape: Shape {
         )
         path.addRect(stemRect)
 
-        // The sheet hangs from the screen's top edge, so its top corners stay
-        // square (fused with the menu bar band) and only the bottom two
-        // corners round — the same shape grammar as the resting pill.
-        let radius = cornerRadius
-        path.move(to: CGPoint(x: bodyRect.minX, y: bodyRect.minY))
-        path.addLine(to: CGPoint(x: bodyRect.maxX, y: bodyRect.minY))
-        path.addLine(to: CGPoint(x: bodyRect.maxX, y: bodyRect.maxY - radius))
+        // All four corners round, the top pair wider than the bottom. Each
+        // radius has to be clamped to half the body's shorter side or the arcs
+        // cross each other: the collapse animation walks the body back down to
+        // the resting pill (190×32), and not even 24pt fits in a 32pt-tall
+        // body. 16 happened to equal exactly half of that height, which is why
+        // this never showed up before the radius grew.
+        let maximumFittingRadius = min(bodyWidth, bodyHeight) / 2
+        let topRadius = min(topCornerRadius, maximumFittingRadius)
+        let bottomRadius = min(bottomCornerRadius, maximumFittingRadius)
+
+        path.move(to: CGPoint(x: bodyRect.minX + topRadius, y: bodyRect.minY))
+        path.addLine(to: CGPoint(x: bodyRect.maxX - topRadius, y: bodyRect.minY))
         path.addQuadCurve(
-            to: CGPoint(x: bodyRect.maxX - radius, y: bodyRect.maxY),
+            to: CGPoint(x: bodyRect.maxX, y: bodyRect.minY + topRadius),
+            control: CGPoint(x: bodyRect.maxX, y: bodyRect.minY)
+        )
+        path.addLine(to: CGPoint(x: bodyRect.maxX, y: bodyRect.maxY - bottomRadius))
+        path.addQuadCurve(
+            to: CGPoint(x: bodyRect.maxX - bottomRadius, y: bodyRect.maxY),
             control: CGPoint(x: bodyRect.maxX, y: bodyRect.maxY)
         )
-        path.addLine(to: CGPoint(x: bodyRect.minX + radius, y: bodyRect.maxY))
+        path.addLine(to: CGPoint(x: bodyRect.minX + bottomRadius, y: bodyRect.maxY))
         path.addQuadCurve(
-            to: CGPoint(x: bodyRect.minX, y: bodyRect.maxY - radius),
+            to: CGPoint(x: bodyRect.minX, y: bodyRect.maxY - bottomRadius),
             control: CGPoint(x: bodyRect.minX, y: bodyRect.maxY)
+        )
+        path.addLine(to: CGPoint(x: bodyRect.minX, y: bodyRect.minY + topRadius))
+        path.addQuadCurve(
+            to: CGPoint(x: bodyRect.minX + topRadius, y: bodyRect.minY),
+            control: CGPoint(x: bodyRect.minX, y: bodyRect.minY)
         )
         path.closeSubpath()
 
@@ -234,8 +257,13 @@ struct NotchPillRootView: View {
     /// the full band spans ~355pt — left wing ~78, right wing ~87). The word
     /// is right-aligned against the notch, so the left wing only needs to
     /// hold the longest word ("Listening") plus a small margin.
-    private static let leadingWingWidth: CGFloat = 86
-    private static let trailingWingWidth: CGFloat = 88
+    ///
+    /// 2026-09-23：两个数字搬去了 `NotchSupport`。语音聊天进行中右翼同时是
+    /// **挂断按钮**，`NotchWindowController.handleGlobalClick` 要用同一对数
+    /// 反推出它的命中矩形（`NotchSupport.restingTrailingWingFrame`）—— 画的
+    /// 和点的是两处代码，数字只留一份才不会改了一边忘了另一边。
+    private static var leadingWingWidth: CGFloat { NotchSupport.leadingWingWidth }
+    private static var trailingWingWidth: CGFloat { NotchSupport.trailingWingWidth }
 
     var body: some View {
         GeometryReader { geometry in
@@ -468,15 +496,60 @@ struct NotchWingView: View {
                     // The animation rides inside the glow, toward its bright
                     // end. Only the animation is inset from the edge — the
                     // glow's own centre is what places it now.
-                    NotchActivityView(
-                        phase: phase,
-                        audioHistoryProvider: audioHistoryProvider,
-                        tint: phase.notchAnimationTint
-                    )
+                    //
+                    // 2026-09-23：语音聊天进行中这一格换成一颗粒红色的挂断
+                    // 图标。它同时是**按钮** —— 这块区域可以直接点，点了就挂断，
+                    // 不必展开刘海（用户第 6 条：「菜单栏刘海屏右侧应显示一个
+                    // 挂断动画，或者保留菜单栏当前样式风格，把它做成挂断按钮，
+                    // 用户可以直接点击挂断，不必展开刘海屏再点击挂断」）。命中
+                    // 矩形由 `NotchSupport.restingTrailingWingFrame` 给出。
+                    Group {
+                        if phase == .externalChatting {
+                            NotchHangUpGlyph()
+                        } else {
+                            NotchActivityView(
+                                phase: phase,
+                                audioHistoryProvider: audioHistoryProvider,
+                                tint: phase.notchAnimationTint
+                            )
+                        }
+                    }
                     .frame(height: 20)
                     .padding(.trailing, 10)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+    }
+}
+
+/// 语音聊天进行中画在右翼上的那颗挂断图标：话筒向下 + 一圈呼吸的红色光晕。
+///
+/// 它不只是装饰——那一整块区域是一颗真的按钮，在收起状态下直接点击就挂断
+/// （`NotchWindowController.handleGlobalClick` 判的是
+/// `NotchSupport.restingTrailingWingFrame`）。所以它必须一眼看上去像能按的
+/// 东西：`phone.down.fill` 是通话里"挂断"的通用符号，呼吸只是让它在一片黑里
+/// 被注意到，不做任何会让人误判成"正在拨号"的动作。
+private struct NotchHangUpGlyph: View {
+
+    @State private var isPulsing = false
+
+    /// 和 `NotchActivityPhase.externalChatting` 的状态色同源（#4ADE80 是聊天
+    /// 中的绿），这里是它的对立面——挂断用红，因为按下去结束的正是那个绿。
+    private static let hangUpRed = Color(red: 1.0, green: 0.42, blue: 0.38)
+
+    var body: some View {
+        Image(systemName: "phone.down.fill")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(Self.hangUpRed)
+            .shadow(
+                color: Self.hangUpRed.opacity(isPulsing ? 0.85 : 0.3),
+                radius: isPulsing ? 7 : 3
+            )
+            .scaleEffect(isPulsing ? 1.08 : 0.94)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                    isPulsing = true
+                }
             }
     }
 }
@@ -698,45 +771,32 @@ struct NotchPanelRootSwitchingView: View {
 
 // MARK: - Expanded sheet (Phase C placeholder content)
 
-/// 展开面板的配色，取色来源是 design-preview/notch-glow-expand.html。
+/// 展开面板的配色。
 ///
-/// 面板表面 = 那份文件 `.skin` 的深色皮 `rgba(14,14,13,.92)`——用户要的
-/// 「深色背景」是这块皮，**不是**那条蓝紫渐变：渐变在文件里只当左、右、
-/// 下三边露出的 1.5pt 边光（`.panel` 的 1.5px padding），从没铺过面。
+/// 面板表面 = 参考页 `.window` 的 `rgba(24,24,28,.94)`。这里**只有**一块皮：
+/// 早期版本还有一条蓝紫渐变，取自 `design-preview/notch-glow-expand.html`，
+/// 只当左、右、下三边露出的 1.5pt 边光用、从没铺过面——用户 2026-09-23
+/// 要求删掉那圈外框高亮线，渐变的四个取色和两个端点一起删了。
 private enum NotchExpandedSheetStyle {
-
-    /// 边光渐变的四个取色——`.panel` 的
-    /// `background:linear-gradient(115deg, …)`，顺序和位置
-    /// （0 / 35% / 70% / 100%）与文件完全一致。只当边光用。
-    private static let demoGradientRGB: [(red: CGFloat, green: CGFloat, blue: CGFloat)] = [
-        (0x7C, 0x3A, 0xED), // #7C3AED 紫
-        (0xC0, 0x84, 0xFC), // #C084FC 亮紫
-        (0x22, 0xD3, 0xEE), // #22D3EE 亮青
-        (0x08, 0x91, 0xB2), // #0891B2 深青
-    ]
 
     /// 面板皮肤的深色底——2026-09-23 UI 化改造换成参考页 `.window` 的
     /// `rgba(24,24,28,.94)` 原值（旧值 rgba(14,14,13,.92) 是另一份 demo
-    /// 的 `.skin`）。保留 6% 透明和文件一致；面板后面是什么就透一点什么。
-    static let surfaceColor = Color(red: 24 / 255, green: 24 / 255, blue: 28 / 255, opacity: 0.94)
+    /// 的 `.skin`）。
+    ///
+    /// **那 6% 的透明后来被用户去掉了**：参考页的窗口浮在它自己的页面背景
+    /// 上，透一点出来是设计的一部分；而这里的「背景」是用户的桌面 —— 透出
+    /// 来的是壁纸和别人的窗口，用户 2026-09-23 报「现在是透明状态」，要求
+    /// 「整个弹出窗口调整为完全不透明」。所以这一层、以及三处侧栏底，全部
+    /// 取不透明值。
+    static let surfaceColor = Color(red: 24 / 255, green: 24 / 255, blue: 28 / 255)
 
-    /// 三边边光的取色——同一条渐变，不打折（它是「光」，保持满饱和才亮
-    /// 得起来）。
-    static let edgeGlowGradientColors: [Color] = demoGradientRGB.map { rgb in
-        Color(red: rgb.red / 255, green: rgb.green / 255, blue: rgb.blue / 255)
-    }
+    /// 面板左上、右上两角的圆角半径（用户 2026-09-23 要求「再大一点」，
+    /// 因为面板顶边就是屏幕上沿，顶角大一点会多露出一点菜单栏——正是用户
+    /// 要的那圈弧）。
+    static let sheetTopCornerRadius: CGFloat = 36
 
-    /// 渐变方向：文件里的 115deg——几乎竖直、略向右下偏。
-    static let gradientStartPoint = UnitPoint(x: 0.18, y: 0)
-    static let gradientEndPoint = UnitPoint(x: 0.82, y: 1)
-
-    /// 面板底角的圆角半径——参考页 `.window` 的下底角是 16（上底角 30，
-    /// 这里上面两角因与刘海熔接保持直角）。内层表面比外层小一个边光宽度，
-    /// 两层的圆角才是同心弧——内层若用直角，圆角里会露出一块方形亮边。
-    static let sheetCornerRadius: CGFloat = 16
-
-    /// 边光露出的宽度（demo 的 1.5px padding）。
-    static let edgeGlowInset: CGFloat = 1.5
+    /// 面板左下、右下两角的圆角半径——用户直接给的数：24。
+    static let sheetBottomCornerRadius: CGFloat = 24
 }
 
 /// The expanded sheet: the `HomeSpaceSheetShape` body carrying the session
@@ -759,35 +819,15 @@ struct NotchExpandedSheetView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // 外层：亮蓝紫渐变，本身不是面板的底色，只作为三边的边光——
-            // 内层表面在左、右、下各让出 1.5pt，露出来的就是这条线。
-            LinearGradient(
-                colors: NotchExpandedSheetStyle.edgeGlowGradientColors,
-                startPoint: NotchExpandedSheetStyle.gradientStartPoint,
-                endPoint: NotchExpandedSheetStyle.gradientEndPoint
-            )
-
-            // 内层：整面深色皮（demo `.skin` 的 rgba(14,14,13,.92)）——
-            // 面板的底色。顶部不让边（inset 为 0），顶边没有线，
-            // 面板直接贴住屏幕最上沿和菜单栏连成一条。
+            // 面板底色就是这一层。以前这里有三层：一层渐变只当三边露出的
+            // 1.5pt 边光、一层让出边光的深色皮、一层内容。用户 2026-09-23
+            // 要求「把整个弹出窗口的外边框高亮线删掉，不需要这个边框线」，
+            // 于是边光整层去掉——少一层，也少一次裁剪。
             NotchExpandedSheetStyle.surfaceColor
-            // 内层自己的底角半径要比外层小一个边光宽度，两层圆角才是
-            // 同心弧；用直角内层会在圆角里露出一块方形亮边。
-            .clipShape(HomeSpaceSheetShape(
-                expansionProgress: 1,
-                cornerRadius: NotchExpandedSheetStyle.sheetCornerRadius
-                    - NotchExpandedSheetStyle.edgeGlowInset
-            ))
-            .padding(EdgeInsets(
-                top: 0,
-                leading: NotchExpandedSheetStyle.edgeGlowInset,
-                bottom: NotchExpandedSheetStyle.edgeGlowInset,
-                trailing: NotchExpandedSheetStyle.edgeGlowInset
-            ))
 
-            // 仿 HeyClicky：会话侧栏通高，顶栏（右上角关闭等）属于内容区，
-            // 都在 NotchSheetRootView 内部。内容也一起让出边光那 1.5pt，
-            // 否则侧栏自带的深色底会把左边光压暗。
+            // 仿 HeyClicky：会话侧栏通高，顶栏属于内容区，都在
+            // NotchSheetRootView 内部。原来这里还要让出边光那 1.5pt，
+            // 边光删掉后内容直接铺满。
             NotchSheetRootView(
                 panelModel: panelModel,
                 companionManager: companionManager,
@@ -795,12 +835,6 @@ struct NotchExpandedSheetView: View {
                 audioHistoryProvider: audioHistoryProvider
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(EdgeInsets(
-                top: 0,
-                leading: NotchExpandedSheetStyle.edgeGlowInset,
-                bottom: NotchExpandedSheetStyle.edgeGlowInset,
-                trailing: NotchExpandedSheetStyle.edgeGlowInset
-            ))
             // 内容入场三件套（参考页 .unit.line → .unit.in）：透明、模糊、
             // 下移 8pt，同时归零。reduceMotion 时直接落在清晰态。
             .opacity(hasContentSettledIn ? 1 : 0)

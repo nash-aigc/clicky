@@ -441,6 +441,24 @@ final class NotchWindowController {
 
         if panelModel.isFullscreenSuppressed { return }
 
+        // 语音聊天进行中，右翼就是不展开刘海的那颗挂断按钮（用户 2026-09-23
+        // 第 6 条：「如果用户已经点击连接或当前处于连接状态，菜单栏刘海屏右侧
+        // 应显示一个挂断动画，或者保留菜单栏当前样式风格，把它做成挂断按钮，
+        // 用户可以直接点击挂断，不必展开刘海屏再点击挂断」）。
+        //
+        // 判在 pill 之前：右翼在 pill 右侧、两者不重叠，顺序本身不影响结果，
+        // 但写死了能保证以后有人把 pill 的命中区放大时，挂断不会被吃掉。
+        // 命中的是收起态的窗口——它 `ignoresMouseEvents = true`，所以这一下
+        // 既没有落到本 app 的窗口上，也不会被谁拦下，全局监听照常收到。
+        if panelModel.externalSessionOverride == .externalChatting,
+           screenPresences.contains(where: { presence in
+               guard let wingFrame = NotchSupport.restingTrailingWingFrame(on: presence.screen) else { return false }
+               return wingFrame.contains(clickLocation)
+           }) {
+            companionManager.voiceWebSessionController.disconnectCurrentSession()
+            return
+        }
+
         if let clickedPresence = screenPresences.first(where: { presence in
             guard let restingFrame = NotchSupport.restingPillFrame(on: presence.screen) else { return false }
             return restingFrame.insetBy(dx: -NotchSupport.pillClickHitMargin, dy: -NotchSupport.pillClickHitMargin).contains(clickLocation)

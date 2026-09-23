@@ -401,13 +401,14 @@ struct GeneralSettingsView: View {
     }
 
     /// Says how much is about to be deleted, so the confirmation is a decision
-    /// rather than a guess.
+    /// rather than a guess. The count includes 归档里删掉的对话, because this is
+    /// the one action that deletes them too.
     private var clearConversationMemoryDescription: String {
         let storedExchangeCount = generalSettingsViewModel.storedConversationExchangeCount
         if storedExchangeCount == 0 {
             return "当前没有存在磁盘上的对话。清空仍会丢掉这次运行里记着的上下文，它会忘了你们刚才聊过什么。"
         }
-        return "磁盘上存着 \(storedExchangeCount) 轮问答。清空会删掉它们，也会让它忘掉这次运行里记着的上下文 —— 删了就找不回来。"
+        return "磁盘上存着 \(storedExchangeCount) 轮问答（含归档里已删除的对话）。清空会删掉它们，也会让它忘掉这次运行里记着的上下文 —— 删了就找不回来。"
     }
 
     private var clearConversationMemoryAlertMessage: String {
@@ -415,7 +416,7 @@ struct GeneralSettingsView: View {
         if storedExchangeCount == 0 {
             return "它会立刻忘掉你们刚才聊过的内容，然后从头开始记。"
         }
-        return "磁盘上的 \(storedExchangeCount) 轮问答会被删除，它也会立刻忘掉这次运行里记着的上下文。此操作无法撤销。"
+        return "磁盘上的 \(storedExchangeCount) 轮问答会被删除（含归档里已删除的对话），它也会立刻忘掉这次运行里记着的上下文。此操作无法撤销。"
     }
 
     /// What the 系统提示词 editor reads and writes.

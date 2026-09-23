@@ -7,15 +7,18 @@
 //  big greeting and the hint line. Once the session has turns, the hero gives
 //  way to the conversation flow.
 //
-//  The composer at the bottom accepts BOTH input forms the original accepts:
-//  voice (the glossy 「按住 ⌃⌥ 说话」 pill — talking is still push-to-talk)
-//  and keyboard (the 「输入…」 field, Return submits through
-//  `CompanionManager.submitTypedQuestion`). While a job runs, its question
-//  shows as the outgoing bubble (`pendingQuestionText` — the history entry is
-//  only written when the turn finishes) and its executed steps fold into a
-//  「N 条进度」 disclosure (HeyClicky's progress messages). A turn the user
-//  stopped shows an 「已被用户打断」 chip; a finished turn shows a duration +
-//  time footer with a copy button.
+//  The composer at the bottom is keyboard-only now — the glossy
+//  「按住 ⌃⌥ 说话」 pill was deleted on 2026-09-23 at the user's request
+//  (「右侧下方只有一个输入框」); talking is still push-to-talk, and the
+//  shortcut is spelled out in the empty-session hero and on the 快捷键 page.
+//  Return submits through `CompanionManager.submitTypedQuestion`, and the
+//  field carries its own 展开 button (30% of the column). While a job runs, its
+//  question shows as the outgoing bubble (`pendingQuestionText` — the history
+//  entry is only written when the turn finishes) and its executed steps fold
+//  into a 「N 条进度」 disclosure (HeyClicky's progress messages). A turn the
+//  user stopped shows an 「已被用户打断」 chip; a finished turn shows a duration
+//  + time footer beside its copy button. Every message carries a copy control
+//  of its own and can be selected with the mouse.
 //
 
 import SwiftUI
@@ -31,6 +34,16 @@ struct NotchHomeView: View {
 
     @FocusState private var composerFieldIsFocused: Bool
     @State private var composerDraft: String = ""
+
+    /// The composer's 展开 button (user's request): the field grows to 30% of
+    /// the content column's height and collapses back to three lines.
+    @State private var isComposerExpanded = false
+    /// The content column's height, measured off the root view. The expansion
+    /// is 30% of *this*, so it has to be a real measurement rather than a
+    /// constant — the sheet's height is the user's own (they can drag its
+    /// bottom edge), and a fixed expanded height would be a different fraction
+    /// on every screen.
+    @State private var contentColumnHeight: CGFloat = 0
 
     /// The reply-card theme (对话与记忆 → 卡片样式). Snapshotted into state
     /// so a settings save (`.clickyAppSettingsChanged`) re-renders the flow's
@@ -85,6 +98,20 @@ struct NotchHomeView: View {
                     .padding(.bottom, 10)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            // Measures the column the composer expands against. Taken off the
+            // column's own frame (which the parent bounds) rather than off a
+            // scroll view's content, so growing the composer can never feed
+            // its own measurement back in.
+            GeometryReader { geometryProxy in
+                Color.clear
+                    .onAppear { contentColumnHeight = geometryProxy.size.height }
+                    .onChange(of: geometryProxy.size.height) { _, newHeight in
+                        contentColumnHeight = newHeight
+                    }
+            }
+        )
     }
 
     private var isEmptySession: Bool {
@@ -96,8 +123,9 @@ struct NotchHomeView: View {
 
     // MARK: - Empty-session hero
 
-    /// 原版主页的居中构图：大字号问候和按住说话的提示。语音胶囊在底部
-    /// 输入行里——原版主页也是这样，问候居中、输入行贴底。
+    /// 原版主页的居中构图：大字号问候和按住说话的提示。提示行是现在唯一
+    /// 写着 ⌃⌥ 的地方——底部那颗「按住 ⌃⌥ 说话」胶囊 2026-09-23 按用户的
+    /// 要求删掉了（右侧下方只留一个输入框）。
     /// 右侧不再放小人了（用户的要求：小人只在左侧会话列表里出现），
     /// 空会话主页就剩问候和提示两行。
     private var emptySessionHero: some View {
@@ -152,7 +180,7 @@ struct NotchHomeView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(Capsule().fill(Color.white.opacity(0.07)))
-            .padding(.horizontal, 28)
+            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
             .padding(.top, 6)
             .padding(.bottom, 8)
         }
@@ -211,13 +239,34 @@ struct NotchHomeView: View {
                         assistantBubble(companionManager.streamingAnswerText, isStreaming: true)
                             .id("streaming")
                     }
+
+                    // The scroll target, and the flow's bottom breathing room
+                    // in one view. It is a *resident* view on purpose: the
+                    // streaming ids above only exist while a reply is arriving,
+                    // so scrolling to one of those did nothing when the user
+                    // opened an old session or switched conversations — the
+                    // user's 「点击某一个对话，都要自动定位到最下面的聊天记录」.
+                    Color.clear
+                        .frame(height: 16)
+                        .id(Self.conversationBottomAnchorID)
                 }
-                .padding(.horizontal, 28)
+                .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
                 .padding(.top, 4)
-                .padding(.bottom, 16)
             }
+            // Selection is enabled for the whole flow at once — the user asked
+            // to be able to select part of a message or drag across one, and
+            // the environment modifier covers every Text beneath it, the
+            // reply card's per-character units included.
+            .textSelection(.enabled)
             .onChange(of: entries.count) { _ in
                 scrollToBottom(proxy)
+            }
+            .onChange(of: sessionsModel.activeSessionID) { _ in
+                // Switching conversations has to land at the newest message,
+                // and the new session's rows are laid out in the same update —
+                // waiting one turn of the main loop is what makes the scroll
+                // land on the final layout instead of the previous session's.
+                scheduleScrollToBottom(proxy)
             }
             .onChange(of: companionManager.streamingAnswerText) { _ in
                 scrollToBottom(proxy)
@@ -234,9 +283,23 @@ struct NotchHomeView: View {
         }
     }
 
+    /// The resident view the flow scrolls to. Named rather than inlined so the
+    /// scroll target cannot drift away from the view that carries it.
+    private static let conversationBottomAnchorID = "conversation-bottom-anchor"
+
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
-            proxy.scrollTo("streaming", anchor: .bottom)
+            proxy.scrollTo(Self.conversationBottomAnchorID, anchor: .bottom)
+        }
+    }
+
+    /// One turn of the main loop later, then scroll. Used when the thing that
+    /// changed is the *session* rather than its content: the new rows are part
+    /// of the same render pass, and a scroll issued before that pass lays out
+    /// measures the old content.
+    private func scheduleScrollToBottom(_ proxy: ScrollViewProxy) {
+        Task { @MainActor in
+            scrollToBottom(proxy)
         }
     }
 
@@ -341,31 +404,41 @@ struct NotchHomeView: View {
     private static let bubbleCornerRadius: CGFloat = 14
     private static let bubbleTailCornerRadius: CGFloat = 4
 
-    /// The user's words: the reference page's solid-accent bubble on the right
-    /// (`#0A84FF`, white text) — 2026-09-23 UI 化改造 replaced the violet
-    /// gradient.
+    /// The user's words: a dark bubble on the right, brighter than Clicky's
+    /// dark card so the two sides are told apart by shade as well as by side.
+    /// It replaced the reference page's solid-accent `#0A84FF` fill on
+    /// 2026-09-23 at the user's request (「气泡调成暗色，但区分用户和 AI，
+    /// 三个页面全部暗色，主题跟背景一致」). See `DS.Colors.userBubbleFill`.
+    /// The copy control sits under it, flush with the bubble's trailing edge —
+    /// the same placement the Agent and 语音聊天 columns use.
     private func outgoingBubble(_ text: String) -> some View {
-        HStack(alignment: .bottom) {
-            Spacer(minLength: 56)
+        VStack(alignment: .trailing, spacing: 3) {
+            HStack(alignment: .bottom) {
+                Spacer(minLength: 56)
 
-            Text(text)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 13)
-                .padding(.vertical, 9)
-                .background(
-                    bubbleShape(isOutgoing: true)
-                        .fill(DS.Colors.accent)
-                )
+                Text(text)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 9)
+                    .background(
+                        bubbleShape(isOutgoing: true)
+                            .fill(DS.Colors.userBubbleFill)
+                    )
+            }
+
+            MessageCopyButton(text: text, helpText: "复制我说的话")
         }
     }
 
-    /// Clicky's reply: the card themed by 对话与记忆 → 卡片样式 (blue is the
-    /// default; black and paper are the other two), replacing the old
-    /// translucent dark bubble. The streaming reply renders with the card's
-    /// blur-focus per-character animation; a finished reply renders as one
-    /// plain Text inside the same card. See AnswerCardView.
+    /// Clicky's reply: the card themed by 设置 → 卡片样式. The default is
+    /// 「黑」 since 2026-09-23 (the user's 「不需要蓝色，主题应该跟背景颜色一
+    /// 致」 changed it from the blue reference default; 蓝 and 宣纸 remain
+    /// available in that page), replacing the old translucent dark bubble.
+    /// The streaming reply renders with the card's blur-focus per-character
+    /// animation; a finished reply renders as one plain Text inside the same
+    /// card. See AnswerCardView.
     private func assistantBubble(_ text: String, isStreaming: Bool) -> some View {
         HStack(alignment: .top) {
             AnswerCardView(
@@ -397,23 +470,16 @@ struct NotchHomeView: View {
                     .foregroundColor(.white.opacity(0.35))
             }
 
-            Button(action: { copyToPasteboard(entry.assistantResponse) }) {
-                Image(systemName: "doc.on.doc")
-                    .font(.system(size: 10))
-                    .foregroundColor(.white.opacity(0.35))
-            }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .help("复制回答")
+            // 所见即所得：复制的是卡片里显示的那份文字，不是存储原文。
+            // 存储的 `assistantResponse` 还带着 `[POINT:…]` / `[CLICK:…]`
+            // 这些执行器标签，粘到别处只会是噪声。
+            MessageCopyButton(
+                text: stripActionTagsForDisplay(entry.assistantResponse),
+                helpText: "复制这条回答"
+            )
 
             Spacer(minLength: 0)
         }
-    }
-
-    private func copyToPasteboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
     }
 
     /// "23s · 21:59" — seconds when short, minutes when long; the finish time
@@ -432,33 +498,44 @@ struct NotchHomeView: View {
         return "\(durationPart) · \(formatter.string(from: finishedAt))"
     }
 
-    // MARK: - Composer (voice + keyboard)
+    // MARK: - Composer (keyboard; talking is still push-to-talk)
 
-    /// The bottom row the original always shows: the mascot sitting on the
-    /// glossy 「按住 ⌃⌥ 说话」 pill (voice, push-to-talk) and, beside it, a
-    /// separate text field pill (Return submits).
+    /// The bottom row: one text field, nothing else. The glossy
+    /// 「按住 ⌃⌥ 说话」 pill that used to sit to the left is gone — the user
+    /// asked for 「右侧下方只有一个输入框」, and the shortcut itself is what
+    /// starts a recording, so a badge repeating it earned no space. The send
+    /// button that used to sit to the right went the same way on 2026-09-23
+    /// (「三个页面都删掉右侧底部的发送按钮」) — Return sends. The shortcut is
+    /// still spelled out in the empty-session hero.
     private var composerRow: some View {
-        HStack(alignment: .center, spacing: 10) {
-            voicePill
-
-            composerField
-
-            Button(action: submitComposerDraft) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(composerDraftIsEmpty
-                        ? .white.opacity(0.2)
-                        : Color(red: 0.30, green: 0.56, blue: 1.0))
-            }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .disabled(composerDraftIsEmpty)
-            .help("发送")
-        }
-        .padding(.horizontal, 28)
+        MessageComposerField(
+            placeholder: "输入问题，回车发送…",
+            draft: $composerDraft,
+            isFocused: $composerFieldIsFocused,
+            height: composerHeight,
+            isExpanded: isComposerExpanded,
+            canToggleExpansion: contentColumnHeight > 0,
+            onToggleExpansion: { isComposerExpanded.toggle() },
+            onSubmit: submitComposerDraft
+        )
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)
         .padding(.bottom, 12)
     }
+
+    /// Three lines at rest, 30% of the content column when expanded — the
+    /// user's own figure for the 展开 button.
+    private var composerHeight: CGFloat {
+        guard isComposerExpanded, contentColumnHeight > 0 else {
+            return MessageComposerField.threeLineHeight
+        }
+        return max(
+            MessageComposerField.threeLineHeight,
+            contentColumnHeight * Self.expandedComposerHeightFraction
+        )
+    }
+
+    private static let expandedComposerHeightFraction: CGFloat = 0.30
 
     private var composerDraftIsEmpty: Bool {
         composerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -469,68 +546,6 @@ struct NotchHomeView: View {
         companionManager.submitTypedQuestion(composerDraft)
         composerDraft = ""
         composerFieldIsFocused = false
-    }
-
-    /// The glossy 「按住 ⌃⌥ 说话」 pill (voice, push-to-talk). The mascot that
-    /// used to sit on its left end is gone with the hero's — the user wants
-    /// the characters only in the sidebar's session list, and the pill's
-    /// waveform icon already says what it does.
-    private var voicePill: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "waveform")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Color(red: 0.25, green: 0.45, blue: 0.90))
-            Text("按住 ⌃⌥ 说话")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Color(red: 0.12, green: 0.15, blue: 0.25))
-        }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
-        .background(
-            Capsule().fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.97, green: 0.98, blue: 1.0),
-                        Color(red: 0.88, green: 0.91, blue: 0.97)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-        )
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5))
-    }
-
-    private var composerField: some View {
-        HStack(spacing: 6) {
-            TextField("输入问题，回车发送…", text: $composerDraft)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundColor(.white)
-                .focused($composerFieldIsFocused)
-                .onSubmit(submitComposerDraft)
-
-            if !composerDraftIsEmpty {
-                Button(action: { composerDraft = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.4))
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-            }
-        }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
-        .background(
-            Capsule().fill(Color.white.opacity(0.08))
-        )
-        .overlay(
-            Capsule().strokeBorder(
-                composerFieldIsFocused ? Color.white.opacity(0.25) : Color.white.opacity(0.1),
-                lineWidth: 0.5
-            )
-        )
     }
 
     /// The conversation view shows what the user hears, not the tags the

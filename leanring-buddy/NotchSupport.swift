@@ -120,6 +120,27 @@ nonisolated enum NotchSupport {
     /// notch's left and right edges), never downward.
     static let restingPillAnimationHeadroom: CGFloat = 22
 
+    // MARK: - Content column geometry (对话 / Agent / 语音聊天)
+
+    /// How far the content column's header sits below the sheet's top edge.
+    ///
+    /// The sheet's top edge IS the top of the screen (`expandedSheetFrame`), so
+    /// anything at `0` would render under the menu bar / the hardware notch.
+    /// `restingPillAnimationHeadroom + 8` is the inset the sheet's top bar has
+    /// always used; it became a constant on 2026-09-23 when the Agent and
+    /// 语音聊天 pages lost that bar — their own headers take the bar's slot
+    /// now, and "the title moves up to where the chip was" only comes out right
+    /// if both read the same number. The sheet root, the two content headers,
+    /// the sidebar's account section and the settings sidebar all use it, so
+    /// there is exactly one value to change if the top edge ever moves.
+    static let sheetHeaderTopInset: CGFloat = restingPillAnimationHeadroom + 8
+
+    /// The left and right breathing room of a content column. The user asked
+    /// for the side margins to be as small as they can be, so all four regions
+    /// of a content column — header, message flow, error line and composer —
+    /// share this one number and stay flush with each other.
+    static let contentColumnHorizontalMargin: CGFloat = 12
+
     /// The expanded sheet's size — HeyClicky's expanded sheet is *large*, a
     /// real main-window-sized surface (measured off the reference screenshot:
     /// roughly 810×940pt), not a popover. Clamped per screen so small
@@ -245,6 +266,51 @@ nonisolated enum NotchSupport {
     static func restingWindowFrame(on screen: NSScreen) -> CGRect? {
         guard let pillFrame = restingPillFrame(on: screen) else { return nil }
         return pillFrame.insetBy(dx: -activeFlankWidth, dy: 0)
+    }
+
+    // MARK: - Wing geometry (shared by the drawing and the click target)
+
+    /// 收起状态下两条翼的宽度，和 `NotchPillRootView` 画出来的一致。
+    ///
+    /// 放在 `NotchSupport` 而不是留在那个视图里，是为了让**画的**那一份和
+    /// **点的**那一份（`restingTrailingWingFrame`）用的是同一个数字：两边各
+    /// 写一遍的话，改了一个忘了另一个，命中区就会错位 —— 而且不报错、不崩，
+    /// 只是点不准。
+    static let leadingWingWidth: CGFloat = 86
+    static let trailingWingWidth: CGFloat = 88
+
+    /// 收起状态下**右翼**的矩形（屏幕坐标）。
+    ///
+    /// 语音聊天进行中这块会被画成一颗挂断按钮，并且可以直接点（用户
+    /// 2026-09-23 第 6 条：「如果用户已经点击连接或当前处于连接状态，菜单栏刘
+    /// 海屏右侧应显示一个挂断动画，或者保留菜单栏当前样式风格，把它做成挂断
+    /// 按钮，用户可以直接点击挂断，不必展开刘海屏再点击挂断」）。
+    ///
+    /// 几何不是估的，是从 `NotchPillRootView` 的布局反推的：`HStack(spacing: -2)`
+    /// 的三段（左翼 / 中段 / 右翼）在窗口里居中，所以展开时
+    ///
+    ///     右翼左边界 = activeFlankWidth + leadingWingWidth/2 − trailingWingWidth/2 + pillWidth − 2
+    ///
+    /// （两个 −2 是那两处负间距）。竖直方向是窗口顶部那 `notchRect` 高的一条
+    /// —— 翼的高度是窗口高减掉 `restingPillAnimationHeadroom`，也就是刘海本身
+    /// 的高度。
+    static func restingTrailingWingFrame(on screen: NSScreen) -> CGRect? {
+        guard let windowFrame = restingWindowFrame(on: screen) else { return nil }
+
+        let pillWidth = windowFrame.width - activeFlankWidth * 2
+        let wingOriginX = activeFlankWidth
+            + leadingWingWidth / 2
+            - trailingWingWidth / 2
+            + pillWidth
+            - 2
+        let wingHeight = windowFrame.height - restingPillAnimationHeadroom
+
+        return CGRect(
+            x: windowFrame.minX + wingOriginX,
+            y: windowFrame.maxY - wingHeight,
+            width: trailingWingWidth,
+            height: wingHeight
+        )
     }
 
     /// The expanded sheet's frame: `expandedSheetSize(on:)`, centered

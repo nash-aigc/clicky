@@ -2,13 +2,20 @@
 //  HomeSpaceSidebarView.swift
 //  leanring-buddy
 //
-//  The notch sheet's session sidebar: the account section at the very top
-//  (initial-letter disc, account name, status line, gear into the settings —
-//  moved up from the bottom on the user's request so it is always one click
-//  away; the old top-left waveform logo was deleted with the move), then a
-//  search field beside a round new-session button, then the session list
-//  (pastel avatar, title + relative time, preview line, hairline separators,
-//  a blue dot marking the active session).
+//  The notch sheet's session sidebar. Top to bottom: the 对话 / Agent / 语音聊天
+//  switcher, a divider, one search field + round 「＋」 row shared by all three
+//  sections, the section's list, and — pinned at the very bottom — the
+//  「归档」 / 「设置」 pair.
+//
+//  Both ends of that order are the user's, and they were asked for in two steps
+//  on 2026-09-23: first the account card and the bottom 归档 row were replaced
+//  by one 归档/设置 row at the top, then that row was moved down here so the
+//  top could carry the three section buttons above the divider ("分割线下面是
+//  搜索和添加"). The sidebar therefore reads top-down as *which column am I in*
+//  and bottom-up as *the whole app*.
+//
+//  The three sections read as one surface on purpose (the user's request):
+//  same order from the top, same field, same rows, same margins.
 //
 
 import SwiftUI
@@ -18,9 +25,12 @@ struct HomeSpaceSidebarView: View {
     @ObservedObject var sessionsModel: ConversationSessionsModel
     @ObservedObject var agentSessionManager: AgentSessionManager
     /// The VoiceWeb subsystem — the 语音聊天 section's role-preset list reads
-    /// its published presets and connection phase, and its rows connect.
+    /// its published presets and connection phase, and its rows select.
     @ObservedObject var voiceWebSessionController: VoiceWebSessionController
     @Binding var showsSettings: Bool
+    /// 归档 takes the whole sheet over, the way 设置 does — see
+    /// `NotchSheetRootView` — so this row only has to raise the flag.
+    @Binding var showsArchive: Bool
 
     @State private var hoveringSessionID: UUID?
     @State private var renamingSessionID: UUID?
@@ -30,26 +40,49 @@ struct HomeSpaceSidebarView: View {
     /// lists share one inline-rename interaction, so one id pair serves both.
     @State private var renamingAgentID: UUID?
 
+    /// Search text for the two sections the store does not own a query for.
+    /// The 对话 list's query lives on `ConversationSessionsModel` because its
+    /// search also has to reach into entry text; these two are plain view state,
+    /// which is all a name filter needs.
+    @State private var agentSearchQuery: String = ""
+    @State private var roleSearchQuery: String = ""
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // 账户区在最顶部（用户的要求）：应用没有标题可显示，原左上角
-            // 的波形 logo 已删——账户行自己带上茎带高度，就是侧栏第一行；
-            // 设置齿轮在行右侧，同样在最顶部。
-            accountSection
+            // 顶部是三个分区的切换器，紧跟一条分割线；分割线下面是搜索与
+            // 「＋」，然后是列表，最底下才是「归档 / 设置」。
+            //
+            // 这个顺序是用户 2026-09-23 定的：「把对话、Agent、语音聊天这三个
+            // 按钮放在左侧顶部这条分割线的上面，用按钮的形式显示。分割线下面
+            // 是搜索和添加」「把左侧顶部的归档和设置按钮移动到左侧最下面」。
+            // 读法因此从左到右、从上到下都成立 —— 上面选去哪一栏，下面管整个
+            // 应用。
             sidebarSectionSwitcher
+
+            Divider()
+                .overlay(Color.white.opacity(0.08))
+
+            // 三个分区共用同一行「搜索 + ＋」（用户要求三个页面顺序一致）。
+            searchRow
 
             switch agentSessionManager.selectedSidebarSection {
             case .conversations:
-                searchRow
                 sessionList
             case .agents:
                 agentList
             case .voiceChat:
                 voiceChatRoleList
             }
+
             Spacer(minLength: 0)
+
+            bottomActionRow
         }
-        .background(Color.black.opacity(0.35))
+        // 完全不透明（用户 2026-09-23：「整个弹出窗口调整为完全不透明，现在
+        // 是透明状态」）。原来这里是 `Color.black.opacity(0.35)` 叠在面板地面
+        // 上，合成出来正好是 surface3 的 #101014 —— 换成不透明的同一个色，
+        // 侧栏观感不变，透出来的壁纸没了。
+        .background(DS.Colors.surface3)
     }
 
     // MARK: - Section switcher
@@ -57,18 +90,25 @@ struct HomeSpaceSidebarView: View {
     /// 「对话 / Agent / 语音聊天」三选一——长方形圆角的按钮（用户定的样式），
     /// 三颗按钮平分整行。语音聊天是 VoiceWeb 的角色预设列表，与上面两个
     /// 列表一样是独立的半区。
+    ///
+    /// 2026-09-23 用户要求「把这三个按钮的高度调大一点，文字也大一点，让按钮
+    /// 距离下边缘这条线的间距小一点……这样分割线位置不变，按钮也会变大」：
+    /// 字号 12→13、按钮固定高 25→30，而下面那 5pt 的间距是从原来的 10pt 里
+    /// **让出来的**——按钮长高的 5pt 正好等于间距少掉的 5pt，所以这一整块的总高
+    /// 不变，底下那条分割线一动不动。按钮高度写死而不是靠 padding 撑，是因为
+    /// 「总高不变」这件事必须由代码保证，不能靠每次调字号时心算。
     private var sidebarSectionSwitcher: some View {
         HStack(spacing: 4) {
             ForEach(SidebarSection.allCases, id: \.self) { section in
                 let isSelected = agentSessionManager.selectedSidebarSection == section
                 Button(action: { agentSessionManager.selectedSidebarSection = section }) {
                     Text(section.displayName)
-                        .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                         .foregroundColor(isSelected ? .white : .white.opacity(0.45))
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 5)
+                        .frame(height: Self.sectionSwitcherButtonHeight)
                         .background(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                 .fill(isSelected ? Color.white.opacity(0.12) : Color.clear)
@@ -79,13 +119,22 @@ struct HomeSpaceSidebarView: View {
                 .pointerCursor()
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 10)
+        // 这一行现在顶在侧栏最上面，自己让开茎带（与刘海相接的那段黑带）。
+        .padding(.top, NotchSupport.sheetHeaderTopInset)
+        .padding(.bottom, Self.sectionSwitcherBottomPadding)
     }
+
+    /// 30（原来 25）——用户要求的「按钮高度调大一点」。
+    private static let sectionSwitcherButtonHeight: CGFloat = 30
+    /// 5（原来 10）——用户要求的「跟分割线的间距小一点」，正好把按钮长高的那
+    /// 5pt 还回去，分割线因此不动。
+    private static let sectionSwitcherBottomPadding: CGFloat = 5
 
     // MARK: - Pieces
 
-    /// 搜索框占满剩余宽度，旁边是原版那颗独立的圆形「＋」。
+    /// 搜索框占满剩余宽度，旁边是原版那颗独立的圆形「＋」。三个分区共用：
+    /// 文案、过滤对象与「＋」的动作按当前分区取。
     private var searchRow: some View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
@@ -93,14 +142,14 @@ struct HomeSpaceSidebarView: View {
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.4))
 
-                TextField("搜索对话", text: $sessionsModel.searchQuery)
+                TextField(searchFieldPlaceholder, text: searchQueryBinding)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .foregroundColor(.white)
                     .disableAutocorrection(true)
 
-                if sessionsModel.isSearching {
-                    Button(action: { sessionsModel.searchQuery = "" }) {
+                if !currentSearchQuery.isEmpty {
+                    Button(action: { searchQueryBinding.wrappedValue = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.4))
@@ -116,7 +165,7 @@ struct HomeSpaceSidebarView: View {
                     .fill(Color.white.opacity(0.07))
             )
 
-            Button(action: { sessionsModel.createSession() }) {
+            Button(action: primaryCreateAction) {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.white.opacity(0.85))
@@ -126,12 +175,64 @@ struct HomeSpaceSidebarView: View {
             }
             .buttonStyle(.plain)
             .pointerCursor()
-            .help("新建会话")
+            .help(primaryCreateHelp)
         }
-        .padding(.horizontal, 16)
-        // 与账户区分隔线之间的间距——原来这里没有，分隔线贴着搜索框。
+        .padding(.horizontal, 10)
+        // 与上面那条分割线之间的间距——分割线不贴着输入框。
         .padding(.top, 8)
         .padding(.bottom, 10)
+    }
+
+    /// What the shared search field says. The placeholder names the thing being
+    /// filtered, so one field reads correctly in all three sections.
+    private var searchFieldPlaceholder: String {
+        switch agentSessionManager.selectedSidebarSection {
+        case .conversations: return "搜索对话"
+        case .agents: return "搜索 Agent"
+        case .voiceChat: return "搜索角色"
+        }
+    }
+
+    /// The query the current section filters on. Read-only here; the writable
+    /// form is `searchQueryBinding`.
+    private var currentSearchQuery: String {
+        switch agentSessionManager.selectedSidebarSection {
+        case .conversations: return sessionsModel.searchQuery
+        case .agents: return agentSearchQuery
+        case .voiceChat: return roleSearchQuery
+        }
+    }
+
+    /// The field's binding, routed to whichever query the current section uses.
+    private var searchQueryBinding: Binding<String> {
+        switch agentSessionManager.selectedSidebarSection {
+        case .conversations: return $sessionsModel.searchQuery
+        case .agents: return $agentSearchQuery
+        case .voiceChat: return $roleSearchQuery
+        }
+    }
+
+    /// What the 「＋」 does here. 对话 and Agent both make something new; the
+    /// 语音聊天 roles come from VoiceWeb's own configuration and cannot be
+    /// created by Clicky, so there the button re-reads the list instead — and
+    /// its tooltip says so, rather than pretending to be a create button.
+    private func primaryCreateAction() {
+        switch agentSessionManager.selectedSidebarSection {
+        case .conversations:
+            sessionsModel.createSession()
+        case .agents:
+            createAgentWithFolderPicker()
+        case .voiceChat:
+            voiceWebSessionController.refreshRolePresets()
+        }
+    }
+
+    private var primaryCreateHelp: String {
+        switch agentSessionManager.selectedSidebarSection {
+        case .conversations: return "新建会话"
+        case .agents: return "选一个项目文件夹，新建一个 Agent"
+        case .voiceChat: return "角色预设来自 VoiceWeb 的配置，这里只能重新读取"
+        }
     }
 
     private var sessionList: some View {
@@ -147,7 +248,7 @@ struct HomeSpaceSidebarView: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
             .padding(.top, 2)
         }
     }
@@ -177,6 +278,14 @@ struct HomeSpaceSidebarView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(alignment: .center, spacing: 6) {
+                            // 固定过的会话带一枚小图钉，否则用户看不出它是
+                            // 因为什么排在最上面。
+                            if row.session.pinnedAt != nil {
+                                Image(systemName: "pin.fill")
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.white.opacity(0.35))
+                            }
+
                             Text(row.session.title)
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.white)
@@ -186,7 +295,7 @@ struct HomeSpaceSidebarView: View {
 
                             if hoveringSessionID == row.session.id {
                                 Button(action: { sessionsModel.deleteSession(row.session.id) }) {
-                                    Image(systemName: "trash")
+                                    Image(systemName: "archivebox")
                                         .font(.system(size: 10))
                                         .foregroundColor(.white.opacity(0.55))
                                         .frame(width: 18, height: 18)
@@ -194,7 +303,7 @@ struct HomeSpaceSidebarView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .pointerCursor()
-                                .help("删除这个会话")
+                                .help("归档这个会话（可在「归档」里恢复）")
                             } else if row.searchPreview == nil && !row.session.entries.isEmpty {
                                 Text(Self.relativeTime(row.session.updatedAt))
                                     .font(.system(size: 11))
@@ -235,11 +344,15 @@ struct HomeSpaceSidebarView: View {
             hoveringSessionID = hovering ? row.session.id : (hoveringSessionID == row.session.id ? nil : hoveringSessionID)
         }
         .contextMenu {
+            Button(row.session.pinnedAt == nil ? "固定" : "取消固定") {
+                sessionsModel.setPinned(row.session.pinnedAt == nil, forSessionID: row.session.id)
+            }
             Button("重命名") {
                 renamingSessionID = row.session.id
                 renameDraft = row.session.title
             }
-            Button("删除", role: .destructive) {
+            // 删除是软删：这一条会移到「归档」，随时能恢复。
+            Button("归档", role: .destructive) {
                 sessionsModel.deleteSession(row.session.id)
             }
         }
@@ -259,52 +372,35 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - Agent list
 
+    /// 三个分区共用的那一行「＋」负责新建 Agent（选文件夹），所以列表首行
+    /// 不再重复放一颗。
     private var agentList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                newAgentRow
-
-                ForEach(Array(agentSessionManager.sessions.enumerated()), id: \.element.id) { rowIndex, agent in
+                ForEach(Array(filteredAgents.enumerated()), id: \.element.id) { rowIndex, agent in
                     agentRow(agent)
-                    if rowIndex < agentSessionManager.sessions.count - 1 {
+                    if rowIndex < filteredAgents.count - 1 {
                         Divider()
                             .overlay(Color.white.opacity(0.08))
                             .padding(.leading, 46)
                     }
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
             .padding(.top, 2)
         }
     }
 
-    /// The 「＋ 新建 Agent」 row: opens the folder picker, and the picked
-    /// folder becomes the new agent's working directory.
-    private var newAgentRow: some View {
-        Button(action: createAgentWithFolderPicker) {
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(Color.clear)
-                    .frame(width: 5, height: 5)
-
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 15))
-                    .foregroundColor(.white.opacity(0.6))
-                    .frame(width: 38, height: 38)
-
-                Text("新建 Agent")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
-
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
+    /// The Agent rows, filtered by the shared search field — name, project
+    /// folder and last preview, so a folder name finds its agent too.
+    private var filteredAgents: [AgentSession] {
+        let trimmedQuery = agentSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return agentSessionManager.sessions }
+        return agentSessionManager.sessions.filter { agent in
+            agent.name.localizedCaseInsensitiveContains(trimmedQuery)
+                || agent.projectFolderPath.localizedCaseInsensitiveContains(trimmedQuery)
+                || agent.lastPreview.localizedCaseInsensitiveContains(trimmedQuery)
         }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .help("选一个项目文件夹，新建一个 Agent")
     }
 
     private func agentRow(_ agent: AgentSession) -> some View {
@@ -399,18 +495,22 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - Voice chat role presets
 
-    /// The 语音聊天 section's list: VoiceWeb's own role presets. Clicking a
-    /// row makes that role active in VoiceWeb and starts the session; the
-    /// connected role shows a green dot instead of the selection dot.
+    /// The 语音聊天 section's list: VoiceWeb's own role presets. Clicking a row
+    /// only SELECTS it — the connection is started by the 连接 button in the
+    /// content column, which is the single place a session can begin. That
+    /// split is what stops the connection state from appearing to move between
+    /// cards as the user clicks around (see the row's status line below).
     private var voiceChatRoleList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if voiceWebSessionController.rolePresets.isEmpty {
                     voiceChatEmptyHint
+                } else if filteredRolePresets.isEmpty {
+                    voiceChatNoMatchHint
                 } else {
-                    ForEach(Array(voiceWebSessionController.rolePresets.enumerated()), id: \.element.id) { rowIndex, role in
+                    ForEach(Array(filteredRolePresets.enumerated()), id: \.element.id) { rowIndex, role in
                         voiceChatRoleRow(role)
-                        if rowIndex < voiceWebSessionController.rolePresets.count - 1 {
+                        if rowIndex < filteredRolePresets.count - 1 {
                             Divider()
                                 .overlay(Color.white.opacity(0.08))
                                 .padding(.leading, 46)
@@ -418,61 +518,157 @@ struct HomeSpaceSidebarView: View {
                     }
                 }
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 8)
             .padding(.top, 2)
         }
         .onAppear { voiceWebSessionController.refreshRolePresets() }
     }
 
+    /// The role rows, filtered by the shared search field.
+    private var filteredRolePresets: [VoiceWebSessionController.VoiceWebRolePreset] {
+        let trimmedQuery = roleSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return voiceWebSessionController.rolePresets }
+        return voiceWebSessionController.rolePresets.filter {
+            $0.name.localizedCaseInsensitiveContains(trimmedQuery)
+        }
+    }
+
     private func voiceChatRoleRow(_ role: VoiceWebSessionController.VoiceWebRolePreset) -> some View {
         let isSelected = role.id == voiceWebSessionController.selectedRoleID
-        let isConnectedToThisRole = voiceWebSessionController.connectionPhase != .idle
-            && voiceWebSessionController.activeRoleID == role.id
+        let connectionPhase = voiceWebSessionController.connectionPhase
+        // 状态只属于真正在连/连上的那一个角色：`activeRoleID` 是 VoiceWeb
+        // 真的在用的角色，`selectedRoleID` 只是用户点选的那一行。两者分开，
+        // 连接状态就不可能跟着点击在卡片之间搬家。
+        let isConnectedToThisRole = voiceWebSessionController.activeRoleID == role.id
+            && (connectionPhase == .connected || connectionPhase == .connecting)
 
-        return Button(action: {
-            voiceWebSessionController.connectToRole(role.id)
-            showsSettings = false
-        }) {
-            HStack(alignment: .center, spacing: 10) {
-                // 连接中的角色亮绿点；未连接时当前选中行亮蓝点——与
-                // 会话/Agent 列表同一个小点语言。
-                Circle()
-                    .fill(isConnectedToThisRole
-                        ? Color(red: 0.35, green: 0.85, blue: 0.55)
-                        : Color(red: 0.25, green: 0.52, blue: 1.0))
-                    .frame(width: 5, height: 5)
-                    .opacity(isConnectedToThisRole || isSelected ? 1 : 0)
+        // 行分成两个**并列**的按钮，不是一个按钮套一个：左边整块只负责选中，
+        // 右边那颗只负责连接/挂断。嵌套按钮在 SwiftUI 里点哪一颗都不确定，
+        // 而这两件事必须互不干扰。
+        return HStack(spacing: 6) {
+            Button(action: {
+                voiceWebSessionController.selectRole(role.id)
+                showsSettings = false
+            }) {
+                HStack(alignment: .center, spacing: 10) {
+                    // 连上的角色亮绿点；只选中还没连的行亮蓝点——与
+                    // 会话/Agent 列表同一个小点语言。
+                    Circle()
+                        .fill(isConnectedToThisRole
+                            ? Color(red: 0.35, green: 0.85, blue: 0.55)
+                            : Color(red: 0.25, green: 0.52, blue: 1.0))
+                        .frame(width: 5, height: 5)
+                        .opacity(isConnectedToThisRole || (!isConnectedToThisRole && isSelected) ? 1 : 0)
 
-                Image(systemName: "waveform")
-                    .font(.system(size: 13))
-                    .foregroundColor(.white.opacity(0.6))
-                    .frame(width: 38, height: 38)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
+                    Image(systemName: "waveform")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 38, height: 38)
+                        .background(Circle().fill(Color.white.opacity(0.08)))
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(role.name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(role.name)
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
 
-                    Text(isConnectedToThisRole ? "聊天中" : "点击连接语音聊天")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(isConnectedToThisRole ? 0.7 : 0.45))
-                        .lineLimit(1)
+                        Text(roleStatusText(isConnectedToThisRole: isConnectedToThisRole, isSelected: isSelected))
+                            .font(.system(size: 11.5))
+                            .foregroundColor(.white.opacity(isConnectedToThisRole ? 0.7 : 0.45))
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
                 }
-
-                Spacer(minLength: 0)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 10)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isSelected ? Color.white.opacity(0.05) : Color.clear)
+            .buttonStyle(.plain)
+            .pointerCursor()
+
+            voiceChatRoleConnectButton(
+                role,
+                isConnectedToThisRole: isConnectedToThisRole,
+                isConnecting: connectionPhase == .connecting
             )
-            .contentShape(Rectangle())
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isSelected ? Color.white.opacity(0.05) : Color.clear)
+        )
+    }
+
+    /// The per-row 连接 / 挂断 button the user asked for on 2026-09-23:
+    /// 「把连接按钮放在左侧边角色卡片的右侧部分，做成大一点的长方形圆角形式。
+    /// 这样用户点击角色就可以选择是否连接，鼠标移动距离会非常小。不要放在右上角。」
+    ///
+    /// The mouse-travel argument is the whole point of it: the row is where the
+    /// pointer already is when the user decides who to talk to, so the connect
+    /// no longer needs a trip across the sheet to the content column's corner.
+    /// Green before a session, red during one — the same two colours the notch
+    /// wing's hang-up uses, so 「挂断」 looks the same wherever it is offered.
+    private func voiceChatRoleConnectButton(
+        _ role: VoiceWebSessionController.VoiceWebRolePreset,
+        isConnectedToThisRole: Bool,
+        isConnecting: Bool
+    ) -> some View {
+        let tint: Color = isConnectedToThisRole
+            ? Color(red: 1.0, green: 0.45, blue: 0.4)
+            : Color(red: 0.35, green: 0.85, blue: 0.55)
+        // 「取消」while the handshake is still running: the button tears down a
+        // connection that has not finished being made, and calling that 挂断
+        // would claim a conversation that never started.
+        let title = isConnectedToThisRole ? (isConnecting ? "取消" : "挂断") : "连接"
+
+        return Button {
+            if isConnectedToThisRole {
+                voiceWebSessionController.disconnectCurrentSession()
+            } else {
+                voiceWebSessionController.connectToRole(role.id)
+            }
+        } label: {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(tint)
+                .lineLimit(1)
+                .frame(height: 28)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                        .fill(tint.opacity(0.14))
+                )
+                .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
         }
         .buttonStyle(.plain)
         .pointerCursor()
+        .help(isConnectedToThisRole
+            ? "挂断「\(role.name)」"
+            : "用「\(role.name)」开始语音聊天")
+    }
+
+    /// What a role row says under its name. Four states, and only the first
+    /// two mention a connection — the others describe selection, so a row the
+    /// user has merely clicked never reads as connected or connecting.
+    ///
+    /// Short by design since 2026-09-23: the connect button moved into the row
+    /// itself, so the status line no longer has to explain where that button
+    /// is (it used to read 「已选中 · 点右上角连接」), and the row's name column
+    /// lost the width that sentence needed.
+    private func roleStatusText(isConnectedToThisRole: Bool, isSelected: Bool) -> String {
+        guard isConnectedToThisRole else {
+            return isSelected ? "已选中" : "点击选择"
+        }
+        return voiceWebSessionController.connectionPhase == .connected ? "聊天中" : "连接中…"
+    }
+
+    /// Shown when the search field matches no role.
+    private var voiceChatNoMatchHint: some View {
+        Text("没有匹配的角色")
+            .font(.system(size: 12))
+            .foregroundColor(.white.opacity(0.4))
+            .frame(maxWidth: .infinity)
+            .padding(.top, 30)
     }
 
     /// Empty / unreachable states for the preset list — a hint, not a wall:
@@ -527,63 +723,55 @@ struct HomeSpaceSidebarView: View {
         )
     }
 
-    /// 顶部账户区：首字母头像 + 账户名 + 状态行，右侧一颗进设置的齿轮。
-    /// （原版这里还有配额环和 info 图标——配额是账号服务的概念，本地
-    /// 应用没有对应的真实数据，空着不画，免得展示一个假数字。）
-    private var accountSection: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.12))
-                    Text(Self.accountInitial)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                .frame(width: 32, height: 32)
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(Self.accountDisplayName)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    Text("本地模式")
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.4))
-                }
-
-                Spacer(minLength: 4)
-
-                Button(action: { showsSettings = true }) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.55))
-                        .frame(width: 26, height: 26)
-                        .background(Circle().fill(Color.white.opacity(0.07)))
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help("设置")
+    /// 侧栏最底部一行：左「设置」右「归档」，两颗都是长方形按钮。2026-09-23
+    /// 用户先要求「左侧顶部只显示归档和设置按钮：归档放左、设置放右、设置做
+    /// 成长方形按钮，把用户名、本地模式、图标都删掉」——原本这里是一张账号卡
+    /// （首字母圆盘 + 本机用户名 + 「本地模式」 + 一颗圆形齿轮），本机没有账号
+    /// 服务支撑它；随后又要求「把左侧顶部的归档和设置按钮移动到左侧最下面」，
+    /// 顶部让给了三个分区按钮。同一天稍后又要求两颗按钮对调位置
+    /// （「把左侧边的设置按钮和归档按钮两个位置调换一下」），设置因此落在左边
+    /// ——它正对着设置页里那颗同为长方形、同为 30pt 高的「返回」，两个入口在同一
+    /// 条竖直线上，来回不跳。
+    ///
+    /// 顶上那条分隔线是随下移一起加的：这一行下面是 `Spacer`，列表短的时候
+    /// 还好，长的时候最后一行会直接贴到按钮上，分不清哪是列表哪是操作。
+    private var bottomActionRow: some View {
+        HStack(spacing: 8) {
+            NotchBarActionButton(
+                title: "设置",
+                systemImage: "gearshape",
+                isHighlighted: showsSettings,
+                help: "设置"
+            ) {
+                showsSettings = true
             }
-        .padding(.horizontal, 16)
-        // 账户区行在顶上时自己让开茎带（与刘海相接的那段黑带）——原来这
-        // 个高度由已删除的波形 logo 承担。
-        .padding(.top, NotchSupport.restingPillAnimationHeadroom + 8)
-        .padding(.bottom, 12)
 
-        // 分隔线在账户区和搜索框之间，上下都留出间距（原来它与搜索框
-        // 挤在一起，用户看着像重叠）。
-        Divider()
-            .overlay(Color.white.opacity(0.08))
+            Spacer(minLength: 8)
+
+            NotchBarActionButton(
+                title: "归档",
+                systemImage: "archivebox",
+                isHighlighted: showsArchive,
+                help: "查看已删除的对话，可以恢复"
+            ) {
+                showsArchive = true
+                showsSettings = false
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .overlay(alignment: .top) {
+            Divider()
+                .overlay(Color.white.opacity(0.08))
         }
     }
 
     // MARK: - Formatting
 
     /// 会话的第二行预览：取最近一条对话的开头（用户的话优先，读起来才
-    /// 像原版的「我会读完四家中国发射…」）。
-    private static func previewText(_ session: ConversationSession) -> String {
+    /// 像原版的「我会读完四家中国发射…」）。internal 供归档页复用。
+    static func previewText(_ session: ConversationSession) -> String {
         let lastEntry = session.entries.last
         let candidate = lastEntry?.userTranscript ?? lastEntry?.assistantResponse ?? ""
         let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -592,20 +780,11 @@ struct HomeSpaceSidebarView: View {
     }
 
     /// Relative time for a session's last update — the sidebar's second line.
-    private static func relativeTime(_ date: Date) -> String {
+    /// internal 供归档页复用。
+    static func relativeTime(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
-    }
-
-    /// 本机账户名，仿原版账户区的名字行。
-    private static var accountDisplayName: String {
-        let fullName = NSFullUserName()
-        return fullName.isEmpty ? "用户" : fullName
-    }
-
-    private static var accountInitial: String {
-        String(accountDisplayName.prefix(1)).uppercased()
     }
 }

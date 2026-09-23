@@ -6,10 +6,12 @@
 //  sidebar's Agent section is active and an agent is selected.
 //
 //  Every visual here is cloned from `NotchHomeView`'s conversation styles (the
-//  bubble geometry, the composer pill, the auto-scroll discipline) so the two
+//  bubble geometry, the composer field, the auto-scroll discipline) so the two
 //  content columns read as one family; the differences are the agent's own:
-//  a status + folder header, gray tool-activity lines instead of a progress
-//  disclosure, and an interrupt button where voice had its pill.
+//  a status + folder header that doubles as the page's only title (the sheet's
+//  top bar is not drawn on this page — see `agentHeader`), gray tool-activity
+//  lines instead of a progress disclosure, and an interrupt button at the
+//  header's right.
 //
 
 import SwiftUI
@@ -21,6 +23,14 @@ struct AgentSessionView: View {
     @FocusState private var composerFieldIsFocused: Bool
     @State private var composerDraft: String = ""
 
+    /// The composer's 展开 button (user's request): the field grows to 30% of
+    /// the content column and collapses back to three lines.
+    @State private var isComposerExpanded = false
+    /// The content column's height, measured off the root view — the sheet's
+    /// height is the user's own (they can drag its bottom edge), so the 30%
+    /// figure has to be measured rather than assumed.
+    @State private var contentColumnHeight: CGFloat = 0
+
     var body: some View {
         if let agent = agentSessionManager.selectedAgent {
             VStack(spacing: 0) {
@@ -30,6 +40,15 @@ struct AgentSessionView: View {
                 composerRow(agent)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(
+                GeometryReader { geometryProxy in
+                    Color.clear
+                        .onAppear { contentColumnHeight = geometryProxy.size.height }
+                        .onChange(of: geometryProxy.size.height) { _, newHeight in
+                            contentColumnHeight = newHeight
+                        }
+                }
+            )
         } else {
             emptyRosterHint
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -40,6 +59,13 @@ struct AgentSessionView: View {
 
     /// Name + status capsule + the project folder the agent works in, plus the
     /// interrupt button while a turn is running.
+    ///
+    /// This header now opens the column: the sheet's own top bar (the name
+    /// capsule, the activity indicator and the ✕) is not rendered on the Agent
+    /// and 语音聊天 pages any more — the user asked for one title, not two, and
+    /// for the ✕ to go, since clicking outside the sheet already puts it away.
+    /// `sheetHeaderTopInset` is what the deleted bar used to occupy, so the
+    /// title lands exactly where the capsule was instead of under the menu bar.
     private func agentHeader(_ agent: AgentSession) -> some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
@@ -102,9 +128,9 @@ struct AgentSessionView: View {
                     .foregroundColor(.white.opacity(0.35))
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.top, 10)
-        .padding(.bottom, 6)
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+        .padding(.top, NotchSupport.sheetHeaderTopInset)
+        .padding(.bottom, 10)
     }
 
     private func statusColor(_ status: AgentSessionStatus) -> Color {
@@ -150,16 +176,33 @@ struct AgentSessionView: View {
                                 .id("agent-streaming")
                         }
                     }
+
+                    // The scroll target AND the flow's bottom breathing room,
+                    // as one resident view — the streaming ids above only exist
+                    // while a turn is running, so scrolling to one of them did
+                    // nothing when the user simply opened another agent.
+                    Color.clear
+                        .frame(height: 16)
+                        .id(Self.transcriptBottomAnchorID)
                 }
-                .padding(.horizontal, 28)
+                .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
                 .padding(.top, 4)
-                .padding(.bottom, 16)
             }
+            // Whole-flow selection: the user asked to be able to select part of
+            // a message or drag across one, and this covers every Text below —
+            // including the gray tool-activity lines.
+            .textSelection(.enabled)
             .onChange(of: agent.transcript.count) { _, _ in
                 scrollToBottom(proxy)
             }
             .onChange(of: streamingText) { _, _ in
                 scrollToBottom(proxy)
+            }
+            .onChange(of: agentSessionManager.selectedAgentID) { _, _ in
+                // One turn of the main loop later: the newly selected agent's
+                // transcript is part of the same render pass, and scrolling
+                // before that pass lays out measures the previous agent's rows.
+                scheduleScrollToBottom(proxy)
             }
             .onAppear {
                 scrollToBottom(proxy)
@@ -167,13 +210,21 @@ struct AgentSessionView: View {
         }
     }
 
+    private static let transcriptBottomAnchorID = "agent-transcript-bottom-anchor"
+
     private var streamingText: String {
         agentSessionManager.streamingTextByAgentID[agentSessionManager.selectedAgentID ?? UUID()] ?? ""
     }
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
-            proxy.scrollTo("agent-streaming", anchor: .bottom)
+            proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
+        }
+    }
+
+    private func scheduleScrollToBottom(_ proxy: ScrollViewProxy) {
+        Task { @MainActor in
+            scrollToBottom(proxy)
         }
     }
 
@@ -254,7 +305,7 @@ struct AgentSessionView: View {
                 .foregroundColor(Color(red: 1.0, green: 0.5, blue: 0.45).opacity(0.85))
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 28)
+                .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
                 .padding(.bottom, 4)
                 .contentShape(Rectangle())
                 .onTapGesture { agentSessionManager.dismissError() }
@@ -263,81 +314,48 @@ struct AgentSessionView: View {
 
     // MARK: - Composer
 
+    /// One text field, nothing else. The Agent status badge that used to sit
+    /// to the left is gone (the user's 「右侧下方只有一个输入框」) and so is the
+    /// send button that used to sit to the right (「无论是对话、agent 还是语音
+    /// 聊天，都删掉右侧底部的发送按钮」) — Return sends, and the field's own
+    /// Return handling goes through the same `submitComposerDraft`.
     private func composerRow(_ agent: AgentSession) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            agentBadge(agent)
-
-            composerField
-
-            Button(action: submitComposerDraft(agent)) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(composerDraftIsEmpty
-                        ? .white.opacity(0.2)
-                        : Color(red: 0.30, green: 0.56, blue: 1.0))
-            }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .disabled(composerDraftIsEmpty)
-            .help("发送给 Agent")
-        }
-        .padding(.horizontal, 28)
+        MessageComposerField(
+            placeholder: "让 Agent 做什么…",
+            draft: $composerDraft,
+            isFocused: $composerFieldIsFocused,
+            height: composerHeight,
+            isExpanded: isComposerExpanded,
+            canToggleExpansion: contentColumnHeight > 0,
+            onToggleExpansion: { isComposerExpanded.toggle() },
+            onSubmit: submitComposerDraft(agent)
+        )
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)
         .padding(.bottom, 12)
     }
 
-    /// The composer's left badge — the agent's own status pill, playing the
-    /// role the voice pill plays in the conversation composer.
-    private func agentBadge(_ agent: AgentSession) -> some View {
-        HStack(spacing: 6) {
-            Circle()
-                .fill(agent.status == .running
-                    ? Color(red: 0.35, green: 0.85, blue: 0.55)
-                    : Color.white.opacity(0.35))
-                .frame(width: 6, height: 6)
-            Text("Agent")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white.opacity(0.7))
+    /// Three lines at rest, 30% of the content column when expanded — the
+    /// user's own figure for the 展开 button.
+    private var composerHeight: CGFloat {
+        guard isComposerExpanded, contentColumnHeight > 0 else {
+            return MessageComposerField.threeLineHeight
         }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
-        .background(Capsule().fill(Color.white.opacity(0.08)))
-    }
-
-    private var composerField: some View {
-        HStack(spacing: 6) {
-            TextField("让 Agent 做什么…", text: $composerDraft)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundColor(.white)
-                .focused($composerFieldIsFocused)
-                .onSubmit { submitComposerDraft(agentSessionManager.selectedAgent)() }
-
-            if !composerDraftIsEmpty {
-                Button(action: { composerDraft = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.4))
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-            }
-        }
-        .padding(.horizontal, 12)
-        .frame(height: 34)
-        .background(Capsule().fill(Color.white.opacity(0.08)))
-        .overlay(
-            Capsule().strokeBorder(
-                composerFieldIsFocused ? Color.white.opacity(0.25) : Color.white.opacity(0.1),
-                lineWidth: 0.5
-            )
+        return max(
+            MessageComposerField.threeLineHeight,
+            contentColumnHeight * Self.expandedComposerHeightFraction
         )
     }
+
+    private static let expandedComposerHeightFraction: CGFloat = 0.30
 
     private var composerDraftIsEmpty: Bool {
         composerDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// The submit closure reads the agent at call time rather than capturing it
+    /// — the field's own Return handling and the send button both go through
+    /// here, and the selected agent can change while a draft is being typed.
     private func submitComposerDraft(_ agent: AgentSession?) -> () -> Void {
         return {
             guard !composerDraftIsEmpty, let agent else { return }
@@ -364,40 +382,51 @@ struct AgentSessionView: View {
     private static let bubbleCornerRadius: CGFloat = 14
     private static let bubbleTailCornerRadius: CGFloat = 4
 
+    /// The user's line, with its copy control underneath — flush with the
+    /// bubble's trailing edge. Both bubbles in this column carry one (the user
+    /// asked for their own words and the agent's replies to be copyable here).
     private func outgoingBubble(_ text: String) -> some View {
-        HStack(alignment: .bottom) {
-            Spacer(minLength: 56)
+        VStack(alignment: .trailing, spacing: 3) {
+            HStack(alignment: .bottom) {
+                Spacer(minLength: 56)
 
-            Text(text)
-                .font(.system(size: 14))
-                .foregroundColor(.white)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 13)
-                .padding(.vertical, 9)
-                .background(
-                    bubbleShape(isOutgoing: true)
-                        .fill(DS.Colors.accent)
-                )
+                Text(text)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 9)
+                    .background(
+                        bubbleShape(isOutgoing: true)
+                            .fill(DS.Colors.userBubbleFill)
+                    )
+            }
+
+            MessageCopyButton(text: text, helpText: "复制我说的话")
         }
     }
 
     private func assistantBubble(_ text: String) -> some View {
-        HStack(alignment: .top) {
-            Text(text)
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.92))
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 13)
-                .padding(.vertical, 9)
-                .background(
-                    bubbleShape(isOutgoing: false)
-                        .fill(Color.black.opacity(0.26))
-                )
-                .overlay(
-                    bubbleShape(isOutgoing: false)
-                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 0.5)
-                )
-            Spacer(minLength: 56)
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .top) {
+                Text(text)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.92))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 13)
+                    .padding(.vertical, 9)
+                    .background(
+                        bubbleShape(isOutgoing: false)
+                            .fill(DS.Colors.assistantBubbleFill)
+                    )
+                    .overlay(
+                        bubbleShape(isOutgoing: false)
+                            .strokeBorder(DS.Colors.assistantBubbleBorder, lineWidth: 0.5)
+                    )
+                Spacer(minLength: 56)
+            }
+
+            MessageCopyButton(text: text, helpText: "复制 Agent 的回复")
         }
     }
 }

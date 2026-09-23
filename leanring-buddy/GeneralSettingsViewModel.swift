@@ -106,8 +106,13 @@ final class GeneralSettingsViewModel: ObservableObject {
     /// Read live from the store rather than kept as state, because nothing here
     /// writes to it except the clear button — and after a clear the answer is
     /// simply zero, which needs no cache to be correct.
+    ///
+    /// Archived conversations are counted: the clear button deletes them too
+    /// (`clearAllSessions` empties the whole file), so counting only the live
+    /// sessions would let the row promise "there is nothing on disk" while
+    /// conversations the user deleted are still there.
     var storedConversationExchangeCount: Int {
-        ConversationSessionsStore.allSessions().reduce(0) { $0 + $1.entries.count }
+        ConversationSessionsStore.allSessionsIncludingArchived().reduce(0) { $0 + $1.entries.count }
     }
 
     /// Deletes every stored session and tells the running app to forget them.

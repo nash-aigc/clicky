@@ -109,6 +109,34 @@ final class VoiceWebSessionController: ObservableObject {
     /// which also sets this.
     @Published var selectedRoleID: String?
 
+    /// The engine the 语音聊天 header's 模式 menu has picked, and the one a
+    /// role-preset connect hands the page. Deliberately NOT `activeMode`:
+    /// that one answers a different question — "was this session started by a
+    /// mode shortcut?" — which `handleShortcutPress` reads to decide whether a
+    /// second press hangs up or switches over. A role-preset session carries
+    /// an engine without being a shortcut session.
+    ///
+    /// Not persisted: it describes the session the user is about to start, not
+    /// the app. `activeMode`'s own doc says the same thing from the other side.
+    @Published var selectedMode: VoiceWebMode = .threeStage {
+        didSet {
+            guard selectedMode != oldValue else { return }
+            // 屏幕 / 摄像头两个开关读的键是跟着模式走的（三段式一个屏幕键、
+            // 全模态另一对），换模式必须重读，否则按钮会显示上一种模式的值。
+            reloadDeviceSwitches()
+        }
+    }
+
+    /// 语音聊天页头部的「屏幕」开关，和 快捷键 页「VoiceWeb 语音模式」组里的
+    /// 是**同一个设置** —— 两个入口读写的都是 `AppSettingsStore`，所以一处改
+    /// 另一处立刻一致，不会出现"两个地方显示不同的值"。读哪一对键由
+    /// `selectedMode` 决定：三段式只有 `voiceWebThreeStageSendsScreen`，全模态
+    /// 才有 `voiceWebOmniScreenEnabled`。
+    @Published private(set) var isScreenSharingEnabled = false
+
+    /// 同上，「摄像头」开关 —— 只有全模态有摄像头。
+    @Published private(set) var isCameraEnabled = false
+
     /// The live transcript of the session's conversation — VoiceWeb writes
     /// each turn to a per-role history file, and the 1 s poll mirrors every
     /// message here (both sides, so the view shows the user's own words too).
@@ -170,6 +198,9 @@ final class VoiceWebSessionController: ObservableObject {
         self.presentAnswer = presentAnswer
         self.presentFailure = presentFailure
         self.setNotchOverride = setNotchOverride
+        // 页头那三个控件的初值 —— 不读一次的话第一帧会显示成"全关"，而
+        // 用户在设置页里可能早把它们打开了。
+        reloadDeviceSwitches()
     }
 
     // MARK: - Shortcut entry
@@ -192,14 +223,31 @@ final class VoiceWebSessionController: ObservableObject {
         startSession(mode: mode, roleID: nil)
     }
 
-    /// The 语音聊天 sidebar's role row action: make the role active in
+    /// The 语音聊天 sidebar role row's connect button: make the role active in
     /// VoiceWeb, then connect. Clicking the already-connected role again is a
     /// no-op; clicking a different one while a session runs hangs up the old
     /// session first (the single-bridge command slot cannot carry both).
+    ///
+    /// Not wired to a sidebar row any more — a row click only selects (see
+    /// `selectRole`), and the connection is started from the row's own
+    /// 连接 button. Kept because that button and the shortcuts call it.
     func connectToRole(_ roleID: String) {
         selectedRoleID = roleID
-        if connectionPhase == .connected, activeRoleID == roleID { return }
-        startSession(mode: nil, roleID: roleID)
+        // `.connecting` counts as busy: a second click while the handshake is
+        // still running would otherwise tear the半-finished session down and
+        // start it again, which reads as the row restarting itself.
+        if connectionPhase != .idle, activeRoleID == roleID { return }
+        // 引擎取页头的 模式 菜单 —— 用户在那里选的就是这一条连接要用的模式。
+        startSession(mode: selectedMode, roleID: roleID)
+    }
+
+    /// The sidebar row's action: select the role, and nothing else. Selection
+    /// is the user's choice of who to talk to; starting a session is a separate
+    /// decision made once, by the 连接 button. Keeping them apart is what stops
+    /// the connection state from appearing to move between rows as the user
+    /// clicks through them.
+    func selectRole(_ roleID: String) {
+        selectedRoleID = roleID
     }
 
     /// Best-effort disconnect at app termination — the server keeps running.
@@ -248,6 +296,72 @@ final class VoiceWebSessionController: ObservableObject {
         }
     }
 
+    // MARK: - Header device switches (模式 / 屏幕 / 摄像头)
+
+    /// 头部那两个开关的当前值，从设置里重读一遍。
+    ///
+    /// 调用点有三处，都不是随便放的：`init`（第一帧就是对的）、
+    /// `selectedMode` 的 `didSet`（换模式 = 换键）、以及页头的 `onAppear`
+    /// （用户在设置页改了同一个开关之后回到这一页）。**不需要通知观察者**：
+    /// 设置页是整窗独占的，它和语音聊天的页头不可能同时在屏幕上，所以
+    /// "改完再回到这一页"一定会重新走一次 `onAppear` —— 和
+    /// `refreshRolePresets` 靠的是同一条。
+    func reloadDeviceSwitches() {
+        let settings = AppSettingsStore.snapshot()
+        isScreenSharingEnabled = Self.screenSharingSetting(from: settings, mode: selectedMode)
+        isCameraEnabled = settings.voiceWebOmniCameraEnabled
+    }
+
+    /// 三段式的屏幕开关和全模态的屏幕开关是**两个**存储键（VoiceWeb 自己的
+    /// 配置就是这么分的：三段式是 `screen_vision`，全模态是 `screen`），所以
+    /// 读的时候也要按模式选键。全双工语音两者都没有。
+    private static func screenSharingSetting(from settings: AppSettings, mode: VoiceWebMode) -> Bool {
+        switch mode {
+        case .threeStage: return settings.voiceWebThreeStageSendsScreen
+        case .duplexVoice: return false
+        case .omni: return settings.voiceWebOmniScreenEnabled
+        }
+    }
+
+    /// 三段式没有摄像头，全双工语音既没有摄像头也没有屏幕。按钮**禁用而不是
+    /// 隐藏** —— 隐藏的话换模式时页头会跳一下，而且用户看不出"这个模式没有
+    /// 这个能力"和"这个功能没做"的区别。
+    var selectedModeSupportsScreenSharing: Bool { selectedMode != .duplexVoice }
+    var selectedModeSupportsCamera: Bool { selectedMode == .omni }
+
+    /// 写回设置并刷新本对象的两个开关。`AppSettingsStore.save` 本来就会发
+    /// `.clickyAppSettingsChanged`（设置页据此重读），这里只需要更新自己的
+    /// `@Published` 值，让头部按钮立刻变色。
+    ///
+    /// 值只在**下一次连接**时才被送进 VoiceWeb（`sendConnectCommand` 读的是
+    /// 当时的设置）—— 桥没有运行时切换设备的命令，页头的 `.help` 写明了这一点。
+    func setScreenSharingEnabled(_ isEnabled: Bool) {
+        guard selectedModeSupportsScreenSharing else { return }
+        var settings = AppSettingsStore.snapshot()
+        switch selectedMode {
+        case .threeStage: settings.voiceWebThreeStageSendsScreen = isEnabled
+        case .omni: settings.voiceWebOmniScreenEnabled = isEnabled
+        case .duplexVoice: return
+        }
+        persistAppSettings(settings)
+    }
+
+    func setCameraEnabled(_ isEnabled: Bool) {
+        guard selectedModeSupportsCamera else { return }
+        var settings = AppSettingsStore.snapshot()
+        settings.voiceWebOmniCameraEnabled = isEnabled
+        persistAppSettings(settings)
+    }
+
+    private func persistAppSettings(_ settings: AppSettings) {
+        do {
+            try AppSettingsStore.save(settings)
+            reloadDeviceSwitches()
+        } catch {
+            presentFailure("保存语音聊天设置失败：\(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Text input (the composer)
 
     /// Sends a typed line into the connected session. The page executes
@@ -281,6 +395,14 @@ final class VoiceWebSessionController: ObservableObject {
         }
         activeMode = mode
         activeRoleID = roleID
+        // 这一条连接真正要用的引擎。shortcut 会话用它自己的模式；sidebar 起的
+        // 会话没有模式，用页头 模式 菜单选的那一个。
+        //
+        // 必须另存一份而不是直接把 `selectedMode` 写进 `activeMode`：那个属性
+        // 回答的是"这条会话是不是 shortcut 起的"（`handleShortcutPress` 靠它
+        // 判断第二次触发是挂断还是换模式），把角色会话也标上模式会让「⌃⌥2」
+        // 从"挂断"变成"切换到全双工语音"。
+        let sessionEngineMode = mode ?? selectedMode
         connectionPhase = .connecting
         // A new session watches a new conversation; the transcript poll
         // repopulates from the history baseline at its first tick.
@@ -294,11 +416,17 @@ final class VoiceWebSessionController: ObservableObject {
         // (the user's requirement: 连接过程中就持续显示，直到挂断).
         setNotchOverride(.externalChatting)
         sessionTask = Task { [weak self] in
-            await self?.runSession(mode: mode)
+            await self?.runSession(mode: sessionEngineMode)
         }
     }
 
-    private func runSession(mode: VoiceWebMode?) async {
+    /// - Parameter mode: 这条连接要用的引擎，**一定不是 nil** —— shortcut 会话
+    ///   在自己的模式下起，sidebar 起的会话用页头 模式 菜单选的那个
+    ///   （`startSession` 里合成 `sessionEngineMode`，两种来源在那一步就并成
+    ///   一个值）。以前这里是 Optional，因为角色会话刻意不指定引擎、让页面
+    ///   沿用自己加载时的那个；现在页头有了显式的模式选择，那个"不指定"的
+    ///   分支就没有来源了。
+    private func runSession(mode: VoiceWebMode) async {
         do {
             try await ensureVoiceWebServerIsReachable()
             try await ensureVoiceWebPageIsAvailable()
@@ -460,15 +588,20 @@ final class VoiceWebSessionController: ObservableObject {
 
     // MARK: - Bridge commands and polling
 
-    private func sendConnectCommand(mode: VoiceWebMode?) async throws {
+    /// 把这一条连接的四个选择一起交给页面：引擎、麦克风、屏幕、摄像头。
+    ///
+    /// 屏幕与摄像头读的是**当前设置**（页头那两个开关和 快捷键 页写的是同一
+    /// 批键），所以改完开关要重新连一次才会生效 —— 桥没有运行时切换设备的
+    /// 命令，页头的 `.help` 写明了这一点。
+    ///
+    /// 引擎一定会发：页头 模式 菜单选的就是它。页面自己处理"引擎和我加载时
+    /// 的不一样"这种情况（重新 POST 一次命令再 `location.reload()`，见
+    /// 开发经验里那条实测——服务端切 `chat_engine` 对已经挂载的页面是不可见
+    /// 的，它的连接会静默什么都不做）。
+    private func sendConnectCommand(mode: VoiceWebMode) async throws {
         let settings = AppSettingsStore.snapshot()
         var payload: [String: Any] = ["action": "connect"]
-        if let mode {
-            // A mode shortcut names the engine; a role-preset connect leaves
-            // the engine alone — the page keeps the one it loaded with (an
-            // omitted `engine` never triggers the reload path in the page).
-            payload["engine"] = mode.engineName
-        }
+        payload["engine"] = mode.engineName
         payload["mic"] = true
         if mode == .threeStage {
             payload["screen_vision"] = settings.voiceWebThreeStageSendsScreen

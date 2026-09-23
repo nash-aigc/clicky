@@ -414,8 +414,12 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     var answerLengthStyle: AnswerLengthStyle = .oneOrTwoSentences
 
     /// The card theme that renders the assistant's reply in the conversation
-    /// view. Blue is the default, per the user's reference spec.
-    var answerCardStyle: AnswerCardStyle = .blue
+    /// view. 黑 is the default since 2026-09-23 — the user asked for the
+    /// bubbles to be dark and to match the panel's ground (「气泡调成暗色…
+    /// 主题应该跟背景颜色一致」), so the blue reference default became the
+    /// option rather than the starting point. 蓝 and 宣纸 are still there for
+    /// whoever wants them, in 设置 → 卡片样式.
+    var answerCardStyle: AnswerCardStyle = .black
 
     /// Free-form instructions appended verbatim to the system prompt.
     var extraSystemPromptInstructions: String = ""

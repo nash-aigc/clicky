@@ -128,6 +128,28 @@ enum DS {
         /// (the reference `.opt.sel`'s rgba(10,132,255,.10)).
         static let accentSubtle = Color(hex: "#0A84FF").opacity(0.10)
 
+        // ── Chat bubbles ─────────────────────────────────────────────
+        // 2026-09-23 用户要求「右侧气泡调成暗色，但要区分用户和 AI；三个
+        // 页面全部暗色，主题跟背景一致」——原来的用户气泡是实心 accent 蓝，
+        // 在暗底上是一片蓝，读起来像另一种按钮而不是「我说的话」。现在两侧
+        // 都是暗色，靠**明暗差 + 对齐方向 + 尾巴角**区分：
+        //
+        //   · 用户：比面板底 (#18181C) 亮一档的深灰，靠右，尾巴在右下；
+        //   · AI  ：比面板底暗一档（沿用参考页「卡片比窗口底更暗」的层级），
+        //           靠左，尾巴在左下，另加一条 0.5pt 描边把它从底上拎出来。
+        //
+        // 三处内容列（对话 / Agent / 语音聊天）与归档页共用这两个 token，
+        // 免得三个文件各写一份 rgba 各差一点。
+
+        /// 用户气泡的填充。
+        static let userBubbleFill = Color(hex: "#2E2E34")
+
+        /// AI 气泡的填充。
+        static let assistantBubbleFill = Color(hex: "#0C0C0E")
+
+        /// AI 气泡的描边——暗底上的暗气泡需要这一笔才看得见边界。
+        static let assistantBubbleBorder = Color.white.opacity(0.12)
+
         // ── Pill Button (the light capsule in HeyClicky screenshots) ──
 
         /// Light gradient top stop for the pill button — the pale capsule the
@@ -844,6 +866,66 @@ extension View {
             }
         }
     }
+}
+
+// MARK: - Notch Bar Action Button
+
+/// The notch sheet's rectangular bar button: a rounded rectangle (radius
+/// `DS.CornerRadius.medium` — deliberately not a capsule, matching the
+/// 2026-09-23 UI 化改造's button family) carrying an icon and a label, brighter
+/// while the page it opens is the one being shown.
+///
+/// **Shared rather than written twice, on purpose.** The sidebar's 「设置」 /
+/// 「归档」 pair and the settings page's own 「返回」 have to render identically —
+/// the user's 「返回按钮跟设置按钮必须样式完全相同，但返回按钮改成绿色」 — so the
+/// only thing the call sites are allowed to differ on is `tint`. Two copies of
+/// this shape would drift the first time either one is tuned, and the difference
+/// would be exactly the kind nobody notices until it looks wrong.
+struct NotchBarActionButton: View {
+
+    let title: String
+    let systemImage: String
+
+    /// The one legitimate difference between the call sites: 「返回」 is green so
+    /// the way back out of the settings pages is visible at a glance. Everything
+    /// else about the button is derived from this, so the two still match.
+    var tint: Color = .white
+
+    /// The brighter step, for a button whose page is currently open.
+    var isHighlighted: Bool = false
+
+    var help: String
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 12, weight: .medium))
+
+                Text(title)
+                    .font(.system(size: 12.5, weight: .medium))
+            }
+            // Opacity on the tint itself, so a white button reproduces the
+            // original white-on-white opacities exactly while a green one keeps
+            // the same two steps as green.
+            .foregroundColor(tint.opacity(isHighlighted ? 1.0 : 0.7))
+            .frame(height: Self.height)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(tint.opacity(isHighlighted ? 0.14 : 0.07))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
+    }
+
+    /// Exposed so a caller can align something else to the same height without
+    /// re-typing the number.
+    static let height: CGFloat = 30
 }
 
 // MARK: - Buddy Composer Visual Style
