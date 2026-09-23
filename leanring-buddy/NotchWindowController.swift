@@ -1355,9 +1355,21 @@ final class NotchWindowController {
             return
         }
 
-        // Idle: hold whatever was showing, for long enough to cover the gap
-        // between one phase and the next. Recomputing at the deadline rather
-        // than recursing is what keeps this from re-arming its own hold for ever.
+        // Idle — but only HOLD IT while a listening window is still open, because
+        // that is the only situation in which an idle instant is a GAP rather
+        // than an ending. The user's stop closes the window first
+        // (`endContinuousListeningWindow` runs before `interruptActiveResponse`
+        // sets the voice state idle), so a stop now retracts the wings at once.
+        // With the hold unconditional the panel sat there for the whole 2.5 s
+        // after a stop, which the user reported as 「按下快捷键之后大概等了 3 秒，
+        // 刘海屏才消失。我希望它瞬间消失」.
+        guard companionManager.buddyDictationManager.isContinuousListening else {
+            activityPhaseHoldTask?.cancel()
+            activityPhaseHoldTask = nil
+            panelModel.activityPhase = derivedPhase
+            return
+        }
+
         guard panelModel.activityPhase != .idle else { return }
         activityPhaseHoldTask?.cancel()
         activityPhaseHoldTask = Task { @MainActor [weak self] in
