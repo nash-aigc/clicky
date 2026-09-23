@@ -831,7 +831,10 @@ struct NotchPanelRootSwitchingView: View {
 /// 早期版本还有一条蓝紫渐变，取自 `design-preview/notch-glow-expand.html`，
 /// 只当左、右、下三边露出的 1.5pt 边光用、从没铺过面——用户 2026-09-23
 /// 要求删掉那圈外框高亮线，渐变的四个取色和两个端点一起删了。
-private enum NotchExpandedSheetStyle {
+/// internal（不再是 private）：`NotchWindowController` 的展开驻留层要在
+/// SwiftUI 内容画出来之前，先用同一份表面色和底角半径铺出一块临时的
+/// 「空面板皮」，颜色和圆角只能有一份真相。
+enum NotchExpandedSheetStyle {
 
     /// 面板皮肤的深色底——2026-09-23 UI 化改造换成参考页 `.window` 的
     /// `rgba(24,24,28,.94)` 原值（旧值 rgba(14,14,13,.92) 是另一份 demo

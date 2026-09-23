@@ -96,11 +96,13 @@ struct MessageComposerField: View {
     /// buttons (they are 20pt wide and sit 4pt from the edge).
     static let trailingButtonInset: CGFloat = 26
 
-    /// The stop button: 「长方形的、竖向的」, and small — 「减少空间的占用」.
-    /// Taller than it is wide is the whole of "vertical rectangle", and 42pt
-    /// keeps it clear of the box's own 67pt without pretending to be a column.
+    /// The stop button: 「长方形的、竖向的」, and its height is exactly the
+    /// box's own — the user's 「停止按钮的高度必须与输入框高度完全相同」
+    /// (2026-09-23): the earlier fixed 42pt read as a stub beside the
+    /// three-line box, and collapsed further against the expanded one. The
+    /// height is the `height` parameter, so it tracks the box in both states.
+    /// Only the width is fixed.
     static let stopButtonWidth: CGFloat = 24
-    static let stopButtonHeight: CGFloat = 42
     static let stopButtonCornerRadius: CGFloat = 6
     /// 「小细缝就可以，不要边距太大」 — a hairline of air, not a gutter.
     static let stopButtonGap: CGFloat = 6
@@ -240,7 +242,7 @@ struct MessageComposerField: View {
                         .fill(stopButtonGlyphColor)
                         .frame(width: 8, height: 8)
                 )
-                .frame(width: Self.stopButtonWidth, height: Self.stopButtonHeight)
+                .frame(width: Self.stopButtonWidth, height: height)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

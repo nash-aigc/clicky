@@ -136,6 +136,13 @@ final class NotchWindowController {
     /// cycle would snap the OLD screen's panel to that OLD expanded frame.
     private var expansionGeneration = 0
 
+    /// 展开提交延后一个 run-loop tick（见 `beginExpansion` 里 2026-09-23 的
+    /// 317ms 实测）：`isExpanded` 翻转前的这一小段窗口里，第二次点击会穿过
+    /// `!panelModel.isExpanded` 的判断再走一次展开。这个标志在 `beginExpansion`
+    /// 置位、在延后块里**无条件**先清掉（在 generation 判断之前），所以任何
+    /// 情况下都不会卡死。
+    private var isExpansionCommitPending = false
+
     /// The screen whose sheet is currently expanded. At most one — expanding
     /// on a second screen collapses the first.
     private var expandedScreen: NSScreen?
@@ -549,7 +556,9 @@ final class NotchWindowController {
     /// any of them from flashing a finished sheet for one frame (see
     /// `installRevealCover`).
     private func beginExpansion(on presence: ScreenPresence) {
-        guard !panelModel.isExpanded else { return }
+        // The commit is deferred one tick (see below); a second click landing
+        // inside that gap must not start a second expansion on top of it.
+        guard !panelModel.isExpanded && !isExpansionCommitPending else { return }
         // 记住开在哪块屏幕上 —— 「打开」让位之后要放回同一块（见
         // `lastSheetHostScreen`）。
         lastSheetHostScreen = presence.screen
@@ -564,14 +573,15 @@ final class NotchWindowController {
         expansionGeneration += 1
         let expansionGenerationAtStart = expansionGeneration
         expandedScreen = presence.screen
+        isExpansionCommitPending = true
 
-        // Order matters. The cover goes on FIRST, hiding the content entirely:
-        // `setFrame(display: true)` below forces a synchronous draw, so
-        // installing it afterwards would paint the finished sheet for one
-        // frame before the reveal hid it — a visible flash.
+        // Order matters. The cover (plus the temporary surface) goes on FIRST,
+        // hiding the content entirely: `setFrame(display: true)` below forces a
+        // synchronous draw, so installing it afterwards would paint the
+        // finished sheet for one frame before the reveal hid it — a visible
+        // flash.
         installRevealCover(on: presence)
 
-        panelModel.isExpanded = true
         presence.panel.setFrame(expandedFrame, display: true)
 
         startReveal(on: presence, style: expansionStyle, expandedFrame: expandedFrame)
@@ -586,7 +596,29 @@ final class NotchWindowController {
         }
 
         presence.panel.ignoresMouseEvents = false
-        finishExpansionCommit(on: presence)
+
+        // The content flip is DEFERRED one run-loop tick. Measured 2026-09-23
+        // (「点击刘海之后没有马上开始展开，而是等了一段时间」): with the flip
+        // inline, the sheet's SwiftUI build + draw ran inside the synchronous
+        // draw above — 317 ms with a populated conversation (44 ms empty) — so
+        // the reveal animation did not begin until click+350 ms. Deferring the
+        // flip lets this tick's transaction commit with the reveal animations
+        // already attached, and the render server (which plays them on its own
+        // clock) starts the expansion the instant the click lands; the sheet
+        // builds and draws mid-animation, over the temporary surface. The
+        // generation guard stands a second expansion's stale flip down.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            // Cleared unconditionally: a stale deferred block (a generation
+            // bump that should not happen while the flag gates new
+            // expansions, but which must never wedge the flag on) must not
+            // block every future expansion.
+            self.isExpansionCommitPending = false
+            guard self.expansionGeneration == expansionGenerationAtStart,
+                  !self.panelModel.isExpanded else { return }
+            self.panelModel.isExpanded = true
+            self.finishExpansionCommit(on: presence)
+        }
 
         // Expansion watchdog: a dropped layer animation cannot strand the
         // sheet half-revealed — past the reveal's deadline, force the expanded
@@ -623,6 +655,23 @@ final class NotchWindowController {
         // installing it must be instantaneous, the reveal is the animation.
         CATransaction.setDisableActions(true)
         hostingLayer.mask = coverLayer
+
+        // The temporary surface (「空面板皮」): the content build is deferred
+        // one run-loop tick so the reveal's transaction commits first, which
+        // means the mask is growing over a layer whose SwiftUI content has
+        // NOT drawn yet — without a surface the growing sheet would be a
+        // growing TRANSPARENT hole onto the desktop. This paints the layer
+        // with the sheet's own surface color and bottom corners so what grows
+        // out of the notch reads as the sheet from the first frame; the real
+        // content draws over it moments later. Top corners stay square
+        // (the sheet's are 36 — a sliver the content corrects when it draws).
+        hostingLayer.backgroundColor = NSColor(NotchExpandedSheetStyle.surfaceColor).cgColor
+        hostingLayer.cornerRadius = NotchExpandedSheetStyle.sheetBottomCornerRadius
+        // 「Bottom」 in the layer's own coordinate space depends on the view's
+        // flippedness — the same dynamic read the mask styles use for topEdgeY.
+        hostingLayer.maskedCorners = presence.contentHostingView.isFlipped
+            ? [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+            : [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         CATransaction.commit()
     }
 
@@ -952,6 +1001,14 @@ final class NotchWindowController {
             hostingLayer.opacity = 1
         }
         hostingLayer.removeAnimation(forKey: Self.notchBloomAnimationKey)
+        // The temporary surface goes with the reveal: the real content has
+        // drawn (or the watchdog converged) by the time any removeReveal path
+        // runs, and a leftover dark fill would halo the resting pill's
+        // transparent flanks.
+        hostingLayer.backgroundColor = NSColor.clear.cgColor
+        hostingLayer.cornerRadius = 0
+        hostingLayer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner,
+                                      .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
         CATransaction.commit()
     }
 
