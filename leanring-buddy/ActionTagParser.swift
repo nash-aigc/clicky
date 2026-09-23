@@ -128,6 +128,13 @@ nonisolated enum CompanionAction: Sendable {
     /// block on the next turn, which is what lets the model answer questions
     /// about the files ("这个文件夹里有什么") through the agent too.
     case runDesktopFileAgent(task: String)
+    /// Hand a task to the fifth exit — the figure agent, a Python subprocess
+    /// that turns a figure description into a precise geometry SVG via the
+    /// local geometry-dsl compiler (the model writes a `.geom` description,
+    /// the compiler computes every coordinate). One fixed script, task text
+    /// the only free part; the rendered figure lands in `~/Desktop/Clicky图形/`
+    /// and opens in front of the user. Same shape as `runDesktopFileAgent`.
+    case runFigureAgent(task: String)
 }
 
 nonisolated struct ActionParseResult: Sendable {
@@ -147,19 +154,28 @@ nonisolated struct ActionParseResult: Sendable {
     /// handed to `AgentSessionManager` directly, the way `shapeRequests` are
     /// handed to the annotation manager.
     let agentRequests: [AgentDispatchRequest]
+    /// Every [SVG_BOARD:…] tag, in the order the model wrote them — figures
+    /// for the user's eyes, drawn on screen next to a named element. Deliberately NOT in
+    /// `actions`: a board touches no screen state, so it must not enter the
+    /// one-action-per-screenshot continuation loop — these are handed to the
+    /// figure-board controller, the way `shapeRequests` are handed to the
+    /// annotation manager.
+    let figureBoardRequests: [FigureBoardRequest]
 
     init(
         spokenText: String,
         pointingRequest: ModelReportedCoordinate?,
         actions: [CompanionAction],
         shapeRequests: [AnnotationShapeRequest] = [],
-        agentRequests: [AgentDispatchRequest] = []
+        agentRequests: [AgentDispatchRequest] = [],
+        figureBoardRequests: [FigureBoardRequest] = []
     ) {
         self.spokenText = spokenText
         self.pointingRequest = pointingRequest
         self.actions = actions
         self.shapeRequests = shapeRequests
         self.agentRequests = agentRequests
+        self.figureBoardRequests = figureBoardRequests
     }
 }
 
@@ -182,6 +198,21 @@ nonisolated struct AgentDispatchRequest: Sendable {
     /// The task text: a new agent's first instruction, or an existing agent's
     /// follow-up.
     let message: String
+}
+
+/// One [SVG_BOARD:元素名：任务] tag: the model asking for a figure drawn ON
+/// SCREEN, on a small white board placed next to a named element — the
+/// screen-anchored sibling of [SVG_AGENT], which instead opens the figure as
+/// a file. Deliberately NOT in `actions`, exactly like shapeRequests and
+/// agentRequests: a board is a drawing for the user's eyes, so it must not
+/// enter the one-action-per-screenshot continuation loop.
+nonisolated struct FigureBoardRequest: Sendable {
+    /// The on-screen element's own wording the anchor resolves against — the
+    /// same label vocabulary the click path's AX lookup ranks (exact name →
+    /// control-sized → nearest).
+    let anchorLabel: String
+    /// The figure description, passed to the figure agent verbatim.
+    let task: String
 }
 
 nonisolated enum ActionTagParser {
@@ -213,6 +244,20 @@ nonisolated enum ActionTagParser {
     ///
     /// Capture group: 1 = task text.
     private static let desktopAgentPattern = #"\[PY_AGENT:([^\]]+)\]"#
+
+    /// `[SVG_AGENT:画一个三角形和它的外接圆]` — hand a task to the figure agent
+    /// (the fifth exit). The task is the whole rest of the tag.
+    ///
+    /// Capture group: 1 = task text.
+    private static let figureAgentPattern = #"\[SVG_AGENT:([^\]]+)\]"#
+
+    /// `[SVG_BOARD:三角形:画出两条边并标注勾股定理]` — the on-screen whiteboard
+    /// variant of the figure agent: draw the figure next to a named element
+    /// instead of opening it as a file. The anchor is split at the FIRST
+    /// colon, so the element name cannot contain one but the task text may.
+    ///
+    /// Capture groups: 1 = anchor element name, 2 = task text.
+    private static let figureBoardPattern = #"\[SVG_BOARD:([^:\]]+?):([^\]]+)\]"#
 
     /// `[SHAPE:circle:500,300;560,300:a label:screen2]` — kind, then two or more
     /// ";"-separated points, then an optional label and an optional screen.
@@ -247,6 +292,7 @@ nonisolated enum ActionTagParser {
         var actions: [CompanionAction] = []
         var shapeRequests: [AnnotationShapeRequest] = []
         var agentRequests: [AgentDispatchRequest] = []
+        var figureBoardRequests: [FigureBoardRequest] = []
 
         // Tags are removed from the spoken text afterwards, so a tag nested inside
         // another tag's text would corrupt the result once both were cut. Letting
@@ -409,6 +455,22 @@ nonisolated enum ActionTagParser {
             actions.append(.runDesktopFileAgent(task: taskText))
         }
 
+        forEachMatch(in: responseText, pattern: figureAgentPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let taskText = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !taskText.isEmpty else { return }
+            actions.append(.runFigureAgent(task: taskText))
+        }
+
+        forEachMatch(in: responseText, pattern: figureBoardPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let anchorLabel = capture(1, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespaces), !anchorLabel.isEmpty else { return }
+            guard let taskText = capture(2, of: match, in: responseText)?
+                .trimmingCharacters(in: .whitespacesAndNewlines), !taskText.isEmpty else { return }
+            figureBoardRequests.append(FigureBoardRequest(anchorLabel: anchorLabel, task: taskText))
+        }
+
         forEachMatch(in: responseText, pattern: shapePattern) { match, tagRange in
             guard claimTagRange(tagRange) else { return }
             // The pattern swallows *any* `[SHAPE:…]` tag — an unknown kind, a
@@ -460,7 +522,8 @@ nonisolated enum ActionTagParser {
             pointingRequest: pointingRequest,
             actions: actions,
             shapeRequests: shapeRequests,
-            agentRequests: agentRequests
+            agentRequests: agentRequests,
+            figureBoardRequests: figureBoardRequests
         )
     }
 
@@ -630,7 +693,7 @@ nonisolated enum ActionTagParser {
     /// a keyword added to the parser above must be added here too, or the
     /// streaming speech would read the tag aloud instead of removing it.
     private static let streamingTagKeywords =
-        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE|AGENT_SPAWN|AGENT_SEND|PY_AGENT"
+        "POINT|CLICK|RIGHT_CLICK|DOUBLE_CLICK|SCROLL|TYPE|SELECT|PRESS|OPEN|WAIT|AX_TREE|SHAPE|AGENT_SPAWN|AGENT_SEND|PY_AGENT|SVG_AGENT|SVG_BOARD"
 
     /// A complete tag, however far the reply has streamed: `[TYPE:北京新闻]`.
     private static let streamingCompleteTagPattern =
