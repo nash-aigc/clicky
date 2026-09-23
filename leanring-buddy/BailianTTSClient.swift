@@ -237,6 +237,16 @@ final class BailianTTSClient {
 
     /// Stops playback immediately and abandons any chunks still queued.
     func stopPlayback() {
+        // Reported BEFORE the storm of teardown below, because the interesting
+        // question about a silent reply is whether there was ever anything to
+        // hear: `isPlaying == true` with `isSpeakingChunkSequence == false`
+        // means this stop landed in the synthesis gap BETWEEN two segments (the
+        // first finished, the next had not started) — a reply that is being
+        // killed while it is momentarily quiet. Every caller of this method is
+        // an interrupt path, so the line also names how much was abandoned.
+        if isPlaying {
+            print("🔊 Streaming speech: stopPlayback() while \(isSpeakingChunkSequence ? "a segment was playing" : "between segments (synthesis gap)") — abandoning the rest of the reply")
+        }
         activeStreamingSession?.stop()
         activeStreamingSession = nil
         remainingChunksPlaybackTask?.cancel()
@@ -932,6 +942,20 @@ final class BailianTTSClient {
             }
         }
 
+        /// One line per playback-loop exit, naming WHY it left and how much
+        /// audio went unplayed.
+        ///
+        /// Dropping queued segments on a stop is correct — a stop must not keep
+        /// talking — but it is silent, and a silent drop is indistinguishable
+        /// in the log from a reply that never had any audio. That ambiguity is
+        /// what made a level-triggered barge-in read as a synthesis failure and
+        /// cost a whole round of diagnosis, so every exit now says which exit
+        /// it was.
+        private func reportPlaybackLoopExit(reason: String) {
+            let unplayedSegmentCount = pendingSegments.count + inFlightSyntheses.count
+            print("🔊 Streaming speech: playback loop exited (\(reason)); \(unplayedSegmentCount) unplayed segment(s) dropped, first audio \(firstAudioStarted ? "had started" : "never started")")
+        }
+
         private func runPlaybackLoop() async {
             guard let owner else { return }
             while !Task.isCancelled, !isStopped {
@@ -939,7 +963,14 @@ final class BailianTTSClient {
                 if let nextSynthesis = inFlightSyntheses.first {
                     do {
                         let audioData = try await nextSynthesis.task.value
-                        guard !Task.isCancelled, !isStopped else { return }
+                        guard !Task.isCancelled, !isStopped else {
+                            reportPlaybackLoopExit(
+                                reason: isStopped
+                                    ? "stopPlayback() landed while the next segment's audio was in flight"
+                                    : "playback task cancelled while the next segment's audio was in flight"
+                            )
+                            return
+                        }
                         inFlightSyntheses.removeFirst()
                         if !firstAudioStarted {
                             firstAudioStarted = true
@@ -955,6 +986,7 @@ final class BailianTTSClient {
                     } catch {
                         if isStopped || Task.isCancelled { return }
                         print("⚠️ Streaming speech: segment synthesis failed: \(error.localizedDescription)")
+                        reportPlaybackLoopExit(reason: "segment synthesis failed")
                         synthesisFailure = error
                         // Partial audio already played is still useful; end the
                         // sequence rather than leaving the companion stuck in a
@@ -964,6 +996,7 @@ final class BailianTTSClient {
                         return
                     }
                 } else if hasFinishedStreaming, pendingSegments.isEmpty {
+                    reportPlaybackLoopExit(reason: "the whole reply played")
                     owner.isSpeakingChunkSequence = false
                     owner.voicePlaybackEngine.releaseEngineWhenIdle()
                     return
@@ -971,6 +1004,11 @@ final class BailianTTSClient {
                     try? await Task.sleep(nanoseconds: 100_000_000)
                 }
             }
+            // The loop also leaves here when the task was cancelled without a
+            // stop, which is the one exit that used to print nothing at all.
+            reportPlaybackLoopExit(
+                reason: isStopped ? "stopPlayback()" : "playback task cancelled"
+            )
             if isStopped {
                 owner.isSpeakingChunkSequence = false
                 owner.voicePlaybackEngine.releaseEngineWhenIdle()
