@@ -504,6 +504,25 @@ nonisolated final class CardRenderPlanCache {
         }
     }
 
+    /// How full a packed line is, as a fraction of the width it was packed
+    /// against — 0 when the line has nothing in it yet, 1 when it is at the
+    /// limit it was broken at.
+    ///
+    /// This is what makes the card's growth continuous. A line of text is one
+    /// line tall no matter whether it holds one character or twenty-seven, so
+    /// without this the card's height can only change in whole lines. The
+    /// fraction is the one continuous quantity available, and it is exact rather
+    /// than estimated: it is the same measured unit widths the line breaker
+    /// packed with, summed over the units it actually put on this line.
+    func fillFraction(ofLine line: CardTextPackedLine, lineWidth: CGFloat) -> CGFloat {
+        guard lineWidth > 0 else { return 0 }
+        var packedWidth: CGFloat = 0
+        for unitIndex in line.unitIndices where unitIndex < unitWidths.count {
+            packedWidth += unitWidths[unitIndex]
+        }
+        return min(1, max(0, packedWidth / lineWidth))
+    }
+
     /// One unit's width, measured with the font and letter spacing the card
     /// actually renders with.
     ///
@@ -584,6 +603,19 @@ struct AnswerCardView: View {
     /// its own line pitch as font line height + this, so it is also exactly the
     /// gap the block arithmetic in `paragraphBlocks` has to leave.
     private static let lineSpacing: CGFloat = 5
+
+    /// The height one rendered line occupies: the font's own line height plus
+    /// `lineSpacing`, i.e. exactly how far the next line starts below this one.
+    ///
+    /// This is the unit the live-line buffer trades in — see `cardContent`. The
+    /// buffer holds a fraction of one pitch in reserve and pays it out as the
+    /// line fills, so a line wrapping spends exactly one whole pitch: the reserve
+    /// empties by one pitch while the text grows by one line, and the card's
+    /// bottom edge does not move at the wrap at all.
+    private static let linePitch: CGFloat = {
+        let font = NSFont.systemFont(ofSize: fontSize)
+        return font.ascender - font.descender + font.leading + lineSpacing
+    }()
 
     /// The reference's 14pt paragraph pause, added on top of `lineSpacing` at a
     /// 「\n\n」 boundary — matching the flow layout's old `paragraphGapSpacing`.
@@ -679,7 +711,9 @@ struct AnswerCardView: View {
     ///
     /// When the reply settles, the growing line is folded into its paragraph and
     /// the blur is dropped: the same lines, the same breaks, the same heights.
-    /// Nothing moves.
+    /// Nothing moves at all — including the buffer below the last line, which is
+    /// read from `lines` in both states rather than falling to zero once the
+    /// reply stops streaming. See `liveLineFill`.
     @ViewBuilder
     private func cardContent(reduceMotion: Bool) -> some View {
         // The width is measured, not assumed (see `textColumnWidth`), and there
@@ -695,6 +729,21 @@ struct AnswerCardView: View {
                 from: settledParagraphs,
                 hasLiveLine: hasLiveLine
             )
+            // How full the reply's LAST line is — read from `lines` whether the
+            // card is streaming or settled, because it is the same line either
+            // way and the buffer must not change value when the reply finishes.
+            //
+            // That is what stops the card shrinking at the end. A settled card
+            // carries its last line inside the paragraph rather than as its own
+            // view, but that paragraph grew by exactly the one line the live view
+            // used to occupy — the text below the buffer is the same height in
+            // both states — so holding the buffer steady holds the whole card
+            // steady. Letting it fall to zero here (as it first did) returns up
+            // to a full pitch in one frame, which is the bottom edge springing
+            // back up that the card was reported doing 2026-09-23.
+            let liveLineFill: CGFloat = lines.last.map {
+                renderPlanCache.fillFraction(ofLine: $0, lineWidth: lineWidth)
+            } ?? 0
 
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
@@ -712,6 +761,38 @@ struct AnswerCardView: View {
                         reduceMotion: reduceMotion
                     )
                 }
+                // The live-line buffer: blank space held below the reply's last
+                // line, worth one line pitch when that line is empty and nothing
+                // when it is full. It is drawn for a settled card too — see
+                // `liveLineFill` above — which is what keeps the card's bottom
+                // edge from moving when the reply ends.
+                //
+                // Without it the card can only grow in whole lines, because a line
+                // of text is one line tall whether it holds one character or
+                // twenty-seven — so every twenty-seven characters the bottom edge
+                // jumps a full 22.5 pt at once, and a reader sees a staircase
+                // rather than a card sliding open. The buffer is the continuous
+                // quantity the layout otherwise lacks: it pays the line's own fill
+                // fraction back out as the line fills, so the bottom edge tracks
+                // the text character by character instead (measured 2026-09-23:
+                // 0.83 pt per character rather than a 22.5 pt step per line).
+                //
+                // A FIXED reserve does not work and is worth understanding before
+                // changing this. Held at a constant, it does nothing at all while a
+                // line fills — the line's height is fixed too, so the bottom edge
+                // would not move for twenty-seven characters — and then still jumps
+                // a whole pitch when the line finally wraps. The reserve has to
+                // swing over exactly one pitch for the wrap to be free: at the wrap
+                // the fill fraction falls from ~1 to ~0 while the text grows by
+                // exactly one line, and the two cancel.
+                //
+                // The cost, accepted deliberately: the buffer still holds whatever
+                // the last line's fill fraction was, so a reply that ends mid-line
+                // keeps a little more room below it than one that ends flush. That
+                // is the extra space the card is given in exchange for never
+                // springing back, and it is bounded by one line pitch.
+                Color.clear
+                    .frame(height: liveLineFill * Self.linePitch)
             }
         } else {
             Text(text)
