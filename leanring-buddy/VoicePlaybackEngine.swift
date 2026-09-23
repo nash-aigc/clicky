@@ -347,6 +347,36 @@ final class VoicePlaybackEngine {
         print("🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)")
     }
 
+    /// Starts the engine — and with it voice processing — ahead of the first
+    /// chunk, so the cost lands while the reply is still being written.
+    ///
+    /// Measured 2026-09-24: the user reports ~3 s between the reply's card
+    /// appearing and the first sound, and the log shows the reason — the
+    /// segments are all queued long before `engine started` is printed:
+    ///
+    ///     🗣️ Streaming speech: queued segment 1 (3 chars)
+    ///     🗣️ Streaming speech: queued segment 2 (36 chars)
+    ///     🔊 VoicePlaybackEngine: engine started (...)
+    ///     🔊 Bailian TTS: playing segment 1
+    ///
+    /// The text is on screen, the audio is ready, and the whole wait is this
+    /// start. It is not cheap: enabling voice processing reconfigures the entire
+    /// IO (44.1 kHz / 1 ch → 48 kHz / 9 ch by this file's own measurement), and
+    /// the verification added earlier can restart the engine a second time. None
+    /// of that needs to be on the critical path — the reply has not been written
+    /// yet when this is called.
+    func prepareForPlayback() {
+        guard !isEngineStarted || !engine.isRunning else { return }
+        do {
+            try ensureEngineStarted()
+        } catch {
+            print("⚠️ VoicePlaybackEngine: could not start the engine ahead of playback (\(error.localizedDescription)) — it will be retried when the first chunk arrives")
+        }
+    }
+
+    /// The live engine state, for diagnostics.
+    var isPlaybackEngineRunning: Bool { engine.isRunning }
+
     /// Installs the continuous-listening mic tap on whichever engine
     /// `prepareCaptureHost` chose, starting that engine if it is the
     /// capture-only one.

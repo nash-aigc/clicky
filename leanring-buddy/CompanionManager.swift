@@ -1959,6 +1959,13 @@ final class CompanionManager: ObservableObject {
             var streamingSpeechSession: BailianTTSClient.StreamingSpeechSession?
             if appSettings.speechSpeakMode == .sentenceFastReply {
                 do {
+                    // BEFORE the session starts, so the audio engine's start —
+                    // which includes enabling voice processing and can restart
+                    // the engine once — overlaps the reply being written instead
+                    // of landing when the first segment is ready. That wait is
+                    // what the user measures as ~3 s between the card appearing
+                    // and the first sound.
+                    bailianTTSClient.prepareForPlayback()
                     let session = try bailianTTSClient.beginStreamingSpeech()
                     streamingSpeechSession = session
                     // The watch task does the two jobs the whole-reply path
