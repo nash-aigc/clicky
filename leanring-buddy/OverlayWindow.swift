@@ -1103,13 +1103,27 @@ private struct OnboardingVideoPlayerView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: AVPlayerNSView, context: Context) {
-        nsView.player = player
+        // Assign only on a real change. This view is always in the overlay's
+        // tree (its player is nil outside onboarding), and the overlay
+        // re-evaluates its body on every streamed character of a reply — so an
+        // unconditional assignment re-attaches an AVPlayerLayer twenty-odd
+        // times a second, in a full-screen window, for a player that has not
+        // changed. That work has no business on the main thread while the
+        // answer card is mid-stream (2026-09-23).
+        if nsView.player !== player {
+            nsView.player = player
+        }
     }
 }
 
 private class AVPlayerNSView: NSView {
     var player: AVPlayer? {
-        didSet { playerLayer.player = player }
+        didSet {
+            // Same guard one level down: `AVPlayerLayer.player` re-attaches its
+            // video output on assignment even when handed the same object.
+            guard playerLayer.player !== player else { return }
+            playerLayer.player = player
+        }
     }
 
     private let playerLayer = AVPlayerLayer()

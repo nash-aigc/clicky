@@ -1908,6 +1908,16 @@ final class CompanionManager: ObservableObject {
             // receipt stays in the bubble while the next request is in flight.
             var finalSpokenText = ""
 
+            // The tag-stripped text the card was last shown, captured as the
+            // loop runs so the settle assignment below can hand the card the
+            // very same string it already has — see the streaming publish for
+            // why a card that is re-fed a *different* string at the end of the
+            // stream is exactly the 「渲染完之后字数变了」 the user reported.
+            // It is assigned from the same `speakableTextFromStreamedReply`
+            // call the streaming feed uses, on the last step's full reply, so
+            // the two are equal by construction rather than by luck.
+            var lastStreamedDisplayText = ""
+
             // 逐句快答 (the default 播报方式): the session speaks the reply while
             // the model is still writing it. Declared outside the `do` like the
             // other accumulators so the catch paths can drain it cleanly; a
@@ -2103,10 +2113,23 @@ final class CompanionManager: ObservableObject {
                         onTextChunk: { [weak self] accumulatedText in
                             // The vision client hands over the whole accumulated answer,
                             // not just the new piece. Assigning it (rather than appending)
-                            // is what keeps the bubble from duplicating text, and it also
-                            // means the [POINT:…] tag is visible while it streams and then
-                            // disappears when the reply is parsed and read aloud.
-                            // Delivered on the main actor, so no hop is needed here.
+                            // is what keeps the bubble from duplicating text.
+                            //
+                            // What the bubble is given is the TAG-STRIPPED text, not the
+                            // raw reply. It used to be the raw one, so the [POINT:…] tag
+                            // sat in the card while the reply streamed and then vanished
+                            // the instant the reply was parsed and read aloud — and the
+                            // characters behind it re-wrapped, because removing two
+                            // characters from a line is a different line break. The user
+                            // watched the first line go from eight characters to nine and
+                            // then to seven, and reported it twice as 「第一行文字在渲染
+                            // 时还是会出现字数变化…你还是没有固定」 (2026-09-23). The display
+                            // text is now a pure function of the reply so far, which makes
+                            // the end-of-stream assignment below a byte-for-byte no-op —
+                            // the re-wrap is impossible by construction rather than tuned
+                            // away. Delivered on the main actor, so no hop is needed here.
+                            let displayText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
+
                             if !announcedAnswerStart, !accumulatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 announcedAnswerStart = true
                                 SoundEffectPlayer.shared.play(.answerStarted)
@@ -2129,7 +2152,7 @@ final class CompanionManager: ObservableObject {
                             }
 
                             guard showsResponseText else { return }
-                            self?.streamingAnswerText = accumulatedText
+                            self?.streamingAnswerText = displayText
                         }
                     )
 
@@ -2139,6 +2162,12 @@ final class CompanionManager: ObservableObject {
                     // card's blurred tail settles to sharp from here; the text itself
                     // stays on screen through the TTS swap and the linger.
                     isAnswerStreamLive = false
+
+                    // Remember what the card is showing right now, computed by the
+                    // same helper the streaming feed just used on the same text, so
+                    // the settle assignment further down re-publishes a string the
+                    // card already has and no line can re-wrap.
+                    lastStreamedDisplayText = ActionTagParser.speakableTextFromStreamedReply(fullResponseText)
 
                     // The raw reply becomes the assistant half of this step, so the
                     // continuation request — and only it, this array is local to the
@@ -2391,12 +2420,24 @@ final class CompanionManager: ObservableObject {
                 // Only the loop's last reply is spoken — an intermediate step's
                 // receipt stayed in the bubble while the next request ran.
                 if !finalSpokenText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    // Swap the raw stream for what is actually about to be said.
-                    // The stream still carries the [POINT:…] tag the user never
-                    // hears, and the bubble now stays up for the whole reading, so
-                    // that tag would otherwise sit on screen for seconds.
+                    // Keep the bubble showing what it is already showing.
+                    //
+                    // This used to swap in `finalSpokenText` (the text about to be
+                    // read aloud), because the streamed text was the RAW reply and
+                    // its [POINT:…] tag would otherwise sit on screen for seconds.
+                    // The streaming feed is tag-stripped now, so that reason is
+                    // gone — and swapping to `finalSpokenText` was itself a defect:
+                    // it goes through a different stripper (`spokenTextByRemoving`,
+                    // which trims and only removes claimed ranges), so it can differ
+                    // from the streamed text by a character or two, and a different
+                    // string is a different line break. That is the second half of
+                    // 「第一行文字在渲染时还是会出现字数变化…你还是没有固定」: the
+                    // first line settled one character shorter than it had streamed.
+                    // The card is handed the string it already has, and only falls
+                    // back to `finalSpokenText` if the streaming feed never ran.
                     if showsResponseText {
-                        streamingAnswerText = finalSpokenText
+                        let settledDisplayText = lastStreamedDisplayText.trimmingCharacters(in: .whitespacesAndNewlines)
+                        streamingAnswerText = settledDisplayText.isEmpty ? finalSpokenText : settledDisplayText
                     }
 
                     if let streamingSpeechSession {

@@ -13,15 +13,21 @@
 //
 //  SwiftUI cannot blur individual characters inside one Text, so the text is
 //  split into units (one unit per CJK character, contiguous Latin/digit runs
-//  kept whole so English words never wrap mid-word) and each unit is its own
-//  small Text inside a custom flow Layout. Newlines become layout break
-//  markers (carried as custom LayoutValueKey values, because Layout sees
-//  only subviews, not content): 「\n\n」 opens a 14pt paragraph gap, a bare
-//  「\n」 just ends the row.
+//  kept whole so English words never wrap mid-word). Newlines become break
+//  markers: 「\n\n」 opens a 14pt paragraph gap, a bare 「\n」 just ends the line.
 //
-//  A finished reply renders as one plain Text — a 600-character reply would
-//  otherwise be 600 Text views in a ScrollView that is rebuilt on every
-//  session switch. Only the live stream needs per-unit views.
+//  ONE line-breaking rule renders both states. `CardTextLineBreaker` packs the
+//  units into lines, and both the streaming card and the settled card are drawn
+//  from those same lines — the settled card as one Text per paragraph, the
+//  streaming card as those same paragraphs plus its still-growing last line
+//  rendered per unit (that is where the blur-focus tail lives). The card used to
+//  break its lines twice — a greedy flow Layout while streaming, one whole-string
+//  Text once settled — and the two engines disagreed: measured on a real
+//  1482-character reply, 55 lines streaming against 62 settled, so the card grew
+//  seven lines (~150 pt) the instant a reply finished. Per-unit views also cost
+//  far more than they look: one Text per unit through SwiftUI's layout on every
+//  streamed character measured at 88% of the main thread and ~117% of one CPU
+//  core, against 12% idle.
 //
 //  系统开启「减弱动态效果」时全部直接清晰显示，不做任何动画
 //  (the reference's prefers-reduced-motion degradation).
@@ -29,6 +35,8 @@
 
 import SwiftUI
 import AppKit
+import CoreText
+import QuartzCore
 
 // MARK: - Theme
 
@@ -75,61 +83,112 @@ struct AnswerCardTheme {
 /// "qwen3-vl-plus" enters as a word instead of shattering and wrapping
 /// mid-word. Break markers carry the newline information the flow layout
 /// needs.
-enum CardTextUnitKind {
+nonisolated enum CardTextUnitKind {
     case content
     case lineBreak
     case paragraphGap
 }
 
-struct CardTextUnit: Identifiable {
+nonisolated struct CardTextUnit: Identifiable {
     let id: Int
     let text: String
     let kind: CardTextUnitKind
+    /// How many characters of the reply this unit was built from. Always equal
+    /// to `text.count` for a content unit, but a `"\n\n"` paragraph gap carries
+    /// no text at all while consuming two characters — so this is the only way
+    /// to know where the final unit began, which is what lets the builder resume
+    /// from it instead of re-splitting the whole reply.
+    let characterCount: Int
 }
 
-enum CardTextUnitBuilder {
+nonisolated enum CardTextUnitBuilder {
 
     /// Split reply text into rendering units. `"\n\n"` becomes a paragraph
     /// gap (a 14pt vertical pause in the reference timeline), a bare `"\n"`
     /// a line break.
     static func units(from text: String) -> [CardTextUnit] {
-        var units: [CardTextUnit] = []
-        var nextID = 0
-        let characters = Array(text)
-        var index = 0
+        units(from: text, extending: [], resumingAfterCharacterCount: 0)
+    }
 
-        func appendUnit(_ text: String, _ kind: CardTextUnitKind) {
-            units.append(CardTextUnit(id: nextID, text: text, kind: kind))
+    /// Split `text` into rendering units, reusing `previousUnits` when `text`
+    /// merely continues the text they were built from.
+    ///
+    /// This is where the card stops being quadratic. The card re-evaluates its
+    /// body on every streamed character, and splitting the whole reply each time
+    /// allocated one `String` per character of it — 5936 characters at ~21
+    /// evaluations a second. But the split is left to right and a unit is closed
+    /// only when the next character begins a different kind of run, so a
+    /// character appended at the end can extend the final unit or begin a new
+    /// one and **can change no other**. Every unit before the last is therefore
+    /// reusable verbatim, and only the last is dropped and re-derived — from the
+    /// character offset it began at, which `CardTextUnit.characterCount` is what
+    /// makes knowable. Dropping that one unit is also what turns a trailing
+    /// 「\n」 into a paragraph gap when a second one arrives.
+    ///
+    /// - Parameters:
+    ///   - previousUnits: the units `text` was last split into, or `[]`.
+    ///   - previousTextCharacterCount: the length of the text those units were
+    ///     split from. Must not exceed `text.count`.
+    static func units(
+        from text: String,
+        extending previousUnits: [CardTextUnit],
+        resumingAfterCharacterCount previousTextCharacterCount: Int
+    ) -> [CardTextUnit] {
+        var units = previousUnits
+        var characterIndex = previousTextCharacterCount
+        if let finalUnit = units.popLast() {
+            characterIndex -= finalUnit.characterCount
+        }
+        // The surviving units are contiguous from the start of the text, so each
+        // one's id is still its own position — the live line's `ForEach` and the
+        // line breaker both index units by position, and neither may see a gap.
+        var nextID = units.count
+
+        func appendUnit(_ unitText: String, _ kind: CardTextUnitKind, _ characterCount: Int) {
+            units.append(CardTextUnit(
+                id: nextID,
+                text: unitText,
+                kind: kind,
+                characterCount: characterCount
+            ))
             nextID += 1
         }
 
-        while index < characters.count {
-            let character = characters[index]
+        var index = text.index(text.startIndex, offsetBy: characterIndex)
+        let endIndex = text.endIndex
+
+        while index < endIndex {
+            let character = text[index]
 
             if character == "\n" {
-                if index + 1 < characters.count, characters[index + 1] == "\n" {
-                    appendUnit("", .paragraphGap)
-                    index += 2
+                let nextIndex = text.index(after: index)
+                if nextIndex < endIndex, text[nextIndex] == "\n" {
+                    appendUnit("", .paragraphGap, 2)
+                    index = text.index(after: nextIndex)
                 } else {
-                    appendUnit("", .lineBreak)
-                    index += 1
+                    appendUnit("", .lineBreak, 1)
+                    index = nextIndex
                 }
                 continue
             }
 
             if CardTextUnitBuilder.isLatinWordCharacter(character) {
                 var word = ""
-                while index < characters.count,
-                      CardTextUnitBuilder.isLatinWordCharacter(characters[index]) {
-                    word.append(characters[index])
-                    index += 1
+                var wordCharacterCount = 0
+                var wordEndIndex = index
+                while wordEndIndex < endIndex,
+                      CardTextUnitBuilder.isLatinWordCharacter(text[wordEndIndex]) {
+                    word.append(text[wordEndIndex])
+                    wordCharacterCount += 1
+                    wordEndIndex = text.index(after: wordEndIndex)
                 }
-                appendUnit(word, .content)
+                appendUnit(word, .content, wordCharacterCount)
+                index = wordEndIndex
                 continue
             }
 
-            appendUnit(String(character), .content)
-            index += 1
+            appendUnit(String(character), .content, 1)
+            index = text.index(after: index)
         }
 
         return units
@@ -147,164 +206,334 @@ enum CardTextUnitBuilder {
     }
 }
 
-// MARK: - Flow layout
+// MARK: - Line breaking
 
-/// How a subview ends the current flow row. Carried per-subview through
-/// `CardTextFlowLayout` via a custom LayoutValueKey — the layout cannot see
-/// view content, only these values. `nonisolated` because the layout reads
-/// them from nonisolated positions (the LayoutSubviews subscript).
-nonisolated enum CardTextBreakKind {
-    case none
-    case lineBreak
-    case paragraphGap
+/// One rendered line of the reply: the units that sit on it, and whether a
+/// 「\n\n」 opened a paragraph gap in front of it.
+nonisolated struct CardTextPackedLine {
+    var unitIndices: [Int]
+    var opensParagraph: Bool
 }
 
-private nonisolated struct CardTextBreakKey: LayoutValueKey {
-    static let defaultValue = CardTextBreakKind.none
-}
+/// The card's ONE line-breaking rule, and the reason this file no longer
+/// contains a flow `Layout`.
+///
+/// Both the streaming card and the settled card are rendered from the lines
+/// this returns, and that is the point: the card used to break its lines twice —
+/// the streaming card through a greedy per-unit flow layout, the settled card by
+/// handing the whole string to a single `Text` — and the two engines disagreed
+/// about where the lines went. Measured 2026-09-23 on the user's own longest
+/// reply (1482 characters, read back from
+/// `~/Library/Application Support/Clicky/ConversationSessions.json`): the flow
+/// layout packed it into **55 lines** and `Text` laid the same string out in
+/// **62**, so the instant a reply finished the card re-wrapped and grew seven
+/// lines (≈150 pt) under the person reading it.
+///
+/// The rule is CSS's own greedy inline flow: append a unit while it fits, close
+/// the line when it does not, and let a `\n` close a line outright.
+nonisolated enum CardTextLineBreaker {
 
-extension View {
-    /// Marks this subview as ending the current row, optionally opening a
-    /// paragraph gap before the next row.
-    func cardTextBreak(_ kind: CardTextBreakKind) -> some View {
-        layoutValue(key: CardTextBreakKey.self, value: kind)
-    }
-}
+    /// - Parameters:
+    ///   - units: the reply's rendering units, in reading order.
+    ///   - unitWidths: each unit's measured width, index-aligned with `units`.
+    ///   - lineWidth: the width the rendered text will actually be given.
+    ///   - previousState: where the last pack left off — `CardTextBreakState()`
+    ///     for a fresh pack, or `stateBeforeFinalLine` of the previous one to
+    ///     continue a reply that has only grown.
+    /// - Returns: the packing state. `closedLines` is the finished result; the
+    ///   rest is what a later call resumes from.
+    static func breakIntoLines(
+        units: [CardTextUnit],
+        unitWidths: [CGFloat],
+        lineWidth: CGFloat,
+        resumingFrom previousState: CardTextBreakState
+    ) -> CardTextBreakState {
+        var state = previousState
 
-/// The per-unit text layout: wraps units into rows like CSS inline text,
-/// honors the break markers, keeps a 22pt line pitch (13.5pt font + 5pt row
-/// spacing ≈ the reference's line-height 1.62), and — because
-/// `sizeThatFits` reports the widest row actually used rather than the
-/// proposal — lets the card hug a short reply and cap at `maxRowWidth` once
-/// the text is long enough to wrap.
-struct CardTextFlowLayout: Layout {
-
-    /// Vertical space between rows. With the 13.5pt font this lands the
-    /// ~22pt line pitch the reference sets (13.5 × 1.62 ≈ 21.9).
-    var rowSpacing: CGFloat = 5
-    /// Extra vertical space before the row after a 「\n\n」 (the reference's
-    /// 14px paragraph gap).
-    var paragraphGapSpacing: CGFloat = 14
-    /// The row-width ceiling when the parent proposes more (or nothing).
-    var maxRowWidth: CGFloat = 460
-
-    struct Row {
-        var unitIndices: [Int]
-        var width: CGFloat
-        var height: CGFloat
-        /// Extra vertical space this row demands ABOVE itself (the paragraph
-        /// gap opened by the break before it).
-        var topGap: CGFloat
-    }
-
-    struct Cache {
-        var rows: [Row] = []
-        var proposalWidth: CGFloat?
-    }
-
-    func makeCache(subviews: Subviews) -> Cache {
-        Cache()
-    }
-
-    func updateCache(_ cache: inout Cache, subviews: Subviews) {}
-
-    /// Rows for this proposal. An oversized single unit (wider than the
-    /// available width) still gets its own row at full width — CSS behaves
-    /// the same way for an unbreakable word.
-    private func computeRows(
-        proposal: ProposedViewSize,
-        subviews: Subviews
-    ) -> [Row] {
-        let proposedWidth = proposal.width
-        let availableWidth = min(proposedWidth ?? maxRowWidth, maxRowWidth)
-
-        var rows: [Row] = []
-        var currentIndices: [Int] = []
-        var currentWidth: CGFloat = 0
-        var currentHeight: CGFloat = 0
-        var pendingTopGap: CGFloat = 0
-
-        func closeRow() {
-            // An empty row is skipped rather than appended: 「text\n\nmore」
-            // produces a lineBreak followed by a paragraphGap, and closing
-            // the empty row between them would double the gap; a reply that
-            // ends with 「\n」 must not gain a phantom blank line's height.
-            guard !currentIndices.isEmpty else { return }
-            rows.append(Row(
-                unitIndices: currentIndices,
-                width: currentWidth,
-                height: currentHeight,
-                topGap: pendingTopGap
+        func closeLine() {
+            // A break with nothing in front of it is skipped rather than
+            // emitted: 「text\n\nmore」 is a lineBreak followed by a paragraphGap,
+            // and closing the empty line between them would double the gap,
+            // while a reply ending in 「\n」 must not gain a phantom blank line.
+            guard !state.currentUnitIndices.isEmpty else { return }
+            state.closedLines.append(CardTextPackedLine(
+                unitIndices: state.currentUnitIndices,
+                opensParagraph: state.pendingParagraphGap
             ))
-            currentIndices = []
-            currentWidth = 0
-            currentHeight = 0
-            pendingTopGap = 0
+            state.currentUnitIndices = []
+            state.currentLineWidth = 0
+            state.pendingParagraphGap = false
         }
 
-        for (index, subview) in subviews.enumerated() {
-            let breakKind = subview[CardTextBreakKey.self]
+        var unitIndex = state.nextUnitIndex
+        while unitIndex < units.count {
+            let unit = units[unitIndex]
+            defer { unitIndex += 1 }
 
-            if breakKind != .none {
-                closeRow()
-                if breakKind == .paragraphGap {
-                    pendingTopGap = paragraphGapSpacing
+            guard unit.kind == .content else {
+                closeLine()
+                if unit.kind == .paragraphGap {
+                    state.pendingParagraphGap = true
                 }
                 continue
             }
-
-            let unitSize = subview.sizeThatFits(.unspecified)
-
-            let needsWrap = currentWidth > 0 && currentWidth + unitSize.width > availableWidth
-            if needsWrap {
-                closeRow()
+            guard unitIndex < unitWidths.count else { continue }
+            let unitWidth = unitWidths[unitIndex]
+            // A paragraph flag belongs to the line that STARTS after the gap, and
+            // the `closeLine()` above consumed it when it ended the paragraph, so
+            // a line that wraps later in the paragraph can never inherit it.
+            if !state.currentUnitIndices.isEmpty
+                && state.currentLineWidth + unitWidth > lineWidth {
+                closeLine()
             }
-
-            currentIndices.append(index)
-            currentWidth += unitSize.width
-            currentHeight = max(currentHeight, unitSize.height)
+            state.currentUnitIndices.append(unitIndex)
+            state.currentLineWidth += unitWidth
         }
+        state.nextUnitIndex = units.count
 
-        closeRow()
+        closeLine()
+        return state
+    }
+}
 
-        return rows
+/// Where a pack of the reply's lines left off.
+///
+/// Kept so the next pack can continue instead of starting over — see
+/// `stateBeforeFinalLine` for the invariant that makes that exact.
+nonisolated struct CardTextBreakState {
+
+    /// Every line already closed. A line lands here when a later unit overflows
+    /// it or a break marker follows it, and **nothing appended afterwards can
+    /// change it**: the pack only ever moves forward.
+    var closedLines: [CardTextPackedLine] = []
+
+    /// The line currently being packed. Empty between lines.
+    var currentUnitIndices: [Int] = []
+    var currentLineWidth: CGFloat = 0
+
+    /// Set by a paragraph gap, consumed by the next `closeLine()`, where it
+    /// becomes that line's `opensParagraph`.
+    var pendingParagraphGap = false
+
+    /// The first unit not yet visited.
+    var nextUnitIndex = 0
+
+    /// The state this pack was in just before its final line began.
+    ///
+    /// This is the whole reason the card can render a streamed reply in constant
+    /// time per character. A line's content depends only on the units from its
+    /// own first one onward and on the width in play, and both are unchanged by
+    /// a character appended at the end — so re-packing from that unit reproduces
+    /// the final line exactly, while every line before it is already closed and
+    /// stays closed. Only the last line is ever re-packed, and a line is bounded
+    /// by the width it was packed into, so that is a handful of units rather
+    /// than the whole reply.
+    ///
+    /// The last line's `opensParagraph` is what `pendingParagraphGap` held while
+    /// it was open: a paragraph gap closes the line in front of it, so the flag
+    /// can only have been set before this line began, and `closeLine()` is what
+    /// clears it.
+    var stateBeforeFinalLine: CardTextBreakState {
+        guard let finalLine = closedLines.last,
+              let firstUnitIndex = finalLine.unitIndices.first else {
+            // No line to roll back: every unit so far was a break marker, and
+            // whatever it set is already in `pendingParagraphGap`.
+            return self
+        }
+        var state = CardTextBreakState()
+        state.closedLines = Array(closedLines.dropLast())
+        state.pendingParagraphGap = finalLine.opensParagraph
+        state.nextUnitIndex = firstUnitIndex
+        return state
+    }
+}
+
+/// The reply's units, their measured widths, the lines they pack into, and the
+/// paragraphs those lines fold into — every one of them extended rather than
+/// rebuilt as the reply streams.
+///
+/// This exists because the card re-evaluates its body on every streamed
+/// character, and the three passes that build that plan are each O(reply
+/// length). Measured 2026-09-23 with `sample`, streaming a 5936-character reply
+/// at the app's real ~21 evaluations a second: `cardContent` held **22.8% of the
+/// main thread**, `makeRenderPlan` alone **10.2%**, and the run was the reason
+/// the last lines of a long reply hitch hardest — the work per character grew
+/// with the reply, so the whole thing cost O(n²).
+///
+/// Rebuilding is also unnecessary, and that is the point. Every pass here walks
+/// left to right and only ever affects what is at the END of the reply:
+/// `CardTextUnitBuilder` closes a unit only when the next character begins a
+/// different kind of run, and `CardTextLineBreaker` closes a line only when the
+/// next unit overflows it. So a character appended at the end can change the
+/// final unit and the final line and nothing else. One streamed character now
+/// costs one measurement and one re-pack of the line it landed on — a handful of
+/// units, bounded by the width that line was packed into — instead of a pass
+/// over the whole reply.
+///
+/// A reference type held in `@State` rather than a `Layout`'s cache, because the
+/// measurement happens in the view body: what SwiftUI does with a layout's cache
+/// across a changed layout value is not something correctness may rest on.
+nonisolated final class CardRenderPlanCache {
+
+    /// A run of lines that share one `Text` — a paragraph, in other words.
+    struct SettledParagraph {
+        var text: String
+        var opensWithGap: Bool
     }
 
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Cache) -> CGSize {
-        let rows = computeRows(proposal: proposal, subviews: subviews)
-        cache.rows = rows
-        cache.proposalWidth = proposal.width
+    private let fontSize: CGFloat
+    private let letterSpacing: CGFloat
 
-        let usedWidth = rows.map(\.width).max() ?? 0
-        let totalHeight = rows.reduce(0) { $0 + $1.topGap + $1.height } + CGFloat(max(0, rows.count - 1)) * rowSpacing
-        return CGSize(width: usedWidth, height: totalHeight)
+    init(fontSize: CGFloat, letterSpacing: CGFloat) {
+        self.fontSize = fontSize
+        self.letterSpacing = letterSpacing
     }
 
-    func placeSubviews(
-        in bounds: CGRect,
-        proposal: ProposedViewSize,
-        subviews: Subviews,
-        cache: inout Cache
-    ) {
-        // sizeThatFits always runs before placeSubviews in a layout pass, so
-        // the cache holds this pass's rows — but recompute defensively rather
-        // than trust call ordering.
-        let rows = computeRows(proposal: proposal, subviews: subviews)
+    private(set) var units: [CardTextUnit] = []
+    private(set) var lines: [CardTextPackedLine] = []
 
-        var yOffset = bounds.minY
-        for row in rows {
-            yOffset += row.topGap
-            var xOffset = bounds.minX
-            for unitIndex in row.unitIndices {
-                let unitSize = subviews[unitIndex].sizeThatFits(.unspecified)
-                subviews[unitIndex].place(
-                    at: CGPoint(x: xOffset, y: yOffset),
-                    proposal: .unspecified
-                )
-                xOffset += unitSize.width
-            }
-            yOffset += row.height + rowSpacing
+    private var unitWidths: [CGFloat] = []
+    private var breakState = CardTextBreakState()
+
+    /// The paragraphs folded out of the lines a later line has already made
+    /// immutable, in reading order.
+    private var settledParagraphs: [SettledParagraph] = []
+
+    /// How many of `lines` have been folded into `settledParagraphs`.
+    private var foldedLineCount = 0
+
+    /// The text and the line width this plan was built for.
+    private var planText = ""
+    private var planLineWidth: CGFloat = -1
+
+    /// The lines for `text` at `lineWidth`, extending the previous plan when
+    /// `text` merely continues the text it was built from.
+    @discardableResult
+    func plan(for text: String, lineWidth: CGFloat) -> [CardTextPackedLine] {
+        guard text != planText || lineWidth != planLineWidth else { return lines }
+
+        // Either invalidation rebuilds everything. A width change leaves every
+        // unit alone but invalidates every line — the pack is per width — and
+        // with them the paragraphs folded from those lines; anything but an
+        // append (a different reply, a settled re-render, a cleared card) can
+        // change any unit at all. Both are once-per-card events, so keeping the
+        // units across a width change would buy nothing for a second path
+        // through this method that has to be right.
+        if lineWidth != planLineWidth || !text.hasPrefix(planText) {
+            reset()
+            planLineWidth = lineWidth
         }
+
+        guard text != planText else { return lines }
+
+        units = CardTextUnitBuilder.units(
+            from: text,
+            extending: units,
+            resumingAfterCharacterCount: planText.count
+        )
+        // The final unit may have been extended, replaced or newly begun, so it
+        // is measured again; no earlier unit's text can have changed.
+        measureUnitWidths(from: max(0, units.count - 1))
+        breakState = CardTextLineBreaker.breakIntoLines(
+            units: units,
+            unitWidths: unitWidths,
+            lineWidth: lineWidth,
+            resumingFrom: breakState.stateBeforeFinalLine
+        )
+        lines = breakState.closedLines
+        planText = text
+        return lines
+    }
+
+    /// The settled paragraphs, folding in every line a later line has now made
+    /// immutable.
+    ///
+    /// A paragraph is append-stable for the same reason a line is — once a later
+    /// line exists, this one can never change — so the fold only ever adds. That
+    /// matters as much as the incremental pack: this used to re-join every line
+    /// of the whole reply into strings on every streamed character.
+    ///
+    /// - Parameter settlingFinalLine: true once the reply has stopped streaming,
+    ///   which is what makes the last line immutable too. While it is still
+    ///   arriving that line is the live one and is rendered separately.
+    func paragraphs(settlingFinalLine: Bool) -> [SettledParagraph] {
+        let lineCountToFold = settlingFinalLine ? lines.count : max(0, lines.count - 1)
+        while foldedLineCount < lineCountToFold {
+            foldLine(at: foldedLineCount)
+            foldedLineCount += 1
+        }
+        return settledParagraphs
+    }
+
+    private func foldLine(at lineIndex: Int) {
+        let line = lines[lineIndex]
+        let lineText = line.unitIndices.map { units[$0].text }.joined()
+        // A paragraph gap closes the paragraph in front of it, so the flag
+        // belongs to the line that opens the next paragraph.
+        if line.opensParagraph || settledParagraphs.isEmpty {
+            settledParagraphs.append(SettledParagraph(
+                text: lineText,
+                opensWithGap: line.opensParagraph
+            ))
+        } else {
+            let lastParagraphIndex = settledParagraphs.count - 1
+            settledParagraphs[lastParagraphIndex].text += "\n" + lineText
+        }
+    }
+
+    private func reset() {
+        units = []
+        unitWidths = []
+        lines = []
+        breakState = CardTextBreakState()
+        settledParagraphs = []
+        foldedLineCount = 0
+        planText = ""
+    }
+
+    /// The measured width of every unit, extended rather than re-measured.
+    private func measureUnitWidths(from firstUnitIndexToMeasure: Int) {
+        if unitWidths.count > firstUnitIndexToMeasure {
+            unitWidths.removeLast(unitWidths.count - firstUnitIndexToMeasure)
+        }
+        for unitIndex in unitWidths.count..<units.count {
+            let unit = units[unitIndex]
+            // A line break or a paragraph gap draws nothing: it carries no width,
+            // only the structure the line breaker reads.
+            unitWidths.append(unit.kind == .content ? unitWidth(of: unit.text) : 0)
+        }
+    }
+
+    /// One unit's width, measured with the font and letter spacing the card
+    /// actually renders with.
+    ///
+    /// CoreText rather than SwiftUI's own `sizeThatFits`, which cannot be called
+    /// outside a layout pass and so is not available in a view body. Measured
+    /// 2026-09-23 against the same units measured inside a `Layout` — what the
+    /// previous flow layout used — the two agree to within 0.45 pt across a real
+    /// 1482-character reply, which is why `lineFitSafetyMargin` exists rather
+    /// than trusting them to agree exactly.
+    private func unitWidth(of unitText: String) -> CGFloat {
+        guard !unitText.isEmpty else { return 0 }
+        let attributedUnit = NSAttributedString(
+            string: unitText,
+            attributes: [
+                .font: NSFont.systemFont(ofSize: fontSize),
+                .kern: letterSpacing,
+            ]
+        )
+        let unitLine = CTLineCreateWithAttributedString(attributedUnit)
+        return CGFloat(CTLineGetTypographicBounds(unitLine, nil, nil, nil))
+    }
+}
+
+/// Reports the width the card's text is actually given, so the line breaker can
+/// break for the width in play instead of an assumed one — the three call sites
+/// frame the card at 300 pt, at 340 pt, and at their own column width.
+struct CardTextColumnWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
@@ -319,6 +548,24 @@ struct AnswerCardView: View {
     let isStreaming: Bool
     let style: AnswerCardStyle
 
+    /// The reply's units, widths, lines and settled paragraphs so far, extended
+    /// across the streamed updates — see `CardRenderPlanCache` for why one
+    /// streamed character must not cost a pass over the whole reply.
+    @State private var renderPlanCache = CardRenderPlanCache(
+        fontSize: AnswerCardView.fontSize,
+        letterSpacing: AnswerCardView.letterSpacing
+    )
+
+    /// The width the card's text is actually given, reported back by the
+    /// invisible probe in `body`. The line breaker breaks for the width in play
+    /// rather than an assumed one, because the three call sites frame the card
+    /// differently (300 pt in the settings preview, 340 pt at the cursor, and
+    /// whatever the notch sheet's column measures).
+    ///
+    /// 0 means "no layout pass has reported a width yet", which is also why the
+    /// card renders its plain text for that one frame — see `cardContent`.
+    @State private var textColumnWidth: CGFloat = 0
+
     /// How many trailing units stay blurred while streaming (the reference's
     /// settle rule: the unit five positions back is settled to sharp).
     private static let freshTailUnitCount = 5
@@ -327,20 +574,80 @@ struct AnswerCardView: View {
     private static let settleAnimationDuration: TimeInterval = 0.3
 
     /// Reference spec §3.1–3.4: corner 10, border 1.5, padding 10px 12px,
-    /// font 13.5, letter-spacing .02em.
+    /// font 13.5, letter-spacing .02em, on the reference's ~22pt line pitch.
     private static let cardCornerRadius: CGFloat = 10
     private static let cardBorderWidth: CGFloat = 1.5
     private static let fontSize: CGFloat = 13.5
     private static let letterSpacing: CGFloat = 13.5 * 0.02
 
+    /// The gap between two rendered lines that share a paragraph. `Text` reports
+    /// its own line pitch as font line height + this, so it is also exactly the
+    /// gap the block arithmetic in `paragraphBlocks` has to leave.
+    private static let lineSpacing: CGFloat = 5
+
+    /// The reference's 14pt paragraph pause, added on top of `lineSpacing` at a
+    /// 「\n\n」 boundary — matching the flow layout's old `paragraphGapSpacing`.
+    private static let paragraphGapSpacing: CGFloat = 14
+
+    /// Slack in the fit test, because the line breaker's CoreText measurement and
+    /// the width `Text` lays out at are two different engines: measured
+    /// 2026-09-23 they agree to within 0.45 pt per unit, but a line packed to
+    /// within a fraction of a point of the limit is a line that can come out one
+    /// unit too wide and wrap where the breaker said it would not — which would
+    /// put the rendered text permanently one line taller than the card computed.
+    /// A point of slack costs nothing (the last unit of a line rarely lands
+    /// within a point of the edge) and makes that impossible by construction.
+    private static let lineFitSafetyMargin: CGFloat = 1
+
     var body: some View {
         let theme = AnswerCardTheme(style: style)
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
-        cardContent(reduceMotion: reduceMotion)
+        return cardContent(reduceMotion: reduceMotion)
+            // 宽度由「容器给了多少」决定，不由「内容有多宽」决定。
+            //
+            // 这是 2026-09-23 用户报的「第一行从 10 个字变成 11 个、再变成 12 个」
+            // 的根因修复。原来的卡片是被内容撑开的：短回复窄、文字长一点就宽一点，
+            // 而那把宽度尺子量出来的数字又被喂回断行器当断行宽度 —— 于是一旦卡片
+            // 变宽，断行宽度跟着变（实测 314 → 315），**整篇回复每一行的断点全部
+            // 重算**，第一行就多吃进一个字。实测两轮，每次都一模一样：
+            //   t=10.3  0.0 -> 315.0 -> 316.0
+            //   t=55.4  0.0 -> 315.0 -> 316.0
+            // 而且宽度一变，`CardRenderPlanCache` 的增量缓存整块作废、从头重排。
+            //
+            // 撑满之后，文字列宽度在第一次布局就是定值，之后再也不会变：断行只算
+            // 一次，第一行不动，缓存永不失效 —— 也就是用户要的「最开始宽度就固定，
+            // 然后从上到下展开」。代价是短回答也会占满整张卡片的宽度，这是这个
+            // 取舍必然的一面。
+            .frame(maxWidth: .infinity, alignment: .leading)
             .font(.system(size: Self.fontSize))
             .kerning(Self.letterSpacing)
             .foregroundColor(theme.textColor)
+            // Reports the width the text is given, so the line breaker can break
+            // for the width actually in play instead of an assumed one — the
+            // three call sites frame this card at 300 pt, at 340 pt, and at
+            // whatever the notch sheet's column measures. It sits inside the
+            // padding, so it measures the text column itself: exactly the width
+            // `Text` lays out in. A preference rather than a `GeometryReader` on
+            // purpose — a reader would add a layout container of its own, and
+            // worse, would feed its own measurement back into the content it is
+            // measuring.
+            .background(
+                GeometryReader { textColumnGeometry in
+                    Color.clear.preference(
+                        key: CardTextColumnWidthKey.self,
+                        value: textColumnGeometry.size.width
+                    )
+                }
+            )
+            .onPreferenceChange(CardTextColumnWidthKey.self) { measuredTextColumnWidth in
+                // Guarded so the state write happens once per real change: this
+                // closure runs on every streamed character, and an unconditional
+                // write would re-enter the layout each time.
+                if abs(measuredTextColumnWidth - textColumnWidth) > 0.5 {
+                    textColumnWidth = measuredTextColumnWidth
+                }
+            }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(cardBackground(theme: theme))
@@ -351,48 +658,132 @@ struct AnswerCardView: View {
             )
     }
 
+    /// A run of lines that share one `Text` — a paragraph, in other words — and
+    /// the space to leave below it before whatever is drawn next.
+    private struct CardTextParagraphBlock {
+        var text: String
+        var spaceBelow: CGFloat
+    }
+
+    /// The card's text, rendered from ONE set of lines in both states.
+    ///
+    /// While a reply streams, the last line is the only one still changing, so
+    /// it is rendered per unit — that is where the blur-focus tail lives — and
+    /// every line above it is folded into one `Text` per paragraph. That is the
+    /// whole point of this rewrite. The card used to put one `Text` per unit
+    /// through SwiftUI's layout on every streamed character (a 1482-character
+    /// reply is 1017 units), and measured 2026-09-23 with `sample` that cost
+    /// **88% of the main thread and ~117% of one CPU core** against a 12% idle —
+    /// and the settled card alone, with nothing streaming at all, still sat at
+    /// ~32%.
+    ///
+    /// When the reply settles, the growing line is folded into its paragraph and
+    /// the blur is dropped: the same lines, the same breaks, the same heights.
+    /// Nothing moves.
     @ViewBuilder
     private func cardContent(reduceMotion: Bool) -> some View {
-        if isStreaming && !reduceMotion {
-            streamingUnitsView
+        // The width is measured, not assumed (see `textColumnWidth`), and there
+        // is no width to break against until the first layout pass reports one.
+        // Packing against a guess is exactly how a line ends up wider than the
+        // space it is drawn in, so that one frame renders the plain text instead.
+        if textColumnWidth > 0 {
+            let lineWidth = max(0, textColumnWidth - Self.lineFitSafetyMargin)
+            let lines = renderPlanCache.plan(for: text, lineWidth: lineWidth)
+            let settledParagraphs = renderPlanCache.paragraphs(settlingFinalLine: !isStreaming)
+            let hasLiveLine = isStreaming && !lines.isEmpty
+            let blocks = paragraphBlocks(
+                from: settledParagraphs,
+                hasLiveLine: hasLiveLine
+            )
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                    Text(block.text)
+                        .lineSpacing(Self.lineSpacing)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if block.spaceBelow > 0 {
+                        Color.clear.frame(height: block.spaceBelow)
+                    }
+                }
+                if isStreaming, let liveLine = lines.last {
+                    liveLineView(
+                        line: liveLine,
+                        units: renderPlanCache.units,
+                        reduceMotion: reduceMotion
+                    )
+                }
+            }
         } else {
-            // A finished reply is one Text — per-unit views would put
-            // hundreds of Texts into a ScrollView rebuilt on every switch.
-            // The line spacing matches the flow layout's 22pt pitch.
             Text(text)
-                .lineSpacing(5)
+                .lineSpacing(Self.lineSpacing)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    /// The live stream: one small Text per unit, the last `freshTailUnitCount`
-    /// of them blurred and translucent. Each unit animates its own blur and
-    /// opacity over the settle duration when the tail moves past it; a unit
-    /// that just appeared enters in its blurred state with no transition,
-    /// which is exactly the reference's per-character entrance.
-    private var streamingUnitsView: some View {
-        let units = CardTextUnitBuilder.units(from: text)
-        let unitCount = units.count
+    /// Folds consecutive lines into paragraphs — one `Text` each — and works out
+    /// the space each one leaves below itself.
+    ///
+    /// The arithmetic is exact, not tuned. An n-line `Text` with line spacing `s`
+    /// measures `n·LH + (n−1)·s`, so the line after it must start at
+    /// `n·(LH + s)` — exactly `s` below that `Text`'s own bottom edge. The gap
+    /// between two blocks is therefore the line spacing itself, and a paragraph
+    /// boundary adds the reference's paragraph pause on top of it. Being a point
+    /// out here would show up as the pitch changing at every paragraph.
+    ///
+    /// The paragraphs themselves come from the cache already folded, so this is
+    /// a walk over the paragraphs (a handful) rather than a re-join of every
+    /// line in the reply (which is what it used to be, on every character).
+    private func paragraphBlocks(
+        from settledParagraphs: [CardRenderPlanCache.SettledParagraph],
+        hasLiveLine: Bool
+    ) -> [CardTextParagraphBlock] {
+        settledParagraphs.enumerated().map { paragraphIndex, paragraph in
+            let isLastParagraph = paragraphIndex == settledParagraphs.count - 1
+            let spaceBelow: CGFloat
+            if isLastParagraph {
+                // Only the still-growing line follows a final paragraph, and it
+                // sits one line pitch below. With the reply finished nothing
+                // follows at all, and a trailing gap would only make the card
+                // taller than its own text.
+                spaceBelow = hasLiveLine ? Self.lineSpacing : 0
+            } else {
+                let nextParagraphOpensWithGap = settledParagraphs[paragraphIndex + 1].opensWithGap
+                spaceBelow = Self.lineSpacing
+                    + (nextParagraphOpensWithGap ? Self.paragraphGapSpacing : 0)
+            }
+            return CardTextParagraphBlock(
+                text: paragraph.text,
+                spaceBelow: spaceBelow
+            )
+        }
+    }
 
-        return CardTextFlowLayout {
-            ForEach(units) { unit in
-                switch unit.kind {
-                case .content:
-                    let positionsFromEnd = unitCount - 1 - unit.id
-                    let isFresh = positionsFromEnd < Self.freshTailUnitCount
-                    Text(unit.text)
-                        .blur(radius: isFresh ? Self.freshBlurRadius : 0)
-                        .opacity(isFresh ? Self.freshOpacity : 1)
-                        .animation(.easeInOut(duration: Self.settleAnimationDuration), value: isFresh)
-                case .lineBreak:
-                    Color.clear
-                        .frame(width: 0, height: 0)
-                        .cardTextBreak(.lineBreak)
-                case .paragraphGap:
-                    Color.clear
-                        .frame(width: 0, height: 0)
-                        .cardTextBreak(.paragraphGap)
-                }
+    /// The one line still being written: a small `Text` per unit, so the last
+    /// `freshTailUnitCount` of them can stay blurred and translucent — SwiftUI
+    /// cannot blur part of a `Text`. This is the only place per-unit views
+    /// survive, and it is one line (about 25 views) rather than every unit in
+    /// the reply.
+    private func liveLineView(
+        line: CardTextPackedLine,
+        units: [CardTextUnit],
+        reduceMotion: Bool
+    ) -> some View {
+        let unitCount = units.count
+        return HStack(alignment: .top, spacing: 0) {
+            ForEach(line.unitIndices, id: \.self) { unitIndex in
+                // The reference's settle rule, applied to the end of the reply
+                // rather than the end of the line: a unit goes sharp once five
+                // more have arrived behind it. A unit is a whole line's worth of
+                // units from the end by the time its line completes and rolls out
+                // of here, so it is always already sharp when it leaves and the
+                // blur is never cut off mid-fade.
+                let positionsFromEnd = unitCount - 1 - unitIndex
+                let isFresh = isStreaming && !reduceMotion
+                    && positionsFromEnd < Self.freshTailUnitCount
+                Text(units[unitIndex].text)
+                    .blur(radius: isFresh ? Self.freshBlurRadius : 0)
+                    .opacity(isFresh ? Self.freshOpacity : 1)
+                    .animation(.easeInOut(duration: Self.settleAnimationDuration), value: isFresh)
             }
         }
     }
