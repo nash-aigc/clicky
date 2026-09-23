@@ -21,14 +21,25 @@
 //  swapping windows would flash and drop key status), while the SwiftUI
 //  content inside switches between pill and sheet, keyed off
 //  `expansionProgress` — which is DERIVED from the panel's live frame on
-//  every `windowDidResize`, not animated on its own. One animation source
-//  (the window frame, driven frame-by-frame by `driveCenterScaleFrames` —
-//  2026-09-23 中心缩放：展开沿以刘海顶边中点为锚的等比缩放路径从 .08 长到
-//  1.0（340ms，cubic-bezier(.22,.9,.3,1)，参考页 01 中心缩放的 winScale），
-//  收起走参考页 winClose：scale .92 + 整窗淡出 160ms ease-in)：the
-//  silhouette cannot desync from it, and a stalled progress value is
-//  structurally impossible (the desync-stall class behind the 2026-09-23
-//  「刘海缩不回去」 bug — see 开发经验/10 G12).
+//  every `windowDidResize`, not animated on its own.
+//
+//  Expansion and collapse use two different mechanisms, both ported from
+//  `刘海屏弹出窗口_12种动画对比.html`:
+//
+//    · 展开 = 02 幕布垂落. The frame is set ONCE (the sheet's final rect) and
+//      the animation is a clip on the content layer falling from the top edge
+//      — Core Animation, on the render server, with no per-frame window
+//      resize and no per-frame SwiftUI layout. 2026-09-23: this replaced a
+//      per-frame window resize along the 01 中心缩放 scale path, which was a
+//      category error — the reference animates `transform`/`clip-path` on a
+//      fixed-size element precisely because resizing re-wraps text and
+//      rebuilds the window's drawing surface every frame.
+//    · 收起 = the reference's winClose: scale .92 + the whole window fading
+//      out over 160 ms ease-in, still driven frame-by-frame by
+//      `driveCenterScaleFrames` (the window frame is its own animation source
+//      there, and progress derives from it, so the silhouette cannot desync
+//      or stall — the desync-stall class behind the 2026-09-23 「刘海缩不回去」
+//      bug, see 开发经验/10 G12).
 //
 //  Collapse paths — all deliberate: Esc (local keyDown monitor, installed
 //  only while expanded), a click outside the sheet, the app resigning active,
@@ -83,6 +94,10 @@ final class NotchWindowController {
         let displayID: CGDirectDisplayID
         let screen: NSScreen
         let panel: NotchPanel
+        /// The SwiftUI surface inside the panel. Held because the expand
+        /// animation masks *this* layer (02 幕布垂落) — the panel's frame is
+        /// set once and never animated, so the clip is the only moving part.
+        let contentHostingView: NSView
         /// Fires whenever this panel's frame changes — the per-frame hook
         /// that re-derives `expansionProgress` from the live frame while the
         /// morph animates. Removed with the presence in `teardown`.
@@ -120,12 +135,13 @@ final class NotchWindowController {
     /// on a second screen collapses the first.
     private var expandedScreen: NSScreen?
 
-    /// 中心缩放展开/收起的逐帧驱动器（2026-09-23，参考
-    /// `刘海屏弹出窗口_12种动画对比.html` 01 中心缩放）。窗口 setFrame
-    /// 仍然是唯一动画源——只是每一帧的 frame 由缩放路径算出（以刘海
-    /// 顶边中点为锚的等比缩放），不能再交给 NSAnimationContext，因为它
-    /// 只会做两端 frame 的线性拉伸（「由小变大」而不是「等比放大」）。
-    /// 每次新的展开/收起先 invalidate 上一个，防两个驱动器抢同一个面板。
+    /// 中心缩放收起的逐帧驱动器（2026-09-23，参考
+    /// `刘海屏弹出窗口_12种动画对比.html` 的 winClose）。**展开已经不用它了**
+    /// ——展开是 02 幕布垂落，窗口一步到最终 frame、动的是内容层的遮罩（见
+    /// `beginExpansion` / `startCurtainReveal`）。收起仍然是逐帧 setFrame：
+    /// 它是一条以刘海顶边中点为锚的等比缩放路径，NSAnimationContext 只会做
+    /// 两端 frame 的线性拉伸（「由小变大」而不是「等比缩小」），只能自己算。
+    /// 每次新的收起先 invalidate 上一个，防两个驱动器抢同一个面板。
     private var centerScaleAnimationTimer: Timer?
 
     init(companionManager: CompanionManager, audioHistoryProvider: @escaping () -> [CGFloat]) {
@@ -216,6 +232,9 @@ final class NotchWindowController {
             let hostingView = NSHostingView(rootView: rootView)
             hostingView.frame = NSRect(origin: .zero, size: panel.contentView!.bounds.size)
             hostingView.autoresizingMask = [.width, .height]
+            // 展开的幕布挂在宿主层的 `mask` 上（02 幕布垂落），所以这一层必须
+            // 真的存在——NSHostingView 通常自带 layer，显式置位不依赖这个巧合。
+            hostingView.wantsLayer = true
             panel.contentView?.addSubview(hostingView)
 
             panel.orderFrontRegardless()
@@ -236,6 +255,7 @@ final class NotchWindowController {
                     displayID: screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? 0,
                     screen: screen,
                     panel: panel,
+                    contentHostingView: hostingView,
                     resizeObserver: resizeObserver
                 )
             )
@@ -429,12 +449,13 @@ final class NotchWindowController {
         }
     }
 
-    /// Starts the sheet growing on `presence` and commits it in the same
-    /// breath — the window scales up from the notch's top-centre anchor, the
-    /// silhouette reaches full size, and the sheet becomes real (content,
-    /// activation, key status, shadow, chime). Hover no longer has a path
-    /// here: expansion is click-only, so there is no slow creep to commit
-    /// later.
+    /// Starts the sheet opening on `presence` and commits it in the same
+    /// breath — the window is put at its final frame in ONE step and the
+    /// reveal is a curtain clip on the content layer (02 幕布垂落, see
+    /// `NotchSupport.curtainRevealDuration`). No per-frame `setFrame`, no
+    /// per-frame SwiftUI layout: the width is final from frame 0, so text
+    /// cannot re-wrap mid-animation, and the main thread has nothing to do
+    /// while the curtain falls.
     private func beginExpansion(on presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
         let expandedFrame = NotchSupport.expandedSheetFrame(on: presence.screen)
@@ -443,36 +464,34 @@ final class NotchWindowController {
         let expansionGenerationAtStart = expansionGeneration
         expandedScreen = presence.screen
 
-        // 01 中心缩放：window frames driven along a top-centre-anchored
-        // SCALE path — scale .08 → 1.0, 340 ms, cubic-bezier(.22,.9,.3,1),
-        // exactly the reference page's winScale keyframes. One animation
-        // source is preserved: the frame is still what everything derives
-        // from, it just follows a scale curve instead of a two-point stretch.
-        driveCenterScaleFrames(
-            panel: presence.panel,
-            targetFrame: expandedFrame,
-            startScale: NotchSupport.centerScaleInitialScale,
-            endScale: 1.0,
-            duration: NotchSupport.centerScaleExpansionDuration,
-            controlPoints: NotchSupport.centerScaleTimingControlPoints,
-            fadesToTransparent: false,
-            completion: { [weak self] in
-                guard let self,
-                      self.expansionGeneration == expansionGenerationAtStart,
-                      self.panelModel.isExpanded else { return }
-                self.convergeOnExpandedState(presence, targetFrame: expandedFrame)
-            }
-        )
+        // Order matters. The curtain goes on FIRST, at zero visible height:
+        // `setFrame(display: true)` below forces a synchronous draw, so
+        // installing the mask afterwards would paint the finished sheet for
+        // one frame before the curtain hid it — a visible flash.
+        installCurtainMask(on: presence)
+
+        panelModel.isExpanded = true
+        presence.panel.setFrame(expandedFrame, display: true)
+
+        startCurtainReveal(on: presence, expandedFrame: expandedFrame)
+
+        // Back to the deadline the curtain was measured against; the sheet
+        // must be fully revealed by then whether or not the animation ran.
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.curtainRevealDuration + 0.05) { [weak self] in
+            guard let self,
+                  self.expansionGeneration == expansionGenerationAtStart,
+                  self.panelModel.isExpanded else { return }
+            self.removeCurtainMask(on: presence)
+        }
 
         presence.panel.ignoresMouseEvents = false
-        panelModel.isExpanded = true
         finishExpansionCommit(on: presence)
 
-        // Expansion watchdog: a skipped timer tick cannot strand the sheet
-        // at a partial scale — past the curve's deadline, force the frame to
-        // full unless a newer expand/collapse owns the panel. Progress
-        // follows the frame, so one snap covers both.
-        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.centerScaleExpansionDuration + 0.25) { [weak self] in
+        // Expansion watchdog: a dropped layer animation cannot strand the
+        // sheet half-revealed — past the curtain's deadline, force the
+        // expanded state (frame and mask) unless a newer expand/collapse
+        // owns the panel.
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.curtainRevealDuration + 0.25) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
@@ -480,11 +499,101 @@ final class NotchWindowController {
         }
     }
 
-    /// Forces the panel's frame to the full expanded frame with no animation
-    /// — the frame-driven counterpart of `convergeOnRestingState`. Idempotent
-    /// at every normal completion.
+    /// Hangs the curtain on the content layer at zero visible height — the
+    /// panel renders nothing until `startCurtainReveal` grows it.
+    ///
+    /// The mask's geometry is computed from the FINAL expanded frame, not
+    /// from the hosting view's current bounds: the window has not been
+    /// resized yet at this point, and a mask sized to the resting frame would
+    /// stay that size (sublayers do not follow their superlayer's bounds) and
+    /// reveal the sheet through a pill-sized hole.
+    private func installCurtainMask(on presence: ScreenPresence) {
+        guard let hostingLayer = presence.contentHostingView.layer else { return }
+        let maskLayer = CALayer()
+        maskLayer.backgroundColor = NSColor.black.cgColor
+
+        CATransaction.begin()
+        // Implicit animations would animate the mask's own installation —
+        // installing it must be instantaneous, the reveal is the animation.
+        CATransaction.setDisableActions(true)
+        hostingLayer.mask = maskLayer
+        CATransaction.commit()
+    }
+
+    /// 02 幕布垂落's reveal: one Core Animation group growing the mask's
+    /// visible strip from the content's top edge down to its full height. The
+    /// render server plays it — the main thread does no per-frame work, which
+    /// is the whole point of doing this as a clip instead of a window resize.
+    private func startCurtainReveal(on presence: ScreenPresence, expandedFrame: CGRect) {
+        guard let maskLayer = presence.contentHostingView.layer?.mask else { return }
+        let contentWidth = expandedFrame.width
+        let contentHeight = expandedFrame.height
+
+        // The strip is anchored at the content's TOP edge, and "top" is a
+        // different y depending on the hosting view's flippedness: a flipped
+        // (top-left origin) view's top edge is y = 0, an unflipped one's is
+        // y = height. Handling both explicitly keeps the curtain falling
+        // downward either way instead of silently rising from the bottom.
+        let topEdgeY: CGFloat = presence.contentHostingView.isFlipped ? 0 : contentHeight
+
+        // Model values are the END state: if the animation were ever dropped,
+        // the worst case is a fully revealed sheet, never a permanently
+        // half-covered panel.
+        let fullBounds = CGRect(x: 0, y: 0, width: contentWidth, height: contentHeight)
+        let centrePosition = CGPoint(x: contentWidth / 2, y: contentHeight / 2)
+        let collapsedBounds = CGRect(x: 0, y: 0, width: contentWidth, height: 0)
+        let topEdgePosition = CGPoint(x: contentWidth / 2, y: topEdgeY)
+
+        // Both properties interpolate together under one timing function, so
+        // the strip's top edge stays pinned exactly at the content's top edge
+        // for the whole reveal — that pinning IS the curtain.
+        let boundsAnimation = CABasicAnimation(keyPath: "bounds")
+        boundsAnimation.fromValue = NSValue(rect: collapsedBounds)
+        boundsAnimation.toValue = NSValue(rect: fullBounds)
+
+        let positionAnimation = CABasicAnimation(keyPath: "position")
+        positionAnimation.fromValue = NSValue(point: topEdgePosition)
+        positionAnimation.toValue = NSValue(point: centrePosition)
+
+        let revealGroup = CAAnimationGroup()
+        revealGroup.animations = [boundsAnimation, positionAnimation]
+        revealGroup.duration = NotchSupport.curtainRevealDuration
+        let controlPoints = NotchSupport.curtainRevealTimingControlPoints
+        revealGroup.timingFunction = CAMediaTimingFunction(
+            controlPoints: controlPoints.0,
+            controlPoints.1,
+            controlPoints.2,
+            controlPoints.3
+        )
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        maskLayer.bounds = fullBounds
+        maskLayer.position = centrePosition
+        maskLayer.add(revealGroup, forKey: "curtainReveal")
+        CATransaction.commit()
+    }
+
+    /// Takes the curtain off. Idempotent, and called from every path that
+    /// claims the panel is (or is becoming) fully open or fully closed — a
+    /// mask left behind would clip the sheet forever, and it also costs a
+    /// compositing pass on every frame the panel draws.
+    private func removeCurtainMask(on presence: ScreenPresence) {
+        guard let hostingLayer = presence.contentHostingView.layer, hostingLayer.mask != nil else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hostingLayer.mask = nil
+        CATransaction.commit()
+    }
+
+    /// Forces the panel into the fully-open state with no animation — the
+    /// counterpart of `convergeOnRestingState`, covering both halves of what
+    /// "open" means: the frame (which `beginExpansion` already put in place in
+    /// one step, so this is normally a no-op) and the curtain (which must come
+    /// off). Idempotent at every normal completion.
     private func convergeOnExpandedState(_ presence: ScreenPresence, targetFrame: CGRect) {
         guard panelModel.isExpanded else { return }
+        removeCurtainMask(on: presence)
         let frame = presence.panel.frame
         let isFrameAtTarget =
             abs(frame.minX - targetFrame.minX) < 0.5 &&
@@ -539,6 +648,14 @@ final class NotchWindowController {
         companionManager.isNotchSheetExpanded = false
         removeEscapeMonitor()
 
+        // The curtain belongs to the expansion. A collapse can start while it
+        // is still falling (a click on the close button right after opening),
+        // and the winClose fade must take the WHOLE sheet with it — leave the
+        // mask on and the fade would play over a still-clipped panel.
+        if let collapsingPresence {
+            removeCurtainMask(on: collapsingPresence)
+        }
+
         // Every collapse bumps the generation; a pending convergence callback
         // from an earlier collapse sees the bump and stands down instead of
         // snapping this collapse's mid-flight animation to rest.
@@ -554,6 +671,7 @@ final class NotchWindowController {
             centerScaleAnimationTimer?.invalidate()
             centerScaleAnimationTimer = nil
             if let collapsingPresence {
+                removeCurtainMask(on: collapsingPresence)
                 collapsingPresence.panel.alphaValue = 1
             }
             return
@@ -601,12 +719,13 @@ final class NotchWindowController {
         }
     }
 
-    /// The 中心缩放 frame driver — the one animation source for expand and
-    /// collapse. Each tick evaluates the reference page's CSS cubic-bezier
-    /// timing function, scales `targetFrame` about its top-centre anchor
-    /// (transform-origin: 50% 0), and setFrame's the result. `fadesToTransparent`
-    /// additionally drives the window's alphaValue down with the same curve —
-    /// winClose's opacity leg.
+    /// The winClose frame driver — the collapse's animation source. Each tick
+    /// evaluates the reference page's CSS cubic-bezier timing function, scales
+    /// `targetFrame` about its top-centre anchor (transform-origin: 50% 0),
+    /// and setFrame's the result. `fadesToTransparent` additionally drives the
+    /// window's alphaValue down with the same curve — winClose's opacity leg.
+    /// (Expansion has no driver any more: 02 幕布垂落 sets the frame once and
+    /// animates a layer mask instead.)
     private func driveCenterScaleFrames(
         panel: NSPanel,
         targetFrame: CGRect,
@@ -648,16 +767,26 @@ final class NotchWindowController {
                 completion()
             }
         }
+        // 同时挂进 .common 模式：scheduledTimer 只挂 .default，展开恰好由一次
+        // 点击发起，若点击的追踪循环还没退出，default 模式的定时器整段静默、
+        // 进度靠下一次 tick 追平——表现为动画开头顿一下。common 模式下两种
+        // 模式都会触发。
+        RunLoop.main.add(timer, forMode: .common)
         centerScaleAnimationTimer = timer
     }
 
     /// Forces the panel's frame to the resting state with no animation — the
-    /// one remaining morph animation (the window frame) can still be
-    /// skipped, and the published `expansionProgress` is derived from the
-    /// frame, so snapping the frame converges both. Idempotent: at every
-    /// normal completion this is a no-op.
+    /// winClose fade can still be skipped, and the published
+    /// `expansionProgress` is derived from the frame, so snapping the frame
+    /// converges that too. Idempotent: at every normal completion this is a
+    /// no-op.
     private func convergeOnRestingState(_ presence: ScreenPresence) {
         guard !panelModel.isExpanded else { return }
+
+        // The curtain is expansion state: whatever path got here, the resting
+        // pill must not be clipped by a mask left over from an expansion that
+        // never finished.
+        removeCurtainMask(on: presence)
 
         // Defensive alpha restore: the winClose fade leaves the window fully
         // transparent until the frame snap brings it back. If the fade's

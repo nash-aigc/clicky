@@ -811,8 +811,10 @@ struct NotchExpandedSheetView: View {
                     hasContentSettledIn = true
                     return
                 }
-                // 参考页的错峰：内容比窗口慢 230ms 起步。
-                withAnimation(.easeOut(duration: 0.45).delay(0.23)) {
+                // 参考页配对 02 幕布垂落时给的入场延迟就是 140ms（见
+                // NotchSupport.curtainContentEntranceDelay）——幕布刚落到
+                // 三分之一时内容开始浮现，两者叠着走，不是先落完再入。
+                withAnimation(.easeOut(duration: 0.45).delay(NotchSupport.curtainContentEntranceDelay)) {
                     hasContentSettledIn = true
                 }
             }

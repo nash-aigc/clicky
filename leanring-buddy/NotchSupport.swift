@@ -23,35 +23,38 @@ import AppKit
 import CoreGraphics
 
 nonisolated enum NotchSupport {
-    /// 静息胶囊 ↔ 展开面板的形变时长。窗口 setFrame 是唯一动画源——
-    /// SwiftUI 侧的 expansionProgress 从窗口实时 frame 推导，没有自己的
-    /// 动画，所以不存在「两边同步」问题。
-    /// 0.62 s：design-preview/notch-glow-expand.html 定稿的展开时长——
-    /// 面板弹开要一眼看清「长开」的过程，0.38 s 太快看不清。
-    static let expansionAnimationDuration: TimeInterval = 0.62
+    // MARK: - 幕布垂落展开（参考：刘海屏弹出窗口_12种动画对比.html 02 幕布垂落）
+    //
+    // 展开和收起用的是两套完全不同的机制，各自有各自的常量，别混：
+    //   展开 = 02 幕布垂落（下面三个 curtain*）——窗口 frame 一次性到位，
+    //         动画在内容层的图层遮罩上，GPU 播放，主线程零逐帧工作。
+    //   收起 = winClose（centerScaleCollapse*）——仍然是 60Hz 逐帧 setFrame。
+    // 早先那两个「形变时长 / 过冲弹簧曲线」常量（0.62s + (0.22,1.28,.36,1)）
+    // 是更早一版的展开实现，已被上面两套取代，无引用，2026-09-23 删除——
+    // 留着会让这里对「展开到底怎么动」的描述自相矛盾。
 
-    /// 即刻提交（点击 / 设置 / 启动）的形变曲线：带过冲的春季曲线
-    /// （demo 定稿的 cubic-bezier(.22,1.28,.36,1)）——面板先弹过目标
-    /// 尺寸再回落，落位有「稳稳站住」的手感。y 控制点大于 1 就是过冲，
-    /// 窗口 setFrame 接受。
-    static let morphTimingControlPoints: (Float, Float, Float, Float) = (0.22, 1.28, 0.36, 1.0)
-
-    /// 收起的形变时长与曲线（demo 定稿的 cubic-bezier(.6,.04,.36,1)）：
-    /// 起步慢半拍、随后加速收回——收起读起来是「退场」，不跟展开抢戏。
-    static let collapseAnimationDuration: TimeInterval = 0.5
-    static let collapseTimingControlPoints: (Float, Float, Float, Float) = (0.6, 0.04, 0.36, 1.0)
-
-    // MARK: - 中心缩放展开（参考：刘海屏弹出窗口_12种动画对比.html 01 中心缩放）
-
-    /// 展开 = 01 中心缩放：窗口 frame 不再做两端 frame 的线性拉伸，而是沿
-    /// 「以刘海顶边中点为锚」的**等比缩放路径**从 .08 长到 1.0——参考页
-    /// winScale 关键帧（scale(.08) → scale(1)，transform-origin: 50% 0）。
-    /// 窗口 setFrame 仍然是唯一动画源，只是每一帧的 frame 由这条缩放曲线
-    /// 算出（NotchWindowController 的 scale 驱动器逐帧 setFrame）。
-    static let centerScaleInitialScale: CGFloat = 0.08
-    static let centerScaleExpansionDuration: TimeInterval = 0.34
-    /// 参考页指定的 cubic-bezier(.22,.9,.3,1)——快起步、缓落位，无过冲。
-    static let centerScaleTimingControlPoints: (Float, Float, Float, Float) = (0.22, 0.9, 0.3, 1.0)
+    /// 展开 = 02 幕布垂落：窗口**一步**到最终 frame（宽度、x、顶边从第 0 帧
+    /// 起就是最终值），展开的动感全部由内容层的裁剪揭示承担——可见区从
+    /// 顶边往下长到整高。参考页的 winCurtain 就是这件东西：
+    ///
+    ///     @keyframes winCurtain{ 0%{ clip-path:inset(-44px -44px 100% -44px …) }
+    ///                            100%{ clip-path:inset(-44px -44px 0 -44px …) } }
+    ///     .win.winCurtain{ animation:winCurtain .43s ease-out both; }
+    ///
+    /// 为什么不再逐帧改窗口 frame（这一条换来的是「不卡」和「不重排」两件事）：
+    /// 参考页 12 种窗口动画全是 `transform` / `clip-path`——**没有一种改元素
+    /// 尺寸**，因为这两类都是合成器属性，GPU 每帧重画一下就完了。早先把它
+    /// 移植成「逐帧 setFrame」是范畴错误：窗口每帧重建绘制表面、SwiftUI 每帧
+    /// 对整张面板做变宽重排、文字每帧重算换行——用户看到的竖直卡顿和「同一行
+    /// 十个字展开后变十一个字」都是这一个错误带来的（2026-09-23）。宽度恒定
+    /// 之后换行从第一帧到最后一帧不可能变，这是结构性保证，不是调参调出来的。
+    static let curtainRevealDuration: TimeInterval = 0.43
+    /// CSS ease-out 的控制点，也就是 `CAMediaTimingFunction(name: .easeOut)`
+    /// 的取值——参考页 winCurtain 写的 `ease-out`。
+    static let curtainRevealTimingControlPoints: (Float, Float, Float, Float) = (0.0, 0.0, 0.58, 1.0)
+    /// 内容入场比幕布晚多少起步。参考页把 02 幕布垂落和 `.unit.line` 配在一起
+    /// 时给的 delay 就是 140ms（01 中心缩放配的是 230ms）。
+    static let curtainContentEntranceDelay: TimeInterval = 0.14
 
     /// 收起 = 参考页的 winClose：scale(.92) + 整窗淡出，160ms ease-in。
     static let centerScaleCollapseDuration: TimeInterval = 0.16
@@ -65,7 +68,8 @@ nonisolated enum NotchSupport {
     /// CAMediaTimingFunction 可以交曲线过去，所以在这里自己解：先用
     /// Newton–Raphson 解 bezier-x(t) = progress 得参数 t（平坦段退化为
     /// 小步推进），再取 bezier-y(t)。端点直接透传，y 控制点 > 1（过冲
-    /// 曲线）也能算——morphTimingControlPoints 的弹簧曲线走同一条路。
+    /// 曲线）也能算。收起曲线（`centerScaleCollapseTimingControlPoints`）
+    /// 走的就是这条求值。
     static func timingCurveValue(
         atProgress progress: Double,
         controlPoints: (Float, Float, Float, Float)
