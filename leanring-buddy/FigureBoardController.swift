@@ -34,7 +34,7 @@ final class FigureBoardController {
 
     /// The board's outer size. Generous enough for a labelled triangle or two
     /// intersecting circles; the SVG scales down to fit inside either way.
-    private static let boardSize = CGSize(width: 340, height: 260)
+    private static let boardSize = CGSize(width: 460, height: 360)
     private static let boardCornerRadius: CGFloat = 14
     private static let boardMarginFromAnchor: CGFloat = 14
     private static let screenEdgeMargin: CGFloat = 8

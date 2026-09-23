@@ -245,11 +245,11 @@ struct BuddyContinuousListeningCallbacks {
     /// The user really is speaking over the answer (the barge-in moment: the
     /// caller stops TTS playback and takes the follow-up screenshot here).
     ///
-    /// Fires at most ONCE per utterance, and — while the answer is being read
-    /// aloud — only once the recognizer has produced real words. A rise in the
-    /// microphone level is not enough on its own: see
-    /// `markContinuousListeningUtteranceActive` for the measurement that made
-    /// the level path non-authoritative while the bot is speaking.
+    /// Fires at most ONCE per utterance, and from the level VAD's
+    /// QUIET→SPEAKING transition alone. A transcript may not start a turn here
+    /// — that is the reference's own structure, not a local bar; the interim
+    /// handler in `openContinuousListeningTranscriptionSession` carries the
+    /// evidence.
     let onSpeechDetected: () -> Void
     /// Cumulative interim transcript of the utterance currently being spoken.
     let onTranscriptUpdate: (String) -> Void
@@ -355,12 +355,14 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // converged for the whole session; this app restarts its canceller per
     // reply, which is what makes the local rule the stricter one.
     //
-    // Concretely, while the answer plays the level path may neither OPEN an
-    // utterance (that would start a silence countdown and a final request off
-    // our own audio, churning the ASR session mid-reply) nor interrupt, and the
-    // ASR path keeps the full real-question bar instead of the corroborated
-    // one. Real barge-in still works and stays fast where it can be trusted:
-    // the user's own WORDS, at the same bar the no-evidence path always used.
+    // Concretely, the level VAD is the ONLY thing that may start a turn, while
+    // the answer plays or not. That is what the reference does, and the reason
+    // is structural rather than a threshold: VoiceWeb's transcript cannot exist
+    // until its VAD has already ruled that the user spoke, so a transcript can
+    // never be an independent trigger there. Here the recognizer free-runs, and
+    // one guessed character is all it takes — so the source is restricted
+    // instead. Real barge-in is unaffected: the user's own speech measures
+    // 0.3–1.0 against a 0.25 threshold.
     // The silence that ends an utterance is now a USER SETTING
     // (「静音多久自动发送」, AppSettings.continuousListeningSilenceSendSeconds,
     // default 2.0 s, clamped 1–5) — human thinking pauses are unbounded (the
@@ -400,8 +402,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // sentence. Counted through `continuousListeningContentCharacterCount`, so
     // punctuation can never add up to a sentence (「。。。。」 is 0, not 4).
     private static let continuousListeningMinimumTranscriptCharacters = 4
-    // There is NO content bar on the interrupt path, and that is the ported
-    // behaviour rather than an omission (2026-09-24).
+    // There is NO content bar on the interrupt path, and there must not be one:
+    // the interrupt has a single source, the level VAD (2026-09-24).
     //
     // This file used to carry a 4-content-character bar here, justified by
     // pipecat's `MinWordsUserTurnStartStrategy`
@@ -409,14 +411,19 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // was wrong. VoiceWeb never instantiates that strategy: its 三段式 builds
     // its user-turn-start list from `VADUserTurnStartStrategy` and
     // `TranscriptionUserTurnStartStrategy` only (server.py:3753-3754), and
-    // neither carries any word, character or bot-speaking condition —
-    // `transcription_user_turn_start_strategy.py` triggers on every
-    // `InterimTranscriptionFrame` outright. The bar is unnecessary there
-    // because the canceller keeps the bot's own voice out of the recognizer,
-    // and this app now relies on the same mechanism (voice processing with AGC
-    // off — see `VoicePlaybackEngine.disableAutomaticGainControlOnProcessedUplink`),
-    // which is what made the bar's premise — "our own answer clears any bar we
-    // can set" — false in the first place.
+    // neither carries any word, character or bot-speaking condition.
+    //
+    // Removing the bar was right; re-opening the ASR as a turn-start source was
+    // not. In VoiceWeb the transcription strategy is unreachable for an
+    // interruption no matter what it says, because the STT is segmented by the
+    // VAD — a transcript cannot exist before the VAD has ruled. Run that same
+    // strategy against this app's free-running streaming recognizer and it
+    // becomes the hole: measured 2026-09-24, the canceller's residual made the
+    // recognizer guess 「噻」 and 「是」 at mic peaks of 0.214 / 0.241 — BELOW the
+    // 0.25 level gate, so the VAD was silent and only the transcript stopped the
+    // answer. No bar fixes that (a guessed character can be four characters long
+    // too); only restricting the SOURCE does, which is what the interim handler
+    // now does.
 
     /// Characters that are actual linguistic content — letters (CJK included)
     /// and digits — with punctuation, whitespace, symbols and emoji excluded.
@@ -615,12 +622,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private var continuousListeningUtteranceActive = false
     /// The barge-in callback has already fired for the utterance in progress.
     ///
-    /// Separate from `continuousListeningUtteranceActive` because the two are
-    /// decided by DIFFERENT evidence (see
-    /// `markContinuousListeningUtteranceActive`): the level path may open an
-    /// utterance without being allowed to interrupt, and the transcript path
-    /// must still be able to interrupt that same utterance afterwards. One
-    /// flag for both would make whichever path fired first veto the other.
+    /// One-shot per utterance: the level VAD is the only thing that can raise
+    /// it, and an utterance must not be interrupted twice.
     private var continuousListeningDidRequestBargeIn = false
     /// The microphone levels of the last
     /// `continuousListeningRecentLevelWindowSeconds`, refreshed by the VAD loop
@@ -900,21 +903,42 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                     let didTranscriptChange = transcriptText
                         != self.continuousListeningLatestInterimTranscript
                     self.continuousListeningLatestInterimTranscript = transcriptText
-                    // Text means the user was speaking, whether or not the
-                    // energy VAD agreed (see markContinuousListeningUtteranceActive)
-                    // — but only once it carries real content, and while an
-                    // answer is being read aloud it must carry enough of it.
-                    // pipecat's rule, not a local one: a single word may open a
-                    // turn when the bot is silent, a higher bar applies while
-                    // the bot is speaking (MinWordsUserTurnStartStrategy). The
-                    // `else` branch is not a nicety — the recognizer emits
-                    // 「。」 into silence, and without this an answer would cut
-                    // itself off the moment that landed.
-                    // ANY transcript is a user turn start — this is the
-                    // reference's `TranscriptionUserTurnStartStrategy`, which
-                    // fires on every `InterimTranscriptionFrame` outright: no
-                    // content bar, no word count, no bot-speaking condition.
-                    // The only thing it requires is that a transcript exists.
+                    // The transcript is RECORDED here, never acted on: it is the
+                    // copy a dead session's fallback submits as the final, and
+                    // the text the send bar counts. It may not start a turn.
+                    //
+                    // That is not a policy choice, it is the reference's own
+                    // structure. VoiceWeb's cascade pipeline segments its STT by
+                    // the VAD — `class BailianASRService(SegmentedSTTService)`
+                    // (server.py:699) — which emits one final transcript per VAD
+                    // segment and never an interim (pipecat
+                    // services/stt_service.py:906-918). A transcript therefore
+                    // cannot exist until the VAD has already decided the user
+                    // spoke. `TranscriptionUserTurnStartStrategy` IS in VoiceWeb's
+                    // `_start` list (server.py:3754) and still cannot interrupt:
+                    // `UserTurnController`'s only dedup is `if self._user_turn:
+                    // return` (turns/user_turn_controller.py:353), and a segment's
+                    // transcript arrives in the same pass as the turn end, while
+                    // `_user_turn` is still true. In VoiceWeb the ONLY thing that
+                    // can interrupt mid-reply is the VAD's QUIET→SPEAKING
+                    // transition — one event per transition, after `start_secs` of
+                    // sustained confidence (pipecat audio/vad/vad_analyzer.py:211,
+                    // :238-243).
+                    //
+                    // Ported onto a free-running streaming ASR, that same
+                    // strategy becomes the one hole in the wall, because a
+                    // transcription no longer requires a VAD decision first. A
+                    // cloud recogniser handed the canceller's residual does not
+                    // return silence — it GUESSES, and it guesses single
+                    // characters: measured 2026-09-24, 「噻」 and 「是」 at mic peaks
+                    // of 0.214 and 0.241, both BELOW the 0.25 level gate, so no
+                    // VAD would have fired and every one of them used to stop the
+                    // answer mid-sentence. No threshold can take this job: the
+                    // reference's canceller is Chrome's, and Silero rates a
+                    // smeared echo of speech as speech at the same confidence as
+                    // clean speech (frac >= 0.7 of 0.90–0.94 against 0.89 clean,
+                    // measured 2026-09-24 on the shipped ONNX model). Only the
+                    // turn-start SOURCE can, so the VAD is the source.
                     let trimmedTranscriptText = transcriptText
                         .trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmedTranscriptText.isEmpty {
@@ -932,7 +956,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                            ) {
                             print("🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: \"\(transcriptText)\", recent mic peak \(String(format: "%.3f", self.continuousListeningRecentPeakAudioLevel)))")
                         }
-                        self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
                     }
                     // New words are still arriving, so the user is still
                     // talking — restart the silence countdown. This is the

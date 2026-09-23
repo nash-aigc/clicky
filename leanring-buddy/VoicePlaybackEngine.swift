@@ -212,6 +212,9 @@ final class VoicePlaybackEngine {
     /// chunks exactly as it did before.
     private(set) var isChunkPlaying = false
 
+    /// TEMPORARY PROBE (2026-09-24) — see `installPlaybackRenderProbe`.
+    private var playbackRenderProbeCounter = 0
+
     /// The engine-side format playback buffers are converted into. Read once
     /// when the graph is first connected; every chunk after that converts to
     /// it, so a provider returning a different sample rate never forces the
@@ -293,9 +296,38 @@ final class VoicePlaybackEngine {
         installedInputTapHandler = handler
         installedInputTapBufferSize = bufferSize
 
+        // `preparedCaptureHost` may be STALE by the time this runs, and using it
+        // anyway is the one way this app can end up with a live microphone that
+        // has no echo cancellation.
+        //
+        // Measured by reading the two call sites: `prepareCaptureHost` snapshots
+        // `isEngineStarted` (VoicePlaybackEngine.swift:273), and between it and
+        // this call sits a network await — `BuddyDictationManager.swift:851`
+        // opens the ASR session. The window arms on the first-audio hook
+        // (BuddyDictationManager.swift:842-846), so "an answer starts during that
+        // await" is the ordinary case, not a corner. With the snapshot still
+        // saying `.captureOnlyEngine`, the switch below would start the
+        // capture-only engine — which has NO voice processing — and it does not
+        // stop the playback engine, so two microphones run at once and the
+        // recognizer is fed the one engine that cannot cancel anything. That is
+        // the reference project's 坑 1 (实现方案/08-踩坑总表.md:11, "音频采集/播放
+        // 不全在 WebRTC 里 → 浏览器 AEC 失灵 → 自己打断自己") in its native form,
+        // and it lands exactly on the reply the user is trying to hear.
+        //
+        // So the host is decided HERE, from the live state, and the playback
+        // engine wins whenever it is running: it is the only engine whose voice
+        // processing can cancel the answer out of the microphone.
+        if isEngineStarted {
+            installTapOnPlaybackEngine(handler: handler, bufferSize: bufferSize)
+            return
+        }
+
         switch preparedCaptureHost {
         case .playbackEngine:
-            installTapOnPlaybackEngine(handler: handler, bufferSize: bufferSize)
+            // The snapshot said playback but the engine is not running any more
+            // (a reply that ended during the same await). The capture-only
+            // engine is the only one that can host a tap now.
+            try startCaptureOnlyEngineWithTap(handler: handler, bufferSize: bufferSize)
         case .captureOnlyEngine:
             try startCaptureOnlyEngineWithTap(handler: handler, bufferSize: bufferSize)
         case .none:
@@ -320,6 +352,14 @@ final class VoicePlaybackEngine {
         bufferSize: AVAudioFrameCount
     ) {
         let playbackInputNode = engine.inputNode
+        // TEMPORARY PROBE (2026-09-24). The engine's own log shows playback
+        // starting and then nothing ever again — no `playback loop exited`, no
+        // barge-in — which means `.dataPlayedBack` never fired and
+        // `waitUntilPlaybackFinishes` is spinning. The tap below is installed
+        // moments after `playerNode.play()`, on a RUNNING engine with voice
+        // processing on, so these two lines say whether that is what kills the
+        // render.
+        print("🔊 [probe] installTap BEFORE: engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying) inputFormat=\(playbackInputNode.outputFormat(forBus: 0).sampleRate)Hz/\(playbackInputNode.outputFormat(forBus: 0).channelCount)ch")
         playbackInputNode.removeTap(onBus: 0)
         playbackInputNode.installTap(
             onBus: 0,
@@ -328,6 +368,7 @@ final class VoicePlaybackEngine {
             block: handler
         )
         inputTapHost = .playbackEngine
+        print("🔊 [probe] installTap AFTER: engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying)")
     }
 
     func removeInputTap() {
@@ -399,6 +440,7 @@ final class VoicePlaybackEngine {
     /// main-actor turn, so no newer playback can have started in between and
     /// `isChunkPlaying` is the whole truth about whether a stop is safe here.
     func releaseEngineWhenIdle() {
+        print("🔊 [probe] releaseEngineWhenIdle entered: isEngineStarted=\(isEngineStarted) engineRunning=\(engine.isRunning) isChunkPlaying=\(isChunkPlaying) tapHost=\(inputTapHost)")
         guard isEngineStarted, !isChunkPlaying else { return }
 
         if inputTapHost == .playbackEngine {
@@ -595,6 +637,21 @@ final class VoicePlaybackEngine {
     /// chunk is audible is tracked in `isChunkPlaying`.
     func playWAVData(_ audioData: Data, rate: Float, volume: Float) throws {
         try ensureEngineStarted()
+
+        // A dead engine must not become an unending reply. With nothing being
+        // rendered, `scheduleBuffer`'s `.dataPlayedBack` never fires, so
+        // `isChunkPlaying` would stay true for ever and
+        // `BailianTTSClient.waitUntilPlaybackFinishes` would poll it for ever —
+        // which is what the user sees as the app freezing mid-answer with the
+        // stop button up and no sound. A skipped chunk is a silent reply;
+        // a hang is an app the user cannot get out of, and of the two the hang
+        // is the worse one.
+        guard engine.isRunning else {
+            isChunkPlaying = false
+            print("⚠️ VoicePlaybackEngine: skipping a TTS chunk — the engine is not running, so this chunk could never finish playing")
+            return
+        }
+
         guard let canonicalPlaybackFormat else {
             throw BailianTTSClientError(message: "播放引擎没有可用的输出格式。")
         }
@@ -617,6 +674,10 @@ final class VoicePlaybackEngine {
         if !playerNode.isPlaying {
             playerNode.play()
         }
+        // TEMPORARY PROBE (2026-09-24): the reply reaches the speakers or it
+        // does not, and the log has never answered that. See
+        // `installPlaybackRenderProbe`.
+        print("🔊 [probe] play(): isEngineStarted=\(isEngineStarted) engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying) frames=\(chunkBuffer.frameLength) bufferFormat=\(chunkBuffer.format.sampleRate)Hz/\(chunkBuffer.format.channelCount)ch")
     }
 
     /// Stops the current chunk immediately (interruption path). The engine
@@ -767,7 +828,72 @@ final class VoicePlaybackEngine {
 
         engine.prepare()
         try engine.start()
+
+        // `start()` returning without throwing is NOT proof the engine runs, and
+        // the difference is invisible until the reply is silent AND never
+        // finishes. Measured 2026-09-24 with the probe below: one run reported
+        // `after engine.start(): isRunning=TRUE` and played (mixer peaks 0.05–0.84
+        // over three segments, voice-processing input format 9 ch); another
+        // reported the engine started and then `play(): engineRunning=FALSE`,
+        // with the input format 3 ch — the raw device format, i.e. voice
+        // processing had not engaged. In that state `playerNode.play()` does
+        // nothing, `scheduleBuffer`'s `.dataPlayedBack` never fires, and
+        // `BailianTTSClient.waitUntilPlaybackFinishes` spins forever, so the
+        // reply is both mute and unending with not one line of log to say so.
+        //
+        // The retry is the fix for the two-engine instability rather than a
+        // guess: the same call path yields a working IO on one run and a dead
+        // one on the next, which is the signature of the IO being reconfigured
+        // underneath (this class runs two `AVAudioEngine`s and moves the mic
+        // between them, toggling voice processing each time — the opposite of the
+        // reference's rule that capture and playback stay on ONE path, 坑 1 in
+        // 实现方案/08-踩坑总表.md:11). Stopping, re-warming and starting again
+        // rebuilds the IO from scratch, which is what a fresh launch does.
+        if !engine.isRunning {
+            print("⚠️ VoicePlaybackEngine: engine.start() returned but the engine is not running — rebuilding the IO and starting again")
+            engine.stop()
+            warmUpMainMixerNode()
+            engine.prepare()
+            try engine.start()
+        }
+
+        installPlaybackRenderProbe()
         isEngineStarted = true
+        if engine.isRunning {
+            print("🔊 [probe] connectGraphAndStart done: isRunning=true outputFormat=\(engine.outputNode.outputFormat(forBus: 0).sampleRate)Hz/\(engine.outputNode.outputFormat(forBus: 0).channelCount)ch")
+        } else {
+            print("⚠️ VoicePlaybackEngine: the engine still is not running after a rebuild — playback will be silent for this reply. Input format \(engine.inputNode.outputFormat(forBus: 0).sampleRate)Hz/\(engine.inputNode.outputFormat(forBus: 0).channelCount)ch (3 ch is the raw device format, i.e. voice processing did not engage; 9 ch is the processed one)")
+        }
+    }
+
+    /// TEMPORARY PROBE (2026-09-24) — remove once the silence is explained.
+    ///
+    /// Measures the one thing no log in this repo has ever measured: whether
+    /// audio is actually being RENDERED. A tap on the main mixer observes every
+    /// sample on its way to the output node, so a non-zero peak here means the
+    /// app produced sound and the fault is downstream (device, routing, mute);
+    /// a flat zero while `playerNode.isPlaying` is true means the player is not
+    /// being pulled at all and the fault is the graph.
+    ///
+    /// Prints at most twice a second — a per-buffer print from the audio thread
+    /// would bury the log it exists to explain.
+    private func installPlaybackRenderProbe() {
+        playbackRenderProbeCounter = 0
+        engine.mainMixerNode.removeTap(onBus: 0)
+        engine.mainMixerNode.installTap(onBus: 0, bufferSize: 4096, format: nil) { [weak self] buffer, _ in
+            guard let channelData = buffer.floatChannelData else { return }
+            var peak: Float = 0
+            for frameIndex in 0..<Int(buffer.frameLength) {
+                peak = max(peak, abs(channelData[0][frameIndex]))
+            }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.playbackRenderProbeCounter += 1
+                if self.playbackRenderProbeCounter % 20 == 0 {
+                    print("🔊 [probe] render peak over last 20 mixer buffers: \(String(format: "%.5f", peak))")
+                }
+            }
+        }
     }
 
     /// Turns the system AEC on for this engine run when the settings ask for
