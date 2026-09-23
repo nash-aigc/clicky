@@ -1329,11 +1329,46 @@ final class NotchWindowController {
     private var latestVoiceState: CompanionVoiceState = .idle
     private var isDictationFinalizing = false
 
+    /// Keeps the last non-idle phase on screen instead of collapsing the moment
+    /// the voice state goes quiet.
+    ///
+    /// The phase is a straight mapping from `CompanionVoiceState`, and the wings
+    /// are drawn only while the phase is not `.idle` — so a single idle instant
+    /// between `thinking` and `speaking` retracts them and slides them straight
+    /// back out, which is what the user reported (2026-09-24: 「在 thinking
+    /// 后面，动画自动缩回去了…缩回去之后 speaking 的时候又展开，这个时候其实没有
+    /// 意义…不要一会儿开一会儿关」). The gap is not the end of the turn, and the
+    /// panel should not read as flickering during it.
+    private var activityPhaseHoldTask: Task<Void, Never>?
+    private static let activityPhaseHoldSeconds: TimeInterval = 2.5
+
     private func refreshActivityPhase() {
-        panelModel.activityPhase = panelModel.externalSessionOverride
+        let derivedPhase = panelModel.externalSessionOverride
             ?? (isDictationFinalizing
                 ? .transcribing
                 : NotchActivityPhase(from: latestVoiceState))
+
+        guard derivedPhase == .idle else {
+            activityPhaseHoldTask?.cancel()
+            activityPhaseHoldTask = nil
+            panelModel.activityPhase = derivedPhase
+            return
+        }
+
+        // Idle: hold whatever was showing, for long enough to cover the gap
+        // between one phase and the next. Recomputing at the deadline rather
+        // than recursing is what keeps this from re-arming its own hold for ever.
+        guard panelModel.activityPhase != .idle else { return }
+        activityPhaseHoldTask?.cancel()
+        activityPhaseHoldTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(Self.activityPhaseHoldSeconds))
+            guard let self, !Task.isCancelled else { return }
+            self.activityPhaseHoldTask = nil
+            self.panelModel.activityPhase = self.panelModel.externalSessionOverride
+                ?? (self.isDictationFinalizing
+                    ? .transcribing
+                    : NotchActivityPhase(from: self.latestVoiceState))
+        }
     }
 
     /// The VoiceWeb session controller's way in — `panelModel` is private, and

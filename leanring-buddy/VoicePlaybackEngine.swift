@@ -147,6 +147,14 @@ final class VoicePlaybackEngine {
     private let timePitchNode = AVAudioUnitTimePitch()
 
     private var isEngineStarted = false
+
+    /// Whether `playerNode` and `timePitchNode` have been attached to `engine`.
+    ///
+    /// `AVAudioEngine.attach` takes ownership of a NEW node, so attaching the
+    /// same one twice is meaningless — the graph is built once. This exists so
+    /// `ensureEngineStarted` can be re-entered (which it now must be, whenever
+    /// the engine stopped without telling `isEngineStarted`) without re-attaching.
+    private var hasAttachedPlaybackNodes = false
     /// True while the capture-only engine is running. It is started by
     /// `installInputTap` (with the tap already on it, the order the own-engine
     /// path uses) and stopped by whichever caller takes the tap away.
@@ -702,17 +710,37 @@ final class VoicePlaybackEngine {
     // MARK: - Engine lifecycle
 
     private func ensureEngineStarted() throws {
-        if isEngineStarted {
+        if isEngineStarted, engine.isRunning {
             // Already running: an answer is in progress, so the microphone is
             // already here (or there is no listening window open at all).
             return
         }
 
-        // Attached exactly once, and outside the retry below: the header
-        // documents `attachNode:` as taking ownership of a NEW node and gives
-        // no meaning to attaching the same one twice.
-        engine.attach(playerNode)
-        engine.attach(timePitchNode)
+        // `isEngineStarted` is NOT allowed to be the only word on this. It is
+        // this class's own bookkeeping, and the engine can stop without telling
+        // it — the audio configuration changing (a device appearing, a route
+        // changing, the sample rate moving) stops an `AVAudioEngine` outright,
+        // and nothing here observes `AVAudioEngineConfigurationChange`. Once the
+        // flag outlives the engine, this method early-returns for ever, every
+        // reply's chunks take the `guard engine.isRunning` early-return in
+        // `playWAVData`, and the app shows the text while speaking nothing —
+        // reply after reply, until it is relaunched. That is exactly the shape
+        // the user reported (2026-09-24: "一旦第一次不朗读，后面连续两三次、
+        // 五六次一直都不朗读"): a latch, not an intermittent fault.
+        if isEngineStarted {
+            print("⚠️ VoicePlaybackEngine: isEngineStarted was true but the engine is not running — rebuilding the IO instead of trusting the flag")
+        }
+
+        // Attached exactly once: the header documents `attachNode:` as taking
+        // ownership of a NEW node and gives no meaning to attaching the same one
+        // twice — so the flag guards it now that this method can be re-entered
+        // with the graph already built.
+        if !hasAttachedPlaybackNodes {
+            engine.attach(playerNode)
+            engine.attach(timePitchNode)
+            hasAttachedPlaybackNodes = true
+        }
+        isEngineStarted = false
 
         // LOAD-BEARING, and it has to happen BEFORE voice processing is turned
         // on — see `warmUpMainMixerNode`. Without it the engine cannot start at
