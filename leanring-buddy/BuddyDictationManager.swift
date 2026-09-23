@@ -400,51 +400,23 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // sentence. Counted through `continuousListeningContentCharacterCount`, so
     // punctuation can never add up to a sentence (「。。。。」 is 0, not 4).
     private static let continuousListeningMinimumTranscriptCharacters = 4
-    /// How much real content a transcript must carry to be allowed to INTERRUPT
-    /// an answer that is being read aloud.
-    ///
-    /// This is pipecat's official `MinWordsUserTurnStartStrategy`, adopted
-    /// rather than reinvented — it is the framework's answer to exactly this
-    /// failure. Its rule (user_start/min_words_user_turn_start_strategy.py:118)
-    /// is `word_count >= (min_words if bot_speaking else 1)`: a single word may
-    /// start a turn while the bot is SILENT, but while the bot is SPEAKING a
-    /// transcription must clear a higher bar before it may interrupt it.
-    /// VoiceWeb runs the same transcription-driven turn start — its 三段式
-    /// passes `TranscriptionUserTurnStartStrategy` verbatim (server.py:3725) —
-    /// so this is the shipping framework design, not a local heuristic.
-    ///
-    /// Why the guard is not optional, measured 2026-09-23: the Bailian realtime
-    /// recognizer, fed the microphone audio recorded while this app was reading
-    /// an answer aloud (VPIO's AEC was still active then and working — the
-    /// echo measured BELOW the
-    /// room's own noise floor, peak 0.111 against a 0.167 floor), returned a
-    /// FINAL transcript of 「。」. `String.split()` scores that one "word", so
-    /// pipecat's rule at min_words=1 accepts it — and an unguarded trigger would
-    /// stop the answer mid-sentence. Counting content characters scores it 0.
-    private static let continuousListeningMinimumInterruptContentCharacters = 4
-    // The bar above is the ONLY bar while an answer plays, and it used to have
-    // a shortcut past it — a single content character, when the microphone
-    // LEVEL was believed to confirm the user was speaking (2026-09-24). That
-    // shortcut is gone, and the measurement is why: while an answer plays,
-    // this app's own voice arrives at the microphone at peak 0.876–1.000
-    // (four replies, user silent), so "the level independently confirms the
-    // user" was true for the ENTIRE reply — the corroboration was saturated
-    // by our own audio and licensed a one-character interrupt off the
-    // recognizer's mis-hearing of it (「嗯。」/「我」/「中间」, which is exactly what
-    // a clipped signal transcribes to). The threshold the corroboration read
-    // (0.25) was calibrated in a SILENT room, where the floor is 0.167; it was
-    // never calibrated in the one window it governs. See the level-evidence
-    // comment above `continuousListeningUtteranceEndSilenceSeconds`.
+    // There is NO content bar on the interrupt path, and that is the ported
+    // behaviour rather than an omission (2026-09-24).
     //
-    // What replaced it is the reference's own shape: while the bot speaks, a
-    // transcription must carry REAL WORDS before it may interrupt — the same
-    // `continuousListeningMinimumInterruptContentCharacters` the no-evidence
-    // path always used. VoiceWeb's 三段式 does pass
-    // `TranscriptionUserTurnStartStrategy(use_interim: true)` with no word bar
-    // (server.py:3753), and that is the bar-free behaviour this app used to
-    // imitate; what VoiceWeb has and this app does not is a canceller that
-    // keeps the bot's own voice out of the recognizer, which is why pipecat
-    // ships `MinWordsUserTurnStartStrategy` for the deployments that lack one.
+    // This file used to carry a 4-content-character bar here, justified by
+    // pipecat's `MinWordsUserTurnStartStrategy`
+    // (`word_count >= (min_words if bot_speaking else 1)`). That justification
+    // was wrong. VoiceWeb never instantiates that strategy: its 三段式 builds
+    // its user-turn-start list from `VADUserTurnStartStrategy` and
+    // `TranscriptionUserTurnStartStrategy` only (server.py:3753-3754), and
+    // neither carries any word, character or bot-speaking condition —
+    // `transcription_user_turn_start_strategy.py` triggers on every
+    // `InterimTranscriptionFrame` outright. The bar is unnecessary there
+    // because the canceller keeps the bot's own voice out of the recognizer,
+    // and this app now relies on the same mechanism (voice processing with AGC
+    // off — see `VoicePlaybackEngine.disableAutomaticGainControlOnProcessedUplink`),
+    // which is what made the bar's premise — "our own answer clears any bar we
+    // can set" — false in the first place.
 
     /// Characters that are actual linguistic content — letters (CJK included)
     /// and digits — with punctuation, whitespace, symbols and emoji excluded.
@@ -499,11 +471,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         spokenAnswerText: String
     ) -> Bool {
         let normalizedTranscriptText = transcriptText.filter { $0.isLetter || $0.isNumber }
-        // Below the interrupt bar the transcript cannot barge in on its own,
-        // so there is nothing for the filter to protect against.
-        guard normalizedTranscriptText.count >= continuousListeningMinimumInterruptContentCharacters else {
-            return false
-        }
+        guard !normalizedTranscriptText.isEmpty else { return false }
         let normalizedSpokenAnswerText = spokenAnswerText.filter { $0.isLetter || $0.isNumber }
         guard !normalizedSpokenAnswerText.isEmpty else { return false }
         return normalizedSpokenAnswerText.contains(normalizedTranscriptText)
@@ -670,12 +638,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         continuousListeningRecentAudioLevels.max() ?? 0
     }
     private var continuousListeningUtteranceStartedAt: Date?
-    /// Whether the "the microphone is hearing our own answer" refusal has
-    /// already been reported for the reply now playing. The refusal itself
-    /// repeats on every VAD tick while the answer is loud (the accumulator is
-    /// re-armed by the reset it performs), so the print is edge-triggered and
-    /// re-armed by the VAD loop the moment the answer stops.
-    private var continuousListeningDidReportEchoLevelRise = false
     private var continuousListeningSilenceStartedAt: Date?
     /// The latest interim transcript of the current utterance. The fallback
     /// for a dead session: if `requestFinalTranscript` produces no final
@@ -948,70 +910,42 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                     // `else` branch is not a nicety — the recognizer emits
                     // 「。」 into silence, and without this an answer would cut
                     // itself off the moment that landed.
-                    let isBotSpeaking = self.isBotSpeakingProvider?() ?? false
-                    // Echo of our own answer, checked BEFORE the content bar:
-                    // while the answer plays (mute lifted) the recognizer can
-                    // still transcribe it as real words — the AEC is what stops
-                    // that, and this covers the paths where it is off or did not
-                    // fully converge. Words are exactly what the content bar
-                    // accepts. A transcript contained in the text being read is
-                    // our own voice — it may neither interrupt nor keep an
-                    // utterance's silence countdown open. See
-                    // `continuousListeningTranscriptIsEchoOfSpokenAnswer`.
-                    let transcriptIsOwnAnswerEcho = isBotSpeaking && Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
-                        transcriptText,
-                        spokenAnswerText: self.spokenAnswerTextProvider?() ?? ""
-                    )
-                    if transcriptIsOwnAnswerEcho {
-                        if didTranscriptChange {
-                            print("🎙️ BuddyDictationManager: listening transcript is our own answer's echo — not treating it as the user (transcript: \"\(transcriptText)\")")
+                    // ANY transcript is a user turn start — this is the
+                    // reference's `TranscriptionUserTurnStartStrategy`, which
+                    // fires on every `InterimTranscriptionFrame` outright: no
+                    // content bar, no word count, no bot-speaking condition.
+                    // The only thing it requires is that a transcript exists.
+                    let trimmedTranscriptText = transcriptText
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedTranscriptText.isEmpty {
+                        // Diagnostic, deliberately NOT a gate. While an answer
+                        // plays, a transcript contained in the text being read
+                        // is our own voice reaching the recognizer; it should
+                        // not appear at all now that the canceller's output is
+                        // no longer re-gained, so one line per reply is what
+                        // tells a regression apart from a fix.
+                        let isBotSpeaking = self.isBotSpeakingProvider?() ?? false
+                        if isBotSpeaking, didTranscriptChange,
+                           Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
+                               transcriptText,
+                               spokenAnswerText: self.spokenAnswerTextProvider?() ?? ""
+                           ) {
+                            print("🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: \"\(transcriptText)\", recent mic peak \(String(format: "%.3f", self.continuousListeningRecentPeakAudioLevel)))")
                         }
-                    } else {
-                        // The bar while an answer is being read aloud is the
-                        // FULL real-question bar, with no shortcut past it: the
-                        // level cannot corroborate anything here, because the
-                        // loud thing is our own answer leaking back (peak
-                        // 0.876–1.000 measured across four replies with the
-                        // user silent — see the level-evidence comment above
-                        // `continuousListeningUtteranceEndSilenceSeconds`). Its
-                        // one-character fast path used to accept the
-                        // recognizer's mis-hearing of that leak and stop the
-                        // answer on 「我」.
-                        //
-                        // While the bot is SILENT a single character still
-                        // opens the utterance, which is the whole of the
-                        // no-bar rule for the quiet case: there is no answer to
-                        // interrupt, so a low bar costs nothing.
-                        let minimumContentCharacters = isBotSpeaking
-                            ? Self.continuousListeningMinimumInterruptContentCharacters
-                            : 1
-                        let contentCharacterCount = Self.continuousListeningContentCharacterCount(
-                            in: transcriptText)
-                        if contentCharacterCount >= minimumContentCharacters {
-                            self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
-                            // New words are still arriving, so the user is still
-                            // talking — restart the silence countdown. This is the
-                            // reference's 「有文本」 turn-end rule (pipecat's
-                            // SpeechTimeoutUserTurnStopStrategy only ends a turn
-                            // once text has stopped coming AND silence has
-                            // sustained), and it is what keeps a voice below
-                            // the energy threshold from being cut off mid-sentence
-                            // by the backstop that exists to catch exactly that
-                            // voice. Keyed on a CHANGE, not on every callback: a
-                            // repeated identical transcript is not evidence of
-                            // speech.
-                            if didTranscriptChange, self.continuousListeningUtteranceActive {
-                                self.continuousListeningSilenceStartedAt = nil
-                            }
-                        } else if isBotSpeaking, didTranscriptChange {
-                            // Short words arriving while the answer plays are
-                            // held back rather than ignored quietly, so the log
-                            // shows what the bar rejected: a run of 1–3
-                            // character lines here is the recognizer's reading
-                            // of our own answer, while a steady climb through
-                            // the bar is the user.
-                            print("🎙️ BuddyDictationManager: listening heard \(contentCharacterCount) content character(s) while speaking — holding the \(minimumContentCharacters)-character bar before interrupting (transcript: \"\(transcriptText)\")")
-                        }
+                        self.markContinuousListeningUtteranceActive(trigger: "ASR transcript")
+                    }
+                    // New words are still arriving, so the user is still
+                    // talking — restart the silence countdown. This is the
+                    // reference's 「有文本」 turn-end rule (pipecat's
+                    // SpeechTimeoutUserTurnStopStrategy only ends a turn once
+                    // text has stopped coming AND silence has sustained), and it
+                    // is what keeps a voice below the energy threshold from
+                    // being cut off mid-sentence by the backstop that exists to
+                    // catch exactly that voice. Keyed on a CHANGE, not on every
+                    // callback: a repeated identical transcript is not evidence
+                    // of speech.
+                    if didTranscriptChange, self.continuousListeningUtteranceActive {
+                        self.continuousListeningSilenceStartedAt = nil
                     }
                     self.continuousListeningCallbacks?.onTranscriptUpdate(transcriptText)
                 }
@@ -1059,16 +993,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         let contentCharacterCount = Self.continuousListeningContentCharacterCount(in: trimmedTranscriptText)
         if contentCharacterCount < Self.continuousListeningMinimumTranscriptCharacters {
             print("🎙️ BuddyDictationManager: listening transcript too short to send (\(contentCharacterCount) content chars: \"\(trimmedTranscriptText)\")")
-        } else if Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
-            trimmedTranscriptText,
-            spokenAnswerText: spokenAnswerTextProvider?() ?? "") {
-            // The echo check is NOT gated on the bot still speaking, on
-            // purpose: an utterance opened on echo can outlive the answer (the
-            // answer finishes, the level drops, the silence-send fires) and its
-            // final then lands after playback stopped — by then
-            // `isBotSpeakingProvider` is false and the content bar alone would
-            // submit our own sentence as the user's next question.
-            print("🎙️ BuddyDictationManager: listening final transcript is our own answer's echo — dropped (\"\(trimmedTranscriptText)\")")
         } else {
             continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
         }
@@ -1136,55 +1060,38 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// fenced only the first 0.8 s on the transient theory and the answer still
     /// died; the leak outlives any grace.
     ///
-    /// So while the bot speaks the level decides NOTHING here — it neither
-    /// interrupts nor opens an utterance. The second half matters as much as
-    /// the first: opening an utterance off our own audio starts a silence
-    /// countdown and fires a final-transcript request mid-reply, which cancels
-    /// and reopens the ASR session while the answer is still playing.
+    /// Nothing here is conditioned on the bot speaking, and nothing is
+    /// conditioned on the microphone level either — that is the whole of the
+    /// port. The reference's two strategies fire on their frame and stop:
+    /// `VADUserTurnStartStrategy` on any `VADUserStartedSpeakingFrame`,
+    /// `TranscriptionUserTurnStartStrategy` on any `InterimTranscriptionFrame`
+    /// (server.py:3753-3754), and `llm_response_universal.py:1328` broadcasts
+    /// the interruption off `enable_interruptions` alone, with no bot-speaking
+    /// gate on that branch.
     ///
-    /// The reference draws the same line, and this is pipecat's own answer to
-    /// the case: `min_words_user_turn_start_strategy.py:108` reads
-    /// `min_words = self._min_words if self._bot_speaking else 1` — while the
-    /// bot speaks, a HIGHER bar, never a lower one. VoiceWeb runs the bar-free
-    /// pair (`VADUserTurnStartStrategy` + `TranscriptionUserTurnStartStrategy`,
-    /// server.py:3753) and can afford to, because its AEC lives in the browser
-    /// and stays converged across the whole session; this app restarts its
-    /// canceller per reply, which is exactly the deployment
-    /// `MinWordsUserTurnStartStrategy` exists for. Nothing is lost by this:
-    /// the user's own WORDS still interrupt, through the transcript path.
-    ///
-    /// The truth table this produces:
+    /// So the truth table is one row repeated — whatever the evidence, and
+    /// whether or not the bot is mid-sentence, the utterance opens and the
+    /// barge-in fires:
     ///
     ///     bot speaking?  trigger            utterance   barge-in
-    ///     no             mic level          opened      yes   ← nothing to interrupt, so any evidence is free
+    ///     no             mic level          opened      yes
     ///     no             ASR transcript     opened      yes
-    ///     yes            mic level          —           no    ← our own answer, louder than the room
-    ///     yes            ASR transcript     opened      yes   ← the user's real words, at the ≥4-content-character bar
+    ///     yes            mic level          opened      yes
+    ///     yes            ASR transcript     opened      yes
     ///
-    /// Closing the utterance is the right trade for the third row: without a
-    /// working canceller, if the recognizer cannot produce words then stopping
-    /// the answer buys nothing — there is no follow-up question to answer, and
-    /// the follow-up question is the entire point of interrupting.
+    /// What makes that safe is not a bar but the canceller. The microphone is
+    /// no longer re-gained — see `VoicePlaybackEngine`'s
+    /// `disableAutomaticGainControlOnProcessedUplink`, which is the detail that
+    /// was missing while every earlier attempt tried to survive a signal that
+    /// had our own answer pumped to full scale in it — so the bot's own voice
+    /// is gone before either path reads it, which is the position VoiceWeb is
+    /// in with the browser's AEC.
     private func markContinuousListeningUtteranceActive(trigger: String) {
         guard isContinuousListening, !isContinuousListeningAwaitingFinal else { return }
 
-        // Decision 1: may this interrupt, and may it open an utterance? Judged
-        // BEFORE the utterance-active guard below, because the level path
-        // usually opens the utterance first and the transcript path must still
-        // be able to interrupt it.
-        let isBotSpeaking = isBotSpeakingProvider?() ?? false
-        if isBotSpeaking, trigger != "ASR transcript" {
-            // Our own answer is the loud thing in the room, so a level rise
-            // here says nothing about the user. Drop the accumulated level with
-            // it: that accumulator was built from the same leak, and leaving it
-            // standing would let it fire the instant playback stops.
-            continuousListeningSpeechAccumulatorSeconds = 0
-            if !continuousListeningDidReportEchoLevelRise {
-                continuousListeningDidReportEchoLevelRise = true
-                print("🎙️ BuddyDictationManager: continuous listening heard a level rise while the answer plays — that is our own voice, not the user (recent mic peak \(String(format: "%.3f", continuousListeningRecentPeakAudioLevel)))")
-            }
-            return
-        }
+        // Judged BEFORE the utterance-active guard below, because the level
+        // path usually opens the utterance first and the transcript path must
+        // still be able to interrupt it.
         requestContinuousListeningBargeIn(trigger: trigger)
 
         // Decision 2: open the utterance, once. The silence countdown and the
@@ -1232,13 +1139,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             // Sampled here rather than in the tap so the window means
             // wall-clock time — "the last half second" — instead of "however
             // many tap buffers happened to arrive".
-            //
-            // The same tick re-arms the echo-level-rise report: the refusal
-            // repeats every tick while the answer is loud, and one line per
-            // reply is the useful amount.
-            if !(isBotSpeakingProvider?() ?? false) {
-                continuousListeningDidReportEchoLevelRise = false
-            }
             continuousListeningRecentAudioLevels.append(audioLevel)
             let recentLevelSampleCount = Self.continuousListeningRecentLevelSampleCount
             if continuousListeningRecentAudioLevels.count > recentLevelSampleCount {
@@ -1316,15 +1216,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // A final is already in flight (the silence window expired, or an
         // earlier press asked for one): the press means "send it now".
         if isContinuousListeningAwaitingFinal { return true }
-        // Echo of our own answer must not count as pending, or the press goes
-        // into a send the final handler drops one line later while playback
-        // keeps running — the 「按两次快捷键才能停止播放」 shape again, this time
-        // fed by the recognizer transcribing our own voice.
-        if Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
-            continuousListeningLatestInterimTranscript,
-            spokenAnswerText: spokenAnswerTextProvider?() ?? "") {
-            return false
-        }
         return Self.continuousListeningContentCharacterCount(
             in: continuousListeningLatestInterimTranscript
         ) >= Self.continuousListeningMinimumTranscriptCharacters
@@ -1425,13 +1316,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             self.activeTranscriptionSession?.cancel()
             self.activeTranscriptionSession = nil
 
-            if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters,
-               !Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
-                    fallbackTranscriptText,
-                    spokenAnswerText: self.spokenAnswerTextProvider?() ?? "") {
+            if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters {
                 self.continuousListeningCallbacks?.onUtteranceFinalized(fallbackTranscriptText)
-            } else if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters {
-                print("🎙️ BuddyDictationManager: fallback interim transcript is our own answer's echo — dropped (\"\(fallbackTranscriptText)\")")
             } else {
                 print("🎙️ BuddyDictationManager: fallback interim transcript too short to send (\(fallbackTranscriptText.count) chars)")
             }

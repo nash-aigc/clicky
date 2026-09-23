@@ -695,7 +695,7 @@ final class VoicePlaybackEngine {
             takeCaptureBackForPlayback(handler: tapHandlerToMove)
         }
 
-        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(inputNode.outputFormat(forBus: 0).channelCount) ch)")
+        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min, AGC off)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(inputNode.outputFormat(forBus: 0).channelCount) ch)")
     }
 
     /// Hand-off #2, from the other side: playback is starting, so the
@@ -788,7 +788,38 @@ final class VoicePlaybackEngine {
         }
 
         applyMildestOtherAudioDuckingConfiguration(on: inputNode)
+        disableAutomaticGainControlOnProcessedUplink(on: inputNode)
         return inputNode.isVoiceProcessingEnabled
+    }
+
+    /// Turns OFF the automatic gain control the voice processing unit applies to
+    /// the microphone uplink. It is ON by default, and leaving it on is what
+    /// made a working canceller look broken.
+    ///
+    /// `AVAudioIONode.h:228` documents the property as "Enable automatic gain
+    /// control on the processed microphone uplink signal. Enabled by default."
+    /// Sitting AFTER the canceller, that gain re-normalises whatever the
+    /// canceller left behind: with an answer playing, the leftover echo is
+    /// pumped back up towards speech level, so the microphone reads 0.876–1.000
+    /// while the user is silent (four replies, 2026-09-24) even though the
+    /// canceller measured BELOW the room's own noise floor on this same machine
+    /// and route (peak 0.111 against a 0.167 floor, 2026-09-23). Two readings of
+    /// one signal that differ by an order of magnitude and invert in sign are
+    /// not a calibration problem — they are an amplifier sitting between the
+    /// canceller and the meter, and no threshold survives it: the 0.25 that
+    /// separates speech from a quiet room reports "someone is talking" for the
+    /// whole of every reply.
+    ///
+    /// It is not only the meters that read it: the recognizer consumes the same
+    /// re-gained signal, and a clipped one is exactly what this app's own ASR
+    /// turned into 「嗯。」/「哎」/「那」 off its own answer.
+    ///
+    /// The reference project never meets this, because its VAD analyzer and its
+    /// recognizer both read the browser AEC's own output — the same class of
+    /// failure it records as 坑 1 (实现方案/08-踩坑总表.md:11), "capture and
+    /// playback must both travel through the AEC for it to work".
+    private func disableAutomaticGainControlOnProcessedUplink(on inputNode: AVAudioInputNode) {
+        inputNode.isVoiceProcessingAGCEnabled = false
     }
 
     /// The mildest ducking macOS offers, and never the activity-driven extra:
