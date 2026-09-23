@@ -526,15 +526,22 @@ final class CompanionManager: ObservableObject {
             self?.spokenAnswerTextForEchoFilter ?? ""
         }
 
-        // 录制期间静音系统扬声器：录音中且没有播报时把系统扬声器静音，既避免
-        // 录入其他应用的声音，也覆盖「没有播报、AEC 未运行」的那些窗口（见
+        // 录制期间静音系统扬声器：**用户说话确实正在被采集**时把系统扬声器静音，
+        // 既避免录入其他应用的声音，也覆盖「没有播报、AEC 未运行」的那些窗口（见
         // VoicePlaybackEngine 头注释）。轮询循环每 0.5 s 收敛一次目标状态。
+        //
+        // 门里用的是 `isContinuousListeningUtteranceInProgress` 而不是
+        // `isContinuousListening`，这是用户报的「按键之前和之后都压低了电脑的系统
+        // 音量」的一半来源：后者是**承诺窗口**（默认 30 秒），拿它当门等于每次回答
+        // 播完就把系统扬声器静音半分钟 —— 远超「按住快捷键 → 任务结束」，而且是在
+        // 用户根本没在用 App 的时候。改用「utterance 进行中」后，静音只覆盖正在录的
+        // 那一句，句子结束立刻恢复。
         if systemSpeakerMuteCoordinator == nil {
             systemSpeakerMuteCoordinator = SystemSpeakerMuteCoordinator(
                 recordingActiveProvider: { [weak self] in
                     guard let self else { return false }
                     return self.buddyDictationManager.isDictationInProgress
-                        || self.buddyDictationManager.isContinuousListening
+                        || self.buddyDictationManager.isContinuousListeningUtteranceInProgress
                 },
                 playbackActiveProvider: { [weak self] in
                     self?.bailianTTSClient.isPlaying ?? false

@@ -834,15 +834,20 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         if let sharedEngine = sharedVoicePlaybackEngineProvider?() {
             do {
                 // The window can open right as the first TTS chunk starts
-                // (the arm happens on the first-audio hook), so the engine may
-                // already be running — ensureStarted is a no-op then.
-                try sharedEngine.ensureStartedForCapture()
+                // (the arm happens on the first-audio hook), so this usually
+                // resolves to the playback engine, whose voice processing is what
+                // cancels the answer out of the microphone. With nothing playing
+                // it resolves to the engine that has no voice processing at all,
+                // so the rest of the listening window does not duck every other
+                // app on the machine.
+                sharedEngine.prepareCaptureHost()
 
                 activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
 
-                let sharedInputNode = sharedEngine.engineInputNode
-                let inputFormat = sharedInputNode.outputFormat(forBus: 0)
-                sharedEngine.installInputTap(bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
+                // The format is the engine's business, not ours: the two engines
+                // run at different formats, and a tap installed with the other
+                // one's format delivers silence rather than an error.
+                try sharedEngine.installInputTap(bufferSize: 1024) { [weak self] buffer, _ in
                     self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
                     self?.updateAudioPowerLevel(from: buffer)
                 }
@@ -1253,6 +1258,34 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         return Self.continuousListeningContentCharacterCount(
             in: continuousListeningLatestInterimTranscript
         ) >= Self.continuousListeningMinimumTranscriptCharacters
+    }
+
+    /// Whether the user's speech is being captured RIGHT NOW inside a listening
+    /// window: true from the moment the VAD (or the recognizer) opens an
+    /// utterance until its final has been delivered or the utterance is
+    /// dropped.
+    ///
+    /// This — not `isContinuousListening` — is what `SystemSpeakerMuteCoordinator`
+    /// keys the system-speaker mute to, and the difference is a defect the user
+    /// reported as 「按键之前和之后都压低了电脑的系统音量」. `isContinuousListening` is
+    /// true for the whole ARMED window (30 s by default), so keying the mute to
+    /// it silenced the speakers for up to half a minute after every answer —
+    /// attenuation far outside the 「按住快捷键 → 任务结束」 span, and applied while
+    /// the user was doing nothing with the app at all. Keyed here, the mute
+    /// covers exactly the speech being recorded and lifts the instant the
+    /// utterance ends.
+    ///
+    /// The cost is accepted and bounded: the energy VAD needs
+    /// `continuousListeningSpeechAccumulationSeconds` (0.35 s) of speech before
+    /// it opens an utterance, so a follow-up question's first ~0.35 s is
+    /// recorded with other apps' audio still audible. That is the same trade
+    /// the onset debounce itself already makes, and it is strictly smaller than
+    /// muting for the window.
+    ///
+    /// Deliberately NOT a `@Published` property: nothing renders from it, and
+    /// the mute coordinator polls it every 0.5 s from the main actor.
+    var isContinuousListeningUtteranceInProgress: Bool {
+        isContinuousListening && continuousListeningUtteranceActive
     }
 
     /// The talk shortcut pressed mid-utterance is the explicit "I'm done —

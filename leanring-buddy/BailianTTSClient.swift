@@ -243,6 +243,22 @@ final class BailianTTSClient {
         remainingChunksPlaybackTask = nil
         voicePlaybackEngine.stopChunk()
         isSpeakingChunkSequence = false
+
+        // Releasing the engine here is what ends the ducking, and without it an
+        // interrupt left every other application on the machine quiet until the
+        // next reply — which may be minutes away. Stopping the chunk is not
+        // enough: a stopped engine whose voice processing is still on keeps the
+        // input device in its communication-app shape, so macOS goes on ducking
+        // (this is the 「没用它的时候音量也是小的」 half of the report; see
+        // `VoicePlaybackEngine.releaseVoiceProcessingForCaptureOnlyRun`).
+        //
+        // This is the one funnel every interrupt path reaches — the stop
+        // shortcut, a new question replacing a running answer, the vision call
+        // failing — and it always runs BEFORE any newer reply's audio is
+        // requested, so releasing here cannot cut off a reply that is starting.
+        // When a listening window is open the microphone moves to the engine
+        // that has no voice processing at all, so the window keeps hearing.
+        voicePlaybackEngine.releaseEngineWhenIdle()
     }
 
     // MARK: - Synthesis
