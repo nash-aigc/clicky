@@ -199,7 +199,12 @@ final class VoicePlaybackEngine {
     /// same question as the setting: enabling it can fail (no microphone
     /// permission, a device that does not support it), and the log line has to
     /// say which of the two actually happened.
-    private var isEchoCancellationActive = false
+    ///
+    /// Readable outside the class (internal getter) because the barge-in gate
+    /// reads it: the mic-LEVEL path may interrupt a playing answer only while
+    /// the AEC is genuinely up — see BuddyDictationManager's
+    /// `markContinuousListeningUtteranceActive` for the measured reasoning.
+    private(set) var isEchoCancellationActive = false
 
     /// True when the chunk currently scheduled on the player node is being
     /// played back. The analogue of `AVAudioPlayer.isPlaying` for the chunk
