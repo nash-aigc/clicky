@@ -27,8 +27,9 @@ final class SoundEffectPlayer {
         case answerStarted = "clicky-text-receive"
         /// Something failed — the companion says so out loud too.
         case errorSurprised = "clicky-surprised"
-        /// The notch sheet expanded.
-        case notchRevealed = "home-reveal"
+        /// The notch sheet expanded —— 用户 2026-09-25 指定**苹果官方音效 08（导航推入）**：
+        /// 「点击刘海时，音效08（导航推入）」。
+        case notchRevealed = "ui-navigation-push"
         /// One-shot boot chime for the notch presence itself.
         case notchBoot = "reveal-boot"
         /// The answer finished playing.
@@ -43,6 +44,15 @@ final class SoundEffectPlayer {
         /// 语音会话连接成功（页面回报 ready）。挂断音的反向（上行双音），
         /// 一对听感对称的确认音；只在真正连上时响一次。
         case sessionConnected = "session-connect"
+
+        /// **苹果官方音效 12（焦点切换・应用图标）**—— 用户 2026-09-25 指定：
+        /// 「点击（左侧边栏的任何按钮）都发出声音：12-焦点切换・应用图标。
+        /// 包括设置页面的左侧边栏的按钮」。供侧栏那批按钮共用。
+        case sidebarButton = "ui-focus-change"
+
+        /// **苹果官方音效 23（相机倒计时）**—— 用户 2026-09-25 指定：
+        /// 「摄像头、屏幕声音（右上角的位置：点击时=23）」。
+        case deviceToggle = "ui-device-toggle"
     }
 
     private var playersByEffect: [SoundEffect: AVAudioPlayer] = [:]

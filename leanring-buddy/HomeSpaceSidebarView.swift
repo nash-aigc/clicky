@@ -100,7 +100,11 @@ struct HomeSpaceSidebarView: View {
         HStack(spacing: 4) {
             ForEach(SidebarSection.allCases, id: \.self) { section in
                 let isSelected = agentSessionManager.selectedSidebarSection == section
-                Button(action: { agentSessionManager.selectedSidebarSection = section }) {
+                // 用户 2026-09-25：「点击（左侧边栏的任何按钮）都发出声音：12」。
+                Button(action: {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    agentSessionManager.selectedSidebarSection = section
+                }) {
                     Text(section.displayName)
                         .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                         .foregroundColor(isSelected ? .white : .white.opacity(0.45))
@@ -801,6 +805,7 @@ struct HomeSpaceSidebarView: View {
                 isHighlighted: showsSettings,
                 help: "设置"
             ) {
+                SoundEffectPlayer.shared.play(.sidebarButton)
                 showsSettings = true
             }
 

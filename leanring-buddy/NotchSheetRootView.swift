@@ -351,7 +351,10 @@ struct NotchSettingsArea: View {
                             NotchSettingsSidebarItem(
                                 page: page,
                                 isSelected: page == selectedPage,
-                                action: { selectedPage = page }
+                                action: {
+                                    SoundEffectPlayer.shared.play(.sidebarButton)
+                                    selectedPage = page
+                                }
                             )
                         }
                     }

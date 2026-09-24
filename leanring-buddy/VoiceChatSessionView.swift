@@ -1574,6 +1574,9 @@ struct VoiceChatSessionView: View {
         let borderColor: Color = (isOn && isSupported) ? tint.opacity(0.5) : Color.clear
 
         return Button {
+            // 用户 2026-09-25：「摄像头、屏幕声音（右上角的位置：点击时=23）」——
+            // 苹果官方相机倒计时音。置灰时按钮本来就点不动，所以这里必然是有效切换。
+            SoundEffectPlayer.shared.play(.deviceToggle)
             action()
         } label: {
             HStack(spacing: 5) {

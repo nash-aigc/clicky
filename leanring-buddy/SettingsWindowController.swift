@@ -197,7 +197,10 @@ private struct ClickySettingsRootView: View {
                 SettingsSidebarItem(
                     page: page,
                     isSelected: page == pageSelection.selectedPage,
-                    action: { pageSelection.selectedPage = page }
+                    action: {
+                        SoundEffectPlayer.shared.play(.sidebarButton)
+                        pageSelection.selectedPage = page
+                    }
                 )
             }
         }
