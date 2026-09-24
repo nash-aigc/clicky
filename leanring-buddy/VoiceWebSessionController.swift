@@ -595,11 +595,24 @@ final class VoiceWebSessionController: ObservableObject {
         // Chrome not running means no report can be live, whatever the bridge
         // says, so the page is opened unconditionally in that case.
         guard isChromeRunning() else {
+            // TWO STEPS, NOT ONE, and this is the cold-launch fix.
+            //
+            // Handing the URL to `open` while Chrome is ALSO being launched makes
+            // that single request do two things at once, and the URL is the half
+            // that forces a window to be created — and creating a window is where
+            // Chrome raises itself, which `-g` cannot prevent (the flag binds
+            // LaunchServices, not the app; see `openVoiceWebPageInBackground`).
+            // Launching Chrome bare first lets it restore its own session, so the
+            // URL then lands in a window that already exists and nothing has to be
+            // created. Reported as 「它拉起来之后是前端拉起来的…直接覆盖了我窗口的
+            // 界面」.
+            launchChromeWithoutOpeningAnything()
+            await waitForChromeToComeUp()
             openVoiceWebPageInBackground()
             return
         }
 
-        if let state = await fetchBridgeState(), state.phase != nil {
+        if let state = await fetchBridgeState(), bridgeReportsALivePage(state) {
             return
         }
         // Chrome is up and no page is reporting: open the page. `-g` governs
@@ -617,6 +630,31 @@ final class VoiceWebSessionController: ObservableObject {
     /// `NSWorkspace.runningApplications` rather than `pgrep`: it asks the same
     /// registry LaunchServices routes to, so "running" here means exactly "able to
     /// receive a URL", which is the question that matters.
+    /// Starts Chrome with no URL and no window of ours to make.
+    private func launchChromeWithoutOpeningAnything() {
+        print("🌐 VoiceWeb: Chrome 没有运行 —— 先把它自己拉起来（不带页面）")
+        let launchProcess = Process()
+        launchProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+        launchProcess.arguments = ["-g", "-a", "Google Chrome"]
+        try? launchProcess.run()
+    }
+
+    /// Waits for Chrome to be up and restoring, so the page open that follows has
+    /// a window to land in rather than creating one.
+    ///
+    /// 8 s and not more: this is one step of a connect, and the connect's own
+    /// budget is 60 s. If it times out the page open still runs — it just takes
+    /// the old, creation-prone path.
+    private func waitForChromeToComeUp() async {
+        let deadline = Date().addingTimeInterval(8)
+        while Date() < deadline {
+            if isChromeRunning() { break }
+            try? await Task.sleep(nanoseconds: 400_000_000)
+        }
+        // A beat for session restore, so the window exists before the URL does.
+        try? await Task.sleep(nanoseconds: 1_200_000_000)
+    }
+
     private func isChromeRunning() -> Bool {
         NSWorkspace.shared.runningApplications.contains {
             $0.bundleIdentifier == Self.chromeBundleIdentifier
@@ -638,6 +676,36 @@ final class VoiceWebSessionController: ObservableObject {
         openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         openProcess.arguments = ["-g", "-a", "Google Chrome", "http://localhost:8890/client/"]
         try? openProcess.run()
+        verifyChromeStayedInTheBackground()
+    }
+
+    /// Reports whether that open brought Chrome forward.
+    ///
+    /// `-g` binds LaunchServices, NOT Chrome (they compile to the same request —
+    /// `kLSLaunchDontSwitch` == `NSWorkspaceLaunchWithoutActivation` ==
+    /// `OpenConfiguration.activates = false` — so no API swap changes anything).
+    /// When Chrome has no window, the URL's Apple Event forces one to be created,
+    /// and creating a window is where an app raises itself; the flag cannot reach
+    /// that. Whether it happens is therefore a fact about Chrome, not something
+    /// this code can decide by reading headers — so it is MEASURED, at the two
+    /// moments it would show (2026-09-24, per the audit).
+    ///
+    /// If this ever logs a frontmost Chrome, the flag has failed and the reserve
+    /// is warranted: Clicky owning a separate Chrome identity
+    /// (`--user-data-dir`, launched as a child process, never through
+    /// LaunchServices), so the user's own Chrome never receives the event at all.
+    private func verifyChromeStayedInTheBackground() {
+        Task { @MainActor in
+            for delaySeconds in [0.4, 2.0] {
+                try? await Task.sleep(for: .seconds(delaySeconds == 0.4 ? 0.4 : 1.6))
+                let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
+                if frontmost == Self.chromeBundleIdentifier {
+                    print("⚠️ VoiceWeb: 打开页面后 Chrome 被提到了前台（frontmost=Chrome）—— `-g` 对已有窗口的 Chrome 无效，需要走备用方案（独立 user-data-dir）")
+                } else {
+                    print("🌐 VoiceWeb: 打开页面后前台仍是 \(frontmost) —— Chrome 没有被提起来")
+                }
+            }
+        }
     }
 
     /// Keeps Chrome running for as long as Clicky runs.
@@ -663,7 +731,26 @@ final class VoiceWebSessionController: ObservableObject {
                     launchProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
                     launchProcess.arguments = ["-g", "-a", "Google Chrome"]
                     try? launchProcess.run()
+                    // A freshly launched Chrome has restored its session but not
+                    // this page; the prewarm below opens it.
+                    try? await Task.sleep(for: .seconds(8))
+                    guard !Task.isCancelled else { return }
                 }
+
+                // PREWARM THE PAGE, and this is the countermeasure rather than a
+                // nicety. A URL delivered to a Chrome with NO WINDOW forces one to
+                // be created, and window creation is where Chrome raises itself —
+                // which `-g` cannot prevent, because the flag binds LaunchServices
+                // and not the running app. Keeping the tab alive means the URL
+                // delivery is a same-window operation instead, so the
+                // window-creating path is never the one a connect takes.
+                //
+                // It also has to happen HERE rather than only at connect: done at
+                // connect time it is a visible raise in the middle of the user's
+                // session, done while idle it is at worst a window appearing
+                // behind whatever they are looking at.
+                await self.ensureVoiceWebPageIsAvailable()
+
                 try? await Task.sleep(for: .seconds(Self.chromeKeepAlivePollSeconds))
             }
         }
@@ -717,7 +804,26 @@ final class VoiceWebSessionController: ObservableObject {
         /// is only written at disconnect, so this is the only source that
         /// shows turns while the session is still up.
         var liveLines: [(isUser: Bool, text: String)] = []
+
+        /// How old the page's report is, in seconds — `report_age_seconds` in the
+        /// bridge payload.
+        ///
+        /// The server has always had this (`_ts` per report) but used to strip it
+        /// before answering, so Clicky could not tell a live page from a dead one
+        /// whose report had not expired yet — and the 35 s expiry is far too
+        /// generous for that question, because the page heartbeats every 10 s.
+        ///
+        /// `nil` when the server predates the field: the caller then falls back to
+        /// "any report counts" rather than refusing to work.
+        var reportAgeSeconds: Double?
     }
+
+    /// How stale a report may be and still count as "a page is open".
+    ///
+    /// Two heartbeat periods, since the page sends one every 10 s: one missed beat
+    /// is a slow tab, two is a page that is gone. Chrome throttles timers in a
+    /// background tab, so the beat can slip — hence two periods rather than one.
+    private static let pageReportStaleAfterSeconds: Double = 20
 
     private func fetchBridgeState() async -> BridgeState? {
         guard let data = try? await httpGET(path: "/external/state") else { return nil }
@@ -735,8 +841,29 @@ final class VoiceWebSessionController: ObservableObject {
             mic: object["mic"] as? Bool,
             cam: object["cam"] as? Bool,
             screen: object["screen"] as? Bool,
-            liveLines: liveLines
+            liveLines: liveLines,
+            reportAgeSeconds: object["report_age_seconds"] as? Double
         )
+    }
+
+    /// Whether the bridge is reporting a page that is genuinely still there.
+    ///
+    /// `phase != nil` alone is NOT that test, and both failures the user hit come
+    /// from treating it as one: quit Chrome, or delete the VoiceWeb tab, and the
+    /// dead page's last report keeps answering for up to the server's 35 s
+    /// expiry — so Clicky believed a page was open, opened nothing, and the
+    /// connect burned its whole budget with no page to consume the command.
+    /// 「拉起来之后，如果我把 Chrome 里面的那个标签页删掉，它就又出现一个无法连接的
+    /// 操作了」 — the tab and the browser are two separate liveness questions and
+    /// both have to be asked.
+    ///
+    /// The age comes from the server (`report_age_seconds`); a server that predates
+    /// the field returns none, and then this falls back to the old behaviour rather
+    /// than refusing to work at all.
+    private func bridgeReportsALivePage(_ state: BridgeState) -> Bool {
+        guard state.phase != nil else { return false }
+        guard let reportAgeSeconds = state.reportAgeSeconds else { return true }
+        return reportAgeSeconds < Self.pageReportStaleAfterSeconds
     }
 
     /// Waits until the page itself reports ready. The server's own READY
