@@ -1262,7 +1262,6 @@ final class NotchWindowController {
     // MARK: - Fullscreen suppression
 
     private func refreshFullscreenSuppression() {
-        PressPathProbe.shared.mark("refreshFullscreenSuppression begins")
         // Build the per-display geometry the heuristic needs: the display's
         // bounds in the window list's top-left space, and whether the menu
         // bar is currently hidden there (`visibleFrame == frame`) — the
@@ -1282,7 +1281,6 @@ final class NotchWindowController {
             displayGeometries: displayGeometries,
             ownProcessID: getpid()
         )
-        PressPathProbe.shared.mark("suppression: window-list query done")
         let isAnyDisplaySuppressed = screenPresences.contains { coveredDisplayIDs.contains($0.displayID) }
 
         // ONLY ON A CHANGE. `orderFrontRegardless()` posts the notifications that
@@ -1305,7 +1303,6 @@ final class NotchWindowController {
                 presence.panel.orderFrontRegardless()
             }
         }
-        PressPathProbe.shared.mark("suppression: panels re-ordered")
     }
 
     // MARK: - Companion state binding

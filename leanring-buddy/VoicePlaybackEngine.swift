@@ -325,8 +325,6 @@ final class VoicePlaybackEngine {
         // the measurement that retired it is the whole reason this app had no
         // sound (2026-09-24, from the app's own log):
         //
-        //     [probe] connectGraphAndStart done: isRunning=true
-        //     [probe] installTap BEFORE: engineRunning=false ... inputFormat=3ch
         //     ⚠️ skipping a TTS chunk — the engine is not running   (×6, whole reply)
         //
         // Between those two lines the only thing that runs is the hand-off back
@@ -402,7 +400,6 @@ final class VoicePlaybackEngine {
         // moments after `playerNode.play()`, on a RUNNING engine with voice
         // processing on, so these two lines say whether that is what kills the
         // render.
-        print("🔊 [probe] installTap BEFORE: engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying) inputFormat=\(playbackInputNode.outputFormat(forBus: 0).sampleRate)Hz/\(playbackInputNode.outputFormat(forBus: 0).channelCount)ch")
         playbackInputNode.removeTap(onBus: 0)
         playbackInputNode.installTap(
             onBus: 0,
@@ -411,7 +408,6 @@ final class VoicePlaybackEngine {
             block: handler
         )
         inputTapHost = .playbackEngine
-        print("🔊 [probe] installTap AFTER: engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying)")
     }
 
     func removeInputTap() {
@@ -761,12 +757,10 @@ final class VoicePlaybackEngine {
         // TEMPORARY PROBE (2026-09-24): the reply reaches the speakers or it
         // does not, and the log has never answered that. See
         // `installPlaybackRenderProbe`.
-        print("🔊 [probe] play(): isEngineStarted=\(isEngineStarted) engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying) frames=\(chunkBuffer.frameLength) bufferFormat=\(chunkBuffer.format.sampleRate)Hz/\(chunkBuffer.format.channelCount)ch")
         // TEMPORARY (2026-09-24): the first scheduled chunk IS the first sound,
         // so this mark is the far end of the gap the user measures by ear.
         // `markOnce` because it sits on a per-chunk path and only the first one
         // is the measurement.
-        TurnTimingProbe.shared.markOnce("first audio scheduled (sound starts here)")
     }
 
     /// Stops the current chunk immediately (interruption path). The engine
@@ -798,7 +792,6 @@ final class VoicePlaybackEngine {
         // recording would freeze the UI while the user is still speaking, and
         // the engine's start has to move off the main thread before its timing
         // can move at all. If it is a few hundred ms, that step is unnecessary.
-        TurnTimingProbe.shared.mark("engine start requested (main thread: \(Thread.isMainThread))")
         let engineStartBeganAt = Date()
 
         // ONE bring-up at a time, and everyone else waits for the one in flight.
@@ -922,12 +915,6 @@ final class VoicePlaybackEngine {
         // TEMPORARY (2026-09-24): the duration of the whole bring-up, and the
         // number the decision above depends on. This should now be off the main
         // thread — the mark reports which thread it lands on.
-        TurnTimingProbe.shared.mark(String(
-            format: "engine start finished (isRunning=%@, took %.0fms, main thread: %@)",
-            engine.isRunning ? "true" : "false",
-            Date().timeIntervalSince(engineStartBeganAt) * 1000,
-            Thread.isMainThread ? "true" : "false"
-        ))
     }
 
     /// What the off-main-actor bring-up hands back to the main actor.
@@ -961,7 +948,6 @@ final class VoicePlaybackEngine {
         // taken after the `await` resumes on the main actor and would report the
         // main thread no matter where the bring-up actually ran.
         let bringUpBeganAt = Date()
-        TurnTimingProbe.shared.mark("bring-up running (main thread: \(Thread.isMainThread))")
 
         warmUpMainMixerNode(on: engine)
 
@@ -1002,12 +988,6 @@ final class VoicePlaybackEngine {
 
         // TEMPORARY (2026-09-24): the duration the bring-up itself took, printed
         // from inside it so both the time and the thread are the work's own.
-        TurnTimingProbe.shared.mark(String(
-            format: "bring-up finished (isRunning=%@, took %.0fms, main thread: %@)",
-            engine.isRunning ? "true" : "false",
-            Date().timeIntervalSince(bringUpBeganAt) * 1000,
-            Thread.isMainThread ? "true" : "false"
-        ))
 
         return EngineBringUpResult(
             isEngineRunning: engine.isRunning,

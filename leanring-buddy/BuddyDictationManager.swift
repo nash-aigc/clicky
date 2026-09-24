@@ -1279,29 +1279,33 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // earlier press asked for one): the press means "send it now".
         if isContinuousListeningAwaitingFinal { return true }
 
-        // THE BARGE-IN IS THE DISCRIMINATOR, not a content count. That is the
-        // user's own model of their shortcut, stated 2026-09-24:
+        // TWO QUESTIONS, TWO ANSWERS. The user's own model of their shortcut,
+        // stated 2026-09-24:
         //
         //   「如果 AI 在回复的过程中，用户没有打断，按下了快捷键，这个时候的
         //     快捷键就是终止播放…用户打断之后说了内容，再按住快捷键，它就是一个
         //     发送的按钮」
         //
-        // So: the user has interrupted this reply ⇒ the shortcut is SEND, and
-        // what they said goes. The user has NOT interrupted ⇒ it is STOP, and
-        // there is nothing of theirs to send.
+        // 1. IS THIS A SEND OR A STOP? The BARGE-IN answers it. The user has
+        //    interrupted this reply ⇒ the shortcut is SEND; they have not ⇒ it is
+        //    STOP and there is nothing of theirs to send.
+        // 2. IS THERE ANYTHING TO SEND? A content bar answers it — the same one
+        //    `handleContinuousListeningFinalTranscript` applies, because asking
+        //    for a final that bar will reject spends the press on a delivery that
+        //    is dropped one line later. The user experiences that as a press that
+        //    did nothing.
         //
-        // The `>= 4`-content-character bar that used to be here could not tell
-        // those two apart, and its failure was not symmetric. After a barge-in
-        // the interim only grows, so EVERY press took the send branch and the
-        // stop branch became unreachable — reported as 「没有增加这个停止运行的
-        // 快捷键，变成了一个永远都在循环」. The bar's original job (keeping a
-        // hallucinated 「嗯。」 from becoming a question) is done earlier now: the
-        // recognizer can no longer start a turn at all, so an utterance exists
-        // only because the VAD ruled the user spoke.
+        // The bar alone was the original bug: after a barge-in the interim only
+        // grows, so EVERY press took the send branch and the stop branch became
+        // unreachable — reported as 「没有增加这个停止运行的快捷键，变成了一个永远
+        // 都在循环」. The barge-in alone is the other half: without a bar, a
+        // one-character barge-in asks for a final that is then dropped, and the
+        // press does nothing. Both are needed, and they answer different
+        // questions.
         guard continuousListeningDidRequestBargeIn else { return false }
-        return !continuousListeningLatestInterimTranscript
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty
+        return Self.continuousListeningContentCharacterCount(
+            in: continuousListeningLatestInterimTranscript
+        ) >= Self.continuousListeningMinimumTranscriptCharacters
     }
 
     /// Whether the user's speech is being captured RIGHT NOW inside a listening
@@ -1497,13 +1501,11 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         currentPermissionProblem = nil
         isPreparingToRecord = true
 
-        PressPathProbe.shared.mark("permission check begins")
         guard await requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts() else {
             print("🎙️ BuddyDictationManager: permissions missing or denied")
             isPreparingToRecord = false
             return
         }
-        PressPathProbe.shared.mark("permission check done")
 
         guard !Task.isCancelled else {
             print("🎙️ BuddyDictationManager: start cancelled (shortcut released during permission check)")
@@ -1623,7 +1625,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         }
 
         print("🎙️ BuddyDictationManager: opening transcription provider \(transcriptionProvider.displayName)")
-        PressPathProbe.shared.mark("ASR handshake begins (websocket open)")
 
         let activeTranscriptionSession = try await transcriptionProvider.startStreamingSession(
             keyterms: buildTranscriptionKeyterms(),
@@ -1653,7 +1654,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
         self.activeTranscriptionSession = activeTranscriptionSession
         print("🎙️ BuddyDictationManager: provider ready, starting audio engine")
-        PressPathProbe.shared.mark("ASR session ready — tap + engine next")
 
         // THE SHARED ENGINE CARRIES THE RECORDING, not one of its own.
         //
@@ -1683,7 +1683,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             do {
                 try await sharedEngine.installInputTap(bufferSize: 1024, handler: tapHandler)
                 isPushToTalkCaptureOnSharedEngine = true
-                PressPathProbe.shared.mark("recording live on the SHARED engine")
                 return
             } catch {
                 print("⚠️ BuddyDictationManager: the shared engine would not carry the recording (\(error.localizedDescription)) — falling back to the own engine")
@@ -1713,7 +1712,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         if let engineStartFailure {
             throw engineStartFailure
         }
-        PressPathProbe.shared.mark("audio engine started — recording is live")
     }
 
     private func handleRecognitionError(_ error: Error) {

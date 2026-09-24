@@ -20,74 +20,6 @@ enum CompanionVoiceState {
     case responding
 }
 
-// MARK: - TEMPORARY turn-timing probe (2026-09-24)
-
-/// Wall-clock marks for one conversation turn.
-///
-/// TEMPORARY, and it comes out as soon as its one question is answered. The app
-/// has never been able to answer it from its own logs: every line in this repo
-/// is a bare `print` with no time in it, so the user's ear-measurement — "~3 s
-/// from the reply card appearing to the first sound on a session's first
-/// question, and almost nothing on a follow-up" — could not be checked against
-/// anything. These marks turn it into numbers.
-///
-/// `nonisolated` with a lock, the same shape the configuration stores use,
-/// because the marks are written from the TTS client, the audio engine and this
-/// manager alike.
-nonisolated final class TurnTimingProbe {
-    static let shared = TurnTimingProbe()
-
-    private let lock = NSLock()
-    private var turnStartedAt: Date?
-    private var previousMarkAt: Date?
-    private var previousMarkLabel: String?
-    private var labelsAlreadyMarkedOnce: Set<String> = []
-
-    /// Starts a new turn. Called once per question, when the transcript goes out.
-    func beginTurn() {
-        let now = Date()
-        lock.lock()
-        turnStartedAt = now
-        previousMarkAt = now
-        previousMarkLabel = "turn start"
-        labelsAlreadyMarkedOnce = []
-        lock.unlock()
-        print("⏱️ [timing] turn start")
-    }
-
-    /// Records a moment, printing how long it took to arrive — since the turn
-    /// began AND since the previous mark, because the interesting number is
-    /// usually the gap rather than the total.
-    func mark(_ label: String) {
-        record(label)
-    }
-
-    /// Same, but only the first time this label appears in the turn — for marks
-    /// on per-chunk paths, where only the first occurrence is the measurement.
-    func markOnce(_ label: String) {
-        lock.lock()
-        let isNew = labelsAlreadyMarkedOnce.insert(label).inserted
-        lock.unlock()
-        guard isNew else { return }
-        record(label)
-    }
-
-    private func record(_ label: String) {
-        let now = Date()
-        lock.lock()
-        let sinceTurn = turnStartedAt.map { now.timeIntervalSince($0) } ?? 0
-        let sincePrevious = previousMarkAt.map { now.timeIntervalSince($0) } ?? 0
-        let previousLabel = previousMarkLabel ?? "—"
-        previousMarkAt = now
-        previousMarkLabel = label
-        lock.unlock()
-        print(String(
-            format: "⏱️ [timing] %@ — %.0fms since turn start, %.0fms since '%@'",
-            label, sinceTurn * 1000, sincePrevious * 1000, previousLabel
-        ))
-    }
-}
-
 // MARK: - TEMPORARY main-thread hitch probe (2026-09-24)
 
 /// Reports every stretch during which the main thread was busy for longer than a
@@ -140,45 +72,6 @@ nonisolated final class MainThreadHitchProbe {
         }
         CFRunLoopAddObserver(CFRunLoopGetMain(), createdObserver, .commonModes)
         observer = createdObserver
-    }
-}
-
-/// TEMPORARY elapsed-time marks along the shortcut-press path (2026-09-24).
-///
-/// The hitch probe says WHEN the main thread stalled; these say WHAT it was
-/// doing. Every mark prints its own duration and the gap since the previous one,
-/// so one press produces an ordered breakdown of the whole path.
-nonisolated final class PressPathProbe {
-    static let shared = PressPathProbe()
-
-    private let lock = NSLock()
-    private var beganAt: Date?
-    private var previousMarkAt: Date?
-    private var previousLabel: String?
-
-    func begin() {
-        let now = Date()
-        lock.lock()
-        beganAt = now
-        previousMarkAt = now
-        previousLabel = "press"
-        lock.unlock()
-        print("⏱️ [press] ── press ──")
-    }
-
-    func mark(_ label: String) {
-        let now = Date()
-        lock.lock()
-        let sinceBegin = beganAt.map { now.timeIntervalSince($0) } ?? 0
-        let sincePrevious = previousMarkAt.map { now.timeIntervalSince($0) } ?? 0
-        let labelOfPreviousMark = previousLabel ?? "—"
-        previousMarkAt = now
-        previousLabel = label
-        lock.unlock()
-        print(String(
-            format: "⏱️ [press] %@ — +%.0fms (总), +%.0fms (自 '%@')",
-            label, sinceBegin * 1000, sincePrevious * 1000, labelOfPreviousMark
-        ))
     }
 }
 
@@ -1253,7 +1146,6 @@ final class CompanionManager: ObservableObject {
                     }
                     self.voiceState = .processing
                 } else if isRecording {
-                    PressPathProbe.shared.mark("sink: isRecording observed (chime + phase .listening + monitors)")
                     if self.voiceState != .listening {
                         SoundEffectPlayer.shared.play(.listeningStarted)
                     }
@@ -1367,7 +1259,6 @@ final class CompanionManager: ObservableObject {
 
         switch transition {
         case .pressed:
-            PressPathProbe.shared.begin()
             noteVoiceActivity()
             // 点两下说话：已经在录音（或正在开始录音）时再按一次，意思是
             // 「说完了，转文字并发送」。松开不算数，所以这里必须由第二次
@@ -2100,7 +1991,6 @@ final class CompanionManager: ObservableObject {
     }
 
     private func sendTranscriptToVisionChatWithScreenshot(transcript: String) {
-        TurnTimingProbe.shared.beginTurn()
         currentResponseTask?.cancel()
         bailianTTSClient.stopPlayback()
 
@@ -2396,7 +2286,6 @@ final class CompanionManager: ObservableObject {
                                 // The stream is live — the cursor-side answer card
                                 // may show its blurred writing tail from here on.
                                 self?.isAnswerStreamLive = true
-                                TurnTimingProbe.shared.mark("reply text on screen (card appears)")
                             }
 
                             // 逐句快答: hand the tag-stripped cumulative text to the
