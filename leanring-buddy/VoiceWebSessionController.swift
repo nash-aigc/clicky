@@ -161,6 +161,9 @@ final class VoiceWebSessionController: ObservableObject {
     /// pipeline's `currentResponseTask` relies on.
     private var sessionTask: Task<Void, Never>?
 
+    /// The standing Chrome keep-alive job — see `startChromeKeepAlive`.
+    private var chromeKeepAliveTask: Task<Void, Never>?
+
     /// The VoiceWeb server this controller launched (nil when the server was
     /// already running). Deliberately NOT terminated on teardown: the server
     /// is a resident service the user may use outside Clicky.
@@ -576,22 +579,100 @@ final class VoiceWebSessionController: ObservableObject {
     /// because the session's whole face is the notch and its audio. The old
     /// AppleScript raise (and its one-time automation prompt) is gone.
     private func ensureVoiceWebPageIsAvailable() async {
+        // CHROME'S OWN LIVENESS DECIDES FIRST, and this ordering is the fix for
+        // 「把 Chrome 完全退出，点连接就完全无法连接」.
+        //
+        // The bridge probe alone is NOT a page check, and the case that proves it
+        // is quitting Chrome: the dead page's last report stays inside the
+        // server's 35 s expiry (`server.py` drops a reporter only after 35 s, and
+        // the page heartbeats every 10 s), so `/external/state` still carries a
+        // `ready` — `state.phase != nil` is true — and this method returned
+        // WITHOUT OPENING ANYTHING. The connect command then sat in the server's
+        // one-slot store with no page to consume it, and the connect burned the
+        // whole 60 s budget before failing. An immediate retry failed the same way,
+        // which is what 「完全无法连接」 looks like from outside.
+        //
+        // Chrome not running means no report can be live, whatever the bridge
+        // says, so the page is opened unconditionally in that case.
+        guard isChromeRunning() else {
+            openVoiceWebPageInBackground()
+            return
+        }
+
         if let state = await fetchBridgeState(), state.phase != nil {
             return
         }
-        // No live page report means no VoiceWeb page is loaded anywhere, so
-        // opening a tab here cannot duplicate an existing one. `--background`
-        // is load-bearing (user 2026-09-24): Chrome — cold or warm — must
-        // NEVER come to the foreground; the whole session lives in the notch
-        // and the audio, and a browser window stealing focus mid-conversation
-        // is the failure the user described. The old AppleScript "raise an
-        // existing :8890 tab" courtesy did the opposite (set index of w to 1
-        // IS a foreground raise) and is gone with it.
+        // Chrome is up and no page is reporting: open the page. `-g` governs
+        // THIS case correctly — nothing is running, so LaunchServices really is
+        // launching, and the flag is honoured at that moment.
+        openVoiceWebPageInBackground()
+    }
+
+    // MARK: - Chrome liveness
+
+    private static let chromeBundleIdentifier = "com.google.Chrome"
+
+    /// Whether Google Chrome is running at all.
+    ///
+    /// `NSWorkspace.runningApplications` rather than `pgrep`: it asks the same
+    /// registry LaunchServices routes to, so "running" here means exactly "able to
+    /// receive a URL", which is the question that matters.
+    private func isChromeRunning() -> Bool {
+        NSWorkspace.shared.runningApplications.contains {
+            $0.bundleIdentifier == Self.chromeBundleIdentifier
+        }
+    }
+
+    /// Opens the VoiceWeb page in Chrome in the background.
+    ///
+    /// `-g` / `--background` is a LAUNCH flag (`man open`: "Do not bring the
+    /// application to the foreground"), and it is honoured when LaunchServices
+    /// actually launches — which is this method's only guaranteed-safe case
+    /// (Chrome was not running). When Chrome IS running, no launch happens: the
+    /// URL travels to the live Chrome as an Apple Event and any focus change that
+    /// follows is Chrome's own behaviour, which `-g` cannot govern. That is why
+    /// the earlier attempt at this same command did not stop the window surfacing
+    /// for a user who had Chrome open already (measured and explained 2026-09-24).
+    private func openVoiceWebPageInBackground() {
         let openProcess = Process()
         openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        openProcess.arguments = ["-a", "Google Chrome", "--background", "http://localhost:8890/client/"]
+        openProcess.arguments = ["-g", "-a", "Google Chrome", "http://localhost:8890/client/"]
         try? openProcess.run()
     }
+
+    /// Keeps Chrome running for as long as Clicky runs.
+    ///
+    /// The user's rule (2026-09-24): 「只要当前项目在运行，Chrome 就必须在运行；
+    /// 如果没有运行就自动调起，并让它在后台运行」. Two reasons it has to be a
+    /// standing job rather than a step inside connect: a cold Chrome is the slow
+    /// and fragile path (launch + session restore + page + patch + connect all
+    /// inside the connect budget), and a Chrome started ahead of time makes the
+    /// first connect as quick as a warm one.
+    ///
+    /// Launched with no URL — the page is opened at connect time, by
+    /// `ensureVoiceWebPageIsAvailable`, so an idle Clicky does not leave a
+    /// VoiceWeb tab reporting from a session nobody started.
+    func startChromeKeepAlive() {
+        guard chromeKeepAliveTask == nil else { return }
+        chromeKeepAliveTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                if !self.isChromeRunning() {
+                    print("🌐 VoiceWeb: Chrome 没有运行 —— 在后台把它启动起来")
+                    let launchProcess = Process()
+                    launchProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                    launchProcess.arguments = ["-g", "-a", "Google Chrome"]
+                    try? launchProcess.run()
+                }
+                try? await Task.sleep(for: .seconds(Self.chromeKeepAlivePollSeconds))
+            }
+        }
+    }
+
+    /// Three minutes: long enough that a user who deliberately quits Chrome is not
+    /// fought every few seconds, short enough that the next connect almost always
+    /// finds it up.
+    private static let chromeKeepAlivePollSeconds: TimeInterval = 180
 
     // MARK: - Bridge commands and polling
 

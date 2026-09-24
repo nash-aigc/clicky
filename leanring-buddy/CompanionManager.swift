@@ -553,6 +553,13 @@ final class CompanionManager: ObservableObject {
         // TEMPORARY (2026-09-24): starts reporting main-thread stalls. See
         // `MainThreadHitchProbe`.
         MainThreadHitchProbe.shared.start()
+        // Keeps Google Chrome alive in the background for as long as the app runs
+        // — the user's rule (2026-09-24): 「只要当前项目在运行，Chrome 就必须在
+        // 运行；如果没有运行就自动调起，并让它在后台运行」. A warm Chrome is what
+        // makes the first voice connect fast, and a cold one is the fragile path
+        // the connect budget has to cover. Launched with no URL; the page itself
+        // is opened at connect time.
+        voiceWebSessionController.startChromeKeepAlive()
         refreshAllPermissions()
         print("🔑 Clicky start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
         startPermissionPolling()
