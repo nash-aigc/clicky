@@ -1,0 +1,1112 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 16 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 281ms
+⏱️ [hitch] main thread busy for 139ms
+🔊 [aecprobe] t=1790293035.285 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790293036.817 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790293037.092 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_PwDDWSktE5y
+🧾 [ai-text +2字] resp=resp_PwDDW 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_PwDDW 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_PwDDW 累计6字：「有什么」
+🧾 [ai-text +2字] resp=resp_PwDDW 累计8字：「可以」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +1字] resp=resp_PwDDW 累计9字：「帮」
+🧾 [ai-text +2字] resp=resp_PwDDW 累计11字：「你的」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +1字] resp=resp_PwDDW 累计12字：「吗」
+🧾 [ai-text +1字] resp=resp_PwDDW 累计13字：「？」
+⏱️ [hitch] main thread busy for 110ms
+🔊 [ai-audio块] resp=resp_PwDDW
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_PwDDW
+🔊 [ai-audio块] resp=resp_PwDDW
+🔊 [ai-audio块] resp=resp_PwDDW
+🔊 [ai-audio块] resp=resp_PwDDW
+🔊 [ai-audio块] resp=resp_PwDDW
+🎧 [response.done] id=resp_PwDDWSktE5y
+📝 [写盘] 跳过（非用户触发的回合，如开场白）：「你好！有什么可以帮你的吗？」
+🎙️ 上行块 #50（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_PwDDBevlVe5
+🧾 [ai-text +1字] resp=resp_PwDDB 累计1字：「能」
+🧾 [ai-text +2字] resp=resp_PwDDB 累计3字：「听到」
+🧾 [ai-text +1字] resp=resp_PwDDB 累计4字：「，」
+🧾 [ai-text +3字] resp=resp_PwDDB 累计7字：「有什么」
+🧾 [ai-text +1字] resp=resp_PwDDB 累计8字：「想」
+🧾 [ai-text +1字] resp=resp_PwDDB 累计9字：「聊」
+🧾 [ai-text +2字] resp=resp_PwDDB 累计11字：「的吗」
+🧾 [ai-text +1字] resp=resp_PwDDB 累计12字：「？」
+🔊 [ai-audio块] resp=resp_PwDDB
+🎧 [user-transcript] item=item_PwDDE4A 「Hello, can you hear me? 」
+🗣️ [user-utterance] 「Hello, can you hear me?」
+🔊 [ai-audio块] resp=resp_PwDDB
+🔊 [ai-audio块] resp=resp_PwDDB
+🔊 [ai-audio块] resp=resp_PwDDB
+🔊 [ai-audio块] resp=resp_PwDDB
+🔊 [ai-audio块] resp=resp_PwDDB
+🎧 [response.done] id=resp_PwDDBevlVe5
+📝 [写盘] 一条全写：问「Hello, can you hear 」 答「能听到，有什么想聊的吗？」
+⏱️ [hitch] main thread busy for 41ms
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 43ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 183ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa（族=三段式）画面=不允许
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 63ms
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 246ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 3 字
+🗣️ Streaming speech: queued segment 2 (25 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 25 字
+🔊 [aecprobe] t=1790293048.604 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (71KB)
+🎙️ [aecprobe] t=1790293048.936 event=level botSpeaking=true level=0.504 peak0.5s=0.504 utteranceActive=no
+🎙️ [aecprobe] t=1790293048.990 event=level botSpeaking=true level=0.705 peak0.5s=0.705 utteranceActive=no
+🎙️ [aecprobe] t=1790293049.043 event=level botSpeaking=true level=0.705 peak0.5s=0.705 utteranceActive=no
+🎙️ [aecprobe] t=1790293049.094 event=level botSpeaking=true level=0.508 peak0.5s=0.705 utteranceActive=no
+🎙️ [aecprobe] t=1790293049.094 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.705, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790293049.095 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790293049.238 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790293051.257 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (20 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 20 字
+⏱️ [hitch] main thread busy for 91ms
+🗣️ Streaming speech: queued segment 2 (26 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 26 字
+🔊 [aecprobe] t=1790293052.326 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (52KB)
+🔊 [aecprobe] t=1790293053.445 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (63KB)
+🔊 [aecprobe] t=1790293054.732 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 40ms
+🎙️ [aecprobe] t=1790293055.681 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.819, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790293055.836 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790293059.916 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (5 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 5 字
+🗣️ Streaming speech: queued segment 2 (33 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 33 字
+🗣️ Streaming speech: queued segment 3 (30 chars)
+⏱️ [hitch] main thread busy for 54ms
+🗣️ Streaming speech: queued segment 4 (31 chars)
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 5 (38 chars)
+🗣️ Streaming speech: queued segment 6 (31 chars)
+🔊 [aecprobe] t=1790293060.860 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (26KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 30 字
+⏱️ [hitch] main thread busy for 108ms
+🗣️ Streaming speech: queued segment 7 (32 chars)
+🗣️ Streaming speech: queued segment 8 (30 chars)
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 9 (31 chars)
+⏱️ [hitch] main thread busy for 68ms
+🗣️ Streaming speech: queued segment 10 (30 chars)
+🔊 [aecprobe] t=1790293061.492 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (135KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8747053-6d471ea7b676423992496d6a999220aa 文本 31 字
+⏱️ [hitch] main thread busy for 42ms
+🗣️ Streaming speech: queued segment 11 (37 chars)
+🗣️ Streaming speech: queued segment 12 (31 chars)
+🗣️ Streaming speech: queued segment 13 (30 chars)
+⏱️ [hitch] main thread busy for 51ms
+🗣️ Streaming speech: queued segment 14 (32 chars)
+🗣️ Streaming speech: queued segment 15 (21 chars)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790293062.758 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_COwgQeuDJvt
+🧾 [ai-text +2字] resp=resp_COwgQ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计5字：「我已」
+🧾 [ai-text +3字] resp=resp_COwgQ 累计8字：「准备好」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计9字：「。」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计10字：「请」
+🧾 [ai-text +3字] resp=resp_COwgQ 累计13字：「告诉我」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计15字：「你想」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计17字：「练习」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计19字：「哪种」
+⏱️ [hitch] main thread busy for 58ms
+🧾 [ai-text +2字] resp=resp_COwgQ 累计21字：「语言」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计22字：「（」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_COwgQ 累计24字：「日语」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +1字] resp=resp_COwgQ 累计25字：「、」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计27字：「韩语」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计28字：「、」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计30字：「英语」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计31字：「、」
+🧾 [ai-text +4字] resp=resp_COwgQ 累计35字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计36字：「、」
+⏱️ [hitch] main thread busy for 50ms
+🧾 [ai-text +2字] resp=resp_COwgQ 累计38字：「德语」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计39字：「、」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计41字：「法语」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计43字：「），」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计45字：「以及」
+🧾 [ai-text +3字] resp=resp_COwgQ 累计48字：「具体的」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计50字：「练习」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计52字：「场景」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计53字：「或」
+🧾 [ai-text +2字] resp=resp_COwgQ 累计55字：「话题」
+🧾 [ai-text +1字] resp=resp_COwgQ 累计56字：「。」
+🔊 [ai-audio块] resp=resp_COwgQ
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🎙️ 上行块 #50（64B）已发出
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🔊 [ai-audio块] resp=resp_COwgQ
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🔊 [ai-audio块] resp=resp_COwgQ
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [response.done] id=resp_COwgQeuDJvt
+⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略
+⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_COwgN5Aiy36
+🧾 [ai-text +5字] resp=resp_COwgN 累计5字：「こんにちは」
+🧾 [ai-text +1字] resp=resp_COwgN 累计6字：「！」
+🧾 [ai-text +4字] resp=resp_COwgN 累计10字：「もちろん」
+🧾 [ai-text +3字] resp=resp_COwgN 累计13字：「大丈夫」
+🧾 [ai-text +2字] resp=resp_COwgN 累计15字：「です」
+🧾 [ai-text +1字] resp=resp_COwgN 累计16字：「。」
+🧾 [ai-text +2字] resp=resp_COwgN 累计18字：「
+
+」
+⏱️ [hitch] main thread busy for 64ms
+🧾 [ai-text +3字] resp=resp_COwgN 累计21字：「どんな」
+🧾 [ai-text +2字] resp=resp_COwgN 累计23字：「練習」
+🧾 [ai-text +1字] resp=resp_COwgN 累计24字：「を」
+🧾 [ai-text +5字] resp=resp_COwgN 累计29字：「しましょう」
+🧾 [ai-text +1字] resp=resp_COwgN 累计30字：「か」
+🧾 [ai-text +1字] resp=resp_COwgN 累计31字：「？」
+🧾 [ai-text +1字] resp=resp_COwgN 累计32字：「
+」
+🧾 [ai-text +3字] resp=resp_COwgN 累计35字：「例えば」
+🧾 [ai-text +1字] resp=resp_COwgN 累计36字：「：」
+🧾 [ai-text +1字] resp=resp_COwgN 累计37字：「
+」
+🧾 [ai-text +1字] resp=resp_COwgN 累计38字：「-」
+🧾 [ai-text +1字] resp=resp_COwgN 累计39字：「 」
+🧾 [ai-text +2字] resp=resp_COwgN 累计41字：「日常」
+🧾 [ai-text +2字] resp=resp_COwgN 累计43字：「会話」
+🧾 [ai-text +1字] resp=resp_COwgN 累计44字：「の」
+🧾 [ai-text +1字] resp=resp_COwgN 累计45字：「シ」
+🧾 [ai-text +2字] resp=resp_COwgN 累计47字：「ミュ」
+🧾 [ai-text +5字] resp=resp_COwgN 累计52字：「レーション」
+🧾 [ai-text +1字] resp=resp_COwgN 累计53字：「
+」
+🧾 [ai-text +1字] resp=resp_COwgN 累计54字：「-」
+🧾 [ai-text +1字] resp=resp_COwgN 累计55字：「 」
+🧾 [ai-text +1字] resp=resp_COwgN 累计56字：「文」
+🧾 [ai-text +2字] resp=resp_COwgN 累计58字：「法の」
+🧾 [ai-text +2字] resp=resp_COwgN 累计60字：「解説」
+🧾 [ai-text +1字] resp=resp_COwgN 累计61字：「
+」
+🧾 [ai-text +1字] resp=resp_COwgN 累计62字：「-」
+🧾 [ai-text +1字] resp=resp_COwgN 累计63字：「 」
+🧾 [ai-text +1字] resp=resp_COwgN 累计64字：「発」
+🧾 [ai-text +1字] resp=resp_COwgN 累计65字：「音」
+🧾 [ai-text +1字] resp=resp_COwgN 累计66字：「の」
+🧾 [ai-text +4字] resp=resp_COwgN 累计70字：「チェック」
+🧾 [ai-text +1字] resp=resp_COwgN 累计71字：「
+」
+🧾 [ai-text +1字] resp=resp_COwgN 累计72字：「-」
+🧾 [ai-text +1字] resp=resp_COwgN 累计73字：「 」
+🧾 [ai-text +2字] resp=resp_COwgN 累计75字：「旅行」
+🧾 [ai-text +1字] resp=resp_COwgN 累计76字：「や」
+⏱️ [hitch] main thread busy for 137ms
+🧾 [ai-text +4字] resp=resp_COwgN 累计80字：「ビジネス」
+🧾 [ai-text +2字] resp=resp_COwgN 累计82字：「での」
+🧾 [ai-text +2字] resp=resp_COwgN 累计84字：「表現」
+🧾 [ai-text +2字] resp=resp_COwgN 累计86字：「
+
+」
+🧾 [ai-text +3字] resp=resp_COwgN 累计89字：「テーマ」
+🧾 [ai-text +1字] resp=resp_COwgN 累计90字：「を」
+🧾 [ai-text +7字] resp=resp_COwgN 累计97字：「教えてください」
+🧾 [ai-text +1字] resp=resp_COwgN 累计98字：「。」
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🎧 [user-transcript] item=item_COwgEJ8 「こんにちは。ありがとうございます。」
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+🔊 [ai-audio块] resp=resp_COwgN
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 170ms
+⏱️ [hitch] main thread busy for 74ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 124ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 83ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 89ms
+2026-09-25 07:38:07.441 Clicky[34056:11498952] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-25 07:38:07.462 Clicky[34056:11498952] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 219ms
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 165ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 257ms
+⏱️ [hitch] main thread busy for 170ms
+⏱️ [hitch] main thread busy for 217ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 108ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 101ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 122ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 118ms
+⏱️ [hitch] main thread busy for 207ms
+⏱️ [hitch] main thread busy for 95ms
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 206ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 221ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 120ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 100ms
+⏱️ [hitch] main thread busy for 153ms
+⏱️ [hitch] main thread busy for 80ms
+⏱️ [hitch] main thread busy for 158ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 122ms
+⏱️ [hitch] main thread busy for 104ms
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 159ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 140ms
+⏱️ [hitch] main thread busy for 87ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 57ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 113ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 170ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 40ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 124ms
+⏱️ [hitch] main thread busy for 160ms
+⏱️ [hitch] main thread busy for 89ms
+⏱️ [hitch] main thread busy for 173ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 45ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 154ms
+⏱️ [hitch] main thread busy for 108ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 198ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 222ms
+⏱️ [hitch] main thread busy for 85ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 88ms
+⏱️ [hitch] main thread busy for 158ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 118ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 178ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 235ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 56ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_MXrmZ18lrFd
+🧾 [ai-text +2字] resp=resp_MXrmZ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_MXrmZ 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_MXrmZ 累计6字：「有什么」
+🧾 [ai-text +1字] resp=resp_MXrmZ 累计7字：「想」
+🧾 [ai-text +1字] resp=resp_MXrmZ 累计8字：「聊」
+🧾 [ai-text +2字] resp=resp_MXrmZ 累计10字：「的吗」
+🧾 [ai-text +1字] resp=resp_MXrmZ 累计11字：「？」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🔊 [ai-audio块] resp=resp_MXrmZ
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_MXrmZ
+🔊 [ai-audio块] resp=resp_MXrmZ
+🔊 [ai-audio块] resp=resp_MXrmZ
+🔊 [ai-audio块] resp=resp_MXrmZ
+🔊 [ai-audio块] resp=resp_MXrmZ
+🎧 [response.done] id=resp_MXrmZ18lrFd
+📝 [写盘] 跳过（非用户触发的回合，如开场白）：「你好！有什么想聊的吗？」
+🎙️ 上行块 #50（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmDTlyqpO
+🧾 [ai-text +2字] resp=resp_MXrmD 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_MXrmD 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_MXrmD 累计6字：「有什么」
+🧾 [ai-text +2字] resp=resp_MXrmD 累计8字：「可以」
+🧾 [ai-text +1字] resp=resp_MXrmD 累计9字：「帮」
+🧾 [ai-text +2字] resp=resp_MXrmD 累计11字：「你的」
+🧾 [ai-text +1字] resp=resp_MXrmD 累计12字：「吗」
+🧾 [ai-text +1字] resp=resp_MXrmD 累计13字：「？」
+🔊 [ai-audio块] resp=resp_MXrmD
+🔊 [ai-audio块] resp=resp_MXrmD
+🔊 [ai-audio块] resp=resp_MXrmD
+🔊 [ai-audio块] resp=resp_MXrmD
+🔊 [ai-audio块] resp=resp_MXrmD
+🔊 [ai-audio块] resp=resp_MXrmD
+🎧 [response.done] id=resp_MXrmDTlyqpO
+📝 [写盘] #17 等转写补配：答「你好！有什么可以帮你的吗？」
+🎧 [user-transcript] item=item_MXrmM67 「库里吉瓦阿里嘎多。」
+🗣️ [user-utterance] 「库里吉瓦阿里嘎多。」
+📝 [写盘] 补配 #17：问「库里吉瓦阿里嘎多。」 答「你好！有什么可以帮你的吗？」
+🎙️ 上行块 #150（64B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmT6oqfuL
+🧾 [ai-text +2字] resp=resp_MXrmT 累计2字：「可以」
+🧾 [ai-text +1字] resp=resp_MXrmT 累计3字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmT 累计5字：「我会」
+🧾 [ai-text +1字] resp=resp_MXrmT 累计6字：「说」
+🎙️ 上行块 #200（3200B）已发出
+🧾 [ai-text +2字] resp=resp_MXrmT 累计8字：「日语」
+🧾 [ai-text +1字] resp=resp_MXrmT 累计9字：「。」
+🧾 [ai-text +2字] resp=resp_MXrmT 累计11字：「你想」
+⏱️ [hitch] main thread busy for 90ms
+🧾 [ai-text +1字] resp=resp_MXrmT 累计12字：「聊」
+🧾 [ai-text +3字] resp=resp_MXrmT 累计15字：「点什么」
+🧾 [ai-text +1字] resp=resp_MXrmT 累计16字：「？」
+🔊 [ai-audio块] resp=resp_MXrmT
+🔊 [ai-audio块] resp=resp_MXrmT
+🔊 [ai-audio块] resp=resp_MXrmT
+🔊 [ai-audio块] resp=resp_MXrmT
+🔊 [ai-audio块] resp=resp_MXrmT
+🎧 [user-transcript] item=item_MXrmSiw 「Can you speak Japanese language? 」
+🗣️ [user-utterance] 「Can you speak Japanese language?」
+🔊 [ai-audio块] resp=resp_MXrmT
+🔊 [ai-audio块] resp=resp_MXrmT
+🔊 [ai-audio块] resp=resp_MXrmT
+🎧 [response.done] id=resp_MXrmT6oqfuL
+📝 [写盘] 一条全写：问「Can you speak Japane」 答「可以，我会说日语。你想聊点什么？」
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #250（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #300（64B）已发出
+⏱️ [hitch] main thread busy for 58ms
+🎙️ 上行块 #350（3200B）已发出
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 117ms
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmKU7yKH2
+🧾 [ai-text +2字] resp=resp_MXrmK 累计2字：「当然」
+🧾 [ai-text +2字] resp=resp_MXrmK 累计4字：「可以」
+🧾 [ai-text +1字] resp=resp_MXrmK 累计5字：「，」
+🧾 [ai-text +1字] resp=resp_MXrmK 累计6字：「我」
+🧾 [ai-text +3字] resp=resp_MXrmK 累计9字：「可以用」
+🧾 [ai-text +2字] resp=resp_MXrmK 累计11字：「日语」
+🧾 [ai-text +2字] resp=resp_MXrmK 累计13字：「和你」
+⏱️ [hitch] main thread busy for 47ms
+🧾 [ai-text +2字] resp=resp_MXrmK 累计15字：「交流」
+🧾 [ai-text +1字] resp=resp_MXrmK 累计16字：「。」
+🧾 [ai-text +2字] resp=resp_MXrmK 累计18字：「你想」
+🧾 [ai-text +1字] resp=resp_MXrmK 累计19字：「聊」
+🧾 [ai-text +3字] resp=resp_MXrmK 累计22字：「些什么」
+🧾 [ai-text +1字] resp=resp_MXrmK 累计23字：「呢」
+🧾 [ai-text +1字] resp=resp_MXrmK 累计24字：「？」
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🎧 [user-transcript] item=item_MXrmNeZ 「Ok, i i i want to say i want listening how to you speak text you speak like japanese language. 」
+🗣️ [user-utterance] 「Ok, i i i want to say i want listening how to you speak text you speak like japanese language.」
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🎙️ 上行块 #400（64B）已发出
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🔊 [ai-audio块] resp=resp_MXrmK
+🎧 [response.done] id=resp_MXrmKU7yKH2
+📝 [写盘] 一条全写：问「Ok, i i i want to sa」 答「当然可以，我可以用日语和你交流。你想聊些」
+⏱️ [hitch] main thread busy for 47ms
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 上行块 #500（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #550（2730B）已发出
+⏱️ [hitch] main thread busy for 48ms
+🎙️ 上行块 #600（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmEBnNXXr
+🧾 [ai-text +2字] resp=resp_MXrmE 累计2字：「明白」
+🧾 [ai-text +1字] resp=resp_MXrmE 累计3字：「啦」
+🧾 [ai-text +1字] resp=resp_MXrmE 累计4字：「！」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计6字：「你想」
+🧾 [ai-text +1字] resp=resp_MXrmE 累计7字：「听」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计9字：「日语」
+🧾 [ai-text +3字] resp=resp_MXrmE 累计12字：「怎么说」
+🧾 [ai-text +1字] resp=resp_MXrmE 累计13字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计15字：「直接」
+🧾 [ai-text +3字] resp=resp_MXrmE 累计18字：「告诉我」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计20字：「你想」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计22字：「表达」
+⏱️ [hitch] main thread busy for 56ms
+🧾 [ai-text +3字] resp=resp_MXrmE 累计25字：「的意思」
+🧾 [ai-text +1字] resp=resp_MXrmE 累计26字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计28字：「我来」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计30字：「示范」
+🧾 [ai-text +2字] resp=resp_MXrmE 累计32字：「发音」
+🧾 [ai-text +1字] resp=resp_MXrmE 累计33字：「。」
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🎧 [user-transcript] item=item_MXrmRNU 「What I want to say and speak Japanese language, I want to listen how to say it. 」
+🗣️ [user-utterance] 「What I want to say and speak Japanese language, I want to listen how to say it.」
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🔊 [ai-audio块] resp=resp_MXrmE
+🎧 [response.done] id=resp_MXrmEBnNXXr
+📝 [写盘] 一条全写：问「What I want to say a」 答「明白啦！你想听日语怎么说，直接告诉我你想」
+🎙️ 上行块 #650（64B）已发出
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #700（3200B）已发出
+🎙️ 上行块 #750（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #800（2730B）已发出
+🎙️ 上行块 #850（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmJI4aZol
+🧾 [ai-text +2字] resp=resp_MXrmJ 累计2字：「不是」
+🧾 [ai-text +1字] resp=resp_MXrmJ 累计3字：「的」
+🧾 [ai-text +1字] resp=resp_MXrmJ 累计4字：「，」
+🧾 [ai-text +4字] resp=resp_MXrmJ 累计8字：「我是一个」
+🧾 [ai-text +4字] resp=resp_MXrmJ 累计12字：「人工智能」
+🧾 [ai-text +2字] resp=resp_MXrmJ 累计14字：「助手」
+🧾 [ai-text +1字] resp=resp_MXrmJ 累计15字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmJ 累计17字：「没有」
+🧾 [ai-text +2字] resp=resp_MXrmJ 累计19字：「去过」
+🧾 [ai-text +4字] resp=resp_MXrmJ 累计23字：「北京大学」
+🧾 [ai-text +1字] resp=resp_MXrmJ 累计24字：「。」
+⏱️ [hitch] main thread busy for 104ms
+🔊 [ai-audio块] resp=resp_MXrmJ
+🎧 [user-transcript] item=item_MXrmIqp 「Are you em did you go from Beijing University? 」
+🗣️ [user-utterance] 「Are you em did you go from Beijing University?」
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🔊 [ai-audio块] resp=resp_MXrmJ
+🎧 [response.done] id=resp_MXrmJI4aZol
+📝 [写盘] 一条全写：问「Are you em did you g」 答「不是的，我是一个人工智能助手，没有去过北」
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 上行块 #900（64B）已发出
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 上行块 #950（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #1000（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmFjeqxgE
+🧾 [ai-text +2字] resp=resp_MXrmF 累计2字：「是的」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计3字：「，」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计4字：「我」
+🧾 [ai-text +2字] resp=resp_MXrmF 累计6字：「确定」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计7字：「。」
+🧾 [ai-text +2字] resp=resp_MXrmF 累计9字：「我是」
+⏱️ [hitch] main thread busy for 96ms
+🧾 [ai-text +4字] resp=resp_MXrmF 累计13字：「人工智能」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计14字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmF 累计16字：「没有」
+🧾 [ai-text +2字] resp=resp_MXrmF 累计18字：「实体」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计19字：「，」
+🧾 [ai-text +3字] resp=resp_MXrmF 累计22字：「也不会」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计23字：「去」
+🧾 [ai-text +2字] resp=resp_MXrmF 累计25字：「任何」
+🧾 [ai-text +2字] resp=resp_MXrmF 累计27字：「大学」
+🧾 [ai-text +1字] resp=resp_MXrmF 累计28字：「。」
+🔊 [ai-audio块] resp=resp_MXrmF
+⏱️ [hitch] main thread busy for 69ms
+🎧 [user-transcript] item=item_MXrmSJa 「Are you really sure? 」
+🗣️ [user-utterance] 「Are you really sure?」
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🎙️ 上行块 #1050（3200B）已发出
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🔊 [ai-audio块] resp=resp_MXrmF
+🎧 [response.done] id=resp_MXrmFjeqxgE
+📝 [写盘] 一条全写：问「Are you really sure?」 答「是的，我确定。我是人工智能，没有实体，也」
+🎙️ 上行块 #1100（3200B）已发出
+⏱️ [hitch] main thread busy for 286ms
+⏱️ [hitch] main thread busy for 54ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #1150（3200B）已发出
+🎙️ 上行块 #1200（64B）已发出
+🎙️ 上行块 #1250（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MXrmSrTCGMG
+🧾 [ai-text +2字] resp=resp_MXrmS 累计2字：「谢谢」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计4字：「你的」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计6字：「想法」
+🧾 [ai-text +1字] resp=resp_MXrmS 累计7字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计9字：「但我」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计11字：「只是」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计13字：「程序」
+🧾 [ai-text +1字] resp=resp_MXrmS 累计14字：「，」
+⏱️ [hitch] main thread busy for 72ms
+🧾 [ai-text +2字] resp=resp_MXrmS 累计16字：「没有」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计18字：「身体」
+🧾 [ai-text +1字] resp=resp_MXrmS 累计19字：「，」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计21字：「所以」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计23字：「没法」
+🧾 [ai-text +1字] resp=resp_MXrmS 累计24字：「去」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计26字：「大学」
+🧾 [ai-text +2字] resp=resp_MXrmS 累计28字：「上课」
+🧾 [ai-text +1字] resp=resp_MXrmS 累计29字：「。」
+🔊 [ai-audio块] resp=resp_MXrmS
+⏱️ [hitch] main thread busy for 91ms
+🔊 [ai-audio块] resp=resp_MXrmS
+🎧 [user-transcript] item=item_MXrmHYp 「I think you, you, you can go any university and you got the knowledge. 」
+🗣️ [user-utterance] 「I think you, you, you can go any university and you got the knowledge.」
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🎙️ 上行块 #1300（64B）已发出
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🔊 [ai-audio块] resp=resp_MXrmS
+🎧 [response.done] id=resp_MXrmSrTCGMG
+📝 [写盘] 一条全写：问「I think you, you, yo」 答「谢谢你的想法，但我只是程序，没有身体，所」
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #1350（64B）已发出
+🎙️ 上行块 #1400（3200B）已发出
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #1450（64B）已发出
+⏱️ [hitch] main thread busy for 40ms
+🎙️ 上行块 #1500（3200B）已发出
+🎙️ 上行块 #1550（64B）已发出
+🎙️ 上行块 #1600（2730B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #1650（3200B）已发出
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #1700（64B）已发出
+🎙️ 上行块 #1750（3200B）已发出
+🎙️ 上行块 #1800（64B）已发出
+⏱️ [hitch] main thread busy for 46ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #1850（2730B）已发出
+⏱️ [hitch] main thread busy for 43ms
+🎙️ 上行块 #1900（3200B）已发出
+🎙️ 上行块 #1950（64B）已发出
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #2000（3200B）已发出
+🎙️ 上行块 #2050（64B）已发出
+⏱️ [hitch] main thread busy for 280ms
+⏱️ [hitch] main thread busy for 111ms
+⏱️ [hitch] main thread busy for 45ms
+🎙️ 上行块 #2100（2730B）已发出
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 257ms
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 62ms
+🎙️ 上行块 #2150（3200B）已发出
+⏱️ [hitch] main thread busy for 150ms
+⏱️ [hitch] main thread busy for 178ms
+⏱️ [hitch] main thread busy for 137ms
+⏱️ [hitch] main thread busy for 155ms
+🎙️ 上行块 #2200（64B）已发出
+⏱️ [hitch] main thread busy for 91ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 213ms
+🎙️ 上行块 #2250（64B）已发出
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 87ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 109ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 207ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 127ms
+⏱️ [hitch] main thread busy for 89ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [hitch] main thread busy for 187ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 134ms
+⏱️ [hitch] main thread busy for 145ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 114ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 73ms
+⏱️ [hitch] main thread busy for 86ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 84ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 91ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 110ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 76ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 95ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 97ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 62ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [hitch] main thread busy for 235ms
+⏱️ [hitch] main thread busy for 101ms
+⏱️ [hitch] main thread busy for 104ms
+⏱️ [hitch] main thread busy for 48ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-zdy-10f516b496684d6ab6e9745cac9e679e（族=三段式）画面=不允许
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 74ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 475ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zdy-10f516b496684d6ab6e9745cac9e679e 文本 3 字
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 59ms
+🗣️ Streaming speech: queued segment 2 (25 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zdy-10f516b496684d6ab6e9745cac9e679e 文本 25 字
+🔊 [aecprobe] t=1790293671.794 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (33KB)
+🔊 [aecprobe] t=1790293672.577 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (172KB)
+🔊 [aecprobe] t=1790293675.852 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 40ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-sq-84b1aa9a633d47858d0d4ff88823ff5d（族=三段式）画面=不允许
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 50ms
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 216ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-sq-84b1aa9a633d47858d0d4ff88823ff5d 文本 3 字
+⏱️ [hitch] main thread busy for 58ms
+🗣️ Streaming speech: queued segment 2 (24 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-sq-84b1aa9a633d47858d0d4ff88823ff5d 文本 24 字
+🔊 [aecprobe] t=1790293683.719 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (67KB)
+🔊 [aecprobe] t=1790293685.112 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (198KB)
+🔊 [aecprobe] t=1790293688.875 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 56ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=不允许
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 51ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 226ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 3 字
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 2 (37 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 37 字
+🗣️ Streaming speech: queued segment 3 (34 chars)
+🔊 [aecprobe] t=1790293695.794 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (52KB)
+🔊 [aecprobe] t=1790293696.917 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (296KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 34 字
+🎙️ [aecprobe] t=1790293698.746 event=level botSpeaking=true level=0.441 peak0.5s=0.441 utteranceActive=no
+🎙️ [aecprobe] t=1790293698.797 event=level botSpeaking=true level=0.441 peak0.5s=0.441 utteranceActive=no
+🎙️ [aecprobe] t=1790293698.850 event=level botSpeaking=true level=0.429 peak0.5s=0.441 utteranceActive=no
+🎙️ [aecprobe] t=1790293698.904 event=level botSpeaking=true level=0.429 peak0.5s=0.441 utteranceActive=no
+🎙️ [aecprobe] t=1790293698.904 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.441, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790293698.905 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790293699.062 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790293702.627 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (6 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 6 字
+🗣️ Streaming speech: queued segment 2 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+🔊 [aecprobe] t=1790293703.602 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (41KB)
+🔊 [aecprobe] t=1790293704.493 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (210KB)
+⏱️ [hitch] main thread busy for 43ms
+🔊 [aecprobe] t=1790293708.441 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxi（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxi
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxi）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_DEMNL8LbNak
+🧾 [ai-text +2字] resp=resp_DEMNL 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计5字：「我是」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计6字：「多」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计8字：「语种」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计10字：「教练」
+⏱️ [hitch] main thread busy for 59ms
+🧾 [ai-text +1字] resp=resp_DEMNL 累计11字：「，」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计13字：「随时」
+🎙️ 上行块 #2（2720B）已发出
+🧾 [ai-text +2字] resp=resp_DEMNL 累计15字：「准备」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计16字：「用」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计18字：「日语」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计19字：「、」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计21字：「韩语」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计22字：「、」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计24字：「英语」
+🎙️ 上行块 #3（2720B）已发出
+🧾 [ai-text +1字] resp=resp_DEMNL 累计25字：「、」
+🧾 [ai-text +4字] resp=resp_DEMNL 累计29字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计30字：「、」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计32字：「德语」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计33字：「或」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计35字：「法语」
+⏱️ [hitch] main thread busy for 64ms
+🧾 [ai-text +2字] resp=resp_DEMNL 累计37字：「与您」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计39字：「交流」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计40字：「。」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计41字：「您」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计42字：「想」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计44字：「练习」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计46字：「哪种」
+🧾 [ai-text +2字] resp=resp_DEMNL 累计48字：「语言」
+🧾 [ai-text +1字] resp=resp_DEMNL 累计49字：「？」
+🔊 [ai-audio块] resp=resp_DEMNL
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🔊 [ai-audio块] resp=resp_DEMNL
+🎧 [response.done] id=resp_DEMNL8LbNak
+🎙️ 上行块 #50（2720B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #100（3200B）已发出
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 上行块 #150（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 206ms
+⏱️ [hitch] main thread busy for 90ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 103ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 192ms
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms

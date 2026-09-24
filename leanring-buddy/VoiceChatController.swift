@@ -686,9 +686,12 @@ final class VoiceChatController: ObservableObject {
                 // 正常的最终转写，到那时才是新回合，否则会连开两轮。
                 self?.cascadeEngine.bargeIn()
             },
-            onTranscriptUpdate: { [weak self] interimText in
-                self?.publishLiveUserTranscript(interimText)
-            },
+            // **不再逐字显示转写**（用户 2026-09-25：「希望用户的提示词是一次性展示
+            // 出来的，不要一个字一个字地显示，而是在用户说完整句话后一次性显示」）。
+            // 逐字的实时气泡正是「用户提示词重复两份」的第一份（interim 一份、
+            // final 一份）；去掉 interim，用户气泡就只剩 final 一份。
+            // 说话期间的反馈由既有的相位动画（Listening）承担。
+            onTranscriptUpdate: { _ in },
             onUtteranceFinalized: { [weak self] finalText in
                 self?.handleUserUtterance(finalText)
             },
@@ -917,8 +920,10 @@ final class VoiceChatController: ObservableObject {
         let trimmed = finalUtteranceText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        // 把实时那行定稿成真正的用户气泡。
-        finishLiveUserTranscript(with: trimmed)
+        // **用户气泡只出现一次**：interim 已不再显示（见上面的 onTranscriptUpdate），
+        // 所以这里没有"实时条目"要定稿 —— 直接由 startTurn 追加唯一的用户气泡。
+        // （原来先 finishLive 再 startTurn 会追加第二份同文气泡，用户截图里的
+        // 「Can you speak some English to me?」×2 就是它。）
 
         startTurn(utterance: trimmed)
     }

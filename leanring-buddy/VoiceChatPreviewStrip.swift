@@ -66,7 +66,16 @@ struct VoiceChatPreviewStrip: View {
 
     private func pane(for target: VoiceChatController.PreviewPane,
                       width: CGFloat?) -> some View {
+        // **设备在当前设置下不可用（语音聊天不支持画面）→ 强制折叠成一条**。
+        //
+        // 用户 2026-09-25：「因为是语音聊天，不应该有摄像头和屏幕。即便有，
+        // 也应该以折叠形式呈现，并且应该是自动折叠，现在是自动展开。」
+        // 原先的自动折叠只挂在设备开关上，而语音聊天下开关是被能力层**直接压掉**的
+        // （不走 `setCameraEnabled`），所以折叠没发生。这里按能力层再兜一层。
         let isCollapsed = controller.isCollapsed(target)
+            || !(target == .camera
+                 ? controller.selectedModeSupportsCamera
+                 : controller.selectedModeSupportsScreenSharing)
 
         return VStack(spacing: 0) {
             // 顶部这条既是标题也是折叠开关 —— 用户说的「这个长方形的顶部点击一下

@@ -431,6 +431,29 @@ private final class ComposerNSTextView: NSTextView {
 
     var handleSendKeyEvent: ((NSEvent) -> Bool)?
 
+    /// **首次点击就能聚焦**（用户 2026-09-25：「点击 Asking 后立即点击输入框……
+    /// 无法输入任何问题；只有点击输入框上面，光标才能定位到输入框」）。
+    ///
+    /// 默认行为下，非 key 窗口（或刚重建完视图树的窗口）里的第一次点击只用于
+    /// 「激活窗口」，不会投递给视图 —— 于是点在输入框上的第一下被吃掉，光标
+    /// 不会进来。`acceptsFirstMouse` 让第一击既激活窗口又完成聚焦。
+    ///
+    /// 它同时覆盖「切换分区后视图树刚重建」的场景：新视图实例在第一次点击时
+    /// 直接接管，不再依赖外层那颗 `onTapGesture` 先把 `isFocused` 置真。
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+
+    /// 双保险：即使第一击被窗口激活吞掉（`acceptsFirstMouse` 之外的路徑），
+    /// `mouseDown` 也确保自己成为第一响应者 —— AppKit 对 text view 的默认
+    /// mouseDown 链只有在已经是/能成为 first responder 时才进编辑态。
+    override func mouseDown(with event: NSEvent) {
+        if window?.firstResponder !== self, window?.makeFirstResponder(self) == true {
+            // 让出这次 mouseDown 给 super，caret 会落在点击位置。
+        }
+        super.mouseDown(with: event)
+    }
+
     override func keyDown(with event: NSEvent) {
         if handleSendKeyEvent?(event) == true { return }
         super.keyDown(with: event)
