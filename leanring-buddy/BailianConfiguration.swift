@@ -95,7 +95,7 @@ nonisolated enum BailianConfiguration {
         /// 一边说一边改写（用户看到「文字总是在变」），而且准确率差得远（同一段
         /// 12 秒音频，实时的把句子截断成「…很高。」，这个一字不差）。
         /// 实时那条路仍然可用 —— 模型名里带 `-realtime` 就会走它。
-        static let realtimeTranscription = "qwen-audio-3.1-asr-flash"
+        static let realtimeTranscription = "qwen-audio-3.0-realtime-flash"
 
         /// Text-to-speech used to read answers aloud.
         ///

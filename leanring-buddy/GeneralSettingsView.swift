@@ -603,12 +603,110 @@ struct GeneralSettingsView: View {
 
     // MARK: 听
 
+    /// 「听」页最上面那一栏：**用哪个模型识别**。
+    ///
+    /// 用户 2026-09-24 的要求：把「用语音模型当识别器」这条路放进设置、把实时专用
+    /// 识别模型留作参考项、并且**在页面上说清这一项管哪两个场景**。所以每一行都带
+    /// 一句「它是什么路、代价是什么」，而不是只给三个名字。
+    private var recognitionModelChoiceSection: some View {
+        Group {
+            SettingsGroupLabel("识别模型")
+            SettingsCard {
+                Text("**实时识别比非实时更快、也更准**（说完 0.3 秒内出定稿，而整句一次认要等一次 HTTP 往返）。这一项在**两个地方**生效：对话页面，和语音聊天的**三段式**。")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 12)
+
+                Text("三段式是**三步拆开**的（听 / 想 / 说），所以每一步都能单独挑模型，而「说」还能用你自己的克隆音色。全双工语音不是这样：一个模型包办听、想、说，所以它**的音色不能自定义** —— 这就是两者的根本区别，也是为什么同一台机器上全双工听起来更连贯、更自然。")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 14)
+                    .padding(.top, 6)
+                    .padding(.bottom, 12)
+
+                ForEach(Array(Self.recognitionModelChoices.enumerated()), id: \.offset) { index, choice in
+                    if index > 0 { SettingsCardRowDivider() }
+                    recognitionModelRow(choice)
+                }
+            }
+        }
+    }
+
+    /// 五个可选模型。默认是 **3.0 的语音模型当识别器**（用户指定：又快又准、最便宜；
+    /// 价格全部取自官方模型目录 2026-09-24，单位：元/每百万 tokens）。
+    private static let recognitionModelChoices: [(modelID: String, title: String, description: String)] = [
+        (
+            "qwen-audio-3.0-realtime-flash",
+            "实时语音模型 3.0 Flash（推荐，默认）",
+            "**实时识别比非实时更快、也更准**：边说边认，说完 0.3 秒内出定稿（实测），而且它是 3.x 这一代，认得比专用识别模型准。这里只取它的识别能力，**不生成回答**（实测一个回答事件都没有）。价格（官方）：音频输入 6、输出文本 4.5 —— 只用识别的话，一百万 tokens 的输出文本 4.5 元，正常用量几年也用不完。"
+        ),
+        (
+            "qwen-audio-3.1-realtime-plus",
+            "实时语音模型 3.1 Plus（更强，更贵）",
+            "同代更强的语音模型，识别路子完全一样（实测 0.29 秒出结果、不生成回答）。价格（官方）：音频输入 40、输出文本 40、输出音频 150 —— 是 3.0 的 6~12 倍，按需选。"
+        ),
+        (
+            "qwen-audio-3.1-realtime-flash",
+            "实时语音模型 3.1 Flash（未发售）",
+            "官方还没发售，先放在这里占位。发售之后不用改代码 —— 模型名里带 qwen-audio- 和 realtime，路由会自动把它当语音识别器。"
+        ),
+        (
+            "qwen-audio-3.1-asr-flash",
+            "非实时识别（整句一次认）",
+            "把整句话说完了再交给模型，只给一个定稿结果 —— 没有中间文字。每句要等一次 HTTP 往返（实测 12 秒音频 1.27 秒）。"
+        ),
+        (
+            "qwen3-asr-flash-realtime",
+            "实时识别 3 代（旧，留作参考）",
+            "上一代专用识别模型。同一段音频它会把句子截断，明显不如上面几个。留着只为对比，不推荐。"
+        ),
+    ]
+
+    private func recognitionModelRow(_ choice: (modelID: String, title: String, description: String)) -> some View {
+        let currentModelID = generalSettingsViewModel.currentRecognitionModelID
+        let isSelected = currentModelID == choice.modelID
+        return Button {
+            generalSettingsViewModel.selectRecognitionModel(choice.modelID)
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+                    .font(.system(size: 13))
+                    .foregroundStyle(isSelected ? DS.Colors.accent : DS.Colors.textTertiary)
+                    .padding(.top, 1)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(choice.title)
+                        .font(.system(size: 12.5, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(DS.Colors.textPrimary)
+                    Text(choice.description)
+                        .font(.system(size: 11))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(choice.modelID)
+                        .font(.system(size: 10.5, design: .monospaced))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+    }
+
     private var listenPage: some View {
         Group {
             SettingsPageHeader(
                 title: "听（语音识别）",
                 subtitle: "按住快捷键说话之后、变成文字之前发生的事。"
             )
+
+            recognitionModelChoiceSection
 
             SettingsGroupLabel("识别")
             SettingsCard {

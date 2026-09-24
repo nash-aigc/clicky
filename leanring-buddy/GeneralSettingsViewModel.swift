@@ -182,6 +182,30 @@ final class GeneralSettingsViewModel: ObservableObject {
             }
         )
     }
+
+    /// 「听」页那一栏当前选中的识别模型（来自**模型配置**，不是 AppSettings）。
+    var currentRecognitionModelID: String {
+        ModelConfigurationStore.snapshot().status(of: .transcription).resolvedRole?.modelID ?? ""
+    }
+
+    /// 换识别模型。写的是 `ModelConfiguration.json` 里那个 provider 的
+    /// `transcriptionModelID` —— 也就是「模型」页同一条数据，只是从「听」页也能改。
+    ///
+    /// 为什么把它放在听写页而不是只在「模型」页：用户是在**听的效果**上做判断的，
+    /// 让他为了换个识别模型跑去「模型」页找三个角色里的一个，是把判断和操作隔开了。
+    func selectRecognitionModel(_ modelID: String) {
+        var configuration = ModelConfigurationStore.snapshot()
+        guard let providerIndex = configuration.providers.firstIndex(
+            where: { $0.id == configuration.transcriptionProviderID }
+        ) else { return }
+        configuration.providers[providerIndex].transcriptionModelID = modelID
+        do {
+            try ModelConfigurationStore.save(configuration)
+            print("🎙️ 识别模型已切换到 \(modelID)（在「听（识别）」页选的）")
+        } catch {
+            print("⚠️ 识别模型没写进磁盘：\(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - Push-to-talk shortcut raw values

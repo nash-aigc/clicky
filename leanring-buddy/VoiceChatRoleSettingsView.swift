@@ -26,6 +26,15 @@ struct VoiceChatRoleSettingsView: View {
     @State private var selectedRoleID: String?
     @State private var avatarErrorMessage: String?
 
+    /// 草稿里有没有没保存的修改（用户 2026-09-24 的要求：改了参数**先点亮保存**，
+    /// 用户点了才写盘 —— 不再改一下就自动落盘）。
+    @State private var hasUnsavedChanges = false
+    /// 设置页宿主把这个接进页头的保存按钮（那里也显示同一份脏标记）；
+    /// 语音聊天页宿主不传（nil），视图自己在编辑栏底部画一颗保存。
+    var hasUnsavedChangesBinding: Binding<Bool>? = nil
+    /// 设置页宿主用：把「保存」这个动作注册上去，页头的保存按钮点它。
+    var registerSaveAction: ((@escaping () -> Void) -> Void)? = nil
+
     /// 可选的图标。挑的都是「说话 / 人 / 职业」这一类，与语音对话对得上。
     /// 放在类型级而不是函数体里：ViewBuilder 里的局部 `let` 数组会让类型检查器
     /// 整个放弃（"failed to produce diagnostic"），提到这里就没有那个问题。
@@ -41,7 +50,10 @@ struct VoiceChatRoleSettingsView: View {
             Divider().overlay(DS.Colors.borderSubtle)
             editorColumn
         }
-        .onAppear(perform: reloadRoles)
+        .onAppear {
+            reloadRoles()
+            registerSaveAction? { saveRoleChanges() }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .clickyVoiceChatRolesDidChange)) { _ in
             reloadRoles()
         }
@@ -159,6 +171,25 @@ struct VoiceChatRoleSettingsView: View {
                     memoryModeSection(role)
                     promptSection(role)
                     footerActions(role)
+
+                    if hasUnsavedChanges {
+                        Button {
+                            saveRoleChanges()
+                        } label: {
+                            Text("保存修改")
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundStyle(DS.Colors.textOnAccent)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 9)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                        .fill(DS.Colors.accent)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .pointerCursor()
+                        .help("把改过的参数写进磁盘")
+                    }
                 }
                 .padding(16)
             }
@@ -392,14 +423,28 @@ struct VoiceChatRoleSettingsView: View {
         }
     }
 
-    // MARK: - 绑定
+    // MARK: - 草稿
 
-    /// 直接写回存储（见 `roles` 的注释：这里刻意不做草稿）。
+    /// 字段级编辑只改**内存里的草稿**，落盘交给「保存」。
+    ///
+    /// 为什么推翻当初「刻意不做草稿」的决定：写透式让页头的保存按钮**永远是灭的**
+    /// —— 它亮不了，因为没有「未保存」这个状态存在。用户 2026-09-24 明确要回
+    /// 「改了 → 保存亮 → 点保存」这个交互。结构性的动作（新建 / 删除 / 设为默认）
+    /// 仍然即时写盘：它们要马上拿到持久化的 id，而且语义是「操作」而不是「改参数」。
     private func update(_ role: VoiceChatRole, _ change: (inout VoiceChatRole) -> Void) {
-        var updatedRole = role
-        change(&updatedRole)
-        VoiceChatRoleStore.upsertRole(updatedRole)
-        reloadRoles()
+        guard let index = roles.firstIndex(where: { $0.id == role.id }) else { return }
+        change(&roles[index])
+        hasUnsavedChanges = true
+        hasUnsavedChangesBinding?.wrappedValue = true
+    }
+
+    /// 把草稿写进存储。逐个 upsert（同 id 覆盖），比 diff 一遍划算。
+    private func saveRoleChanges() {
+        for role in roles {
+            VoiceChatRoleStore.upsertRole(role)
+        }
+        hasUnsavedChanges = false
+        hasUnsavedChangesBinding?.wrappedValue = false
     }
 
     private func binding(_ role: VoiceChatRole,

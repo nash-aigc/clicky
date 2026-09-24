@@ -55,17 +55,26 @@ enum BuddyTranscriptionProviderFactory {
         return provider
     }
 
-    /// 百炼有**两条**识别路，由**模型名**决定走哪条：
+    /// 百炼有**三条**识别路，由**模型名**决定走哪条：
     ///
-    ///  · 名字里带 `-realtime`（如 `qwen3-asr-flash-realtime`）→ 实时 websocket，
-    ///    说话时就有中间结果。
-    ///  · 其余（如 `qwen-audio-3.1-asr-flash`）→ 非实时 HTTP，整句一次认，更准。
+    ///  · `qwen-audio-3.x-realtime-*`（全双工语音那个**语音模型**）→ 拿它当纯识别器：
+    ///    它识别又快又准，而且可以不生成回答（实测：commit 后 0.27 秒出转写、
+    ///    一个 `response.*` 事件都没有）。
+    ///  · 其它带 `realtime` 的（`qwen3-asr-flash-realtime`）→ 专用的实时识别模型。
+    ///  · 其余（`qwen-audio-3.1-asr-flash`）→ 非实时 HTTP，整句一次认。
     ///
     /// 分流放在这里而不是让用户在设置里选「协议」，因为模型名本身就说明了协议 ——
-    /// 多一个开关就多一个能和模型名矛盾的状态。
+    /// 多一个开关就多一个能和模型名矛盾的状态。设置页那一栏选的是**模型**，路由
+    /// 从这里推出来。
     private static func bailianProviderForConfiguredModel() -> any BuddyTranscriptionProvider {
         let modelID = ModelConfigurationStore.snapshot()
             .status(of: .transcription).resolvedRole?.modelID ?? ""
+
+        // 语音模型当识别器：名字形如 `qwen-audio-3.0-realtime-flash`。
+        // 判据是 `qwen-audio-` + `-realtime`，因为这一族里还有 `qwen-audio-3.1-realtime-plus`。
+        if modelID.hasPrefix("qwen-audio-") && modelID.contains("realtime") {
+            return BailianRealtimeSpeechTranscriptionProvider()
+        }
         if modelID.contains("realtime") {
             return BailianRealtimeTranscriptionProvider()
         }

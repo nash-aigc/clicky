@@ -230,6 +230,11 @@ struct NotchSheetRootView: View {
 /// 设置页面的左下角，退出按钮放在返回按钮的右侧。去掉版本号」。
 struct NotchSettingsArea: View {
 
+    /// 角色页的草稿脏标记与保存动作（由 `VoiceChatRoleSettingsView` 反填）。
+    /// 放在宿主而不是视图里，因为页头的保存按钮也在读它。
+    @State private var roleEditorHasUnsavedChanges = false
+    @State private var roleEditorSaveAction: (() -> Void)?
+
     /// 「归档」页要它 —— 那一页复用 `NotchArchiveArea`，而归档的列表与选中态
     /// 都来自这个模型。
     @ObservedObject var sessionsModel: ConversationSessionsModel
@@ -273,7 +278,10 @@ struct NotchSettingsArea: View {
 
                 switch selectedPage {
                 case .voiceChatRoles:
-                    VoiceChatRoleSettingsView()
+                    VoiceChatRoleSettingsView(
+                        hasUnsavedChangesBinding: $roleEditorHasUnsavedChanges,
+                        registerSaveAction: { roleEditorSaveAction = $0 }
+                    )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .voiceCatalog:
                     VoiceCatalogSettingsView(companionManager: companionManager)
@@ -426,7 +434,37 @@ struct NotchSettingsArea: View {
 
             Spacer(minLength: 8)
 
-            if selectedPage != .model && selectedPage.drawsSettingsActionBar {
+            if selectedPage == .voiceChatRoles {
+                // 角色页的保存是**这一页自己的草稿**（不是 AppSettings），所以
+                // 页头这里单独画：灭了 = 没有未保存的修改，亮了 = 点一下落盘。
+                HStack(spacing: 8) {
+                    Button {
+                        roleEditorSaveAction?()
+                    } label: {
+                        Text("保存")
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(roleEditorHasUnsavedChanges
+                                             ? DS.Colors.textOnAccent
+                                             : DS.Colors.textTertiary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                    .fill(roleEditorHasUnsavedChanges
+                                          ? DS.Colors.accent
+                                          : DS.Colors.surface3)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!roleEditorHasUnsavedChanges)
+
+                    Button("关闭") { closeAction() }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(DS.Colors.textSecondary)
+                        .pointerCursor()
+                }
+            } else if selectedPage != .model && selectedPage.drawsSettingsActionBar {
                 // 关闭的动作必须走 `closeAction`（收起面板），**不能**是
                 // `GeneralSettingsActionBar` 默认的 `NSApp.keyWindow?.close()`：
                 // 展开的刘海面板就是 key window，`.close()` 会把它直接 orderOut，
