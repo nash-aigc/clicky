@@ -72,20 +72,15 @@ extension NotchActivityPhase {
         // 2026-09-23：用户要求这一格也走英文——「如果用户正在语音聊天，把左侧的
         // "聊天中"也换成英文，比如 Chatting（C H A T I N G），显示效果会更好」。
         // 前四个状态本来就是英文，只有这一格是中文，在一排英文词里它自己就是那个
-        // 不一致的东西。括号里把字母拆开写是在描述**字距拉开**的样子，所以真正
-        // 要的不是 "C H A T T I N G" 这串字符，而是 `notchStateWordTracking`。
+        // 不一致的东西。
+        //
+        // 括号里把字母拆开写曾经被读成了「拉大字距」的指令，于是这一格独有的
+        // `.tracking(1.4)` 存在了一段时间 —— 用户 2026-09-24 指出那是误读：
+        // 「chatting 这个单词，每个字母间距太大了，connecting 是正常的」。
+        // 那些字母是在**描述字距拉开的样子**，不是在要求字距；六个状态词现在
+        // 共用同一套字距（不设 `.tracking`，即 `0`），和 `Connecting` 一致。
         case .externalConnecting: return "Connecting"
         case .externalChatting: return "Chatting"
-        }
-    }
-
-    /// 状态词的字距。只有语音聊天那一格拉，另外四个不动：`Chatting` 是这五个词里
-    /// 唯一由小写字母连写、没有上升部/下降部以外的形状变化的词，不拉开字距在 13.5pt
-    /// 加粗下会糊成一团；`Listening` / `Thinking` 本身就有明显的竖笔分布，加了反而散。
-    var notchStateWordTracking: CGFloat {
-        switch self {
-        case .externalChatting: return 1.4
-        default: return 0
         }
     }
 
@@ -378,6 +373,18 @@ struct NotchWingView: View {
     var audioHistoryProvider: () -> [CGFloat]
     let isLeading: Bool
 
+    @Environment(\.accessibilityReduceMotion) private var shouldReduceMotion
+
+    /// 连接成功那一下的弹入倍数。1 是常态；`.externalChatting` 到达时先落到
+    /// 0.5 再弹回 1，作为「连上了」的一次性确认动画。
+    ///
+    /// 为什么挂在相位变化上：`.externalConnecting → .externalChatting` 只在
+    /// `waitForConnection()` 真正通过之后发生（`VoiceWebSessionController`
+    /// 的成功分支），所以这个 onChange 天生就是"真连上才响一次"。而这一格
+    /// 原本没有任何动画 —— 唯一的 `.animation` 驱动的是两翼**宽度**，连接成功
+    /// 时宽度本来就已经到位，所以那一下是纯粹的、没有反馈的瞬间切换。
+    @State private var connectPulseScale: CGFloat = 1
+
     /// The wing's outer bottom corner radius. Measured 2026-09-22 off the
     /// user's target screenshot (L29938, Listening, 1.635 px/pt): a corner of
     /// roughly 14–16 pt, notably larger than the resting pill's 6. Briefly
@@ -444,7 +451,6 @@ struct NotchWingView: View {
                         Spacer(minLength: 0)
                         Text(phase.notchStateWord)
                             .font(.system(size: 13.5, weight: .bold))
-                            .tracking(phase.notchStateWordTracking)
                             .foregroundColor(.white)
                             .lineLimit(1)
                     }
@@ -539,6 +545,16 @@ struct NotchWingView: View {
                         }
                     }
                     .frame(height: 20)
+                    .scaleEffect(connectPulseScale)
+                    .onChange(of: phase) { _, newPhase in
+                        guard newPhase == .externalChatting, !shouldReduceMotion else { return }
+                        // 落下去不带动画（瞬间到 0.5），再弹回 1 —— 这一落一弹
+                        // 就是那一下「连上了」的观感。约 0.32 秒，和挂断音同时。
+                        connectPulseScale = 0.5
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.55)) {
+                            connectPulseScale = 1
+                        }
+                    }
                     .padding(.trailing, 10)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

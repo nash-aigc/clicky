@@ -451,6 +451,11 @@ final class VoiceWebSessionController: ObservableObject {
             connectionPhase = .connected
             // 连接成功才把右翼换成挂断图标 + 「Chatting」。
             setNotchOverride(.externalChatting)
+            // 连上的确认音。挂断有音效、失败有音效，成功以前什么都没有，
+            // 而「连上了没有」正是用户最需要立刻知道的一件事（用户 2026-09-24）。
+            // 与挂断音成对：挂断是下行双音，这个是上行双音。
+            // 只在这一行响 —— 它是 `waitForConnection()` 真正通过之后才走到的。
+            SoundEffectPlayer.shared.play(.sessionConnected)
             // 页头的 模式 菜单自动对齐这条会话真正用的引擎（用户 2026-09-23：
             // 「快捷键连接的是全双工语音模式，点击面板展开后，右上角的模式没有被
             // 自动切换成全双工语音模式。我希望它能自动切换」）。didSet 会连带

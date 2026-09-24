@@ -39,6 +39,10 @@ final class SoundEffectPlayer {
         /// 语音会话挂断（用户主动）：刘海右翼的挂断图标、语音聊天页的挂断按钮、
         /// 以及再次按下连接快捷键 —— 全部走 `disconnectCurrentSession` 这一个漏斗。
         case sessionHungUp = "session-hangup"
+
+        /// 语音会话连接成功（页面回报 ready）。挂断音的反向（上行双音），
+        /// 一对听感对称的确认音；只在真正连上时响一次。
+        case sessionConnected = "session-connect"
     }
 
     private var playersByEffect: [SoundEffect: AVAudioPlayer] = [:]
