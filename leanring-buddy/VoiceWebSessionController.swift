@@ -712,7 +712,12 @@ final class VoiceWebSessionController: ObservableObject {
         print("🌐 VoiceWeb: Chrome 没有运行 —— 先把它自己拉起来（不带页面）")
         let launchProcess = Process()
         launchProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        launchProcess.arguments = ["-g", "-a", "Google Chrome"]
+        // `-j` (--hide) as well as `-g`: LS asks the freshly launched app to hide
+        // as soon as it checks in, so a COLD Chrome never appears at all. Safe
+        // here precisely because this path only runs when Chrome is not running —
+        // against a running Chrome the same flag would hide the user's own
+        // windows, which is why it is not used on the warm path.
+        launchProcess.arguments = ["-g", "-j", "-a", "Google Chrome"]
         try? launchProcess.run()
     }
 
@@ -749,11 +754,28 @@ final class VoiceWebSessionController: ObservableObject {
     /// the earlier attempt at this same command did not stop the window surfacing
     /// for a user who had Chrome open already (measured and explained 2026-09-24).
     private func openVoiceWebPageInBackground() {
+        // What the user is looking at RIGHT NOW, so the surface can be undone.
+        //
+        // `-g` provably does not stop Chrome surfacing (measured: every open left
+        // Chrome frontmost) because the flag binds LaunchServices and the URL is
+        // delivered to a running Chrome as an Apple Event that Chrome itself
+        // answers by activating. Since the surface cannot be prevented from this
+        // side, it is UNDONE: if Chrome comes forward, the app the user was in
+        // goes back to the front. The user sees at most a flicker and never loses
+        // their place — 「用户不希望它干扰自己正在做的事情」.
+        //
+        // Deliberately NOT `NSRunningApplication.hide()` on Chrome, which is the
+        // other reading of 「瞬间隐藏掉」: that hides the user's OWN Chrome
+        // windows — every tab they had open disappears from the screen — which is
+        // a far bigger interruption than the one it prevents. Restoring their app
+        // touches nothing of theirs.
+        let appUserWasUsing = NSWorkspace.shared.frontmostApplication
+
         let openProcess = Process()
         openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
         openProcess.arguments = ["-g", "-a", "Google Chrome", "http://localhost:8890/client/"]
         try? openProcess.run()
-        verifyChromeStayedInTheBackground()
+        verifyChromeStayedInTheBackground(restoring: appUserWasUsing)
     }
 
     /// Reports whether that open brought Chrome forward.
@@ -771,16 +793,30 @@ final class VoiceWebSessionController: ObservableObject {
     /// is warranted: Clicky owning a separate Chrome identity
     /// (`--user-data-dir`, launched as a child process, never through
     /// LaunchServices), so the user's own Chrome never receives the event at all.
-    private func verifyChromeStayedInTheBackground() {
+    private func verifyChromeStayedInTheBackground(restoring appUserWasUsing: NSRunningApplication?) {
         Task { @MainActor in
-            for delaySeconds in [0.4, 2.0] {
-                try? await Task.sleep(for: .seconds(delaySeconds == 0.4 ? 0.4 : 1.6))
-                let frontmost = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
-                if frontmost == Self.chromeBundleIdentifier {
-                    print("⚠️ VoiceWeb: 打开页面后 Chrome 被提到了前台（frontmost=Chrome）—— `-g` 对已有窗口的 Chrome 无效，需要走备用方案（独立 user-data-dir）")
-                } else {
-                    print("🌐 VoiceWeb: 打开页面后前台仍是 \(frontmost) —— Chrome 没有被提起来")
+            for attempt in 0..<5 {
+                try? await Task.sleep(for: .seconds(attempt == 0 ? 0.35 : 0.5))
+
+                let frontmost = NSWorkspace.shared.frontmostApplication
+                guard frontmost?.bundleIdentifier == Self.chromeBundleIdentifier else {
+                    if attempt == 0 {
+                        print("🌐 VoiceWeb: 打开页面后前台仍是 \(frontmost?.bundleIdentifier ?? "?") —— Chrome 没有被提起来")
+                    }
+                    return
                 }
+
+                // Chrome took the front. Put the user back, once — repeating it
+                // would fight a user who has deliberately switched to Chrome.
+                guard attempt == 0,
+                      let appUserWasUsing,
+                      appUserWasUsing.bundleIdentifier != Self.chromeBundleIdentifier,
+                      !appUserWasUsing.isTerminated else {
+                    print("⚠️ VoiceWeb: 打开页面后 Chrome 被提到了前台，且无法把用户放回原处（原 App：\(appUserWasUsing?.bundleIdentifier ?? "无")）")
+                    return
+                }
+                appUserWasUsing.activate(options: [])
+                print("🌐 VoiceWeb: Chrome 被提起来了 —— 已把用户放回 \(appUserWasUsing.bundleIdentifier ?? "?")")
             }
         }
     }
