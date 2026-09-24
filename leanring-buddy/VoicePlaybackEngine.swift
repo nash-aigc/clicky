@@ -156,6 +156,11 @@ final class VoicePlaybackEngine {
     /// the engine stopped without telling `isEngineStarted`) without re-attaching.
     private var hasAttachedPlaybackNodes = false
 
+    /// The bring-up currently in flight, so a second caller awaits it instead of
+    /// starting another one. See the mutual-exclusion comment in
+    /// `ensureEngineStarted` for the measurement that makes this necessary.
+    private var engineBringUpTask: Task<EngineBringUpResult, Error>?
+
     /// The `AVAudioEngineConfigurationChange` registration — see `init`.
     private var configurationChangeObserver: NSObjectProtocol?
 
@@ -795,6 +800,22 @@ final class VoicePlaybackEngine {
         TurnTimingProbe.shared.mark("engine start requested (main thread: \(Thread.isMainThread))")
         let engineStartBeganAt = Date()
 
+        // ONE bring-up at a time, and everyone else waits for the one in flight.
+        //
+        // This is not defensive: making the bring-up async removed the thing that
+        // used to serialize it. While it was synchronous and main-actor-bound,
+        // re-entering it was impossible; now the first caller SUSPENDS, and a
+        // second caller — the listening tap arming, the next chunk — walks
+        // straight in behind it. Measured 2026-09-24 from the log's own marks:
+        // two bring-ups started 357 ms apart, both running at once, the first
+        // finishing with `isRunning=false` because the second had stopped the
+        // engine underneath it, and a THIRD bring-up taking 1555 ms to clean up.
+        if let bringUpInFlight = engineBringUpTask {
+            let result = try await bringUpInFlight.value
+            applyBringUpResult(result, engineStartBeganAt: engineStartBeganAt)
+            return
+        }
+
         // `isEngineStarted` is NOT allowed to be the only word on this. It is
         // this class's own bookkeeping, and the engine can stop without telling
         // it — the audio configuration changing (a device appearing, a route
@@ -853,13 +874,35 @@ final class VoicePlaybackEngine {
         // `await` on a detached task SUSPENDS the main actor rather than
         // blocking it, so the run loop keeps turning and the card keeps
         // streaming while the device is reconfigured.
-        let bringUpResult = try await Self.bringUpEngineOffMainActor(
-            engine: engine,
-            playerNode: playerNode,
-            timePitchNode: timePitchNode,
-            echoCancellationWanted: isEchoCancellationWantedProvider?() ?? false
-        )
+        // Read here, on the main actor, because the bring-up runs off it and the
+        // provider reaches into this app's settings. Captured as locals so the
+        // detached task holds the NODES, not this class.
+        let echoCancellationWanted = isEchoCancellationWantedProvider?() ?? false
+        let engineToBringUp = engine
+        let playerNodeToBringUp = playerNode
+        let timePitchNodeToBringUp = timePitchNode
+        let bringUpTask = Task.detached(priority: .userInitiated) {
+            try Self.performBringUp(
+                engine: engineToBringUp,
+                playerNode: playerNodeToBringUp,
+                timePitchNode: timePitchNodeToBringUp,
+                echoCancellationWanted: echoCancellationWanted
+            )
+        }
+        engineBringUpTask = bringUpTask
+        defer { engineBringUpTask = nil }
 
+        let bringUpResult = try await bringUpTask.value
+        applyBringUpResult(bringUpResult, engineStartBeganAt: engineStartBeganAt)
+    }
+
+    /// Puts a finished bring-up's result onto this class's state, on the main
+    /// actor. Shared by the caller that ran the bring-up and by any caller that
+    /// waited on one already in flight.
+    private func applyBringUpResult(
+        _ bringUpResult: EngineBringUpResult,
+        engineStartBeganAt: Date
+    ) {
         isEchoCancellationActive = bringUpResult.echoCancellationActive
         canonicalPlaybackFormat = bringUpResult.canonicalPlaybackFormat
         isEngineStarted = bringUpResult.isEngineRunning
@@ -897,28 +940,6 @@ final class VoicePlaybackEngine {
         let isEngineRunning: Bool
         let echoCancellationActive: Bool
         let canonicalPlaybackFormat: AVAudioFormat?
-    }
-
-    /// Runs `performBringUp` on a detached task and hands the result back.
-    ///
-    /// Detached, not merely `Task`, and that is the point: the caller is the
-    /// main actor, so awaiting this SUSPENDS it. The run loop keeps turning, the
-    /// answer card keeps streaming, and the ~2 s the voice-processing IO
-    /// reconfiguration can take stops being a visible stall.
-    nonisolated private static func bringUpEngineOffMainActor(
-        engine: AVAudioEngine,
-        playerNode: AVAudioPlayerNode,
-        timePitchNode: AVAudioUnitTimePitch,
-        echoCancellationWanted: Bool
-    ) async throws -> EngineBringUpResult {
-        try await Task.detached(priority: .userInitiated) {
-            try performBringUp(
-                engine: engine,
-                playerNode: playerNode,
-                timePitchNode: timePitchNode,
-                echoCancellationWanted: echoCancellationWanted
-            )
-        }.value
     }
 
     /// The bring-up itself, on whatever executor the caller runs on.

@@ -1623,8 +1623,18 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             self?.updateAudioPowerLevel(from: buffer)
         }
 
+        // TEMPORARY (2026-09-24). The user reports that the notch's expansion
+        // into `listening` stutters ONCE per listening cycle and is smooth
+        // afterwards — which is the shape of this start: it is synchronous on
+        // the main actor, and the wings are animating on the main actor at that
+        // same instant. This engine is the third `AVAudioEngine` in the app, it
+        // has no voice processing, and it is started per press and stopped per
+        // release — so a cycle pays whatever the device needs for a fresh IO,
+        // right where the animation is.
+        let pushToTalkEngineStartBeganAt = Date()
         audioEngine.prepare()
         try audioEngine.start()
+        print("⏱️ [timing] push-to-talk engine start took \(Int(Date().timeIntervalSince(pushToTalkEngineStartBeganAt) * 1000))ms (main thread: \(Thread.isMainThread))")
     }
 
     private func handleRecognitionError(_ error: Error) {
