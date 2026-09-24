@@ -85,6 +85,25 @@ struct NotchHomeView: View {
                 .buttonStyle(.plain)
                 .pointerCursor()
                 .help("点击隐藏")
+            } else {
+                // Same reasoning as the status strip above: the error line sits
+                // between the scroll view and the composer, and appearing or
+                // disappearing moves the whole conversation. Two lines of the
+                // same font size, invisible, keep the column's height constant.
+                // The real error can span two lines (lineLimit(2)), so the
+                // placeholder reserves two.
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.clear)
+                    Text(" \n ")
+                        .font(.system(size: 11.5))
+                        .lineLimit(2)
+                        .foregroundColor(.clear)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
             }
 
             // 「松开发送」 — the original's caption while the talk key is held.
@@ -176,22 +195,47 @@ struct NotchHomeView: View {
     /// Idle hides the strip — nothing happening is not a status.
     @ViewBuilder
     private var statusStrip: some View {
-        if let statusText = Self.statusText(for: companionManager.voiceState) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 6, height: 6)
-                Text(statusText)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.white.opacity(0.7))
+        // RESERVES ITS SPACE WHEN HIDDEN, and that is the fix for the
+        // conversation jumping when the panel opens.
+        //
+        // This strip sits ABOVE the scroll view, and it used to return nothing
+        // while the voice state was `.idle` — so the moment a reply ended (or
+        // the panel opened on an idle state) the capsule vanished, the scroll
+        // view's available height grew by the strip's ~30 pt, and EVERY message
+        // shifted up by that much at once. The user reads it as
+        // 「所有消息整体向上抖动一下，然后又下来」. Rendering an invisible
+        // placeholder of the same height keeps the column's geometry constant
+        // no matter what the voice state is doing.
+        Group {
+            if let statusText = Self.statusText(for: companionManager.voiceState) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(statusColor)
+                        .frame(width: 6, height: 6)
+                    Text(statusText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.white.opacity(0.07)))
+            } else {
+                // Same capsule shape, fully transparent — same height, no
+                // content.
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: 6, height: 6)
+                    Text(" ")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(Capsule().fill(Color.white.opacity(0.07)))
-            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-            .padding(.top, 6)
-            .padding(.bottom, 8)
         }
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
     }
 
     private var statusColor: Color {
