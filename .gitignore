@@ -24,3 +24,6 @@ voice-agent/
 mini-agent/
 design-preview/
 .tmp-open-test/
+
+# The running app appends to its own run log, so the newest one is never stable.
+开发经验/运行日志/clicky-冷重开验证-20260924-123505.log
