@@ -33,6 +33,37 @@ import AppKit
 import Combine
 import Foundation
 
+/// TEMPORARY connect timing (2026-09-24) — remove once the 30 s is explained.
+///
+/// 「Chrome 正在运行…把标签页删掉后…等待 30 秒后才自动连接。这个过程新建标签页
+/// 应该是毫秒级别的吧？」 — creating a tab IS milliseconds; what follows it is not
+/// (SPA load, bridge patch, command poll, WebRTC, and possibly one self-reload on
+/// an engine mismatch). Nothing in this file was timed, so the 30 s had no
+/// breakdown. These marks give it one.
+nonisolated final class VoiceWebConnectTiming {
+    static let shared = VoiceWebConnectTiming()
+    private let lock = NSLock()
+    private var beganAt: Date?
+    private var previousMarkAt: Date?
+
+    func begin() {
+        let now = Date()
+        lock.lock(); beganAt = now; previousMarkAt = now; lock.unlock()
+        print("⏱️ [voiceweb] ── 连接开始 ──")
+    }
+
+    func mark(_ label: String) {
+        let now = Date()
+        lock.lock()
+        let sinceBegin = beganAt.map { now.timeIntervalSince($0) } ?? 0
+        let sincePrevious = previousMarkAt.map { now.timeIntervalSince($0) } ?? 0
+        previousMarkAt = now
+        lock.unlock()
+        print(String(format: "⏱️ [voiceweb] %@ — +%.0fms（总）, +%.0fms（自上一标记）",
+                     label, sinceBegin * 1000, sincePrevious * 1000))
+    }
+}
+
 @MainActor
 final class VoiceWebSessionController: ObservableObject {
 
@@ -473,8 +504,11 @@ final class VoiceWebSessionController: ObservableObject {
     ///   分支就没有来源了。
     private func runSession(mode: VoiceWebMode) async {
         do {
+            VoiceWebConnectTiming.shared.begin()
             try await ensureVoiceWebServerIsReachable()
+            VoiceWebConnectTiming.shared.mark("服务器就绪")
             try await ensureVoiceWebPageIsAvailable()
+            VoiceWebConnectTiming.shared.mark("页面检查/打开完成")
             // The mode switch disconnect above needs one page poll (500 ms) to
             // have been consumed before the connect overwrites the slot.
             try await Task.sleep(nanoseconds: 700_000_000)
@@ -487,6 +521,7 @@ final class VoiceWebSessionController: ObservableObject {
             }
             try await sendConnectCommand(mode: mode)
             try await waitForConnection()
+            VoiceWebConnectTiming.shared.mark("页面 ready —— 连接成功")
             connectionPhase = .connected
             // 连接成功才把右翼换成挂断图标 + 「Chatting」。
             setNotchOverride(.externalChatting)
@@ -630,6 +665,7 @@ final class VoiceWebSessionController: ObservableObject {
         //
         // Chrome not running means no report can be live, whatever the bridge
         // says, so the page is opened unconditionally in that case.
+        VoiceWebConnectTiming.shared.mark("页面检查：Chrome 存活=\(isChromeRunning() ? "是" : "否")")
         guard isChromeRunning() else {
             // TWO STEPS, NOT ONE, and this is the cold-launch fix.
             //
@@ -649,8 +685,10 @@ final class VoiceWebSessionController: ObservableObject {
         }
 
         if let state = await fetchBridgeState(), bridgeReportsALivePage(state) {
+            VoiceWebConnectTiming.shared.mark("已有活页面，什么都不做")
             return
         }
+        VoiceWebConnectTiming.shared.mark("没有活页面 —— 打开页面")
         // Chrome is up and no page is reporting: open the page. `-g` governs
         // THIS case correctly — nothing is running, so LaunchServices really is
         // launching, and the flag is honoured at that moment.
@@ -909,9 +947,14 @@ final class VoiceWebSessionController: ObservableObject {
     /// then ended the session two polls later.
     private func waitForConnection() async throws {
         let deadline = Date().addingTimeInterval(Self.connectionWaitSeconds)
+        var lastSeenPhase: String?
         while Date() < deadline {
             try Task.checkCancellation()
             if let state = await fetchBridgeState() {
+                if state.phase != lastSeenPhase {
+                    VoiceWebConnectTiming.shared.mark("页面回报 phase=\(state.phase ?? "nil") age=\(state.reportAgeSeconds.map { String(format: "%.1f", $0) } ?? "-")s")
+                    lastSeenPhase = state.phase
+                }
                 if state.phase == "failed" {
                     throw VoiceWebSessionError.connectionFailed
                 }
