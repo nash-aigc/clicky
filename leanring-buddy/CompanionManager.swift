@@ -1955,25 +1955,49 @@ final class CompanionManager: ObservableObject {
         continuousListeningWindowTask = Task { [weak self] in
             guard let self else { return }
 
-            let expiryDeadline = Date().addingTimeInterval(TimeInterval(seconds))
+            // **截止时间是可推进的，而且要推进到"真正安静下来"之后。**
+            //
+            // 这里原来是：从起播算 30 秒 → 到点了再「等播报结束就关」。长回答会在
+            // 播报期间把那 30 秒吃光，于是**用户一打断、播报一停，窗口当场关闭** ——
+            // 而打断正是他要追问的时刻。实测日志（2026-09-25）：
+            //
+            //     🎙️ detected speech (mic peak 0.633)          ← 用户开始问第 4 个问题
+            //     🔊 playback loop exited (stopPlayback())      ← 打断让播报停下
+            //     🎙️ window closing (listening window expired); playback idle
+            //
+            // 那句话说到一半，连会话一起被拆，所以"后面就不回复了"。
+            //
+            // 用户要的语义是**回复结束之后 30 秒**（也是 听 页面那一项的字面意思），
+            // 所以：到点后如果还在播报、或还有一句追问在路上，就把截止时间整个往后推，
+            // 直到真的安静满一个完整窗口才关。
+            var expiryDeadline = Date().addingTimeInterval(TimeInterval(seconds))
 
-            // Sleep in slices so a re-arm (which cancels this task) takes effect
-            // promptly instead of after the whole window.
-            while Date() < expiryDeadline {
-                try? await Task.sleep(for: .milliseconds(250))
-                guard !Task.isCancelled else { return }
-                guard self.buddyDictationManager.isContinuousListening else { return }
+            while true {
+                // Sleep in slices so a re-arm (which cancels this task) takes effect
+                // promptly instead of after the whole window.
+                while Date() < expiryDeadline {
+                    try? await Task.sleep(for: .milliseconds(250))
+                    guard !Task.isCancelled else { return }
+                    guard self.buddyDictationManager.isContinuousListening else { return }
+                }
+
+                // 还在播报：不算数 —— 把窗口推到播报结束之后重新起算。
+                if self.bailianTTSClient.isPlaying {
+                    expiryDeadline = Date().addingTimeInterval(TimeInterval(seconds))
+                    print("🎙️ Companion: 播报还没结束，持续监听窗口推迟到播报之后重新起算（\(seconds)s）")
+                    continue
+                }
+
+                // 有一句追问正在说 / 正在定稿：同样不算数，等它提交完再起算。
+                if self.buddyDictationManager.isContinuousListeningUtterancePending {
+                    expiryDeadline = Date().addingTimeInterval(TimeInterval(seconds))
+                    print("🎙️ Companion: 追问还在说，持续监听窗口推迟（\(seconds)s）")
+                    continue
+                }
+
+                self.endContinuousListeningWindow(reason: "listening window expired")
+                return
             }
-
-            // The window is up, but the answer still being read is not cut off:
-            // listening ends when the voice does.
-            while self.bailianTTSClient.isPlaying {
-                try? await Task.sleep(nanoseconds: 200_000_000)
-                guard !Task.isCancelled else { return }
-                guard self.buddyDictationManager.isContinuousListening else { return }
-            }
-
-            self.endContinuousListeningWindow(reason: "listening window expired")
         }
     }
 
