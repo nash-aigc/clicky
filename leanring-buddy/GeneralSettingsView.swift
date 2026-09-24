@@ -632,12 +632,12 @@ struct GeneralSettingsView: View {
                 }
                 SettingsCardRowDivider()
                 SettingsRow(
-                    label: "监听时长",
-                    description: "每次回答播报开始后持续监听多久。超时且没在说话时自动收工，回到按快捷键说话。"
+                    label: "持续监听时间",
+                    description: "回答播报开始后，麦克风再开多久让你直接追问（不用按快捷键）。超时且没在说话就收工，回到按快捷键说话——引擎不受影响，仍然保持热着，所以之后按快捷键提问一样快。设为 0 表示回答播完就关麦：之后想说什么都听不见，只有按快捷键才听得见。"
                 ) {
                     SettingsStepper(
                         value: generalSettingsViewModel.binding(\.continuousListeningWindowSeconds),
-                        range: 10...120
+                        range: 0...120
                     )
                 }
                 SettingsCardRowDivider()

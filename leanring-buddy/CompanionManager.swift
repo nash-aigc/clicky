@@ -429,6 +429,10 @@ final class CompanionManager: ObservableObject {
     /// has elapsed. Cancelled whenever a new answer takes the bubble over.
     private var answerBubbleClearTask: Task<Void, Never>?
 
+    /// The pending retraction of the notch's activity display once the answer has
+    /// been spoken — see `scheduleVoiceStateResetAfterPlayback`.
+    private var voiceStateResetTask: Task<Void, Never>?
+
     // MARK: - 回答时持续监听 + 自动截屏
 
     /// Screenshots captured the instant the user started speaking (追问时自动
@@ -1811,6 +1815,12 @@ final class CompanionManager: ObservableObject {
         let appSettings = AppSettingsStore.snapshot()
         guard appSettings.continuousListeningEnabled else { return }
 
+        // 「持续监听时间 = 0」 means exactly that: when the answer finishes, the
+        // microphone closes and the only way back in is the talk shortcut. It
+        // does NOT release the engine — that is `audioEngineIdleReleaseMinutes`'
+        // job — so a press still gets a warm, fast reply.
+        guard appSettings.continuousListeningWindowSeconds > 0 else { return }
+
         if buddyDictationManager.isContinuousListening {
             scheduleContinuousListeningWindowExpiry(seconds: appSettings.continuousListeningWindowSeconds)
             return
@@ -2673,6 +2683,23 @@ final class CompanionManager: ObservableObject {
                 if !Task.isCancelled {
                     currentResponseTask = nil
                 }
+
+                // THE TURN HAS TO END ITS OWN STATE, and until 2026-09-24 it did
+                // not. `voiceState = .responding` is set the moment the first
+                // audio plays, and nothing then took it back: this pipeline never
+                // cleared it, `bindVoiceStateObservation` refuses to override
+                // `.responding` by design (the pipeline owns that state while it
+                // streams), and `endContinuousListeningWindow`'s guard reads
+                // `== .listening`, so the window's own close could not clear it
+                // either. The result was a notch that said 「Speaking」 for as long
+                // as the app ran — reported as 「回复完、我没打断它，它在刘海上会持续
+                // 显示 speaking，持续几分钟」.
+                //
+                // The reset waits for playback rather than happening here, because
+                // here the audio has only just STARTED (`speakText` returns after
+                // `player.play()`), and retracting the wings mid-sentence would be
+                // the same lie in the other direction.
+                scheduleVoiceStateResetAfterPlayback()
             } catch is CancellationError {
                 // User spoke again — response was interrupted
                 clearAnswerBubble()
@@ -2900,6 +2927,39 @@ final class CompanionManager: ObservableObject {
             guard !Task.isCancelled else { return }
 
             self.streamingAnswerText = ""
+        }
+    }
+
+    /// Retracts the notch's activity display once the answer has finished being
+    /// SPOKEN, which is when the turn is really over.
+    ///
+    /// The state reset has to happen here and nowhere earlier: `voiceState` is
+    /// set to `.responding` when the first audio starts, `speakText` returns
+    /// while it is still playing, and the dictation observation refuses to
+    /// override `.responding` — so without this the wings stay out until the next
+    /// press. See the comment at its call site.
+    ///
+    /// The listening window is deliberately left alone: it may still be open for
+    /// a hands-free follow-up (see `continuousListeningWindowSeconds`), and the
+    /// mic is genuinely live during it. Retracting the *display* while the turn
+    /// is over is what the user asked for; speaking again brings it straight back
+    /// through the barge-in path.
+    private func scheduleVoiceStateResetAfterPlayback() {
+        voiceStateResetTask?.cancel()
+        voiceStateResetTask = Task { [weak self] in
+            guard let self else { return }
+
+            while self.bailianTTSClient.isPlaying {
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                guard !Task.isCancelled else { return }
+            }
+
+            // Only the state this method owns. A newer turn has already set its
+            // own, and overwriting that would retract a reply that is playing.
+            guard self.voiceState == .responding else { return }
+
+            self.voiceState = .idle
+            self.scheduleTransientHideIfNeeded()
         }
     }
 

@@ -557,8 +557,18 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// finished utterance is sent as a brand-new question.
     var continuousListeningEnabled: Bool = false
 
-    /// How long, in seconds, the continuous-listening window stays open after
-    /// the answer's playback starts. Clamped to 10...120.
+    /// 「持续监听时间」: how long, in seconds, the microphone stays open after the
+    /// answer's playback starts, so a follow-up can be asked hands-free.
+    ///
+    /// `0` is a real value, not a floor (2026-09-24, the user's request): the
+    /// microphone closes when the answer finishes and the only way in is the talk
+    /// shortcut. That is a different thing from releasing the engine — the engine
+    /// is held for `audioEngineIdleReleaseMinutes` either way, so a press after
+    /// minutes of silence still gets a warm, fast reply. The two settings answer
+    /// "is the microphone open?" and "is the engine warm?", and the user can mix
+    /// them however they like.
+    ///
+    /// Clamped to 0...120.
     var continuousListeningWindowSeconds: Int = 30
 
     /// 「静音多久自动发送」: during the continuous-listening window, how long
@@ -912,7 +922,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.screenshotCompressionQuality = min(max(settings.screenshotCompressionQuality, 0.5), 0.95)
         settings.visionMaxCompletionTokens = min(max(settings.visionMaxCompletionTokens, 256), 32768)
         settings.maximumConcurrentAgents = min(max(settings.maximumConcurrentAgents, 1), 6)
-        settings.continuousListeningWindowSeconds = min(max(settings.continuousListeningWindowSeconds, 10), 120)
+        settings.continuousListeningWindowSeconds = min(max(settings.continuousListeningWindowSeconds, 0), 120)
         settings.continuousListeningSilenceSendSeconds = min(max(settings.continuousListeningSilenceSendSeconds, 1.0), 5.0)
         settings.audioEngineIdleReleaseMinutes = min(max(settings.audioEngineIdleReleaseMinutes, 0), 60)
         return settings
