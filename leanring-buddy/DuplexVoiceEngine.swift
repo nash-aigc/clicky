@@ -41,6 +41,16 @@ import AVFoundation
 final class DuplexVoiceEngine {
 
     /// 上行音频的格式。实测：必须是 16 kHz 单声道 PCM16。
+    /// 服务端判定「这一句说完了」所需的**静音时长**。
+    ///
+    /// 原来是 700 ms —— 用户 2026-09-25 实测：「我这句话还没说完，停顿时间不超过一秒，
+    /// 它都给我当作一句话发送过去了」。700 比人的自然停顿还短（想词、换气常常 0.8~1.2s），
+    /// 所以它会把半句话当成一整轮。
+    ///
+    /// 取 **1200 ms**：覆盖自然的句中停顿，又不会让"说完了"等太久。
+    /// 这是**调节点** —— 觉得还是太紧就往上调，觉得反应慢就往下调。
+    private static let turnEndSilenceMilliseconds = 1200
+
     private static let uplinkSampleRate = 16_000.0
     /// 下行音频的格式。实测：服务端回的是 24 kHz 单声道 PCM16。
     private static let downlinkSampleRate = 24_000.0
@@ -62,10 +72,33 @@ final class DuplexVoiceEngine {
         /// 用户开口打断了当前回答（`speech_started`）。被掐断的那半截回答就地成为
         /// 完成的一段话，调用方要解掉「这轮回答」的绑定，好让下一句排在它后面。
         var onBargeIn: () -> Void
+        /// **服务端听到用户开口了**（`input_audio_buffer.speech_started`）。
+        ///
+        /// 调用方靠它区分两种回答：**用户说话触发的**（该和用户那句话配成一对）
+        /// 与**我们自己发起的**（开场白 —— 它不属于任何一轮提问，绝不能被配对）。
+        var onUserSpeechStarted: () -> Void
+        /// **助手这一轮开始了**（`response.created`）。
+        ///
+        /// 调用方据此**在这一刻就把条目排好位**：条目的顺序必须按"回合开始的先后"，
+        /// 而不是"回合结束的先后" —— 后者会让上一轮的回答插到下一轮提问的后面
+        /// （用户 2026-09-25 实测的顺序错乱）。
+        var onAssistantTurnStarted: () -> Void
         /// 助手这一轮的累计文字，每次 delta 都回调一次。
         var onAssistantText: (String) -> Void
         /// 这一轮回答结束（`response.done`）。
         var onAssistantTurnFinished: () -> Void
+        /// **会话配置被服务端接受了**（`session.updated`）—— 这一场已经建好，
+        /// 可以开始说话。
+        ///
+        /// 它和 `onFirstAudioScheduled` 是两件事，**别混**：
+        /// · 这个 = 「连通了」；
+        /// · 那个 = 「对方真的出声了」（Chatting 用它来兑现"已连接"，因为那边
+        ///   连上就会打招呼，出声是必然的）。
+        /// Ask 语音电话**不打招呼**（用户要求：没说话之前什么都不发），所以那边
+        /// 只能拿这一个当"接通"的判据 —— 否则界面会永远停在「连接中…」，
+        /// 2026-09-25 用户报的正是这个。
+        var onSessionConfigured: () -> Void
+
         /// 任何致命问题：连接失败、服务端报错。文字是可以直接显示给用户的中文。
         var onFailure: (String) -> Void
     }
@@ -82,6 +115,45 @@ final class DuplexVoiceEngine {
     /// 服务端是否正在产出一轮回答。`response.cancel` 只有在这个为真时才允许发
     /// （实测：没有活跃回答时发它，服务端回 `Conversation has none active response`）。
     private var isResponseActive = false
+
+    // MARK: - 本地打断（VAD）
+
+    /// 上行电平（由音频线程投递到主线程，与 `BuddyDictationManager` 同一套算法）。
+    private var latestUplinkLevel: Double = 0
+    private var smoothedUplinkLevel: Double = 0
+
+    /// **打断不再等服务端。**
+    ///
+    /// 三段式的打断是「瞬间」的，靠的是**本地能量 VAD**：电平过阈值就地停播放，
+    /// 整个判定在同一进程里（见 `BuddyDictationManager.runContinuousListeningVADLoop`）。
+    /// 全双工原先只用服务端 `server_vad` —— 打断要等「100ms 攒块 + 上行 + 服务端判定 +
+    /// 下行事件」，结构上不可能瞬间（用户 2026-09-25：「三段式瞬间打断，全双工没有打断」）。
+    ///
+    /// 这里把同一套判据搬过来（**同一个阈值 0.25、同一个 0.20 秒累计**，理由见
+    /// `BuddyDictationManager` 里那两处校准注释：安静房间的底噪峰值实测 0.167，
+    /// 说话 0.3~1.0），于是"用户开口那一瞬间就停"对两种模式是同一件事。
+    private var speechAccumulatorSeconds: Double = 0
+    private var didRequestLocalBargeIn = false
+    private var localBargeInTask: Task<Void, Never>?
+
+    /// 打断之后、下一轮开始之前，到达的助手音频要**丢掉**。
+    ///
+    /// 否则 `stopStreamingPlayback()` 只清空一次队列，随后到达的 delta 会把声音
+    /// **重新排回去**（实测报告里指出的第二条独立缺陷：回答文字已结束、声音还在播
+    /// 的那段插话"一个字节都不停"）。它在下一次 `response.created` 时清掉。
+    private var isDiscardingAssistantAudio = false
+
+    /// 上行首块日志只打一次（`appendUplinkAudio` 在音频线程上，所以走 MainActor 写）。
+    nonisolated(unsafe) private var hasLoggedFirstUplinkChunk = false
+    /// 按序上行的泵（nil = 没在跑）。
+    private var uplinkPumpTask: Task<Void, Never>?
+    /// 已发出的上行块序号（日志用）。
+    private var uplinkSequenceNumber = 0
+
+    /// 本地 VAD 的判据（与三段式同一套数）。
+    private static let bargeInLevelThreshold: Double = 0.25
+    private static let bargeInAccumulatedSeconds: Double = 0.20
+    private static let bargeInPollIntervalSeconds: Double = 0.05
     /// 有没有收到 `session.created` —— `session.update` 的前置条件。
     private var didSeeSessionCreated = false
     /// 这一场会话里有没有出声过（见 `Callbacks.onFirstAudioScheduled`）。
@@ -121,6 +193,33 @@ final class DuplexVoiceEngine {
         websocketRequest.setValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
         isStopped = false
+
+        // **会话级状态必须在"会话开始"这一刻清干净。**
+        //
+        // 引擎实例是**跨会话复用**的（Chatting 那台是 lazy 常驻，Ask 语音电话每次新建），
+        // 而这三个字段原先只在 `stop()` 里清 —— 于是任何一条**没走 stop 的结束路径**
+        // （socket 自己断了、错误分支、上一场还在回答时就换了会话）都会把脏状态带进下一场：
+        //
+        //   · `hasScheduledFirstAudio` 残留 true → 下一场的 `onFirstAudioScheduled`
+        //     **永不触发**。而它正是"接通"的判据（Chatting 的「已连接」、Ask 语音电话的
+        //     「通话中」都等它）→ 界面永远停在「连接中」（用户 2026-09-25 报的）
+        //   · `isResponseActive` 残留 true → 打断时会发 `response.cancel`，而那一场
+        //     并没有活跃回答 → 服务端回 **`Conversation has no active response.`**
+        //     （用户截图里那条报错的原文），同时打断逻辑也会被这个脏标志带偏
+        //   · `currentAssistantText` 残留 → 下一场的助手文本会从上一场**接着累加**
+        //
+        // 写成"start 重置"而不是"再多加几个 stop 调用点"：**会话的状态属于会话**，
+        // 清它的地方就该是开始的地方 —— 补 stop 的调用点是在追着症状跑。
+        isResponseActive = false
+        hasScheduledFirstAudio = false
+        currentAssistantText = ""
+        isDiscardingAssistantAudio = false
+        didRequestLocalBargeIn = false
+        speechAccumulatorSeconds = 0
+        smoothedUplinkLevel = 0
+        uplinkSequenceNumber = 0
+        pendingUplinkAudio.removeAll()
+        startLocalBargeInWatch()
         let task = urlSession.webSocketTask(with: websocketRequest)
         webSocketTask = task
         task.resume()
@@ -146,6 +245,9 @@ final class DuplexVoiceEngine {
         try await playbackEngine.installInputTap(bufferSize: 1024) { [weak self] buffer, _ in
             self?.appendUplinkAudio(from: buffer)
         }
+        // **上行可见性**：这条链原先一行日志都没有，于是"麦克风有没有在送"完全不可查
+        // （2026-09-25 两路调查都点了这件事）。首块音频到达时打一行就够定位。
+        print("🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）")
         isRunning = true
     }
 
@@ -166,13 +268,48 @@ final class DuplexVoiceEngine {
                 "input": ["format": ["type": "pcm", "sample_rate": Int(Self.uplinkSampleRate)]],
                 "output": ["format": ["type": "pcm", "sample_rate": Int(Self.downlinkSampleRate)]]
             ],
-            "turn_detection": ["type": "server_vad", "threshold": 0.5, "silence_duration_ms": 700]
+            "turn_detection": ["type": "server_vad", "threshold": 0.5, "silence_duration_ms": Self.turnEndSilenceMilliseconds]
         ]
         let trimmedPrompt = systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedPrompt.isEmpty {
             configuration["instructions"] = trimmedPrompt
         }
         return configuration
+    }
+
+    /// 本地 VAD 轮询：每 50 ms 看一次平滑后的电平（与三段式同一个节拍）。
+    private func startLocalBargeInWatch() {
+        localBargeInTask?.cancel()
+        localBargeInTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(Int(Self.bargeInPollIntervalSeconds * 1000)))
+                guard let self, !self.isStopped else { return }
+                self.smoothedUplinkLevel = max(self.latestUplinkLevel, self.smoothedUplinkLevel * 0.72)
+                if self.smoothedUplinkLevel >= Self.bargeInLevelThreshold {
+                    self.speechAccumulatorSeconds += Self.bargeInPollIntervalSeconds
+                    if self.speechAccumulatorSeconds >= Self.bargeInAccumulatedSeconds,
+                       !self.didRequestLocalBargeIn {
+                        self.didRequestLocalBargeIn = true
+                        self.performLocalBargeIn()
+                    }
+                } else {
+                    self.speechAccumulatorSeconds = 0
+                }
+            }
+        }
+    }
+
+    /// 用户开口了（本地判定）→ **就地停声**，不等服务端。
+    private func performLocalBargeIn() {
+        playbackEngine.stopStreamingPlayback()
+        isDiscardingAssistantAudio = true
+        print("🎙️ 全双工会话：本地判定用户开口 —— 就地停声")
+        callbacks.onBargeIn()
+        // 服务端那一轮只有真的还在进行时才需要撤销；不是就不发（发了会得到一个
+        // 冗余的请求级错误，而那个错误曾经把整场会话收掉）。
+        if isResponseActive {
+            Task { try? await self.sendJSON(["type": "response.cancel"]) }
+        }
     }
 
     /// 有没有真的起过一次会话。
@@ -195,6 +332,10 @@ final class DuplexVoiceEngine {
         pendingUplinkAudio.removeAll()
         currentAssistantText = ""
 
+        localBargeInTask?.cancel()
+        localBargeInTask = nil
+        uplinkPumpTask?.cancel()
+        uplinkPumpTask = nil
         if wasRunning {
             playbackEngine.removeInputTap()
             playbackEngine.stopStreamingPlayback()
@@ -237,17 +378,71 @@ final class DuplexVoiceEngine {
     ///
     /// 这个方法在音频线程上被调，所以**不发网络请求**：只做转换和攒块。
     nonisolated private func appendUplinkAudio(from buffer: AVAudioPCMBuffer) {
+        // 电平在音频线程上算（与 `BuddyDictationManager` 的 tap 同一个公式），
+        // 只把**一个数**投到主线程 —— 音频线程上不做任何别的事。
+        if let channelData = buffer.floatChannelData?[0] {
+            let frameCount = Int(buffer.frameLength)
+            if frameCount > 0 {
+                var sumOfSquares: Double = 0
+                for index in 0..<frameCount {
+                    let sample = Double(channelData[index])
+                    sumOfSquares += sample * sample
+                }
+                let rootMeanSquare = (sumOfSquares / Double(frameCount)).squareRoot()
+                let level = rootMeanSquare * 10.2
+                Task { @MainActor [weak self] in self?.latestUplinkLevel = level }
+            }
+        }
+
         guard let pcm16Data = pcm16Converter.convertToPCM16Data(from: buffer), !pcm16Data.isEmpty else { return }
+        // 只在音频线程上读写这一个 Bool（tap 的回调是串行的），打印丢给主线程。
+        if !hasLoggedFirstUplinkChunk {
+            hasLoggedFirstUplinkChunk = true
+            let chunkByteCount = pcm16Data.count
+            Task { @MainActor in
+                print("🎙️ 全双工会话：第一块上行音频已就绪（\(chunkByteCount) 字节）")
+            }
+        }
         Task { @MainActor [weak self] in
             guard let self, !self.isStopped, self.webSocketTask != nil else { return }
             self.pendingUplinkAudio.append(pcm16Data)
-            while self.pendingUplinkAudio.count >= Self.uplinkChunkByteCount {
-                let chunk = self.pendingUplinkAudio.prefix(Self.uplinkChunkByteCount)
-                self.pendingUplinkAudio.removeFirst(Self.uplinkChunkByteCount)
-                Task { try? await self.sendJSON([
+            self.pumpUplinkChunksInOrder()
+        }
+    }
+
+    /// **按序上行的泵。**
+    ///
+    /// 原来每块音频一个独立 `Task` 发送 —— Swift 的 Task **不保证按创建顺序执行**，
+    /// 于是 websocket 上的字节序 = 实际执行序，音频可能乱序到达服务端。模型听到的
+    /// 就是被打乱的语音：**转写不是用户说的话、回答答非所问、还慢一拍**（用户
+    /// 2026-09-25 报的三个症状，一个原因）。
+    ///
+    /// 现在改成单一消费者：按切分顺序逐块 `await` 发送，前一块没发完就不取下一块。
+    /// `await` 会挂起泵、让出 MainActor，所以不会卡界面；顺序由此得到保证。
+    private func pumpUplinkChunksInOrder() {
+        guard uplinkPumpTask == nil else { return }   // 已有泵在跑，它会把队列抽干
+        uplinkPumpTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.uplinkPumpTask = nil }
+            while !self.isStopped, self.webSocketTask != nil {
+                // **必须在同一个同步段里"看一眼 + 取走"**：`stop()` 会在泵挂起期间
+                // `removeAll()` 这个队列（2026-09-25 崩溃：`Can't remove more items
+                // from a collection than it contains` —— 泵恢复后拿着过期的余量去
+                // remove）。取块数量按**当下**的余量算，永不多取。
+                let chunkByteCount = min(Self.uplinkChunkByteCount, self.pendingUplinkAudio.count)
+                guard chunkByteCount > 0 else { return }
+                let chunk = Data(self.pendingUplinkAudio.prefix(chunkByteCount))
+                self.pendingUplinkAudio.removeFirst(chunkByteCount)
+                self.uplinkSequenceNumber += 1
+                let sequenceNumber = self.uplinkSequenceNumber
+                // 串行 await：这一块发完（成功或失败）才发下一块。
+                try? await self.sendJSON([
                     "type": "input_audio_buffer.append",
-                    "audio": Data(chunk).base64EncodedString()
-                ]) }
+                    "audio": chunk.base64EncodedString()
+                ])
+                if sequenceNumber <= 3 || sequenceNumber % 50 == 0 {
+                    print("🎙️ 上行块 #\(sequenceNumber)（\(chunkByteCount)B）已发出")
+                }
             }
         }
     }
@@ -285,20 +480,70 @@ final class DuplexVoiceEngine {
               let type = event["type"] as? String
         else { return }
 
+        // **全事件流仪器**（2026-09-25）：顺序问题已经改了五次没修好，从这一次起
+        // 先看数据再下结论。每个关键事件都带 response_id / item_id / 文本前缀，
+        // 复现一次之后，"谁先谁后、哪条回答属于哪个回合、转写到底说了什么"
+        // 全部可以从日志直接读出来 —— 不再需要任何推测。
         switch type {
+        case "input_audio_buffer.speech_started":
+            print("🎧 [event] speech_started（服务端听到用户开口）")
+        case "input_audio_buffer.speech_stopped":
+            print("🎧 [event] speech_stopped（服务端判定用户说完）")
+        case "input_audio_buffer.committed":
+            print("🎧 [event] committed（用户音频已提交）")
+        case "conversation.item.input_audio_transcription.completed":
+            let userText = event["transcript"] as? String ?? ""
+            let itemID = event["item_id"] as? String ?? "-"
+            print("🎧 [user-transcript] item=\(itemID.prefix(12)) 「\(userText)」")
+        case "response.created":
+            let responseID = (event["response"] as? [String: Any])?["id"] as? String ?? "-"
+            print("🎧 [response.created] id=\(responseID.prefix(16))")
+        case "response.done":
+            let responseID = (event["response"] as? [String: Any])?["id"] as? String ?? "-"
+            print("🎧 [response.done] id=\(responseID.prefix(16))")
+        case "response.audio_transcript.delta":
+            let responseID = event["response_id"] as? String ?? "-"
+            let delta = event["delta"] as? String ?? ""
+            print("🧾 [ai-text +\(delta.count)字] resp=\(responseID.prefix(10)) 累计\((currentAssistantText + delta).count)字：「\(delta.prefix(24))」")
+        case "response.audio.delta":
+            let responseID = event["response_id"] as? String ?? "-"
+            print("🔊 [ai-audio块] resp=\(responseID.prefix(10))")
+        case "session.updated":
+            print("🎧 [event] session.updated（配置被接受）")
+        case "session.created":
+            print("🎧 [event] session.created")
+        case "error":
+            break   // 下面原有分支已打印完整错误
+        default:
+            break
+        }
+
+        switch type {
+        case "session.updated":
+            callbacks.onSessionConfigured()
+
         case "session.created":
             didSeeSessionCreated = true
 
         case "input_audio_buffer.speech_started":
+            callbacks.onUserSpeechStarted()
             // 用户开口 = 打断。服务端自己会处理回合，客户端要做的只是**别再出声**。
             cancelCurrentResponse()
             callbacks.onBargeIn()
 
         case "response.created":
             isResponseActive = true
+            callbacks.onAssistantTurnStarted()
+            // 新一轮开始：解开"丢弃助手音频"的闸，并允许下一次打断（每句只打断一次）。
+            isDiscardingAssistantAudio = false
+            didRequestLocalBargeIn = false
+            speechAccumulatorSeconds = 0
             currentAssistantText = ""
 
         case "response.audio.delta":
+            // **打断之后到达的音频要丢掉**：`stopStreamingPlayback()` 只清空一次队列，
+            // 不清这个闸的话，随后的 delta 会把声音重新排回去（用户听到的就是"打断了还在说"）。
+            guard !isDiscardingAssistantAudio else { return }
             guard let delta = event["delta"] as? String,
                   let pcmData = Data(base64Encoded: delta) else { return }
             try? playbackEngine.playStreamingPCM16(pcmData, sampleRate: Self.downlinkSampleRate)
@@ -326,6 +571,24 @@ final class DuplexVoiceEngine {
         case "error":
             let message = (event["error"] as? [String: Any])?["message"] as? String
                 ?? String(text.prefix(200))
+            let errorParam = (event["error"] as? [String: Any])?["param"] as? String ?? ""
+            // **「撤销一个不存在的回答」不是致命错误，是打断的副产品。**
+            //
+            // 服务端收到我们的 `response.cancel` 时，它那一轮可能刚好自己结束了
+            // （`response.done` 早于音频播完就到达），于是回一个请求级错误。
+            // 实测（2026-09-25，三份日志）：每一次打断后面都紧跟这一条，
+            // 而它曾经被当成致命错误 → 整场会话被挂断 —— 用户看到的「我一说话它就没了」
+            // 就是这个。这里只记一行，绝不收尾。
+            if errorParam == "response.cancel" || message.lowercased().contains("no active response") {
+                print("⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略")
+                return
+            }
+            // **原文照打**：这句是排查"连上就断"唯一的线索（实测 2026-09-25：
+            // Ask 语音电话每次接通后立刻被 onFailure 收尾，而日志里只有"已挂断"，
+            // 因为错误原文只去了 UI）。code / param / type 一起打，服务端有时把
+            // 真正的原因放在它们里面，message 反而很泛。
+            let errorObject = event["error"] as? [String: Any] ?? [:]
+            print("❌ 全双工会话服务端报错：message=\(message) code=\(errorObject["code"] ?? "-") type=\(errorObject["type"] ?? "-") param=\(errorObject["param"] ?? "-")")
             // 音色不合法会让整条 session.update 被拒 —— 那句话完全不提音色，所以这里
             // 主动把它翻出来，否则用户只会看到「连上了但一句话都不说」。
             if message.contains("Unsupported voice") {

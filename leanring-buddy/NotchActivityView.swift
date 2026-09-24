@@ -869,7 +869,9 @@ struct NotchPanelRootSwitchingView: View {
                         wingBandWidth: wingBandWidth,
                         restingPillWidth: restingPillWidth,
                         hangUpAction: {
-                            companionManager.voiceChatController.disconnectCurrentSession()
+                            // 走"任何一通语音会话"的漏斗：Ask 页那通电话不在
+                            // `voiceChatController` 里（它是独立管线）。
+                            companionManager.hangUpAnyActiveVoiceSession()
                         }
                     )
                 }
@@ -1082,7 +1084,13 @@ struct NotchExpandedSheetView: View {
             // （侧栏没有滚动，它看到的抖动只能来自这个偏移）。淡入 + 模糊
             // 仍然是参考页的入场语言；丢掉的只有那 8pt。
             .opacity(hasContentSettledIn ? 1 : 0)
-            .blur(radius: hasContentSettledIn ? 0 : 8)
+            // **不再加模糊**（用户 2026-09-25：「Ask 页面展开时有一个蒙版/模糊特效，
+            // 删掉，因为在 Agent 和 Chatting 两个页面都没有，体验很好」）。
+            //
+            // 它来自参考实现入场动画的 'line' 模式（+8pt / 8px blur / 透明→清晰）。
+            // 面板的展开本身已经有揭示动画（幕布/缩放），再叠一层内容模糊只是多一次
+            // 全屏光栅化 —— 去掉它，三个页面的入场观感由此一致。
+            .offset(y: hasContentSettledIn ? 0 : 8)
             .onAppear {
                 guard !shouldReduceMotion else {
                     hasContentSettledIn = true

@@ -581,14 +581,35 @@ final class VoiceChatController: ObservableObject {
                 onBargeIn: { [weak self] in
                     self?.duplexAssistantEntryID = nil
                 },
+                onUserSpeechStarted: {
+                    // 见 Callbacks.onUserSpeechStarted 的说明。Chatting 的气泡顺序
+                    // 由第一个 delta 建气泡保证，这里不需要额外动作。
+                },
+                onAssistantTurnStarted: {
+                    // Chatting 那边靠 `updateDuplexAssistantEntry` 在第一个 delta 时建气泡，
+                    // 顺序天然正确（它只有一个流），所以这里不需要额外动作。
+                },
                 onAssistantText: { [weak self] cumulativeText in
                     self?.updateDuplexAssistantEntry(cumulativeText)
                 },
                 onAssistantTurnFinished: { [weak self] in
                     self?.duplexAssistantEntryID = nil
                 },
+                onSessionConfigured: {
+                    // Chatting 的「已连接」仍等第一段音频（那边连上就打招呼，
+                    // 出声是必然的，用户要的就是"听到声音才算连上"）。
+                },
                 onFailure: { [weak self] message in
-                    self?.presentFailure("语音聊天：\(message)")
+                    guard let self else { return }
+                    // 引擎报错（socket 断了 / 服务端拒了）= 这场会话**已经死了**。
+                    // 只报错不收尾的话，界面会永远挂在「通话中」，而实际那条
+                    // websocket 早就没了 —— 2026-09-25 实测（Ask 语音电话报
+                    // `Conversation has no active response` 后状态卡死）。
+                    // 走挂断漏斗：麦克风 tap、刘海状态、页面芯片一起归位。
+                    if self.isSessionLive {
+                        self.disconnectCurrentSession()
+                    }
+                    self.presentFailure("语音聊天：\(message)")
                 }
             )
         )

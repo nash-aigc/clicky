@@ -255,6 +255,42 @@ final class CompanionManager: ObservableObject {
     /// `bailianTTSClient`），这不是偷懒而是本方案的地基：采集与播放在同一条
     /// `AVAudioEngine` 上，系统 AEC 才有参考信号，用户听到的「瞬间打断」正是这么来的。
     /// 代价是会话期间麦克风被会话占着，所以按住说话的快捷键在会话中要让位。
+    /// **挂断当前任何一通语音会话** —— 刘海右翼、展开态顶部那条带子上的红色挂断、
+    /// 以及快捷键，全都走这一个入口。
+    ///
+    /// 为什么需要它：那两处挂断原先直接调 `voiceChatController.disconnectCurrentSession()`，
+    /// 而 Ask 页的语音电话**不在**那个控制器里（它是自己的管线），于是对 Ask 那通电话
+    /// 点挂断什么都不发生 —— 用户 2026-09-25 报的正是这个。
+    func hangUpAnyActiveVoiceSession() {
+        if askVoiceCallController.isActive {
+            askVoiceCallController.hangUp()
+            return
+        }
+        voiceChatController.disconnectCurrentSession()
+    }
+
+    /// Ask 页自己的全双工语音管线。**与 `voiceChatController` 完全独立** ——
+    /// 正因如此，句子「会话在跑就切到 Chatting 页」那条规则不会把它误当成
+    /// Chatting 会话（2026-09-25 实测：塞进 Chatting 控制器时，收起面板再展开会
+    /// 被强行切到 Chatting 页）。
+    lazy var askVoiceCallController: AskVoiceCallController = {
+        let controller = AskVoiceCallController()
+        controller.setNotchPhase = { [weak self] phase in
+            self?.notchWindowController?.setExternalSessionOverride(phase)
+        }
+        // 与 Chatting 同一条上报路径：Ask 页底部那行错误（`lastErrorMessage`）。
+        controller.reportFailure = { [weak self] message in
+            self?.lastErrorMessage = message
+        }
+        controller.playbackEngineProvider = { [weak self] in
+            self?.bailianTTSClient.voicePlaybackEngine
+        }
+        // 试听也要走那台引擎（同一条 voice-processing 链路，试听听到的才是
+        // 选中之后它会发出的声音）。
+        SharedVoicePreviewPlayer.shared.playbackEngine = bailianTTSClient.voicePlaybackEngine
+        return controller
+    }()
+
     lazy var voiceChatController: VoiceChatController = {
         let controller = VoiceChatController(
             presentAnswer: { [weak self] answerText in
@@ -1352,8 +1388,13 @@ final class CompanionManager: ObservableObject {
             // 用户在设计这次改造时就定了这条：会话期间按住说话键就是挂断
             // （与「同一个快捷键再按一次是挂断」一致）。第二条路径是刘海右翼的
             // 红色挂断图标。
-            if voiceChatController.connectionPhase != .idle {
-                voiceChatController.disconnectCurrentSession()
+            // **任何一通语音会话在跑，这一下就是挂断** —— Chatting 的会话，
+            // 以及 Ask 页那通语音电话（它有自己的管线，不在 `voiceChatController` 里）。
+            // 2026-09-25：只有 Chatting 那半边时，Ask 通话中按这个键会掉进下面的
+            // 「按住说话」——而两者**共用同一台音频引擎的麦克风 tap**，于是会话的
+            // 上行被顶掉、半死不活（用户报的那条服务端报错很可能就是这条路径的产物）。
+            if voiceChatController.connectionPhase != .idle || askVoiceCallController.isActive {
+                hangUpAnyActiveVoiceSession()
                 shortcutPressBeganAt = nil
                 return
             }
@@ -2982,6 +3023,23 @@ final class CompanionManager: ObservableObject {
         audioEngineIdleReleaseTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(Double(idleReleaseMinutes) * 60))
             guard let self, !Task.isCancelled else { return }
+
+            // **任何一通语音会话在跑，这一下就不许释放引擎。**
+            //
+            // 实测（2026-09-25 两路调查收敛）：`noteVoiceSessionActivity()` 只在
+            // **连接时**和**第一段音频时**被调，全双工那四个回调用完就不续期了 ——
+            // 于是默认 3 分钟后这个计时器会把引擎从**正在进行**的会话脚下抽走：
+            //   · 上行：tap 没回调 → 模型听不到用户（"没有打断、听不到我说话"）
+            //   · 下行：`playStreamingPCM16` 的前置检查失败，而调用方是 `try?`
+            //     → 错误被吞，一声不响（全双工**没有**任何重建路径）
+            // 表现就是"跑到第 3 分钟突然全哑，挂断重连又能好 3 分钟"。
+            // 会话还在，就不释放；会话结束时的 `noteVoiceSessionActivity()` 会重新起表。
+            if self.voiceChatController.connectionPhase != .idle || self.askVoiceCallController.isActive {
+                print("🔊 CompanionManager: 空闲到点，但语音会话正在进行 —— 不释放引擎")
+                self.noteVoiceActivity()
+                return
+            }
+
             self.audioEngineIdleReleaseTask = nil
             print("🔊 CompanionManager: \(idleReleaseMinutes) 分钟没有活动，释放音频引擎")
             self.bailianTTSClient.releaseAudioEngineNow()

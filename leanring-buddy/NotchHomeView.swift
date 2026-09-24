@@ -27,6 +27,8 @@ struct NotchHomeView: View {
 
     @ObservedObject var companionManager: CompanionManager
     @ObservedObject var sessionsModel: ConversationSessionsModel
+    /// Ask 页自己的全双工语音管线（页内的实时转录与状态芯片都读它）。
+    @ObservedObject var askVoiceCallController: AskVoiceCallController
 
     /// Which finished turns have their progress disclosure expanded. Keyed by
     /// entry offset; live progress while a job runs is always expanded.
@@ -273,6 +275,22 @@ struct NotchHomeView: View {
                             .id("streaming")
                     }
 
+                    // **语音电话正在进行**：用户正在说的那句 + AI 正在说的回复，
+                    // 就地画在这条流里（用户 2026-09-25：「用户说话的内容或 AI 回复的
+                    // 结果要在 ask 页面里显示，而不是像现在这样自动切换到 chatting 页面」）。
+                    // 说完了 AI 那条会落成正式条目（`AskVoiceCallController` 写盘），
+                    // 此刻它先以流式的样子出现。
+                    if askVoiceCallController.isActive {
+                        if !askVoiceCallController.liveUserTranscript.isEmpty {
+                            outgoingBubble(askVoiceCallController.liveUserTranscript)
+                                .id("ask-call-user")
+                        }
+                        if !askVoiceCallController.liveAssistantText.isEmpty {
+                            assistantBubble(askVoiceCallController.liveAssistantText, isStreaming: true)
+                                .id("ask-call-assistant")
+                        }
+                    }
+
                     // The scroll target, and the flow's bottom breathing room
                     // in one view. It is a *resident* view on purpose: the
                     // streaming ids above only exist while a reply is arriving,
@@ -297,6 +315,9 @@ struct NotchHomeView: View {
             .contentShape(Rectangle())
             .onTapGesture { composerFieldIsFocused = true }
             .onChange(of: entries.count) { _ in
+                scrollToBottom(proxy)
+            }
+            .onChange(of: askVoiceCallController.liveAssistantText) { _ in
                 scrollToBottom(proxy)
             }
             .onChange(of: sessionsModel.activeSessionID) { _ in
