@@ -760,7 +760,7 @@ final class VoiceWebSessionController: ObservableObject {
                          "--auto-select-desktop-capture-source=\(Self.autoSelectCaptureSource)",
                          "--disable-features=UseSCContentSharingPicker,DisplayCaptureRequiresUserGesture"]
         if openingPage {
-            arguments.append("http://localhost:8890/client/")
+            arguments.append("http://localhost:8890/client/?exb=owned")
         }
         openProcess.arguments = arguments
         try? openProcess.run()
@@ -853,6 +853,14 @@ final class VoiceWebSessionController: ObservableObject {
         /// `nil` when the server predates the field: the caller then falls back to
         /// "any report counts" rather than refusing to work.
         var reportAgeSeconds: Double?
+
+        /// Whether the reporting page is the one in Clicky's owned instance
+        /// (`?exb=owned` in its URL → `owned: true` in the payload). A page in
+        /// the user's own Chrome does not participate in the bridge any more
+        /// (it neither polls commands nor reports), so a report WITHOUT this
+        /// flag is an old page on an old patch — not ours, not automatable, and
+        /// it must not make us skip bringing our own instance up.
+        var owned: Bool?
     }
 
     /// How stale a report may be and still count as "a page is open".
@@ -894,7 +902,8 @@ final class VoiceWebSessionController: ObservableObject {
             cam: object["cam"] as? Bool,
             screen: object["screen"] as? Bool,
             liveLines: liveLines,
-            reportAgeSeconds: object["report_age_seconds"] as? Double
+            reportAgeSeconds: object["report_age_seconds"] as? Double,
+            owned: object["owned"] as? Bool
         )
     }
 
@@ -913,6 +922,12 @@ final class VoiceWebSessionController: ObservableObject {
     /// the field returns none, and then this falls back to the old behaviour rather
     /// than refusing to work at all.
     private func bridgeReportsALivePage(_ state: BridgeState) -> Bool {
+        // OUR page only. A report from a page in the user's own Chrome (no
+        // `owned` flag — an old tab on an old patch) does not count: screen
+        // automation lives in the owned instance's launch flags, so a live-but-
+        // foreign page would both skip our launch AND consume connect commands
+        // without being able to light the screen. Missing flag = not ours.
+        guard state.owned == true else { return false }
         guard state.phase != nil else { return false }
         guard let reportAgeSeconds = state.reportAgeSeconds else { return true }
         return reportAgeSeconds < Self.pageReportStaleAfterSeconds
