@@ -926,10 +926,15 @@ struct NotchExpandedSheetView: View {
                 // 个延迟配缩放，内容会在板子还只有一半大的时候就完整画出来，
                 // 两个动画看起来是两件事。样式在这里现读一次：它跟
                 // `beginExpansion` 读的是同一个值，而中间没有人能改设置。
-                let entranceDelay = NotchSupport.expansionContentEntranceDelay(
-                    for: AppSettingsStore.snapshot().windowExpansionStyle
-                )
-                withAnimation(.easeOut(duration: 0.45).delay(entranceDelay)) {
+                let appSettingsSnapshot = AppSettingsStore.snapshot()
+                let entranceDelay = appSettingsSnapshot.expansionContentEntranceDelayInForce(
+                    appSettingsSnapshot.notchExpansionSpeedMultiplier
+                )(appSettingsSnapshot.windowExpansionStyle)
+                // The entrance animation itself is scaled with the window: at 2×
+                // the panel grows twice as fast, so a 0.45 s entrance would finish
+                // long after a 0.215 s reveal had landed. Same duration, same curve
+                // family, same relative shape — just faster with everything else.
+                withAnimation(.easeOut(duration: 0.45 / appSettingsSnapshot.notchExpansionSpeedMultiplier).delay(entranceDelay)) {
                     hasContentSettledIn = true
                 }
             }

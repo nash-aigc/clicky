@@ -568,7 +568,7 @@ final class NotchWindowController {
         // into two — the deadline below and the animation have to agree about
         // how long this expansion lasts.
         let expansionStyle = AppSettingsStore.snapshot().windowExpansionStyle
-        let revealDuration = NotchSupport.expansionRevealDuration(for: expansionStyle)
+        let revealDuration = AppSettingsStore.snapshot().expansionRevealDurationInForce(AppSettingsStore.snapshot().notchExpansionSpeedMultiplier)(expansionStyle)
 
         expansionGeneration += 1
         let expansionGenerationAtStart = expansionGeneration
@@ -680,13 +680,17 @@ final class NotchWindowController {
         style: WindowExpansionStyle,
         expandedFrame: CGRect
     ) {
+        // The user's speed multiplier is read HERE, once, and carried through —
+        // the same discipline as the style itself: a mid-animation settings save
+        // must not split one reveal into two speeds.
+        let speedMultiplier = AppSettingsStore.snapshot().notchExpansionSpeedMultiplier
         switch style {
         case .notchBloom:
-            startNotchBloomReveal(on: presence, expandedFrame: expandedFrame)
+            startNotchBloomReveal(on: presence, expandedFrame: expandedFrame, speedMultiplier: speedMultiplier)
         case .edgeScale:
-            startScaleReveal(on: presence, expandedFrame: expandedFrame)
+            startScaleReveal(on: presence, expandedFrame: expandedFrame, speedMultiplier: speedMultiplier)
         case .curtain:
-            startCurtainReveal(on: presence, expandedFrame: expandedFrame)
+            startCurtainReveal(on: presence, expandedFrame: expandedFrame, speedMultiplier: speedMultiplier)
         }
     }
 
@@ -694,7 +698,7 @@ final class NotchWindowController {
     /// visible strip from the content's top edge down to its full height. The
     /// render server plays it — the main thread does no per-frame work, which
     /// is the whole point of doing this as a clip instead of a window resize.
-    private func startCurtainReveal(on presence: ScreenPresence, expandedFrame: CGRect) {
+    private func startCurtainReveal(on presence: ScreenPresence, expandedFrame: CGRect, speedMultiplier: Double) {
         guard let maskLayer = presence.contentHostingView.layer?.mask else { return }
         let contentWidth = expandedFrame.width
         let contentHeight = expandedFrame.height
@@ -727,7 +731,7 @@ final class NotchWindowController {
 
         let revealGroup = CAAnimationGroup()
         revealGroup.animations = [boundsAnimation, positionAnimation]
-        revealGroup.duration = NotchSupport.curtainRevealDuration
+        revealGroup.duration = NotchSupport.curtainRevealDuration / speedMultiplier
         let controlPoints = NotchSupport.curtainRevealTimingControlPoints
         revealGroup.timingFunction = CAMediaTimingFunction(
             controlPoints: controlPoints.0,
@@ -761,7 +765,7 @@ final class NotchWindowController {
     /// vertical start point reuses `startCurtainReveal`'s proven
     /// flippedness read; the horizontal start point is the frame's centre,
     /// which no flippedness can move.
-    private func startNotchBloomReveal(on presence: ScreenPresence, expandedFrame: CGRect) {
+    private func startNotchBloomReveal(on presence: ScreenPresence, expandedFrame: CGRect, speedMultiplier: Double) {
         guard let hostingLayer = presence.contentHostingView.layer,
               let maskLayer = hostingLayer.mask else { return }
         let contentWidth = expandedFrame.width
@@ -796,7 +800,7 @@ final class NotchWindowController {
 
         let revealGroup = CAAnimationGroup()
         revealGroup.animations = [boundsAnimation, positionAnimation]
-        revealGroup.duration = NotchSupport.expansionRevealDuration(for: .notchBloom)
+        revealGroup.duration = NotchSupport.expansionRevealDuration(for: .notchBloom) / speedMultiplier
         let controlPoints = NotchSupport.curtainRevealTimingControlPoints
         revealGroup.timingFunction = CAMediaTimingFunction(
             controlPoints: controlPoints.0,
@@ -839,7 +843,8 @@ final class NotchWindowController {
     /// intermediate paint at full size.
     private func startScaleReveal(
         on presence: ScreenPresence,
-        expandedFrame: CGRect
+        expandedFrame: CGRect,
+        speedMultiplier: Double
     ) {
         guard let hostingLayer = presence.contentHostingView.layer else { return }
 
@@ -875,7 +880,7 @@ final class NotchWindowController {
         // as a single animation.
         let revealGroup = CAAnimationGroup()
         revealGroup.animations = [scaleAnimation, opacityAnimation]
-        revealGroup.duration = NotchSupport.centerPopRevealDuration
+        revealGroup.duration = NotchSupport.centerPopRevealDuration / speedMultiplier
         let controlPoints = NotchSupport.centerPopTimingControlPoints
         revealGroup.timingFunction = CAMediaTimingFunction(
             controlPoints: controlPoints.0,
@@ -1114,7 +1119,7 @@ final class NotchWindowController {
             targetFrame: NotchSupport.expandedSheetFrame(on: collapsingPresence.screen),
             startScale: 1.0,
             endScale: NotchSupport.centerScaleCollapseFinalScale,
-            duration: NotchSupport.centerScaleCollapseDuration,
+            duration: NotchSupport.centerScaleCollapseDuration / AppSettingsStore.snapshot().notchExpansionSpeedMultiplier,
             controlPoints: NotchSupport.centerScaleCollapseTimingControlPoints,
             fadesToTransparent: true,
             completion: { [weak self] in
@@ -1138,7 +1143,7 @@ final class NotchWindowController {
         // deadline, force the resting state unless a newer expand/collapse
         // owns it — the published progress follows the frame, so one snap
         // covers both.
-        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.centerScaleCollapseDuration + 0.25) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + NotchSupport.centerScaleCollapseDuration / AppSettingsStore.snapshot().notchExpansionSpeedMultiplier + 0.25) { [weak self] in
             guard let self,
                   self.collapseGeneration == collapseGenerationAtStart,
                   !self.panelModel.isExpanded else { return }

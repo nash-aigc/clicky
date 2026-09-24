@@ -343,6 +343,21 @@ struct GeneralSettingsView: View {
                         }
                     )
                 }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "弹出速度",
+                    description: "面板展开动画的快慢，倍数越大越快。1× 是参考设计的原始速度；默认 2×，因为原始速度偏慢。三种展开方式和收起都跟着这个倍率走。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.notchExpansionSpeedMultiplier),
+                        options: [
+                            SettingsPickerOption(label: "1×", value: 1.0),
+                            SettingsPickerOption(label: "1.5×", value: 1.5),
+                            SettingsPickerOption(label: "2×", value: 2.0),
+                            SettingsPickerOption(label: "3×", value: 3.0),
+                        ]
+                    )
+                }
             }
 
             SettingsGroupLabel("输入")

@@ -605,6 +605,43 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     ///
     /// Reset by any activity: a press, a recording, a barge-in, a transcript, a
     /// reply starting. Clamped to 0...60.
+    /// 「弹出速度」: how fast the notch sheet's expansion plays, as a multiplier
+    /// applied to every style's duration (and to the content entrance delays,
+    /// which are fractions of the same window). `1.0` is the reference page's
+    /// own timing; `2.0` — the default, the user's choice 2026-09-24 — is twice
+    /// as fast. Clamped to 1...4: below 1 the panel would feel sluggish again,
+    /// and above 4 the reveal stops reading as a bloom and starts reading as a
+    /// flash.
+    ///
+    /// The constants in `NotchSupport` stay at the reference's original values;
+    /// this divides at read time, so the reference numbers remain the documented
+    /// baseline and a future style added to `NotchSupport` inherits the speed
+    /// automatically.
+    var notchExpansionSpeedMultiplier: Double = 2.0
+
+    /// The expansion duration in force for `style`, with the user's speed
+    /// multiplier applied. THE single entry point for "how long does the reveal
+    /// take" — see the `expansionRevealDuration` comment for why there must be
+    /// exactly one.
+    var expansionRevealDurationInForce: (Double) -> (WindowExpansionStyle) -> TimeInterval {
+        { multiplier in
+            { style in
+                NotchSupport.expansionRevealDuration(for: style) / multiplier
+            }
+        }
+    }
+
+    /// The content entrance delay in force, with the user's speed multiplier
+    /// applied — the delay is paired to its window animation and must scale with
+    /// it, or the content draws in full while the panel is still half-grown.
+    var expansionContentEntranceDelayInForce: (Double) -> (WindowExpansionStyle) -> TimeInterval {
+        { multiplier in
+            { style in
+                NotchSupport.expansionContentEntranceDelay(for: style) / multiplier
+            }
+        }
+    }
+
     var audioEngineIdleReleaseMinutes: Int = 3
 
     /// 「释放引擎」: the shortcut that puts the machine's audio back to normal on
@@ -925,6 +962,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.continuousListeningWindowSeconds = min(max(settings.continuousListeningWindowSeconds, 0), 120)
         settings.continuousListeningSilenceSendSeconds = min(max(settings.continuousListeningSilenceSendSeconds, 1.0), 5.0)
         settings.audioEngineIdleReleaseMinutes = min(max(settings.audioEngineIdleReleaseMinutes, 0), 60)
+        settings.notchExpansionSpeedMultiplier = min(max(settings.notchExpansionSpeedMultiplier, 1.0), 4.0)
         return settings
     }
 }
@@ -965,6 +1003,7 @@ nonisolated extension AppSettings {
         case continuousListeningSilenceSendSeconds
         case audioEngineIdleReleaseMinutes
         case releaseAudioEngineShortcut
+        case notchExpansionSpeedMultiplier
         case echoCancellationEnabled
         case mutesSystemSpeakersDuringRecording
         case autoScreenshotOnFollowUpSpeech
@@ -1060,6 +1099,7 @@ nonisolated extension AppSettings {
         continuousListeningSilenceSendSeconds = try container.decodeIfPresent(Double.self, forKey: .continuousListeningSilenceSendSeconds) ?? defaults.continuousListeningSilenceSendSeconds
         audioEngineIdleReleaseMinutes = try container.decodeIfPresent(Int.self, forKey: .audioEngineIdleReleaseMinutes) ?? defaults.audioEngineIdleReleaseMinutes
         releaseAudioEngineShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .releaseAudioEngineShortcut)
+        notchExpansionSpeedMultiplier = try container.decodeIfPresent(Double.self, forKey: .notchExpansionSpeedMultiplier) ?? defaults.notchExpansionSpeedMultiplier
         echoCancellationEnabled = try container.decodeIfPresent(Bool.self, forKey: .echoCancellationEnabled) ?? defaults.echoCancellationEnabled
         mutesSystemSpeakersDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .mutesSystemSpeakersDuringRecording) ?? defaults.mutesSystemSpeakersDuringRecording
         autoScreenshotOnFollowUpSpeech = try container.decodeIfPresent(Bool.self, forKey: .autoScreenshotOnFollowUpSpeech) ?? defaults.autoScreenshotOnFollowUpSpeech
