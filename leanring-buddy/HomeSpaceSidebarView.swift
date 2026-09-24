@@ -30,7 +30,6 @@ struct HomeSpaceSidebarView: View {
     @Binding var showsSettings: Bool
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
-    @Binding var showsArchive: Bool
 
     @State private var hoveringSessionID: UUID?
     @State private var renamingSessionID: UUID?
@@ -807,15 +806,11 @@ struct HomeSpaceSidebarView: View {
 
             Spacer(minLength: 8)
 
-            NotchBarActionButton(
-                title: "归档",
-                systemImage: "archivebox",
-                isHighlighted: showsArchive,
-                help: "查看已删除的对话，可以恢复"
-            ) {
-                showsArchive = true
-                showsSettings = false
-            }
+            // 「归档」**不在这里了**（用户 2026-09-24：「把窗口下面左侧边栏的
+            // 「归档」按钮移动到设置页面，用户点击设置，在「导出导入」的下面添加
+            // 一个按钮叫「归档」」）。它现在是 `SettingsPage.archive`，设置侧栏
+            // 的「导入导出」组里那一行；整窗接管那条旧路连同 `showsArchive`
+            // 一起删掉了 —— 侧栏这颗按钮是它唯一的入口，按钮没了它就成了死状态。
         }
         .padding(.horizontal, 10)
         .padding(.top, 10)

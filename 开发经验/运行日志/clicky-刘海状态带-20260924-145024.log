@@ -1,0 +1,1033 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 304ms
+⏱️ [hitch] main thread busy for 78ms
+🔊 [aecprobe] t=1790232633.155 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790232634.634 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790232634.913 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 48ms
+📷 [camera] 授权 16ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 260ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1055ms（总 1310ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1346ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 89ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1265ms（总 1293ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1337ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [hitch] main thread busy for 185ms
+🎙️ [aecprobe] t=1790232706.579 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.536, transcript: "。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790232706.896 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790232710.432 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (15 chars)
+🗣️ Streaming speech: queued segment 2 (33 chars)
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🗣️ Streaming speech: queued segment 4 (32 chars)
+🔊 [aecprobe] t=1790232712.618 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (120KB)
+⏱️ [hitch] main thread busy for 43ms
+🔊 [aecprobe] t=1790232714.638 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (187KB)
+⏱️ [hitch] main thread busy for 44ms
+🔊 [aecprobe] t=1790232717.652 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (266KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790232720.846 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 253ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 74ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 109ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1267ms（总 1293ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1332ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790232879.723 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.513, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790232879.788 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790232885.358 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (9 chars)
+🗣️ Streaming speech: queued segment 2 (26 chars)
+⏱️ [hitch] main thread busy for 66ms
+🔊 [aecprobe] t=1790232887.776 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (90KB)
+🔊 [aecprobe] t=1790232889.306 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (180KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790232891.085 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 50ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 183ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 241ms
+2026-09-24 14:55:19.368 Clicky[96183:8252821] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+⏱️ [hitch] main thread busy for 83ms
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+⏱️ [hitch] main thread busy for 46ms
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790232919.745 event=speakersMuted
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: How many fingers can you see?
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+⏱️ [hitch] main thread busy for 170ms
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790232922.293 event=speakersRestored
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 1 (2 chars)
+⏱️ [hitch] main thread busy for 101ms
+🗣️ Streaming speech: queued segment 2 (30 chars)
+🗣️ Streaming speech: queued segment 3 (31 chars)
+⏱️ [hitch] main thread busy for 109ms
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 4 (8 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790232923.947 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (67KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 65ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790232925.026 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 79ms
+🎙️ ⚠️ 连续监听请求被忽略：**已经有一个窗口开着**（门槛 4）。调用方若以为这是自己开的窗口，它的说话就不会被自己收到。
+⏱️ [hitch] main thread busy for 41ms
+📷 [camera] 授权 16ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+📷 [camera] startRunning 1266ms（总 1296ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1335ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790232929.545 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.496, transcript: "嗯。")
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790232929.920 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 50ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790232932.528 event=speakersMuted
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Companion sending transcript: How many fingers do I see?
+📸 Companion: pre-captured screen discarded (stale)
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790232936.130 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (2 chars)
+🗣️ Streaming speech: queued segment 2 (32 chars)
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🗣️ Streaming speech: queued segment 4 (31 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 5 (21 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 85ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 [aecprobe] t=1790232937.814 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (67KB)
+📷 [camera] startRunning 1287ms（总 1313ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1356ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🔊 [aecprobe] t=1790232939.006 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (112KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790232939.582 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 85ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 182ms（总 208ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 245ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790232944.180 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.634, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790232944.221 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790232948.778 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 55ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 114ms
+⏱️ [hitch] main thread busy for 197ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 156ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 50ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 467ms
+⏱️ [hitch] main thread busy for 225ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790234998.928 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 144ms
+⏱️ [hitch] main thread busy for 45ms
+🔊 [aecprobe] t=1790235000.585 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790235000.694 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 138ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 92ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1289ms（总 1315ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1351ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790235006.241 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.628, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790235006.637 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790235010.724 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 69ms
+🗣️ Streaming speech: queued segment 1 (14 chars)
+🗣️ Streaming speech: queued segment 2 (32 chars)
+⏱️ [hitch] main thread busy for 49ms
+🗣️ Streaming speech: queued segment 3 (30 chars)
+🗣️ Streaming speech: queued segment 4 (11 chars)
+🔊 [aecprobe] t=1790235013.149 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (127KB)
+🔊 [aecprobe] t=1790235015.243 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (337KB)
+🎙️ [aecprobe] t=1790235016.573 event=level botSpeaking=true level=0.214 peak0.5s=0.214 utteranceActive=no
+🎙️ [aecprobe] t=1790235016.626 event=level botSpeaking=true level=0.214 peak0.5s=0.214 utteranceActive=no
+🎙️ [aecprobe] t=1790235016.679 event=level botSpeaking=true level=0.489 peak0.5s=0.489 utteranceActive=no
+🎙️ [aecprobe] t=1790235016.734 event=level botSpeaking=true level=0.489 peak0.5s=0.489 utteranceActive=no
+🎙️ [aecprobe] t=1790235016.785 event=level botSpeaking=true level=0.456 peak0.5s=0.489 utteranceActive=no
+🎙️ [aecprobe] t=1790235016.840 event=level botSpeaking=true level=0.456 peak0.5s=0.489 utteranceActive=no
+🎙️ [aecprobe] t=1790235016.840 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.489, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790235016.840 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790235017.304 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790235021.852 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (8 chars)
+🗣️ Streaming speech: queued segment 2 (39 chars)
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 3 (25 chars)
+🔊 [aecprobe] t=1790235023.880 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (101KB)
+🔊 [aecprobe] t=1790235025.571 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (341KB)
+🔊 [aecprobe] t=1790235030.893 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (221KB)
+🔊 [aecprobe] t=1790235034.359 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790235036.228 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.700, transcript: "。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790235036.503 event=speakersMuted
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790235040.554 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (15 chars)
+⏱️ [hitch] main thread busy for 67ms
+🗣️ Streaming speech: queued segment 2 (36 chars)
+🗣️ Streaming speech: queued segment 3 (37 chars)
+🗣️ Streaming speech: queued segment 4 (6 chars)
+🔊 [aecprobe] t=1790235042.419 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (131KB)
+🔊 [aecprobe] t=1790235044.543 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (330KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790235046.649 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 53ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 172ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 184ms
+⏱️ [hitch] main thread busy for 156ms
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 101ms
+⏱️ [hitch] main thread busy for 60ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 165ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 224ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 384ms
+⏱️ [hitch] main thread busy for 311ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms

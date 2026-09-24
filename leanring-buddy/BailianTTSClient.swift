@@ -265,6 +265,52 @@ final class BailianTTSClient {
         return session
     }
 
+    /// 试听：把一段**已经合成好**的 WAV 播出来。
+    ///
+    /// 和朗读共用同一个引擎、同一份语速与音量 —— 试听要让用户听到的正是「选完之后
+    /// 朗读会发出的声音」。换一个播放器（哪怕是 `AVAudioPlayer`）就会因为不经过
+    /// 同一条 voice-processing 链路而在两处听起来不一样，而用户是拿试听做决定的。
+    ///
+    /// 不复用 `speakText`：那条路自己还要去合成，而试听的音频已经在手上了。
+    ///
+    /// **必须重试，而且原因不是防御性编程**：试听是**一次性**的，而
+    /// `playWAVData` 在引擎没起来时的兜底是「跳过这一块，等下一块来重建引擎」——
+    /// 对朗读没问题（后面还有块），对试听就是彻底没声音、而且**不报错**。第一次
+    /// 试听几乎必然撞上那个窗口：`ensureEngineStarted` 刚把引擎拉起来，开 voice
+    /// processing 会重配整个 IO，引擎随即**自己停掉**。实测日志：
+    ///
+    ///     🔊 engine started (voiceProcessing=true, 3 ch)
+    ///     ⚠️ skipping a TTS chunk — the engine is not running   ← 用户听到的就是这一行
+    ///     🔊 the audio configuration changed and the engine stopped itself
+    ///
+    /// 所以这里把「跳过」变成「重建再放一次」。判据用 `isChunkPlaying`，它在这条
+    /// 路上已经是现成的信号：被跳过时它被置回 false，真在放时是 true。
+    func playPreviewWAVData(_ wavData: Data) async throws {
+        let appSettings = AppSettingsStore.snapshot()
+        let rate = Float(appSettings.speechPlaybackRate)
+        let volume = Float(appSettings.speechPlaybackVolumePercent) / 100
+
+        for attempt in 1...2 {
+            try await voicePlaybackEngine.playWAVData(wavData, rate: rate, volume: volume)
+            if voicePlaybackEngine.isChunkPlaying { return }
+
+            if attempt == 1 {
+                // 给「引擎自己停掉」那条通知一点时间落地；下一次调用就会走重建
+                // 那条路（`ensureEngineStarted` 发现 `engine.isRunning == false`）。
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+        }
+
+        throw BailianTTSClientError(
+            message: "试听没放出来：播放引擎起不来（可能刚被释放，或音频设备正在切换）。再点一次通常就好。"
+        )
+    }
+
+    /// 停掉正在试听的那一段。只停播放队列，不释放引擎 —— 用户往往会连着试好几个音色。
+    func stopPreviewPlayback() {
+        voicePlaybackEngine.stopChunk()
+    }
+
     /// Stops playback immediately and abandons any chunks still queued.
     func stopPlayback() {
         // Reported BEFORE the storm of teardown below, because the interesting

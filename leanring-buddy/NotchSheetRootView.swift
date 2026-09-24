@@ -40,7 +40,6 @@ struct NotchSheetRootView: View {
     @StateObject private var modelSettingsViewModel = ModelSettingsViewModel()
 
     @State private var showsSettings = false
-    @State private var showsArchive = false
     @State private var selectedSettingsPage: SettingsPage = .general
 
     init(
@@ -73,16 +72,12 @@ struct NotchSheetRootView: View {
             // showsSettings 的互斥判断一处都不用动。设置优先于归档。
             if showsSettings {
                 NotchSettingsArea(
+                    sessionsModel: sessionsModel,
+                    companionManager: companionManager,
                     generalSettingsViewModel: generalSettingsViewModel,
                     modelSettingsViewModel: modelSettingsViewModel,
                     selectedPage: $selectedSettingsPage,
                     backAction: { showsSettings = false },
-                    closeAction: collapseAction
-                )
-            } else if showsArchive {
-                NotchArchiveArea(
-                    sessionsModel: sessionsModel,
-                    backAction: { showsArchive = false },
                     closeAction: collapseAction
                 )
             } else {
@@ -91,8 +86,7 @@ struct NotchSheetRootView: View {
                         sessionsModel: sessionsModel,
                         agentSessionManager: agentSessionManager,
                         voiceChatController: voiceChatController,
-                        showsSettings: $showsSettings,
-                        showsArchive: $showsArchive
+                        showsSettings: $showsSettings
                     )
                     .frame(width: 245)
 
@@ -163,7 +157,7 @@ struct NotchSheetRootView: View {
     /// 放在 `consumeRequestedSettingsPageIfNeeded()` 之后：外部的设置请求优先，
     /// 它刚把整窗让给设置页的时候不该被这一句抢回列表页。
     private func openVoiceChatSectionIfASessionIsLive() {
-        guard !showsSettings, !showsArchive else { return }
+        guard !showsSettings else { return }
         guard voiceChatController.connectionPhase != .idle else { return }
         agentSessionManager.selectedSidebarSection = .voiceChat
     }
@@ -173,13 +167,13 @@ struct NotchSheetRootView: View {
     /// be consumed from both hooks — onAppear because the expand() that sets
     /// the flag is the same call that inserts this view (onChange never fires
     /// for a value the view did not exist to see change), onChange because the
-    /// sheet may already be open when the panel asks. 归档 page 也要一起退出，
-    /// 否则外部的设置请求会停在归档页上、设置永远打不开。
+    /// sheet may already be open when the panel asks.（归档页以前也要在这里一起
+    /// 退出，自从它搬进设置、成为 `SettingsPage.archive` 之后就不需要了 ——
+    /// 它现在就在设置里。）
     private func consumeRequestedSettingsPageIfNeeded() {
         guard let requestedPage = panelModel.requestedSettingsPage else { return }
         selectedSettingsPage = requestedPage
         showsSettings = true
-        showsArchive = false
         panelModel.requestedSettingsPage = nil
     }
 
@@ -236,6 +230,13 @@ struct NotchSheetRootView: View {
 /// 设置页面的左下角，退出按钮放在返回按钮的右侧。去掉版本号」。
 struct NotchSettingsArea: View {
 
+    /// 「归档」页要它 —— 那一页复用 `NotchArchiveArea`，而归档的列表与选中态
+    /// 都来自这个模型。
+    @ObservedObject var sessionsModel: ConversationSessionsModel
+
+    /// 音色查看那一页要它 —— 试听必须走全 app 唯一的播放引擎（见
+    /// `CompanionManager.playVoicePreview`），而设置页拿不到那个客户端。
+    @ObservedObject var companionManager: CompanionManager
     @ObservedObject var generalSettingsViewModel: GeneralSettingsViewModel
     @ObservedObject var modelSettingsViewModel: ModelSettingsViewModel
     @Binding var selectedPage: SettingsPage
@@ -253,8 +254,10 @@ struct NotchSettingsArea: View {
         (label: "看与操作", pages: [.vision, .action]),
         // 「语音聊天」分组（用户 2026-09-24 要求）。角色页与语音聊天页右键
         // 「编辑」共用同一份视图，所以两处入口改的是同一份数据。
-        (label: "语音聊天", pages: [.voiceChatRoles]),
-        (label: "导入导出", pages: [.exportSettings, .importSettings]),
+        (label: "语音聊天", pages: [.voiceChatRoles, .voiceCatalog]),
+        // 「归档」按用户 2026-09-24 的要求从对话侧栏移到这里：
+        // 「在「导出导入」的下面添加一个按钮叫「归档」」。
+        (label: "导入导出", pages: [.exportSettings, .importSettings, .archive]),
     ]
 
     var body: some View {
@@ -272,6 +275,17 @@ struct NotchSettingsArea: View {
                 case .voiceChatRoles:
                     VoiceChatRoleSettingsView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .voiceCatalog:
+                    VoiceCatalogSettingsView(companionManager: companionManager)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .archive:
+                    // 复用归档那两栏，但**不要它自己的返回键** —— 设置侧栏就是
+                    // 导航，页面里再来一个返回会变成两个出口。
+                    NotchArchiveArea(
+                        sessionsModel: sessionsModel,
+                        backAction: nil,
+                        closeAction: nil
+                    )
                 case .model:
                     ModelSettingsView(modelSettingsViewModel: modelSettingsViewModel)
                 case .exportSettings:
@@ -412,7 +426,7 @@ struct NotchSettingsArea: View {
 
             Spacer(minLength: 8)
 
-            if selectedPage != .model && !selectedPage.isSettingsTransferPage {
+            if selectedPage != .model && selectedPage.drawsSettingsActionBar {
                 // 关闭的动作必须走 `closeAction`（收起面板），**不能**是
                 // `GeneralSettingsActionBar` 默认的 `NSApp.keyWindow?.close()`：
                 // 展开的刘海面板就是 key window，`.close()` 会把它直接 orderOut，

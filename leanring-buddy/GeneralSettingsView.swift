@@ -28,8 +28,10 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case action
     case shortcuts
     case voiceChatRoles
+    case voiceCatalog
     case exportSettings
     case importSettings
+    case archive
 
     var id: String { rawValue }
 
@@ -39,6 +41,15 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     /// `SettingsTransferPage` 自己画。
     var isSettingsTransferPage: Bool {
         self == .exportSettings || self == .importSettings
+    }
+
+    /// 这一页要不要画右上角那条「恢复默认 / 保存 / 关闭」。
+    ///
+    /// 导出/导入是**动作**（把设置写出去、读回来），归档是**浏览**已有数据 ——
+    /// 三页都不读也不写 `AppSettings`，那条栏在这里要么没有意义、要么危险
+    /// （「恢复默认」在归档页上会去重置一堆跟这一页毫无关系的设置）。
+    var drawsSettingsActionBar: Bool {
+        !isSettingsTransferPage && self != .archive
     }
 
     var sidebarTitle: String {
@@ -54,8 +65,10 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .action: return "操作"
         case .shortcuts: return "快捷键"
         case .voiceChatRoles: return "角色"
+        case .voiceCatalog: return "音色查看"
         case .exportSettings: return "导出设置"
         case .importSettings: return "导入设置"
+        case .archive: return "归档"
         }
     }
 
@@ -74,8 +87,10 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .action: return "cursorarrow"
         case .shortcuts: return "keyboard"
         case .voiceChatRoles: return "person.2.fill"
+        case .voiceCatalog: return "waveform.circle.fill"
         case .exportSettings: return "square.and.arrow.up"
         case .importSettings: return "square.and.arrow.down"
+        case .archive: return "archivebox.fill"
         }
     }
 }
@@ -121,6 +136,12 @@ struct GeneralSettingsView: View {
                 case .voiceChatRoles:
                     // 角色页由 `VoiceChatRoleSettingsView` 自己画（它有两栏、
                     // 还要读角色存储），这里只是一个占位，与 模型 / 导出导入 同款。
+                    EmptyView()
+                case .voiceCatalog:
+                    // 同上：音色查看由 `VoiceCatalogSettingsView` 自己画。
+                    EmptyView()
+                case .archive:
+                    // 同上：归档由 `NotchArchiveArea` 自己画（它有两栏）。
                     EmptyView()
                 case .model: EmptyView() // 模型 is rendered by ModelSettingsView.
                 // 导出 / 导入 is rendered by SettingsTransferPage — it is an

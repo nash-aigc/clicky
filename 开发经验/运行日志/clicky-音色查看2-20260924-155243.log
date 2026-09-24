@@ -1,0 +1,110 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 325ms
+⏱️ [hitch] main thread busy for 228ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 180ms
+🔊 [aecprobe] t=1790236383.214 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790236384.580 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790236385.001 event=bringUp isRunning=false device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+⚠️ VoicePlaybackEngine: skipping a TTS chunk — the engine is not running, so this chunk could never finish playing (1 in a row)
+🔊 VoicePlaybackEngine: the audio configuration changed and the engine stopped itself (voice processing toggles do this on purpose) — it will be rebuilt before the next chunk
+⏱️ [hitch] main thread busy for 80ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+🔊 [aecprobe] t=1790236464.927 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 [aecprobe] t=1790236464.927 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790236464.976 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 236ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 176ms
+⏱️ [hitch] main thread busy for 199ms

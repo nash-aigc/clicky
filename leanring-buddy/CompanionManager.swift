@@ -154,6 +154,24 @@ final class CompanionManager: ObservableObject {
 
     private lazy var bailianTTSClient = BailianTTSClient()
 
+    /// 「音色查看」试听的播放入口。
+    ///
+    /// 设置页拿不到 `bailianTTSClient`（它是 private），而试听**必须**走它 ——
+    /// 那个客户端持有全 app 唯一的播放引擎，试听和真朗读必须从同一条
+    /// voice-processing 链路出来，否则同一句话在两处听起来不一样，而用户正是
+    /// 拿试听来做决定的。
+    ///
+    /// 放在 CompanionManager 上而不是把客户端公开出去，和仓库里其它共享资源
+    /// （引擎、静音协调器、TTS）同一种做法：所有权只在一处，别人拿到的是一条路。
+    func playVoicePreview(wavData: Data) async throws {
+        try await bailianTTSClient.playPreviewWAVData(wavData)
+    }
+
+    /// 停掉正在试听的那一段。只停播放队列，不释放引擎。
+    func stopVoicePreview() {
+        bailianTTSClient.stopPreviewPlayback()
+    }
+
     /// 「录制期间自动静音系统扬声器」: mutes the default output device while
     /// the mic is recording (and no answer is playing), restores it after.
     /// The echo defence is the shared engine's voice processing (see

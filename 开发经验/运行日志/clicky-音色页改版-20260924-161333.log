@@ -1,0 +1,32 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 386ms
+⏱️ [hitch] main thread busy for 227ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 175ms
+🔊 [aecprobe] t=1790237655.006 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790237656.524 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790237656.812 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 98ms
+2026-09-24 16:15:02.069 Clicky[18893:8539726] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-24 16:15:02.085 Clicky[18893:8539726] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 72ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms

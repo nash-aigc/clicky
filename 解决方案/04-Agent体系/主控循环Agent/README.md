@@ -94,6 +94,15 @@
 | 新增 | MCP 客户端（按需），或先用脚本包装外部服务的少数高频动作 | [`06`](06-工具库与MCP.md) 第三节 |
 | — | **不要把整套 MCP 工具 schema 注入快路径**——判据是它对每次请求固定前缀的开销 | [`06`](06-工具库与MCP.md) 第三节 |
 
+### 第八优先：为复盘打标签（复盘 Agent 的前置）
+
+| 文件 | 改什么 | 依据 |
+|---|---|---|
+| `ConversationHistoryStore.swift` | `ConversationHistoryEntry` 加 `taskLabels: [String]?` 与 `reviewedAt: Date?`（**都走 `decodeIfPresent`**，旧文件照常解码） | [`../复盘Agent/README.md`](../复盘Agent/README.md) §三 |
+| `ActionTagParser.swift` | `[TASK:标签1,标签2]` 的 case + pattern + **`streamingTagKeywords`**（它同样不能被念出来） | 同上 §五 |
+| `CompanionManager.swift` | 系统提示词要求每轮输出 1–3 个**词表内**标签；把标签写进当轮 turn 记录 | 同上 §五 |
+| 新增 | `task_labels.json`（受控词表，放在工具库旁边，用户可改） | 同上 §五 |
+
 ### 加任何动作的四处纪律（漏一处就有症状）
 
 1. `CompanionAction` 加 case（`ActionTagParser.swift`）

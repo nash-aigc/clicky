@@ -32,8 +32,15 @@ import SwiftUI
 struct NotchArchiveArea: View {
 
     @ObservedObject var sessionsModel: ConversationSessionsModel
-    var backAction: () -> Void
-    var closeAction: () -> Void
+
+    /// 左下角那颗「‹ 返回」。**可为空** —— 这个视图现在有两个宿主：整窗接管的
+    /// 旧入口（要它），以及设置里的「归档」页（不要，设置侧栏自己就是导航）。
+    /// 为空时那一行整块不画，而不是画一颗点了没反应的按钮。
+    var backAction: (() -> Void)?
+
+    /// 「退出 Clicky」。整窗接管那一版已经不需要它了（设置页才有），保留成
+    /// 可选是为了以后别处复用；为空就不画。
+    var closeAction: (() -> Void)?
 
     /// Which archived conversation the right column shows. Kept as an id, not
     /// a copy of the record: a 恢复 made anywhere else in the app must not
@@ -162,24 +169,26 @@ struct NotchArchiveArea: View {
             // 定的位置：「返回按钮放在设置页面的左下角」）。这个页面是同一套
             // 整窗接管的写法 —— 两个页面的返回键落在同一个地方，用户才不用
             // 每次重新找。归档页没有「退出 Clicky」，所以这里只有它一颗。
-            Button(action: backAction) {
-                HStack(spacing: 5) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 10, weight: .semibold))
-                    Text("返回")
-                        .font(.system(size: 11.5, weight: .medium))
+            if let backAction {
+                Button(action: backAction) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("返回")
+                            .font(.system(size: 11.5, weight: .medium))
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.white.opacity(0.08)))
+                    .contentShape(Capsule())
                 }
-                .foregroundColor(.white.opacity(0.7))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Capsule().fill(Color.white.opacity(0.08)))
-                .contentShape(Capsule())
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help("返回对话")
+                .padding(.horizontal, 14)
+                .padding(.bottom, 12)
             }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .help("返回对话")
-            .padding(.horizontal, 14)
-            .padding(.bottom, 12)
         }
         .frame(width: 245)
         // 不透明（用户 2026-09-23：「整个弹出窗口调整为完全不透明」）——见
@@ -274,16 +283,20 @@ struct NotchArchiveArea: View {
             .pointerCursor()
             .help("恢复到侧栏，继续聊")
 
-            Button(action: closeAction) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.55))
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
-                    .pointerCursor()
+            // 收起按钮同样可为空：在设置里那一版，页头的「关闭」是设置页自己
+            // 的那一颗，这里再来一个就是两个收起键。
+            if let closeAction {
+                Button(action: closeAction) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.55))
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(Color.white.opacity(0.08)))
+                        .pointerCursor()
+                }
+                .buttonStyle(.plain)
+                .help("收起（Esc）")
             }
-            .buttonStyle(.plain)
-            .help("收起（Esc）")
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, NotchSupport.sheetHeaderTopInset)
