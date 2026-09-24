@@ -117,6 +117,12 @@ final class SystemSpeakerMuteCoordinator {
     /// Whether a recording session (push-to-talk or continuous listening) is
     /// open right now. Injected by CompanionManager, which owns the dictation
     /// manager.
+    /// 每次真的改了扬声器静音状态之后调一次 —— 那一下硬件切换会"咔哒"响，
+    /// 而麦克风和输出是同一条物理链路，所以本 App 的识别器会听见它。
+    /// 收到的人据此在极短窗口内无视电平与识别结果（见
+    /// `BuddyDictationManager.noteSelfProducedAudioTransient`）。
+    private let selfAudioTransientHandler: () -> Void
+
     private let recordingActiveProvider: () -> Bool
 
     /// Whether the app is reading an answer aloud right now — the speakers
@@ -139,8 +145,10 @@ final class SystemSpeakerMuteCoordinator {
 
     init(
         recordingActiveProvider: @escaping () -> Bool,
-        playbackActiveProvider: @escaping () -> Bool
+        playbackActiveProvider: @escaping () -> Bool,
+        selfAudioTransientHandler: @escaping () -> Void = {}
     ) {
+        self.selfAudioTransientHandler = selfAudioTransientHandler
         self.recordingActiveProvider = recordingActiveProvider
         self.playbackActiveProvider = playbackActiveProvider
 
@@ -245,6 +253,7 @@ final class SystemSpeakerMuteCoordinator {
                 return
             }
             print("🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)")
+            selfAudioTransientHandler()
             // TEMPORARY PROBE (2026-09-24): the mute toggle is a CoreAudio write
             // on the device the microphone shares its codec with, so it is a
             // candidate source for a click the VAD could read as speech. Timed
@@ -296,6 +305,7 @@ final class SystemSpeakerMuteCoordinator {
         }
 
         print("🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording")
+        selfAudioTransientHandler()
         // TEMPORARY PROBE (2026-09-24) — see the MUTED counterpart.
         print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=speakersRestored")
         mutedDevicesPriorState.removeAll()

@@ -690,6 +690,36 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// it takes to refill. It is cleared when the listening WINDOW opens and
     /// closes.
     private var continuousListeningRecentAudioLevels: [CGFloat] = []
+
+    /// 自产瞬时噪声的静默截止时刻。见 `noteSelfProducedAudioTransient()`。
+    private var selfProducedTransientQuietUntil: Date = .distantPast
+
+    /// 刚刚有一次**本 App 自己造成的**音频瞬变（目前只有一处：系统扬声器的硬件
+    /// 静音/解静音切换）。在这之后的短时间内，电平 VAD 与识别结果一律不算数。
+    ///
+    /// **为什么必须这样**（2026-09-24 实测定位）：那一下切换走的是 CoreAudio 的
+    /// `kAudioDevicePropertyMute`，而输出编解码器和内置麦克风是同一条物理链路 ——
+    /// 切换时"咔哒"一声进了麦克风，电平峰值 **0.49~0.83**，而本 App 自己回答的残留
+    /// 只有 **0.05~0.08**（实测），所以那绝不是回答漏音。识别器把这个非语音瞬变
+    /// 听成了一个字，返回「嗯。」，于是：
+    ///
+    ///     回答播完 → 2 秒后扬声器重新静音 → 咔哒 → 电平 VAD 触发
+    ///     → 误判成用户插话 → 掐掉/新起一轮 → 屏幕上多出一个「嗯。」
+    ///
+    /// 时间戳能把这条钉死：`bargeIn t=…949.423` 紧挨着 `speakersMUTED t=…949.765`，
+    /// 另一处 `bargeIn t=…926.717` 紧挨着 `speakersMUTED t=…927.029`。
+    ///
+    /// 窗口取 0.6 秒：爆音是几毫秒的事，而真人插话会持续几百毫秒并很快出字 ——
+    /// 真人的打断最多晚 0.6 秒被承认，误触发则被彻底挡掉。
+    func noteSelfProducedAudioTransient() {
+        selfProducedTransientQuietUntil = Date().addingTimeInterval(Self.selfProducedTransientQuietSeconds)
+    }
+
+    private static let selfProducedTransientQuietSeconds: TimeInterval = 0.6
+
+    private var isInsideSelfProducedTransientQuietWindow: Bool {
+        Date() < selfProducedTransientQuietUntil
+    }
     /// The loudest the microphone has been inside that window.
     private var continuousListeningRecentPeakAudioLevel: CGFloat {
         continuousListeningRecentAudioLevels.max() ?? 0
@@ -1091,9 +1121,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
         }
 
-        Task {
-            await self.restartListeningTranscriptionSession()
-        }
+        // **这一句交付完，会话继续用**（原来这里会 `restartListeningTranscriptionSession()`
+        // —— 取消旧 socket 再立刻在同一个共享 URLSession 上建新的）。
+        //
+        // 官方实测（2026-09-24，直连真服务）：同一个 websocket 连着 commit 两次，
+        // 两次都给出各自的最终结果，而且 commit 之后服务端**不会**关连接。所以
+        // 「每句重开会话」不是协议要求，是我们自己加的限制 —— 而它的代价是
+        // **每一轮**都报 `Socket is not connected`、触发重连重试（最多 5×1s），
+        // 最后结果还得先等 2.4 秒宽限。用户报的「三段式特别慢、卡顿」就在这里。
+        activeTranscriptionSession?.beginNextUtterance()
     }
 
     /// Replaces the ASR session after a final transcript was delivered (the
@@ -1233,6 +1269,10 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             let now = Date()
             let audioLevel = currentAudioPowerLevel
 
+            // 自产爆音的静默窗内，电平一律不作为「有人在说话」的证据。
+            // 仍然把电平记进滚动窗口，这样日志里看得到当时到底有多响。
+            let isInsideSelfProducedTransientQuietWindow = self.isInsideSelfProducedTransientQuietWindow
+
             // Refresh the rolling level window the refusal report reads.
             // Sampled here rather than in the tap so the window means
             // wall-clock time — "the last half second" — instead of "however
@@ -1268,6 +1308,12 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                 if audioLevel >= 0.15 || continuousListeningRecentPeakAudioLevel >= 0.15 {
                     print("🎙️ [aecprobe] t=\(String(format: "%.3f", probeNow)) event=level botSpeaking=true level=\(String(format: "%.3f", Double(audioLevel))) peak0.5s=\(String(format: "%.3f", Double(continuousListeningRecentPeakAudioLevel))) utteranceActive=\(continuousListeningUtteranceActive ? "yes" : "no")")
                 }
+            }
+
+            if isInsideSelfProducedTransientQuietWindow {
+                // 静默窗内什么都不判：不开新的一句，也不推进静音倒计时。
+                // 已经开着的那一句**不取消** —— 用户可能正在说话，不该被这一下打断。
+                continue
             }
 
             if continuousListeningUtteranceActive {
@@ -1437,8 +1483,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// `continuousListeningFinalGraceSeconds`, the latest interim transcript
     /// is submitted as the final instead.
     private func requestContinuousListeningFinalTranscript(
-        graceSeconds: TimeInterval = BuddyDictationManager.continuousListeningFinalGraceSeconds
+        graceSeconds requestedGraceSeconds: TimeInterval? = nil
     ) {
+        // 宽限用**这个 provider 自己报的**值：实时 websocket 是 2.4 秒，非实时
+        // HTTP 是 12 秒（它要等一次往返，实测 12 秒音频 1.27 秒返回）。套用同一个
+        // 常量会把正常的 HTTP 请求提前掐掉 —— 那正是「最终结果拿不到、只能交中间
+        // 结果」的老毛病，只是换了个原因。
+        let graceSeconds = requestedGraceSeconds
+            ?? activeTranscriptionSession?.finalTranscriptFallbackDelaySeconds
+            ?? BuddyDictationManager.continuousListeningFinalGraceSeconds
         // Capture BEFORE the reset — resetContinuousListeningUtteranceState
         // clears the interim, and the fallback may still need it.
         let fallbackTranscriptText = continuousListeningLatestInterimTranscript

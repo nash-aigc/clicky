@@ -320,6 +320,32 @@ private final class BailianRealtimeTranscriptionSession: NSObject, BuddyStreamin
         }
     }
 
+    /// 这一句结束了，但**会话继续用**。
+    ///
+    /// 官方实测（2026-09-24，直连真服务）：同一个 websocket 上连着 commit 两次，
+    /// 两次都拿到各自的最终结果；而且 commit 之后服务端**不会**关连接（commit 后
+    /// 0.21 秒给结果，连接一直开着）。所以「每句重开会话」是我们自己加的限制，
+    /// 不是协议要求。
+    ///
+    /// 原来每句都 `cancel()` 旧 task 再在**同一个共享 URLSession** 上建新 task ——
+    /// 新连接撞上正在拆掉的旧连接就报 `Socket is not connected`（POSIX 57），
+    /// 于是每一轮都：报错 → 重试建连（最多 5×1s）→ 而最终结果还得先等 2.4 秒宽限。
+    /// 这就是用户报的「三段式特别慢、卡顿」。
+    ///
+    /// 这个方法只把**每一句**的标记清掉（已请求/已交付/累积文本/那句的截止计时器），
+    /// 会话级的东西（socket、`session.update`、`isCancelled`）一概不动。
+    func beginNextUtterance() {
+        stateQueue.async {
+            guard !self.isCancelled else { return }
+            self.hasRequestedFinalTranscript = false
+            self.hasDeliveredFinalTranscript = false
+            self.pendingPCM16AudioData.removeAll(keepingCapacity: true)
+            self.latestTranscriptText = ""
+            self.finalTranscriptDeadlineWorkItem?.cancel()
+            self.finalTranscriptDeadlineWorkItem = nil
+        }
+    }
+
     /// Sends whatever audio is too short to have formed a full chunk yet.
     /// Must be called on `stateQueue` so the audio precedes the commit on `sendQueue`.
     private func flushPendingAudio() {

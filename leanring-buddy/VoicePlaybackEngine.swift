@@ -173,6 +173,23 @@ final class VoicePlaybackEngine {
     /// path uses) and stopped by whichever caller takes the tap away.
     private var isCaptureOnlyEngineStarted = false
 
+    /// 实时音频（全双工）专用的**持久**转换器，连同它的源/目标格式标记。
+    ///
+    /// **为什么必须持久**：`response.audio.delta` 是一条连续音频流被切成 50ms 左右
+    /// 的小块推过来的。原来每块都新建一个 `AVAudioConverter`，于是每个小块都让
+    /// 重采样器从零开始 —— 它有启动延迟、相位每次不同，块与块之间就出现突变。
+    /// 听感正是用户报的「电流声 / 像被电了一下」，而且**换音色、改语速都不变**
+    /// （它跟音色无关，是传输层的事）。
+    private var streamingPlaybackConverter: AVAudioConverter?
+    private var streamingPlaybackConverterKey: String?
+
+    /// 上一块里那个落单的字节。
+    ///
+    /// PCM16 两字节一个采样，`count / 2` 会把奇数长度的尾巴丢掉一个字节；每块丢
+    /// 一个，整条流的字节对齐就**永久**错开 —— 那是持续的噪声，比接缝的咔哒难听
+    /// 得多。所以剩下的那一个字节留到下一块拼上。
+    private var streamingLeftoverPCMByte = Data()
+
     /// Which engine currently carries the listening tap. Exactly one engine runs
     /// at a time and the tap lives on THAT one, so this single value is the whole
     /// truth about where the microphone is — and therefore about whether voice
@@ -761,6 +778,129 @@ final class VoicePlaybackEngine {
         // so this mark is the far end of the gap the user measures by ear.
         // `markOnce` because it sits on a per-chunk path and only the first one
         // is the measurement.
+    }
+
+    /// 把一段**裸 PCM16 单声道**排进播放队列 —— 全双工那两条路（语音 / 全模态）的入口。
+    ///
+    /// **为什么不复用 `playWAVData`**：那条路每次都把一个完整 WAV 解成 buffer 再排一次，
+    /// 而实时模型的音频是一小块一小块推过来的（`response.audio.delta`，每块几十毫秒）。
+    /// 每块都包一个 WAV 头再交给 `AVAudioFile` 解，既多一次解码，又会把每个小块都变成
+    /// 一个「播完了」的事件 —— 而 `isChunkPlaying` 是「正在播」的唯一真相，被反复翻动
+    /// 之后上层用来判断「播完了没有」的逻辑就不能用了（朗读那条路靠它决定气泡何时收）。
+    /// 这里只做格式转换然后排队，**不碰那个标志**。
+    ///
+    /// 采样率由调用方给：实时模型的输出实测是 **24 kHz**，而上行是 16 kHz，两者不同，
+    /// 共用一个常量会有一边播成半速。
+    func playStreamingPCM16(_ pcm16Data: Data, sampleRate: Double) throws {
+        guard engine.isRunning, let canonicalPlaybackFormat else {
+            throw BailianTTSClientError(message: "播放引擎没在跑，实时音频排不进去。")
+        }
+        // 把上一块落单的字节补回来，保证下面的切分永远落在采样边界上。
+        var alignedPCM16Data = streamingLeftoverPCMByte
+        alignedPCM16Data.append(pcm16Data)
+        if alignedPCM16Data.count % MemoryLayout<Int16>.size != 0 {
+            streamingLeftoverPCMByte = alignedPCM16Data.suffix(1)
+            alignedPCM16Data.removeLast()
+        } else {
+            streamingLeftoverPCMByte = Data()
+        }
+
+        let frameCount = alignedPCM16Data.count / MemoryLayout<Int16>.size
+        guard frameCount > 0 else { return }
+
+        guard let sourceFormat = AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: sampleRate,
+            channels: 1,
+            interleaved: true
+        ),
+        let sourceBuffer = AVAudioPCMBuffer(
+            pcmFormat: sourceFormat,
+            frameCapacity: AVAudioFrameCount(frameCount)
+        ),
+        let sourceSamples = sourceBuffer.int16ChannelData?[0]
+        else {
+            throw BailianTTSClientError(message: "实时音频的源格式建不出来。")
+        }
+        sourceBuffer.frameLength = AVAudioFrameCount(frameCount)
+        alignedPCM16Data.withUnsafeBytes { rawBuffer in
+            guard let baseAddress = rawBuffer.baseAddress else { return }
+            sourceSamples.update(
+                from: baseAddress.assumingMemoryBound(to: Int16.self),
+                count: frameCount
+            )
+        }
+
+        // 源格式和引擎格式（voice processing 之后是 48 kHz）不同，必须转一次。
+        // 转换器**跨块复用**，见 `streamingPlaybackConverter` 的说明。
+        let converterKey = "\(sampleRate)-\(canonicalPlaybackFormat.sampleRate)-\(canonicalPlaybackFormat.channelCount)"
+        if streamingPlaybackConverter == nil || streamingPlaybackConverterKey != converterKey {
+            streamingPlaybackConverter = AVAudioConverter(from: sourceFormat, to: canonicalPlaybackFormat)
+            streamingPlaybackConverterKey = converterKey
+        }
+        guard let converter = streamingPlaybackConverter else {
+            throw BailianTTSClientError(message: "实时音频转换器建不出来。")
+        }
+
+        // **一直抽到抽不出为止**（`inputRanDry`）——不能只调一次。
+        // 一次调用只喂一块输入、转换器内部还留着没吐完的采样，那些采样要是被丢掉，
+        // 每块就少一截，接缝处就是一下咔哒（这正是原来的写法：回调用完一次就
+        // `.noDataNow` 收工）。
+        var didProvideInput = false
+        for _ in 0..<8 {
+            let outputCapacity = AVAudioFrameCount(
+                Double(frameCount) * canonicalPlaybackFormat.sampleRate / sampleRate + 1024
+            )
+            guard let convertedBuffer = AVAudioPCMBuffer(
+                pcmFormat: canonicalPlaybackFormat,
+                frameCapacity: outputCapacity
+            ) else {
+                throw BailianTTSClientError(message: "实时音频的目标 buffer 建不出来。")
+            }
+            var conversionError: NSError?
+            let status = converter.convert(to: convertedBuffer, error: &conversionError) { _, inputStatus in
+                if didProvideInput {
+                    inputStatus.pointee = .noDataNow
+                    return nil
+                }
+                didProvideInput = true
+                inputStatus.pointee = .haveData
+                return sourceBuffer
+            }
+            if let conversionError {
+                throw BailianTTSClientError(message: "实时音频转换失败：\(conversionError.localizedDescription)")
+            }
+            if convertedBuffer.frameLength > 0 {
+                playerNode.scheduleBuffer(convertedBuffer)
+            }
+            // `.inputRanDry` = 输入给完了、转换器里也没存货了 —— 这一块到此为止。
+            if status == .inputRanDry || status == .endOfStream || status == .error {
+                break
+            }
+        }
+
+        // 语速/音量仍按用户在「说」那一页的设置 —— 实时模型自己发声，但
+        // 「多快多响」是用户的偏好，和朗读保持一致。
+        let appSettings = AppSettingsStore.snapshot()
+        timePitchNode.rate = Float(appSettings.speechPlaybackRate)
+        playerNode.volume = Float(appSettings.speechPlaybackVolumePercent) / 100
+
+        if !playerNode.isPlaying {
+            playerNode.play()
+        }
+    }
+
+    /// 立刻掐掉实时音频队列（打断时用）。
+    ///
+    /// 和 `stopChunk` 的区别是**不清 `isChunkPlaying`**：实时那条路根本没用它，
+    /// 清了反而会去干扰朗读那套「播完了没有」的判断。
+    func stopStreamingPlayback() {
+        playerNode.stop()
+        // 会话结束：转换器和那半个字节都不该留到下一次 —— 下一条流的起点与这一条
+        // 没有任何连续性，留着只会把上一轮的尾巴接进来。
+        streamingPlaybackConverter = nil
+        streamingPlaybackConverterKey = nil
+        streamingLeftoverPCMByte = Data()
     }
 
     /// Stops the current chunk immediately (interruption path). The engine

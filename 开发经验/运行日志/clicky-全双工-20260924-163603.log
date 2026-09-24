@@ -1,0 +1,82 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 343ms
+⏱️ [hitch] main thread busy for 82ms
+🔊 [aecprobe] t=1790238974.964 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790238976.477 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790238976.768 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 71ms
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 492ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 881ms（总 1339ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1380ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790238992.798 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.412, transcript: "对。")
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790238993.009 event=speakersMuted
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790238999.587 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (9 chars)
+🗣️ Streaming speech: queued segment 2 (33 chars)
+⏱️ [hitch] main thread busy for 52ms
+🗣️ Streaming speech: queued segment 3 (22 chars)
+🔊 [aecprobe] t=1790239001.349 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (120KB)
+🔊 [aecprobe] t=1790239003.389 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (348KB)
+🔊 [aecprobe] t=1790239009.043 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (221KB)
+🔊 [aecprobe] t=1790239012.673 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 78ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 49ms
+📷 [camera] startRunning 1260ms（总 1286ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1317ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+📷 语音聊天：摄像头已关闭

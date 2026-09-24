@@ -29,6 +29,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case shortcuts
     case voiceChatRoles
     case voiceCatalog
+    case voiceChatConnection
     case exportSettings
     case importSettings
     case archive
@@ -66,6 +67,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .shortcuts: return "快捷键"
         case .voiceChatRoles: return "角色"
         case .voiceCatalog: return "音色查看"
+        case .voiceChatConnection: return "连接"
         case .exportSettings: return "导出设置"
         case .importSettings: return "导入设置"
         case .archive: return "归档"
@@ -88,6 +90,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .shortcuts: return "keyboard"
         case .voiceChatRoles: return "person.2.fill"
         case .voiceCatalog: return "waveform.circle.fill"
+        case .voiceChatConnection: return "link.circle.fill"
         case .exportSettings: return "square.and.arrow.up"
         case .importSettings: return "square.and.arrow.down"
         case .archive: return "archivebox.fill"
@@ -140,6 +143,8 @@ struct GeneralSettingsView: View {
                 case .voiceCatalog:
                     // 同上：音色查看由 `VoiceCatalogSettingsView` 自己画。
                     EmptyView()
+                case .voiceChatConnection:
+                    voiceChatConnectionPage
                 case .archive:
                     // 同上：归档由 `NotchArchiveArea` 自己画（它有两栏）。
                     EmptyView()
@@ -722,6 +727,42 @@ struct GeneralSettingsView: View {
     }
 
     // MARK: 说
+
+    private var voiceChatConnectionPage: some View {
+        Group {
+            SettingsPageHeader(
+                title: "连接",
+                subtitle: "语音聊天连上之后会发生什么。"
+            )
+
+            SettingsGroupLabel("开场")
+            SettingsCard {
+                SettingsRow(
+                    label: "连接后让 AI 先打招呼",
+                    description: "连上之后由 AI 说第一句话。这也是你判断「真的通了」的唯一可听证据 —— 刘海上的「已连接」会等到那一句出声的那一刻才亮，不再是它接受了配置就亮。"
+                ) {
+                    SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceChatGreetsOnConnect))
+                }
+                SettingsCardRowDivider()
+                SettingsTextEditorRow(
+                    label: "第一句说什么",
+                    description: "留空就用内置的那句「\(AppSettings.defaultVoiceChatGreetingText)」。写得短一点，它是「能不能听见」的探针，不是内容。",
+                    text: generalSettingsViewModel.binding(\.voiceChatGreetingText),
+                    placeholder: AppSettings.defaultVoiceChatGreetingText
+                )
+            }
+
+            SettingsGroupLabel("说明")
+            SettingsCard {
+                Text("关掉「先打招呼」之后，刘海会在连接调用返回时就显示「已连接」—— 那时它只代表配置被接受了，不代表对方真的听得到。")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+            }
+        }
+    }
 
     private var speakPage: some View {
         Group {

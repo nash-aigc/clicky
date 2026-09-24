@@ -129,7 +129,8 @@ nonisolated enum APIProviderFlavor: String, Codable, CaseIterable, Sendable {
         case (.bailian, .vision):
             return ["qwen3-vl-plus", "qwen3-vl-flash"]
         case (.bailian, .transcription):
-            return ["qwen3-asr-flash-realtime"]
+            // 非实时优先（默认），实时的留在列表里 —— 换模型就能换路。
+            return ["qwen-audio-3.1-asr-flash", "qwen3-asr-flash-realtime"]
         case (.bailian, .speech):
             return ["qwen-audio-3.1-tts-flash"]
         case (.deepSeek, .vision):

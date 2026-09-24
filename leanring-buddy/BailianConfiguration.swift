@@ -88,9 +88,14 @@ nonisolated enum BailianConfiguration {
             static let defaultModelID = plus
         }
 
-        /// Streaming speech-to-text. Chosen over the file-upload models so the
-        /// transcript appears while the user is still talking.
-        static let realtimeTranscription = "qwen3-asr-flash-realtime"
+        /// 非实时语音识别 —— **整句交给模型，一次拿回完整转写**。
+        ///
+        /// 2026-09-24 从 `qwen3-asr-flash-realtime` 换到它，理由见
+        /// `BailianNonRealtimeTranscriptionProvider` 的文件头：流式的中间结果会
+        /// 一边说一边改写（用户看到「文字总是在变」），而且准确率差得远（同一段
+        /// 12 秒音频，实时的把句子截断成「…很高。」，这个一字不差）。
+        /// 实时那条路仍然可用 —— 模型名里带 `-realtime` 就会走它。
+        static let realtimeTranscription = "qwen-audio-3.1-asr-flash"
 
         /// Text-to-speech used to read answers aloud.
         ///

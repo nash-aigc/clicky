@@ -322,7 +322,9 @@ struct VoiceChatSessionView: View {
         let isHovered = hoveredMode == mode
 
         return Button {
-            controller.selectedMode = mode
+            // 走控制器那一条「写回角色」的路 —— 直接赋 `selectedMode` 会被
+            // `connectToRole` 从角色里读回来的值覆盖掉（见 `selectMode` 的注释）。
+            controller.selectMode(mode)
             isModeMenuOpen = false
         } label: {
             HStack(spacing: 8) {

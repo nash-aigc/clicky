@@ -670,6 +670,13 @@ final class CompanionManager: ObservableObject {
                 },
                 playbackActiveProvider: { [weak self] in
                     self?.bailianTTSClient.isPlaying ?? false
+                },
+                // 扬声器的硬件静音/解静音会和麦克风共用同一条物理链路，切换时那声
+                // "咔哒"会被本 App 自己的识别器听成字（实测：0.49~0.83 的尖峰，
+                // 而回答残留只有 0.05~0.08）。所以每次真的切换之后告诉听写管理器：
+                // 接下来这零点几秒里听见的都不算数。
+                selfAudioTransientHandler: { [weak self] in
+                    self?.buddyDictationManager.noteSelfProducedAudioTransient()
                 })
         }
 

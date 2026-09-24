@@ -236,13 +236,49 @@ final class VoiceChatController: ObservableObject {
         } else {
             selectedRoleID = VoiceChatRoleStore.snapshot().activeRoleID ?? storedRoles.first?.id
         }
+        // 进这一页时就把模式对齐到角色的真实值，别让下拉显示一个连接后会被推翻的值。
+        syncSelectedModeFromRole()
+    }
+
+    /// 用户在页头换了模式。**必须写回角色，不能只改本地那个字段。**
+    ///
+    /// 为什么：`connectToRole` 会做 `selectedMode = role.resolvedChatEngine`，
+    /// 也就是**从角色里读回来**。改成只赋 `selectedMode`，用户的选择会在按下「连接」
+    /// 的那一刻被角色里存的旧值覆盖掉 —— 而这个覆盖是**静默**的：界面上的模式标签
+    /// 会变回去，会话照旧用另一种模式跑（2026-09-24 实测：选了「全双工语音」，
+    /// 连接后日志里写的是「模式 三段式」）。
+    ///
+    /// 所以「改模式」只有这一条路：先写角色，再改本地。页头那颗下拉必须走它。
+    func selectMode(_ mode: VoiceChatEngine) {
+        var role = currentRole
+        role.chatEngine = mode.rawValue
+        VoiceChatRoleStore.upsertRole(role)
+        selectedMode = mode
     }
 
     /// 侧栏点一行 —— **只选中，不连接**（与 Chrome 版同一个交互模型：
     /// 连接由那一行右边的「连接」按钮发起）。
     func selectRole(_ roleID: String) {
         selectedRoleID = roleID
+        syncSelectedModeFromRole()
         reloadDeviceSwitches()
+    }
+
+    /// 让页头那个模式下拉**显示的就是连接时会用的那个**。
+    ///
+    /// 为什么必须有它：`connectToRole` 里有一句 `selectedMode = role.resolvedChatEngine`
+    /// —— 模式是**从角色里读回来**的。而角色里存着上一次选的模式（数据，跨启动、
+    /// 跨代码回退都在）。于是「界面显示三段式、实际跑全双工」是可能的：用户按连接，
+    /// 引擎被换成角色里存的那个，而下拉框要等到那一刻才跟着变。
+    /// 2026-09-24 实测到的「三段式里我说话它不回应」就是这么来的 —— 那时真正跑的
+    /// 是全双工，而全双工没有三段式那些实时转写/静音倒计时的提示。
+    ///
+    /// 同步放在**选角色**时做，显示与将要执行的因此永远一致。
+    private func syncSelectedModeFromRole() {
+        let roleMode = currentRole.resolvedChatEngine
+        if selectedMode != roleMode {
+            selectedMode = roleMode
+        }
     }
 
     /// 进语音聊天分区时的预热。
@@ -417,6 +453,50 @@ final class VoiceChatController: ObservableObject {
     }
 
     /// 起会话：装麦克风、开相位。
+    /// 全双工语音的引擎。**和三段式互斥**：同一个会话只会起其中一个。
+    ///
+    /// 做成 lazy 是因为它要拿 `speechSynthesizer.voicePlaybackEngine`（共享播放引擎，
+    /// 全 app 唯一那台），而那台要等控制器建好之后才拿得到。
+    private lazy var duplexVoiceEngine: DuplexVoiceEngine = {
+        DuplexVoiceEngine(
+            playbackEngine: speechSynthesizer.voicePlaybackEngine,
+            callbacks: DuplexVoiceEngine.Callbacks(
+                onUserUtterance: { [weak self] transcript in
+                    self?.insertDuplexUserEntry(transcript)
+                },
+                onFirstAudioScheduled: { [weak self] in
+                    self?.markVoiceChatFullyConnected()
+                },
+                onBargeIn: { [weak self] in
+                    self?.duplexAssistantEntryID = nil
+                },
+                onAssistantText: { [weak self] cumulativeText in
+                    self?.updateDuplexAssistantEntry(cumulativeText)
+                },
+                onAssistantTurnFinished: { [weak self] in
+                    self?.duplexAssistantEntryID = nil
+                },
+                onFailure: { [weak self] message in
+                    self?.presentFailure("语音聊天：\(message)")
+                }
+            )
+        )
+    }()
+
+    /// 全双工那一轮回答的气泡 id。服务端的回答是流式推来的、没有「回合开始」这个
+    /// 明确信号（`response.created` 才是），所以气泡在第一个 delta 到达时建、
+    /// 在 `response.done` 时解绑 —— 和打字那条路同一个「一个回合一个气泡」的形状。
+    private var duplexAssistantEntryID: UUID?
+
+    /// 这一场会话是不是全双工起的。**只有它为真时才去碰全双工引擎** ——
+    /// `duplexVoiceEngine` 是 lazy 的，而 `disconnectCurrentSession` 三种模式共用，
+    /// 在那里无条件调 `stop()` 会在三段式里凭空构造出引擎、并拆掉三段式自己的
+    /// 麦克风 tap（2026-09-24 实测：「三段式里我说话它不回应」）。
+    private var isDuplexSessionLive = false
+
+    /// 「等第一段音频」的兜底计时器，见 `scheduleConnectionFallbackIfNoAudio`。
+    private var connectionFallbackTask: Task<Void, Never>?
+
     private func beginSession() async {
         let settings = AppSettingsStore.snapshot()
         let sessionStartedAt = Date()
@@ -433,6 +513,19 @@ final class VoiceChatController: ObservableObject {
         // VPIO 重配的同时进行。
         async let screenPreviewStarted: Void = isScreenSharingEnabled ? screenPreview.start() : ()
         async let cameraPreviewStarted: Void = isCameraEnabled ? cameraPreview.start() : ()
+
+        // **全双工语音走另一条路，而且不开持续监听。**
+        //
+        // 两个原因，缺一都不行：
+        //  · 这一条会话的回合由**服务端的 VAD** 决定（`turn_detection: server_vad`），
+        //    再叠一套客户端的电平 VAD + 识别门槛，等于两个人抢方向盘。
+        //  · App 那套连续监听会把麦克风 tap 装到共享引擎上 —— 而全双工也要装。
+        //    同一根输入总线只有一个 tap，后装的会把先装的顶掉。
+        if selectedMode == .duplexVoice {
+            await startDuplexSession(role: currentRole, settings: settings)
+            _ = await (screenPreviewStarted, cameraPreviewStarted)
+            return
+        }
 
         await dictationManager.startContinuousListening(
             utteranceEndSilenceSeconds: settings.continuousListeningSilenceSendSeconds,
@@ -482,8 +575,9 @@ final class VoiceChatController: ObservableObject {
         }
 
         isSessionLive = true
-        connectionPhase = .connected
-        setNotchOverride(.externalChatting)
+        // 同一条规则：先「连接中」，第一段音频真的播出来才叫「已连接」。
+        connectionPhase = .connecting
+        setNotchOverride(.externalConnecting)
         // 连接**不**响音效（用户 2026-09-24：「连接时，用户点击连接按钮的声音要去掉，
         // 挂断时的声音保留」）。
         //
@@ -508,7 +602,103 @@ final class VoiceChatController: ObservableObject {
         // 会话说一句「我在用引擎」，见 `noteVoiceSessionActivity` 的注释。
         noteVoiceSessionActivity()
 
+        // 三段式也要「AI 先说第一句」：那一轮的回答播放就是可听的连通证据。
+        let greetingSettings = AppSettingsStore.snapshot()
+        if greetingSettings.voiceChatGreetsOnConnect {
+            let greetingText = greetingSettings.voiceChatGreetingText
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let greeting = greetingText.isEmpty
+                ? AppSettings.defaultVoiceChatGreetingText
+                : greetingText
+            // `announcesUserBubble: false` —— 这句是我们替系统说的，不是用户说的，
+            // 在对话流里冒出一个用户气泡会把记录弄脏。
+            startTurn(utterance: greeting, announcesUserBubble: false)
+            watchForFirstAudioToConfirmConnection()
+        } else {
+            markVoiceChatFullyConnected()
+        }
+
         print("💬 语音聊天：会话已开始（角色「\(currentRole.displayName)」，模式 \(selectedMode.displayName)）")
+    }
+
+    /// 连接真正完成的**唯一**时刻：第一段回答音频开始播。
+    ///
+    /// 用户 2026-09-24：「刘海屏状态栏的状态应该等同于 AI 发声的那一秒……
+    /// 所谓的连接中、连接成功，根本就不是连接成功，它只是假的连接成功。」
+    /// 所以刘海切到「Chatting」和 `connectionPhase` 变 `.connected` 都在这里，
+    /// 而不在连接调用返回的地方。
+    private func markVoiceChatFullyConnected() {
+        guard connectionPhase == .connecting else { return }
+        connectionPhase = .connected
+        setNotchOverride(.externalChatting)
+        connectionFallbackTask?.cancel()
+        connectionFallbackTask = nil
+        noteVoiceSessionActivity()
+        print("💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」")
+    }
+
+    /// 兜底：等不到第一段音频也要有个说法，不能把界面永远吊在「连接中」。
+    ///
+    /// 15 秒是实测留的余量（全双工首轮实测 3.4 秒出声；三段式还要过截图+理解+TTS）。
+    /// 到点了就如实算连上，但**把话说在界面上** —— 用户知道「它可能没出声」，
+    /// 比一个永远转圈的「连接中」有用。
+    private func scheduleConnectionFallbackIfNoAudio() {
+        connectionFallbackTask?.cancel()
+        connectionFallbackTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(15))
+            guard let self, !Task.isCancelled, self.connectionPhase == .connecting else { return }
+            self.presentFailure("语音聊天：连接了 15 秒还没听到第一句话，它可能没有真的在服务。可以挂断重连试试。")
+            self.markVoiceChatFullyConnected()
+        }
+    }
+
+    /// 起一条全双工语音会话。失败就如实说明并回到未连接 —— 不留一个「连上了但
+    /// 其实没在听」的状态。
+    private func startDuplexSession(role: VoiceChatRole, settings: AppSettings) async {
+        // 引擎要热着：VPIO 的首次重配 ~2 秒，现在付掉，等用户开口时就没有这个延迟。
+        warmUpVoiceEngine()
+        do {
+            try await duplexVoiceEngine.start(
+                role: role,
+                model: selectedDuplexModel(for: role),
+                systemPrompt: role.systemPrompt
+            )
+            isSessionLive = true
+            isDuplexSessionLive = true
+            noteVoiceSessionActivity()
+
+            // **先只到「连接中」**：模型接受了 session.update 只说明配置合法，
+            // 不能说明它听得到、说得出。真正的「已连接」等第一段音频
+            // （`onFirstAudioScheduled` → `markVoiceChatFullyConnected`）。
+            connectionPhase = .connecting
+            setNotchOverride(.externalConnecting)
+            print("💬 语音聊天：全双工语音会话已开始（角色「\(role.displayName)」，模型 \(selectedDuplexModel(for: role))，音色 \(role.duplexVoice)）")
+
+            let greetingSettings = AppSettingsStore.snapshot()
+            if greetingSettings.voiceChatGreetsOnConnect {
+                let greetingText = greetingSettings.voiceChatGreetingText
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                let greeting = greetingText.isEmpty
+                    ? AppSettings.defaultVoiceChatGreetingText
+                    : greetingText
+                try await duplexVoiceEngine.speakGreeting(greeting)
+                scheduleConnectionFallbackIfNoAudio()
+            } else {
+                // 不打招呼就没有「第一段音频」可等 —— 那就不假装，直接算连上。
+                markVoiceChatFullyConnected()
+            }
+        } catch {
+            duplexVoiceEngine.stop()
+            connectionPhase = .idle
+            activeRoleID = nil
+            presentFailure("语音聊天：全双工语音起不来 —— \(error.localizedDescription)")
+        }
+    }
+
+    /// 全双工用哪个模型。Phase 2 之前它是个常量（`VoiceCatalog.defaultDuplexModel`），
+    /// 之后会成为设置项；写在一处，免得散落。
+    private func selectedDuplexModel(for role: VoiceChatRole) -> String {
+        VoiceCatalog.defaultDuplexModel
     }
 
     func disconnectCurrentSession() {
@@ -519,6 +709,11 @@ final class VoiceChatController: ObservableObject {
         activeMode = nil
 
         cascadeEngine.stopEverything()
+        if isDuplexSessionLive {
+            duplexVoiceEngine.stop()
+            isDuplexSessionLive = false
+        }
+        duplexAssistantEntryID = nil
         dictationManager.endContinuousListening()
 
         // 两个采集都停掉：摄像头会把系统的绿灯一直点着，屏幕流一直在编码 ——
@@ -611,9 +806,70 @@ final class VoiceChatController: ObservableObject {
 
     /// 开一轮新对话。**说话与打字共用它** —— 之前两条路各写一遍，导致
     /// 「新回合要新开气泡」这件事只在一条路上做了，那正是气泡顺序错乱的一半原因。
-    private func startTurn(utterance: String) {
+    /// 全双工下用户这句话的气泡落点。
+    ///
+    /// **为什么不直接追加**：服务端的时序是「先听到用户 → 立刻开始回答 → 文字 delta
+    /// 一路推完 → **最后**才补上用户的转写完成事件」（实测一轮 9 个 delta 全到完，
+    /// 转写才 completed）。气泡是「谁先到谁先建」，所以回答的气泡先出现，用户的
+    /// 转写后到、直接 append 就排到了回答**下面** —— 正是用户报的「AI 回复在我的
+    /// 消息气泡之前」。
+    ///
+    /// 修法只动顺序：转写到达时，如果这一轮的回答气泡已经在屏上，就把用户气泡
+    /// **插到它前面**，恢复成时间顺序（先说话，回答是回应）。
+    ///
+    /// **它只被全双工的回调调用**，三段式那条路一行都不经过这里 —— 上一轮那次
+    /// 改动之所以让人以为「拖坏了三段式」，真凶是另外两处跨模式的副作用
+    /// （lazy 引擎被凭空构造 + 拆掉三段式自己的麦克风 tap），已经单独修掉了。
+    private func insertDuplexUserEntry(_ transcript: String) {
+        if let assistantEntryID = duplexAssistantEntryID,
+           let assistantIndex = transcriptEntries.firstIndex(where: { $0.id == assistantEntryID }) {
+            transcriptEntries.insert(
+                VoiceChatTranscriptEntry(id: UUID(), isUser: true, text: transcript),
+                at: assistantIndex
+            )
+        } else {
+            appendTranscriptEntry(isUser: true, text: transcript)
+        }
+    }
+
+    /// 全双工那一轮的助手气泡：第一次 delta 建气泡，之后原地更新。
+    private func updateDuplexAssistantEntry(_ cumulativeText: String) {
+        if let entryID = duplexAssistantEntryID {
+            updateAnswerEntry(entryID, text: cumulativeText)
+        } else {
+            let entryID = UUID()
+            transcriptEntries.append(VoiceChatTranscriptEntry(id: entryID, isUser: false, text: cumulativeText))
+            duplexAssistantEntryID = entryID
+        }
+    }
+
+    /// 三段式下「第一段音频」= 合成器真的开始播了。它是计算属性、不是 @Published，
+    /// 所以这里轮询（100ms，最长 15 秒），而不是订阅。
+    private func watchForFirstAudioToConfirmConnection() {
+        scheduleConnectionFallbackIfNoAudio()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let deadline = Date().addingTimeInterval(15)
+            while Date() < deadline {
+                if self.speechSynthesizer.isPlaying {
+                    self.markVoiceChatFullyConnected()
+                    return
+                }
+                if self.connectionPhase != .connecting { return }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+    }
+
+    private func startTurn(utterance: String, announcesUserBubble: Bool = true) {
         // 每一轮都续一次倒计时，长会话才不会中途被释放。
         noteVoiceSessionActivity()
+
+        // 用户气泡按需画：开场那句打招呼是我们**替系统**说的，不是用户说的 ——
+        // 在对话流里放一个用户气泡会把记录弄脏（用户会以为自己在记录里说过那句话）。
+        if announcesUserBubble {
+            transcriptEntries.append(VoiceChatTranscriptEntry(isUser: true, text: utterance))
+        }
 
         // **这一轮的回答气泡在回合开始时就建好，并且把它的 id 绑给这一轮的闭包。**
         // 两件事一起解决（2026-09-24 收敛后的结论，两条机制都指向「共用槽」）：

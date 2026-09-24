@@ -254,7 +254,7 @@ struct NotchSettingsArea: View {
         (label: "看与操作", pages: [.vision, .action]),
         // 「语音聊天」分组（用户 2026-09-24 要求）。角色页与语音聊天页右键
         // 「编辑」共用同一份视图，所以两处入口改的是同一份数据。
-        (label: "语音聊天", pages: [.voiceChatRoles, .voiceCatalog]),
+        (label: "语音聊天", pages: [.voiceChatRoles, .voiceCatalog, .voiceChatConnection]),
         // 「归档」按用户 2026-09-24 的要求从对话侧栏移到这里：
         // 「在「导出导入」的下面添加一个按钮叫「归档」」。
         (label: "导入导出", pages: [.exportSettings, .importSettings, .archive]),

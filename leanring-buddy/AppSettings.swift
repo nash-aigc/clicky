@@ -744,6 +744,23 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// every sound effect is silent — spoken answers are unaffected either way.
     var playsNotchSoundEffects: Bool = true
 
+    /// 连接成功之后，**先让 AI 说第一句话**（默认开）。
+    ///
+    /// 用户 2026-09-24 的观察很准：「刘海左右两侧显示的是连接成功，但我跟它说话它
+    /// 没有反应，等了很长时间它才有反应」—— 原来的「已连接」只是**我们自己**把
+    /// 状态标志翻了，它并不代表对方真的活着、真的听得到。让 AI 先出声，是把
+    /// 「连接成功」这件事**变成一件用户能听见的事实**。
+    ///
+    /// 配合 `VoiceChatController` 里那条规则：刘海切到「Chatting」的时刻就是
+    /// **第一段音频真的开始播**的时刻，而不是连接调用返回的时刻。
+    var voiceChatGreetsOnConnect: Bool = true
+
+    /// 第一句话说什么。留空就是用内置的那句。
+    var voiceChatGreetingText: String = ""
+
+    /// 内置打招呼语。写得短，因为它是「能不能听见」的探针，不是内容。
+    static let defaultVoiceChatGreetingText = "你好，我在，能听到你说话。"
+
     /// 「刘海屏入口」: whether the notch-area pill is built at all on MacBooks
     /// with a hardware notch. The menu-bar panel is the permanent backup entry,
     /// so turning this off returns the app to a menu-bar-only life. On machines
@@ -1018,6 +1035,8 @@ nonisolated extension AppSettings {
         case pointsAtReferencedElements
         case allowsCircleToAsk
         case playsNotchSoundEffects
+        case voiceChatGreetsOnConnect
+        case voiceChatGreetingText
         case enablesNotchPresence
         case allowsComputerControl
         case allowsKeyboardControl
@@ -1113,6 +1132,8 @@ nonisolated extension AppSettings {
         pointsAtReferencedElements = try container.decodeIfPresent(Bool.self, forKey: .pointsAtReferencedElements) ?? defaults.pointsAtReferencedElements
         allowsCircleToAsk = try container.decodeIfPresent(Bool.self, forKey: .allowsCircleToAsk) ?? defaults.allowsCircleToAsk
         playsNotchSoundEffects = try container.decodeIfPresent(Bool.self, forKey: .playsNotchSoundEffects) ?? defaults.playsNotchSoundEffects
+        voiceChatGreetsOnConnect = try container.decodeIfPresent(Bool.self, forKey: .voiceChatGreetsOnConnect) ?? defaults.voiceChatGreetsOnConnect
+        voiceChatGreetingText = try container.decodeIfPresent(String.self, forKey: .voiceChatGreetingText) ?? defaults.voiceChatGreetingText
         enablesNotchPresence = try container.decodeIfPresent(Bool.self, forKey: .enablesNotchPresence) ?? defaults.enablesNotchPresence
         // `decodeIfPresent` is not optional politeness here: a synthesized `Codable`
         // throws on a missing key, so a plain `Bool` added today would make every
