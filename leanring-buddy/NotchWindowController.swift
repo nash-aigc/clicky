@@ -1262,6 +1262,7 @@ final class NotchWindowController {
     // MARK: - Fullscreen suppression
 
     private func refreshFullscreenSuppression() {
+        PressPathProbe.shared.mark("refreshFullscreenSuppression begins")
         // Build the per-display geometry the heuristic needs: the display's
         // bounds in the window list's top-left space, and whether the menu
         // bar is currently hidden there (`visibleFrame == frame`) — the
@@ -1281,17 +1282,30 @@ final class NotchWindowController {
             displayGeometries: displayGeometries,
             ownProcessID: getpid()
         )
+        PressPathProbe.shared.mark("suppression: window-list query done")
         let isAnyDisplaySuppressed = screenPresences.contains { coveredDisplayIDs.contains($0.displayID) }
 
-        panelModel.isFullscreenSuppressed = isAnyDisplaySuppressed
+        // ONLY ON A CHANGE. `orderFrontRegardless()` posts the notifications that
+        // re-enter this method, and the old code called it unconditionally on
+        // every pass — so one voice-state change became a burst of six calls,
+        // 0 ms apart, each doing a WindowServer round trip (measured 2026-09-24:
+        // six `suppression: panels re-ordered` marks inside 1 ms of each other).
+        // Checking the panel's real visibility first makes the burst impossible;
+        // the panel that is already showing is left alone.
+        if panelModel.isFullscreenSuppressed != isAnyDisplaySuppressed {
+            panelModel.isFullscreenSuppressed = isAnyDisplaySuppressed
+        }
 
         for presence in screenPresences {
-            if coveredDisplayIDs.contains(presence.displayID) && !panelModel.isExpanded {
+            let shouldBeHidden = coveredDisplayIDs.contains(presence.displayID) && !panelModel.isExpanded
+            guard shouldBeHidden != !presence.panel.isVisible else { continue }
+            if shouldBeHidden {
                 presence.panel.orderOut(nil)
             } else {
                 presence.panel.orderFrontRegardless()
             }
         }
+        PressPathProbe.shared.mark("suppression: panels re-ordered")
     }
 
     // MARK: - Companion state binding

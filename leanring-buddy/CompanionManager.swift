@@ -88,6 +88,100 @@ nonisolated final class TurnTimingProbe {
     }
 }
 
+// MARK: - TEMPORARY main-thread hitch probe (2026-09-24)
+
+/// Reports every stretch during which the main thread was busy for longer than a
+/// frame budget.
+///
+/// TEMPORARY. The notch's expansion into `listening` hitches once, in the middle,
+/// on every cycle, and two rounds of reasoning about which code causes it have
+/// both been wrong. This measures it instead: a `CFRunLoopObserver` brackets the
+/// span between the loop waking (`afterWaiting`) and going back to sleep
+/// (`beforeWaiting`), which is exactly the time the main thread spent working —
+/// and a span over the budget IS a dropped frame, with a timestamp to line up
+/// against the app's other prints.
+///
+/// It cannot say which work it was; that is what the `⏱️ [press]` marks around
+/// the press path are for. Together they answer "when" and "what".
+nonisolated final class MainThreadHitchProbe {
+    static let shared = MainThreadHitchProbe()
+
+    private var observer: CFRunLoopObserver?
+    private var busyBeganAt: CFAbsoluteTime = 0
+    private var lastReportAt: CFAbsoluteTime = -1
+
+    /// One frame at 60 Hz is 16.7 ms; 40 ms is two dropped frames and change,
+    /// which is the smallest hitch a person reliably notices in a 380 ms slide.
+    private static let hitchThresholdMilliseconds: Double = 40
+
+    func start() {
+        guard observer == nil else { return }
+        let createdObserver = CFRunLoopObserverCreateWithHandler(
+            kCFAllocatorDefault,
+            CFRunLoopActivity.afterWaiting.rawValue | CFRunLoopActivity.beforeWaiting.rawValue,
+            true,
+            0
+        ) { _, activity in
+            let now = CFAbsoluteTimeGetCurrent()
+            if activity == .afterWaiting {
+                self.busyBeganAt = now
+                return
+            }
+            let busyMilliseconds = (now - self.busyBeganAt) * 1000
+            // The loop's first `beforeWaiting` arrives before any `afterWaiting`
+            // has set a baseline, and would otherwise report the whole epoch.
+            guard self.busyBeganAt > 0 else { return }
+            guard busyMilliseconds >= Self.hitchThresholdMilliseconds else { return }
+            // Bounded: a saturated thread would otherwise bury the log it exists
+            // to explain.
+            guard now - self.lastReportAt > 0.15 else { return }
+            self.lastReportAt = now
+            print(String(format: "⏱️ [hitch] main thread busy for %.0fms", busyMilliseconds))
+        }
+        CFRunLoopAddObserver(CFRunLoopGetMain(), createdObserver, .commonModes)
+        observer = createdObserver
+    }
+}
+
+/// TEMPORARY elapsed-time marks along the shortcut-press path (2026-09-24).
+///
+/// The hitch probe says WHEN the main thread stalled; these say WHAT it was
+/// doing. Every mark prints its own duration and the gap since the previous one,
+/// so one press produces an ordered breakdown of the whole path.
+nonisolated final class PressPathProbe {
+    static let shared = PressPathProbe()
+
+    private let lock = NSLock()
+    private var beganAt: Date?
+    private var previousMarkAt: Date?
+    private var previousLabel: String?
+
+    func begin() {
+        let now = Date()
+        lock.lock()
+        beganAt = now
+        previousMarkAt = now
+        previousLabel = "press"
+        lock.unlock()
+        print("⏱️ [press] ── press ──")
+    }
+
+    func mark(_ label: String) {
+        let now = Date()
+        lock.lock()
+        let sinceBegin = beganAt.map { now.timeIntervalSince($0) } ?? 0
+        let sincePrevious = previousMarkAt.map { now.timeIntervalSince($0) } ?? 0
+        let labelOfPreviousMark = previousLabel ?? "—"
+        previousMarkAt = now
+        previousLabel = label
+        lock.unlock()
+        print(String(
+            format: "⏱️ [press] %@ — +%.0fms (总), +%.0fms (自 '%@')",
+            label, sinceBegin * 1000, sincePrevious * 1000, labelOfPreviousMark
+        ))
+    }
+}
+
 @MainActor
 final class CompanionManager: ObservableObject {
     @Published private(set) var voiceState: CompanionVoiceState = .idle
@@ -553,6 +647,9 @@ final class CompanionManager: ObservableObject {
     }
 
     func start() {
+        // TEMPORARY (2026-09-24): starts reporting main-thread stalls. See
+        // `MainThreadHitchProbe`.
+        MainThreadHitchProbe.shared.start()
         refreshAllPermissions()
         print("🔑 Clicky start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
         startPermissionPolling()
@@ -1150,6 +1247,7 @@ final class CompanionManager: ObservableObject {
                     }
                     self.voiceState = .processing
                 } else if isRecording {
+                    PressPathProbe.shared.mark("sink: isRecording observed (chime + phase .listening + monitors)")
                     if self.voiceState != .listening {
                         SoundEffectPlayer.shared.play(.listeningStarted)
                     }
@@ -1247,6 +1345,7 @@ final class CompanionManager: ObservableObject {
 
         switch transition {
         case .pressed:
+            PressPathProbe.shared.begin()
             // 点两下说话：已经在录音（或正在开始录音）时再按一次，意思是
             // 「说完了，转文字并发送」。松开不算数，所以这里必须由第二次
             // 按下来结束——stopPushToTalk 会走和按住模式松开一样的收尾，

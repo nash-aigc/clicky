@@ -151,7 +151,13 @@ final class SystemSpeakerMuteCoordinator {
     /// Synchronous restore for application termination — the poll loop cannot
     /// be trusted to fire one last time during shutdown.
     func restoreAllMutesNow() {
-        restoreAllMutedDevices()
+        // Deliberately synchronous: this is the termination path, and there the
+        // blocking is the requirement — the restore has to finish before the
+        // process goes away, which an async hop cannot promise.
+        guard !mutedDevicesPriorState.isEmpty else { return }
+        _ = Self.restoreMutes(mutedDevicesPriorState)
+        mutedDevicesPriorState.removeAll()
+        UserDefaults.standard.set(false, forKey: Self.leakedMuteFlagKey)
     }
 
     // MARK: - Poll loop
@@ -160,7 +166,7 @@ final class SystemSpeakerMuteCoordinator {
         mutePollTask?.cancel()
         mutePollTask = Task { [weak self] in
             while !Task.isCancelled {
-                self?.convergeMuteStateOnce()
+                await self?.convergeMuteStateOnce()
                 try? await Task.sleep(nanoseconds: Self.pollIntervalNanoseconds)
             }
         }
@@ -168,42 +174,73 @@ final class SystemSpeakerMuteCoordinator {
 
     /// One convergence step: compute the desired mute state from the setting
     /// and the two live signals, and bring the default output device there.
-    private func convergeMuteStateOnce() {
+    private func convergeMuteStateOnce() async {
         let recordingMuteSettingEnabled = AppSettingsStore.snapshot().mutesSystemSpeakersDuringRecording
         let isRecordingActive = recordingActiveProvider()
         let isTTSPlaybackActive = playbackActiveProvider()
         let desiredMute = recordingMuteSettingEnabled && isRecordingActive && !isTTSPlaybackActive
 
-        guard let currentDeviceID = SystemOutputDeviceMuteController.defaultOutputDeviceID() else {
+        let currentDeviceID = await Self.offMainActor {
+            SystemOutputDeviceMuteController.defaultOutputDeviceID()
+        }
+        guard let currentDeviceID else {
             // No output device to mute; still drop any stale entries so a
             // device that disappeared mid-recording does not leak state.
             if !mutedDevicesPriorState.isEmpty {
-                restoreAllMutedDevices()
+                await restoreAllMutedDevices()
             }
             return
         }
 
         if desiredMute {
-            muteDeviceIfNeeded(deviceID: currentDeviceID)
+            await muteDeviceIfNeeded(deviceID: currentDeviceID)
         } else {
-            restoreAllMutedDevices()
+            await restoreAllMutedDevices()
         }
+    }
+
+    /// Runs a synchronous CoreAudio call away from the main actor.
+    ///
+    /// The HAL is a synchronous IPC to coreaudiod, and a WRITE to it can block
+    /// for hundreds of milliseconds while the device underneath is being
+    /// reconfigured — which is exactly what is happening when this fires, because
+    /// the push-to-talk engine is starting on the same device at that moment.
+    /// Measured 2026-09-24 from the app's own marks: stalls of 80 / 82 / 118 /
+    /// 234 ms of main thread, every one landing beside 「system speakers MUTED for
+    /// recording」, and a 1920 ms one on another run. The 0.5 s poll decides
+    /// where in the cycle that lands, so it sometimes falls inside the notch
+    /// wings' 380 ms slide — which is the 「listening 展开时卡一下」 the user
+    /// reports, and why it is not every single time.
+    nonisolated private static func offMainActor<T: Sendable>(
+        _ work: @escaping @Sendable () -> T
+    ) async -> T {
+        await Task.detached(priority: .userInitiated) { work() }.value
     }
 
     /// Mutes `deviceID` for the recording, capturing its prior mute state
     /// first — unless it is already muted by us. A device the user muted
     /// themselves is left as-is and simply recorded.
-    private func muteDeviceIfNeeded(deviceID: AudioDeviceID) {
+    private func muteDeviceIfNeeded(deviceID: AudioDeviceID) async {
         guard mutedDevicesPriorState[deviceID] == nil else { return }
 
-        guard let muteElement = SystemOutputDeviceMuteController.workingMuteElement(forDeviceID: deviceID) else {
+        let muteElement = await Self.offMainActor {
+            SystemOutputDeviceMuteController.workingMuteElement(forDeviceID: deviceID)
+        }
+        guard let muteElement else {
             print("🔇 SystemSpeakerMuteCoordinator: output device \(deviceID) exposes no mute control — cannot mute for recording")
             return
         }
 
-        let wasMutedBefore = SystemOutputDeviceMuteController.isMuted(deviceID: deviceID, element: muteElement)
+        let wasMutedBefore = await Self.offMainActor {
+            SystemOutputDeviceMuteController.isMuted(deviceID: deviceID, element: muteElement)
+        }
         if !wasMutedBefore {
-            guard SystemOutputDeviceMuteController.setMuted(true, deviceID: deviceID, element: muteElement) else {
+            // THE blocking call. The stall that has to be seen to be believed is
+            // this one, and it is the reason this whole method is async.
+            let didMute = await Self.offMainActor {
+                SystemOutputDeviceMuteController.setMuted(true, deviceID: deviceID, element: muteElement)
+            }
+            guard didMute else {
                 print("🔇 SystemSpeakerMuteCoordinator: muting output device \(deviceID) failed (CoreAudio set rejected)")
                 return
             }
@@ -216,26 +253,44 @@ final class SystemSpeakerMuteCoordinator {
         UserDefaults.standard.set(true, forKey: Self.leakedMuteFlagKey)
     }
 
-    /// Restores every device this coordinator muted to its captured prior
-    /// state. A speaker the user had muted themselves stays muted.
-    private func restoreAllMutedDevices() {
-        guard !mutedDevicesPriorState.isEmpty else { return }
-
-        for (deviceID, priorState) in mutedDevicesPriorState {
-            if !priorState.wasMutedBefore {
-                let restoreSucceeded = SystemOutputDeviceMuteController.setMuted(
-                    false, deviceID: deviceID, element: priorState.element)
-                if restoreSucceeded {
-                    print("🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording")
-                } else {
-                    // Keep the UserDefaults leak flag set so the next launch
-                    // retries the restore.
-                    print("⚠️ SystemSpeakerMuteCoordinator: restoring output device \(deviceID) failed — will retry at next launch")
-                    return
-                }
+    /// Un-mutes the devices this coordinator muted, off the main actor.
+    ///
+    /// `nonisolated static` so the same loop serves both callers: the poll path
+    /// runs it detached, and termination runs it inline — there the blocking IS
+    /// the requirement, because the restore has to finish before the process
+    /// goes away. Returns the devices whose restore failed, so the caller can
+    /// leave the leak flag set for the next launch to retry.
+    nonisolated private static func restoreMutes(
+        _ priorStates: [AudioDeviceID: (element: AudioObjectPropertyElement, wasMutedBefore: Bool)]
+    ) -> [AudioDeviceID] {
+        var failedDeviceIDs: [AudioDeviceID] = []
+        for (deviceID, priorState) in priorStates where !priorState.wasMutedBefore {
+            let restoreSucceeded = SystemOutputDeviceMuteController.setMuted(
+                false, deviceID: deviceID, element: priorState.element
+            )
+            if !restoreSucceeded {
+                failedDeviceIDs.append(deviceID)
             }
         }
+        return failedDeviceIDs
+    }
 
+    /// Restores every device this coordinator muted to its captured prior
+    /// state. A speaker the user had muted themselves stays muted.
+    private func restoreAllMutedDevices() async {
+        guard !mutedDevicesPriorState.isEmpty else { return }
+
+        let priorStatesToRestore = mutedDevicesPriorState
+        let failedDeviceIDs = await Self.offMainActor { Self.restoreMutes(priorStatesToRestore) }
+
+        guard failedDeviceIDs.isEmpty else {
+            // Keep the state and the leak flag so the next launch retries — the
+            // same contract the per-device loop had.
+            print("⚠️ SystemSpeakerMuteCoordinator: restoring output device(s) \(failedDeviceIDs) failed — will retry at next launch")
+            return
+        }
+
+        print("🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording")
         mutedDevicesPriorState.removeAll()
         UserDefaults.standard.set(false, forKey: Self.leakedMuteFlagKey)
     }

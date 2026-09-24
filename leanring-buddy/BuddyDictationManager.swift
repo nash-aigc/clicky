@@ -1468,11 +1468,14 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         currentPermissionProblem = nil
         isPreparingToRecord = true
 
+        PressPathProbe.shared.mark("permission check begins")
         guard await requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts() else {
             print("🎙️ BuddyDictationManager: permissions missing or denied")
             isPreparingToRecord = false
             return
         }
+        PressPathProbe.shared.mark("permission check done")
+
         guard !Task.isCancelled else {
             print("🎙️ BuddyDictationManager: start cancelled (shortcut released during permission check)")
             isPreparingToRecord = false
@@ -1593,6 +1596,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         }
 
         print("🎙️ BuddyDictationManager: opening transcription provider \(transcriptionProvider.displayName)")
+        PressPathProbe.shared.mark("ASR handshake begins (websocket open)")
 
         let activeTranscriptionSession = try await transcriptionProvider.startStreamingSession(
             keyterms: buildTranscriptionKeyterms(),
@@ -1622,6 +1626,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
         self.activeTranscriptionSession = activeTranscriptionSession
         print("🎙️ BuddyDictationManager: provider ready, starting audio engine")
+        PressPathProbe.shared.mark("ASR session ready — tap + engine next")
 
         let inputNode = audioEngine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
@@ -1644,6 +1649,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         audioEngine.prepare()
         try audioEngine.start()
         print("⏱️ [timing] push-to-talk engine start took \(Int(Date().timeIntervalSince(pushToTalkEngineStartBeganAt) * 1000))ms (main thread: \(Thread.isMainThread))")
+        PressPathProbe.shared.mark("audio engine started — recording is live")
     }
 
     private func handleRecognitionError(_ error: Error) {
