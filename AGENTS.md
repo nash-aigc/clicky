@@ -73,6 +73,31 @@ ls -lt ~/Library/Logs/DiagnosticReports/ | head -5
 
 `AppSettings.json` / `ModelConfiguration.json` 里改的是**数据**，存储类会发通知，运行中的 App **立刻生效**，不需要重启。改**代码**才必须走上面的流程。别把这条规则用过头。
 
+## 遇到问题：先找根因，再改代码（最高优先级）
+
+**这一节和上面那节同级，而且先于本文件其他所有内容被使用。** 功能不对、偶发、时好时坏、**改了没反应**——遇到这类问题时的第一动作是**调查**，不是改代码。
+
+### 三条硬规则
+
+1. **同一个问题，自己动手两次没解决，立刻停手。** 不再改、不再猜。继续改只会制造新变量，让下一次归因更难。
+2. **真实存在的缺点 ≠ 本次症状的原因。** 一个改动"确实是个缺陷"和"改了症状就好了"是两件事。只改前者，会得到"改了但没有任何变化"。
+3. **没量到的一律写"推测"，不许写成结论。**
+
+### 该怎么做（顺序不能换）
+
+1. **把用户的感受翻译成仪器能回答的问题。** 「展开时卡一下」→「主线程在动画的哪一段被占住、占多久」。**如果你的"问题"里没有数字、时间点或状态量，说明还没翻译完。**
+2. **装仪器，而不是加日志。** 时间戳打点（同时打印"距起点"和"距上一步"+**所在线程**）、run loop 跨度探针。让数据先于结论。
+3. **并发派多个 agent，每个一个互不重叠的角度，至少一个是批判者。** 要求 `file:line` 证据、要求写出"这条结论会被什么推翻"、要求列出"哪些候选被排除了、凭什么"。**只有一个 agent 指向某处是线索；两个互不相关的角度收敛到同一处才是根因。**
+4. **把测到的数字放进用户描述的时间窗里做算术。** 算得对才叫解释；算不对就还是猜测。
+5. **改一处 → 验证 → 再改下一处。**
+
+### 两个已经踩过的读错方式，别再踩
+
+- **探针报告的是"刚刚结束的一段忙碌"时，紧跟其后的日志是下一步工作，不是原因。** 用日志的**相邻**做归因，等于倒因为果。先读清探针报告的是跨度的起点、终点还是长度。
+- **一个计时器只覆盖它包住的那几行。** 用它去否定一个候选之前，先确认它包住的是这个候选的全部——本仓库有一次因为计时器漏掉了同段代码里的三行，把真凶排除了，多花了三轮。
+
+完整方法、案例时间线、反模式清单、以及三个可复用探针的位置，见 [`开发经验/00-问题根因排查法.md`](开发经验/00-问题根因排查法.md)。**遇到问题先读它。**
+
 ## Overview
 
 macOS notch-based companion app. Lives entirely in the notch (no dock icon, no main window, no menu bar icon). A black pill fused into the hardware notch expands into the app's main sheet — sessions sidebar, conversation, embedded settings. Uses push-to-talk (ctrl+option) to capture voice input, transcribes it via Alibaba Bailian streaming ASR, and sends the transcript + a screenshot of the user's screen to a Qwen vision model. The model responds with text (streamed via SSE) and voice (Bailian TTS). A blue cursor overlay can fly to and point at UI elements the model references on any connected monitor.
