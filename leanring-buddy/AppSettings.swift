@@ -570,6 +570,39 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// Clamped to 1...5.
     var continuousListeningSilenceSendSeconds: Double = 2.0
 
+    /// 「引擎保持时间」: how long the shared audio engine stays up after the last
+    /// activity before it is released.
+    ///
+    /// The engine's bring-up is not cheap — enabling voice processing
+    /// reconfigures the whole IO (44.1 kHz / 1 ch → 48 kHz / 9 ch, measured in
+    /// `VoicePlaybackEngine`) and takes ~2 s, of which the first `start()`
+    /// usually fails and the rebuild succeeds in ~90 ms. That cost is meant to
+    /// be paid ONCE; releasing the engine between replies made every new
+    /// question pay it again, which the user measured as ~3 s from the reply
+    /// card appearing to the first sound, against ~1.1 s on a follow-up inside
+    /// an open listening window.
+    ///
+    /// The price of holding it is the one the second engine used to exist to
+    /// avoid: while voice processing is enabled this app is in macOS's
+    /// "communication app" class and every other application's audio is ducked,
+    /// at the mildest level macOS offers. So the hold is a trade the user asked
+    /// for explicitly (2026-09-24) and it is theirs to set:
+    ///
+    ///   · `1` / `3` / `5` minutes — release that long after the last activity;
+    ///   · `0` — 「永久」: never release on a timer. Warm and instantly
+    ///     responsive at all times; other audio stays ducked until the release
+    ///     shortcut is pressed.
+    ///
+    /// Reset by any activity: a press, a recording, a barge-in, a transcript, a
+    /// reply starting. Clamped to 0...60.
+    var audioEngineIdleReleaseMinutes: Int = 3
+
+    /// 「释放引擎」: the shortcut that puts the machine's audio back to normal on
+    /// demand — engine stopped, voice processing off, ducking lifted — for the
+    /// times the user is doing something else while 「引擎保持时间」 is 永久.
+    /// `nil` = not recorded, so nothing is bound until the user sets one.
+    var releaseAudioEngineShortcut: RecordedKeyboardShortcut?
+
     /// 「回声消除」: whether Apple's voice processing (the system AEC) runs on
     /// the shared playback engine, cancelling the app's OWN spoken answer out
     /// of the microphone before the recognizer ever sees it.
@@ -749,6 +782,23 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         RecordedKeyboardShortcut(modifierFlagsRawValue: 786432, keyCode: 20),
     ]
 
+    /// The factory default for 「释放引擎」: ⌃⌥4, the next key along from the
+    /// three VoiceWeb mode shortcuts above (the only other ⌃⌥ bindings in the
+    /// app), so the release shortcut works out of the box rather than needing to
+    /// be recorded before it can be used.
+    static let defaultReleaseAudioEngineShortcut = RecordedKeyboardShortcut(
+        modifierFlagsRawValue: 786432,
+        keyCode: 21
+    )
+
+    /// The release shortcut in force — the user's recorded one when present,
+    /// otherwise the ⌃⌥4 preset. The same resolve-once shape as
+    /// `pushToTalkShortcutBinding`, and for the same reason: what the settings
+    /// page shows and what the event tap matches must be one value.
+    var releaseAudioEngineShortcutBinding: RecordedKeyboardShortcut {
+        releaseAudioEngineShortcut ?? Self.defaultReleaseAudioEngineShortcut
+    }
+
     /// The shortcut that connects/disconnects the 三段式 (pipeline) voice mode.
     /// `nil` means the factory default ⌃⌥1 — same nil-means-preset shape as
     /// `customPushToTalkShortcut`.
@@ -864,6 +914,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.maximumConcurrentAgents = min(max(settings.maximumConcurrentAgents, 1), 6)
         settings.continuousListeningWindowSeconds = min(max(settings.continuousListeningWindowSeconds, 10), 120)
         settings.continuousListeningSilenceSendSeconds = min(max(settings.continuousListeningSilenceSendSeconds, 1.0), 5.0)
+        settings.audioEngineIdleReleaseMinutes = min(max(settings.audioEngineIdleReleaseMinutes, 0), 60)
         return settings
     }
 }
@@ -902,6 +953,8 @@ nonisolated extension AppSettings {
         case continuousListeningEnabled
         case continuousListeningWindowSeconds
         case continuousListeningSilenceSendSeconds
+        case audioEngineIdleReleaseMinutes
+        case releaseAudioEngineShortcut
         case echoCancellationEnabled
         case mutesSystemSpeakersDuringRecording
         case autoScreenshotOnFollowUpSpeech
@@ -995,6 +1048,8 @@ nonisolated extension AppSettings {
         continuousListeningEnabled = try container.decodeIfPresent(Bool.self, forKey: .continuousListeningEnabled) ?? defaults.continuousListeningEnabled
         continuousListeningWindowSeconds = try container.decodeIfPresent(Int.self, forKey: .continuousListeningWindowSeconds) ?? defaults.continuousListeningWindowSeconds
         continuousListeningSilenceSendSeconds = try container.decodeIfPresent(Double.self, forKey: .continuousListeningSilenceSendSeconds) ?? defaults.continuousListeningSilenceSendSeconds
+        audioEngineIdleReleaseMinutes = try container.decodeIfPresent(Int.self, forKey: .audioEngineIdleReleaseMinutes) ?? defaults.audioEngineIdleReleaseMinutes
+        releaseAudioEngineShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .releaseAudioEngineShortcut)
         echoCancellationEnabled = try container.decodeIfPresent(Bool.self, forKey: .echoCancellationEnabled) ?? defaults.echoCancellationEnabled
         mutesSystemSpeakersDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .mutesSystemSpeakersDuringRecording) ?? defaults.mutesSystemSpeakersDuringRecording
         autoScreenshotOnFollowUpSpeech = try container.decodeIfPresent(Bool.self, forKey: .autoScreenshotOnFollowUpSpeech) ?? defaults.autoScreenshotOnFollowUpSpeech

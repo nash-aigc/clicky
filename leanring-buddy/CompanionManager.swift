@@ -378,8 +378,14 @@ final class CompanionManager: ObservableObject {
 
     private var shortcutTransitionCancellable: AnyCancellable?
     private var externalShortcutTransitionsCancellable: AnyCancellable?
+    /// 「释放引擎」的快捷键订阅 —— 与上面那三个 VoiceWeb 快捷键共用同一条事件流。
+    private var releaseEngineShortcutCancellable: AnyCancellable?
     private var voiceStateCancellable: AnyCancellable?
     private var audioPowerCancellable: AnyCancellable?
+
+    /// The pending release of the shared audio engine — see `noteVoiceActivity`.
+    /// Cancelled and re-armed on every sign of use; nil under 「永久」.
+    private var audioEngineIdleReleaseTask: Task<Void, Never>?
     /// While the 快捷键 page's shortcut recorder is armed, the global event tap
     /// has to stand down so the keys pressed to record don't start a recording.
     private var shortcutRecorderStateObserver: NSObjectProtocol?
@@ -1252,6 +1258,7 @@ final class CompanionManager: ObservableObject {
                         SoundEffectPlayer.shared.play(.listeningStarted)
                     }
                     self.voiceState = .listening
+                    self.noteVoiceActivity()
                     // The whole time the user is holding the shortcut (or a
                     // double-tap recording is open) they may circle something;
                     // the capture is armed per recording and disarmed when it
@@ -1259,6 +1266,7 @@ final class CompanionManager: ObservableObject {
                     // recording is dropped by the same call.
                     self.circleToAskController.beginCaptureIfEnabled()
                 } else if isPreparing {
+                    self.noteVoiceActivity()
                     // Deliberately NO phase change while merely PREPARING to
                     // record. This branch used to publish `.processing`, which the
                     // notch draws as "Thinking" — and because the recording flag
@@ -1326,6 +1334,18 @@ final class CompanionManager: ObservableObject {
                 }
                 voiceWebSessionController.handleShortcutPress(modeIndex: transition.index)
             }
+        // 「释放引擎」: a press stops the shared audio engine and switches voice
+        // processing off, which lifts the ducking of every other application.
+        // It is the way back out of 「引擎保持时间 = 永久」, and harmless under a
+        // timer — it just releases sooner than the timer would have.
+        releaseEngineShortcutCancellable = globalPushToTalkShortcutMonitor
+            .releaseEngineShortcutTransitionsPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isPressed in
+                guard let self, isPressed else { return }
+                self.releaseAudioEngineNow()
+            }
+
         refreshExternalShortcutBindings()
     }
 
@@ -1336,6 +1356,8 @@ final class CompanionManager: ObservableObject {
         globalPushToTalkShortcutMonitor.externalShortcutBindings = (0...2).map {
             AppSettingsStore.snapshot().voiceWebShortcutBinding(modeIndex: $0)
         }
+        globalPushToTalkShortcutMonitor.releaseEngineShortcutBinding =
+            AppSettingsStore.snapshot().releaseAudioEngineShortcutBinding
     }
 
     private func handleShortcutTransition(_ transition: BuddyPushToTalkShortcut.ShortcutTransition) {
@@ -1346,6 +1368,7 @@ final class CompanionManager: ObservableObject {
         switch transition {
         case .pressed:
             PressPathProbe.shared.begin()
+            noteVoiceActivity()
             // 点两下说话：已经在录音（或正在开始录音）时再按一次，意思是
             // 「说完了，转文字并发送」。松开不算数，所以这里必须由第二次
             // 按下来结束——stopPushToTalk 会走和按住模式松开一样的收尾，
@@ -2886,6 +2909,48 @@ final class CompanionManager: ObservableObject {
     /// whether an empty recording should schedule the transient hide, and a
     /// cancelled-but-still-assigned task would keep the cursor on screen for
     /// good in the 「只在指位置时出现」 mode.
+    /// Pushes the shared audio engine's release `audioEngineIdleReleaseMinutes`
+    /// into the future. Called on every sign of use.
+    ///
+    /// The engine is held rather than released between replies because releasing
+    /// it makes the NEXT question pay the voice-processing IO reconfiguration
+    /// again — ~3 s from the reply card to the first sound, against ~1.1 s on a
+    /// follow-up inside an open window (measured 2026-09-24). See
+    /// `AppSettings.audioEngineIdleReleaseMinutes` for the trade, and
+    /// `VoicePlaybackEngine.releaseNow` for what releasing does.
+    ///
+    /// Called from the voice-state sink (any non-idle state), the shortcut press,
+    /// and a continuous-listening barge-in — i.e. from everything a user does.
+    /// It is deliberately NOT called when the state goes idle: that is when the
+    /// countdown is supposed to start running.
+    func noteVoiceActivity() {
+        audioEngineIdleReleaseTask?.cancel()
+
+        let idleReleaseMinutes = AppSettingsStore.snapshot().audioEngineIdleReleaseMinutes
+        guard idleReleaseMinutes > 0 else {
+            // 「永久」: no timer at all. The release shortcut is the only way
+            // back, which is what that option is for.
+            audioEngineIdleReleaseTask = nil
+            return
+        }
+
+        audioEngineIdleReleaseTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Double(idleReleaseMinutes) * 60))
+            guard let self, !Task.isCancelled else { return }
+            self.audioEngineIdleReleaseTask = nil
+            print("🔊 CompanionManager: \(idleReleaseMinutes) 分钟没有活动，释放音频引擎")
+            self.bailianTTSClient.releaseAudioEngineNow()
+        }
+    }
+
+    /// Releases the audio engine now — the release shortcut's action, and the
+    /// manual override that makes 「永久」 usable.
+    func releaseAudioEngineNow() {
+        audioEngineIdleReleaseTask?.cancel()
+        audioEngineIdleReleaseTask = nil
+        bailianTTSClient.releaseAudioEngineNow()
+    }
+
     func interruptActiveResponse() {
         // Tell the panel this idle is an ENDING, not the gap between two phases
         // of a running turn. It cannot tell those apart on its own — see

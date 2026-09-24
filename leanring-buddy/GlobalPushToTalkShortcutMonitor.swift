@@ -25,6 +25,14 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
     var externalShortcutBindings: [RecordedKeyboardShortcut] = []
     let externalShortcutTransitionsPublisher = PassthroughSubject<(index: Int, pressed: Bool), Never>()
 
+    /// 「释放引擎」 — a single binding, matched by the same rules as the VoiceWeb
+    /// mode shortcuts above. Pressing it stops the shared audio engine and
+    /// switches voice processing off, which is what lifts the ducking of every
+    /// other application; it is the way back out of 「引擎保持时间 = 永久」.
+    var releaseEngineShortcutBinding: RecordedKeyboardShortcut?
+    let releaseEngineShortcutTransitionsPublisher = PassthroughSubject<Bool, Never>()
+    private var releaseEngineShortcutPressedState = false
+
     /// Per-index pressed state, the multi-binding analogue of
     /// `isShortcutCurrentlyPressed`. Written only from the tap callback.
     private var externalShortcutPressedStates: [Int: Bool] = [:]
@@ -131,6 +139,14 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
             return Unmanaged.passUnretained(event)
         }
 
+        if matchReleaseEngineShortcut(
+            eventType: eventType,
+            keyCode: eventKeyCode,
+            modifierFlagsRawValue: event.flags.rawValue
+        ) {
+            return Unmanaged.passUnretained(event)
+        }
+
         let shortcutTransition = BuddyPushToTalkShortcut.shortcutTransition(
             for: eventType,
             keyCode: eventKeyCode,
@@ -173,39 +189,80 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
 
         var anyTransitioned = false
         for (index, binding) in externalShortcutBindings.enumerated() {
-            let wasPressed = externalShortcutPressedStates[index] ?? false
-            let requiredModifierFlags = binding.modifierFlags
-                .intersection(.deviceIndependentFlagsMask)
-            var pressedNow: Bool?
-
-            if let boundKeyCode = binding.keyCode {
-                if eventType == .keyDown
-                    && keyCode == boundKeyCode
-                    && modifierFlags.isSuperset(of: requiredModifierFlags)
-                    && !wasPressed {
-                    pressedNow = true
-                }
-                if eventType == .keyUp
-                    && keyCode == boundKeyCode
-                    && wasPressed {
-                    pressedNow = false
-                }
-            } else if eventType == .flagsChanged, !requiredModifierFlags.isEmpty {
-                let isHeldNow = modifierFlags.isSuperset(of: requiredModifierFlags)
-                if isHeldNow && !wasPressed {
-                    pressedNow = true
-                }
-                if !isHeldNow && wasPressed {
-                    pressedNow = false
-                }
-            }
-
-            if let pressedNow {
-                externalShortcutPressedStates[index] = pressedNow
-                externalShortcutTransitionsPublisher.send((index: index, pressed: pressedNow))
-                anyTransitioned = true
-            }
+            guard let pressedNow = Self.shortcutPressednessChange(
+                for: binding,
+                eventType: eventType,
+                keyCode: keyCode,
+                modifierFlags: modifierFlags,
+                wasPressed: externalShortcutPressedStates[index] ?? false
+            ) else { continue }
+            externalShortcutPressedStates[index] = pressedNow
+            externalShortcutTransitionsPublisher.send((index: index, pressed: pressedNow))
+            anyTransitioned = true
         }
         return anyTransitioned
+    }
+
+    /// Whether `binding` changes its pressed-ness on this event, and to what.
+    ///
+    /// ONE implementation, asked by both the VoiceWeb mode shortcuts and the
+    /// release-engine shortcut. Two copies would drift the way
+    /// `ActionTagParser.modifierFlag`'s would — see 开发经验/10-踩过的坑.md A4
+    /// for what that costs.
+    private static func shortcutPressednessChange(
+        for binding: RecordedKeyboardShortcut,
+        eventType: CGEventType,
+        keyCode: UInt16,
+        modifierFlags: NSEvent.ModifierFlags,
+        wasPressed: Bool
+    ) -> Bool? {
+        let requiredModifierFlags = binding.modifierFlags
+            .intersection(.deviceIndependentFlagsMask)
+
+        if let boundKeyCode = binding.keyCode {
+            if eventType == .keyDown
+                && keyCode == boundKeyCode
+                && modifierFlags.isSuperset(of: requiredModifierFlags)
+                && !wasPressed {
+                return true
+            }
+            if eventType == .keyUp && keyCode == boundKeyCode && wasPressed {
+                return false
+            }
+            return nil
+        }
+
+        guard eventType == .flagsChanged, !requiredModifierFlags.isEmpty else { return nil }
+        let isHeldNow = modifierFlags.isSuperset(of: requiredModifierFlags)
+        if isHeldNow && !wasPressed { return true }
+        if !isHeldNow && wasPressed { return false }
+        return nil
+    }
+
+    /// The 「释放引擎」 shortcut. A press — not a release — is the action, because
+    /// releasing the engine is a one-shot command rather than a held state.
+    private func matchReleaseEngineShortcut(
+        eventType: CGEventType,
+        keyCode: UInt16,
+        modifierFlagsRawValue: UInt64
+    ) -> Bool {
+        guard let binding = releaseEngineShortcutBinding else { return false }
+        guard eventType == .flagsChanged || eventType == .keyDown || eventType == .keyUp else {
+            return false
+        }
+        let modifierFlags = NSEvent.ModifierFlags(rawValue: UInt(modifierFlagsRawValue))
+            .intersection(.deviceIndependentFlagsMask)
+
+        guard let pressedNow = Self.shortcutPressednessChange(
+            for: binding,
+            eventType: eventType,
+            keyCode: keyCode,
+            modifierFlags: modifierFlags,
+            wasPressed: releaseEngineShortcutPressedState
+        ) else { return false }
+
+        releaseEngineShortcutPressedState = pressedNow
+        releaseEngineShortcutTransitionsPublisher.send(pressedNow)
+        return true
     }
 }

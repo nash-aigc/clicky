@@ -435,13 +435,41 @@ final class VoicePlaybackEngine {
         inputTapHost = .none
         installedInputTapHandler = nil
 
-        // The window is closed, so this is the moment the engine may go: with
-        // capture and playback sharing one engine, "nobody is listening" is the
-        // only condition that releases it — and releasing it is what switches
-        // voice processing off and ends the ducking of every other app. Refuses
-        // by itself while a chunk is still playing, which is the playback path's
-        // own release.
-        releaseEngineWhenIdle()
+        // Deliberately does NOT release the engine any more (2026-09-24).
+        //
+        // Releasing at the end of every listening window made each NEW question
+        // pay the voice-processing IO reconfiguration again — measured as ~3 s
+        // from the reply card to the first sound, against ~1.1 s on a follow-up
+        // inside an open window. The engine is now held until
+        // `AppSettings.audioEngineIdleReleaseMinutes` of inactivity have passed
+        // (or the release shortcut is pressed), which pays that cost once.
+        //
+        // The price is real and the setting's own text says so: a held engine
+        // keeps the app in macOS's communication-app class, so other audio stays
+        // ducked, and it keeps the microphone route open.
+    }
+
+    /// Stops the engine and gives the machine's audio back, now.
+    ///
+    /// The idle timer's and the release shortcut's way in. The engine can only
+    /// have voice processing switched off while it is stopped (AVAudioIONode.h),
+    /// and switching it off — not stopping — is what ends the ducking, which is
+    /// why both happen here together.
+    func releaseNow() {
+        guard isEngineStarted else {
+            // Nothing running, but voice processing can still be on from a
+            // previous run of this method's own failure path.
+            try? releaseVoiceProcessingForCaptureOnlyRun()
+            return
+        }
+        engine.stop()
+        isEngineStarted = false
+        do {
+            try releaseVoiceProcessingForCaptureOnlyRun()
+            print("🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked")
+        } catch {
+            print("⚠️ VoicePlaybackEngine: engine released, but voice processing would not switch off (\(error.localizedDescription)) — the rest of the machine stays ducked until the next release")
+        }
     }
 
     /// Puts the tap on the capture-only engine and starts it. The engine itself
@@ -490,33 +518,6 @@ final class VoicePlaybackEngine {
     /// `isSpeakingChunkSequence` and then call this synchronously in the same
     /// main-actor turn, so no newer playback can have started in between and
     /// `isChunkPlaying` is the whole truth about whether a stop is safe here.
-    func releaseEngineWhenIdle() {
-        // A live tap means a listening window is open, and the engine must NOT be
-        // stopped under it — that is the second-engine teardown that killed the
-        // running engine and left a reply mute with an un-cancelled microphone
-        // (see `prepareCaptureHost`). Stopping is not what ends the ducking
-        // anyway; `releaseVoiceProcessingForCaptureOnlyRun` is, and neither
-        // belongs here while the microphone is still in use.
-        guard !isInputTapped else {
-            print("🔊 VoicePlaybackEngine: engine kept running — a listening window is open, and the microphone has nowhere else to live now that capture and playback share one engine")
-            return
-        }
-
-        guard isEngineStarted, !isChunkPlaying else { return }
-
-        engine.stop()
-        isEngineStarted = false
-        // Stopping the engine is NOT what hands the input device back — voice
-        // processing has to be switched off too, and this call is the one that
-        // ends the ducking. See `releaseVoiceProcessingForCaptureOnlyRun`.
-        do {
-            try releaseVoiceProcessingForCaptureOnlyRun()
-            print("🔊 VoicePlaybackEngine: engine released (idle) and voice processing is off, so nothing else is ducked")
-        } catch {
-            print("⚠️ VoicePlaybackEngine: engine released (idle), but voice processing would not switch off (\(error.localizedDescription)) — the rest of the machine stays ducked until the next reply")
-        }
-    }
-
     /// Switches voice processing off on the STOPPED playback engine, and it is
     /// the call that hands the input device back to its normal configuration —
     /// and therefore the one that ends the ducking of every other app.

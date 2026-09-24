@@ -182,7 +182,6 @@ final class BailianTTSClient {
                     // than leaving the companion stuck in a speaking state.
                     print("⚠️ Bailian TTS: stopped after chunk \(offset + 1) of \(remainingChunks.count): \(error.localizedDescription)")
                     self.isSpeakingChunkSequence = false
-                    self.voicePlaybackEngine.releaseEngineWhenIdle()
                     return
                 }
             }
@@ -192,7 +191,6 @@ final class BailianTTSClient {
             // one as finished while its audio is still playing.
             guard !Task.isCancelled else { return }
             self.isSpeakingChunkSequence = false
-            self.voicePlaybackEngine.releaseEngineWhenIdle()
         }
     }
 
@@ -218,6 +216,16 @@ final class BailianTTSClient {
     /// - Throws: the same configuration error `speakText` would throw when the
     ///   👄 role is unusable — callers that catch it simply fall back to the
     ///   whole-reply path, which re-throws the identical error.
+    /// Releases the shared audio engine now — see
+    /// `VoicePlaybackEngine.releaseNow`.
+    ///
+    /// Called by `CompanionManager`'s idle-release timer and by the release
+    /// shortcut. Deliberately not called when a reply ends: holding the engine
+    /// is what keeps the next question's first sound fast.
+    func releaseAudioEngineNow() {
+        voicePlaybackEngine.releaseNow()
+    }
+
     func beginStreamingSpeech() throws -> StreamingSpeechSession {
         stopPlayback()
         let resolvedSpeechRole = try resolveSpeechRole()
@@ -268,7 +276,6 @@ final class BailianTTSClient {
         // requested, so releasing here cannot cut off a reply that is starting.
         // When a listening window is open the microphone moves to the engine
         // that has no voice processing at all, so the window keeps hearing.
-        voicePlaybackEngine.releaseEngineWhenIdle()
     }
 
     // MARK: - Synthesis
@@ -995,13 +1002,11 @@ final class BailianTTSClient {
                         // sequence rather than leaving the companion stuck in a
                         // speaking state (same rule as `speakText`'s chunk loop).
                         owner.isSpeakingChunkSequence = false
-                        owner.voicePlaybackEngine.releaseEngineWhenIdle()
                         return
                     }
                 } else if hasFinishedStreaming, pendingSegments.isEmpty {
                     reportPlaybackLoopExit(reason: "the whole reply played")
                     owner.isSpeakingChunkSequence = false
-                    owner.voicePlaybackEngine.releaseEngineWhenIdle()
                     return
                 } else {
                     try? await Task.sleep(nanoseconds: 100_000_000)
@@ -1014,7 +1019,6 @@ final class BailianTTSClient {
             )
             if isStopped {
                 owner.isSpeakingChunkSequence = false
-                owner.voicePlaybackEngine.releaseEngineWhenIdle()
             }
         }
     }

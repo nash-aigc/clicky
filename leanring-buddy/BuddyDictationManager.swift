@@ -808,7 +808,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         if isContinuousListeningOnSharedEngine {
             isContinuousListeningOnSharedEngine = false
             sharedVoicePlaybackEngineProvider?()?.removeInputTap()
-            sharedVoicePlaybackEngineProvider?()?.releaseEngineWhenIdle()
         } else {
             audioEngine.stop()
             audioEngine.inputNode.removeTap(onBus: 0)

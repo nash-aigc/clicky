@@ -647,8 +647,35 @@ struct GeneralSettingsView: View {
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.echoCancellationEnabled))
                 }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "引擎保持时间",
+                    description: engineIdleReleaseDescription
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.audioEngineIdleReleaseMinutes),
+                        options: Self.engineIdleReleaseOptions
+                    )
+                }
             }
         }
+    }
+
+    /// 「引擎保持时间」的选项。`0` 是「永久」——它没有计时器，只能靠释放快捷键退出，
+    /// 所以那一项的描述必须把这件事说清楚。
+    private static let engineIdleReleaseOptions: [SettingsPickerOption<Int>] = [
+        SettingsPickerOption(label: "1 分钟", value: 1),
+        SettingsPickerOption(label: "3 分钟", value: 3),
+        SettingsPickerOption(label: "5 分钟", value: 5),
+        SettingsPickerOption(label: "永久", value: 0),
+    ]
+
+    private var engineIdleReleaseDescription: String {
+        """
+        音频引擎停掉之后，下一次提问要重新启动它——那一步要把系统的整条音频链路重配一遍，实测要 2 秒左右，就是你感觉「第一次出声特别慢」的那一段。\
+        保持得越久，新问题出声越快；代价是保持期间 Clicky 被系统当成「通话软件」，其他软件的声音会被压低（麦克风指示也会一直亮着）。\
+        选「永久」则一直保持、始终最快，需要恢复时按「释放引擎」快捷键即可。
+        """
     }
 
     // MARK: 说
@@ -1099,6 +1126,19 @@ struct GeneralSettingsView: View {
                     description: "连接后提示共享屏幕。macOS 的系统选择窗口必须由人点一次 —— 勾选后 VoiceWeb 窗口里的「屏幕」胶囊会闪烁提醒你点它。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniScreenEnabled))
+                }
+            }
+
+            SettingsGroupLabel("音频引擎")
+            SettingsCard {
+                SettingsRow(
+                    label: "释放引擎",
+                    description: "按一下立刻停掉音频引擎、关掉回声消除，其他软件的音量马上恢复正常，麦克风指示也会熄灭。引擎保持时间选「永久」时这是唯一的退出方式；选计时器时也可以提前释放，不影响任何设置。默认 ⌃⌥4。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: AppSettings.defaultReleaseAudioEngineShortcut,
+                        recordedShortcut: generalSettingsViewModel.binding(\.releaseAudioEngineShortcut)
+                    )
                 }
             }
         }
