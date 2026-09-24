@@ -1,0 +1,60 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 16 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 332ms
+⏱️ [hitch] main thread busy for 129ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🔊 [aecprobe] t=1790273297.881 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 149ms
+⏱️ [hitch] main thread busy for 49ms
+🔊 [aecprobe] t=1790273299.425 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790273299.677 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+Swift/RangeReplaceableCollection.swift:705: Fatal error: Can't remove more items from a collection than it contains

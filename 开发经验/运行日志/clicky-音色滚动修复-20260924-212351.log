@@ -1,0 +1,21 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 315ms
+⏱️ [hitch] main thread busy for 110ms
+🔊 [aecprobe] t=1790256244.008 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790256245.650 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790256245.775 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+[voice-panel] measured content height 203.0, cap 448.0
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 47ms
+[voice-panel] measured content height 3075.0, cap 448.0
+⏱️ [hitch] main thread busy for 433ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms

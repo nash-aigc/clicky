@@ -1,0 +1,24 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 355ms
+⏱️ [hitch] main thread busy for 131ms
+🔊 [aecprobe] t=1790265314.505 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790265315.851 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790265315.901 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: the audio configuration changed and the engine stopped itself (voice processing toggles do this on purpose) — it will be rebuilt before the next chunk
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+🔊 [aecprobe] t=1790265381.170 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 [aecprobe] t=1790265381.171 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+⏱️ [hitch] main thread busy for 149ms
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790265381.218 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 51ms

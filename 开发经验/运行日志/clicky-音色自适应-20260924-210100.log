@@ -1,0 +1,178 @@
+🎙️ Transcription: using Bailian Non-Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 141ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 257ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 212ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 257ms
+⏱️ [hitch] main thread busy for 228ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 107ms
+🔊 [aecprobe] t=1790254895.063 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 65ms
+🔊 [aecprobe] t=1790254896.739 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790254896.847 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+2026-09-24 21:01:42.542 Clicky[79940:9465612] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 80ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 103ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 423ms
+⏱️ [hitch] main thread busy for 647ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 359ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 72ms
+⏱️ [hitch] main thread busy for 341ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 92ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 355ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 109ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 129ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 110ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 127ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 136ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 365ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 341ms
+⏱️ [hitch] main thread busy for 171ms
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 725ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms

@@ -285,6 +285,9 @@ final class CompanionManager: ObservableObject {
         controller.playbackEngineProvider = { [weak self] in
             self?.bailianTTSClient.voicePlaybackEngine
         }
+        controller.warmUpEngine = { [weak self] in
+            await self?.bailianTTSClient.warmUpVoiceEngine()
+        }
         // 试听也要走那台引擎（同一条 voice-processing 链路，试听听到的才是
         // 选中之后它会发出的声音）。
         SharedVoicePreviewPlayer.shared.playbackEngine = bailianTTSClient.voicePlaybackEngine

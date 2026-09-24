@@ -1,0 +1,36 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 7 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 336ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🔊 [aecprobe] t=1790270069.041 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 145ms
+🔊 [aecprobe] t=1790270070.714 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790270070.845 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 42ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 268ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms

@@ -1,0 +1,28 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 316ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 145ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 243ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 114ms
+🔊 [aecprobe] t=1790265922.345 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790265923.747 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790265924.165 event=bringUp isRunning=false device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: the audio configuration changed and the engine stopped itself (voice processing toggles do this on purpose) — it will be rebuilt before the next chunk
+⏱️ [hitch] main thread busy for 197ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 216ms

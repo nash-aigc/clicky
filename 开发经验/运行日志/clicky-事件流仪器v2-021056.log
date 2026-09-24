@@ -1,0 +1,575 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 16 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 329ms
+⏱️ [hitch] main thread busy for 40ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🔊 [aecprobe] t=1790273594.081 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790273595.635 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790273595.863 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_GXLQQRGIR3w
+🧾 [ai-text +2字] resp=resp_GXLQQ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_GXLQQ 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_GXLQQ 累计6字：「有什么」
+🧾 [ai-text +1字] resp=resp_GXLQQ 累计7字：「想」
+🧾 [ai-text +1字] resp=resp_GXLQQ 累计8字：「问」
+🧾 [ai-text +2字] resp=resp_GXLQQ 累计10字：「的吗」
+🧾 [ai-text +1字] resp=resp_GXLQQ 累计11字：「？」
+🎙️ 上行块 #2（2720B）已发出
+🎙️ 上行块 #3（2720B）已发出
+🔊 [ai-audio块] resp=resp_GXLQQ
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_GXLQQ
+🔊 [ai-audio块] resp=resp_GXLQQ
+🔊 [ai-audio块] resp=resp_GXLQQ
+🔊 [ai-audio块] resp=resp_GXLQQ
+🔊 [ai-audio块] resp=resp_GXLQQ
+🎧 [response.done] id=resp_GXLQQRGIR3w
+📝 [写盘] 插到 #16：问「」 答「你好！有什么想问的吗？」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 上行块 #100（64B）已发出
+🎙️ 上行块 #150（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_GXLQC9V1BSz
+🧾 [ai-text +2字] resp=resp_GXLQC 累计2字：「北京」
+🧾 [ai-text +3字] resp=resp_GXLQC 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_GXLQC 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_GXLQC 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_GXLQC 累计9字：「，」
+🧾 [ai-text +2字] resp=resp_GXLQC 累计11字：「位于」
+🧾 [ai-text +2字] resp=resp_GXLQC 累计13字：「华北」
+🧾 [ai-text +2字] resp=resp_GXLQC 累计15字：「平原」
+🧾 [ai-text +2字] resp=resp_GXLQC 累计17字：「北部」
+🧾 [ai-text +1字] resp=resp_GXLQC 累计18字：「。」
+🔊 [ai-audio块] resp=resp_GXLQC
+⏱️ [hitch] main thread busy for 48ms
+🔊 [ai-audio块] resp=resp_GXLQC
+🎧 [user-transcript] item=item_GXLQAGH 「你知道北京在哪吗。」
+🗣️ [user-utterance 回调] 「你知道北京在哪吗。」
+📝 [写盘] 补配 #16：问「你知道北京在哪吗。」 答「你好！有什么想问的吗？」
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🔊 [ai-audio块] resp=resp_GXLQC
+🎧 [response.done] id=resp_GXLQC9V1BSz
+📝 [写盘] 插到 #17：问「」 答「北京是中国的首都，位于华北平原北部。」
+🎙️ 上行块 #200（3200B）已发出
+⏱️ [hitch] main thread busy for 242ms
+🎙️ 上行块 #250（64B）已发出
+🎙️ 上行块 #300（3200B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_GXLQM2rNoEw
+🧾 [ai-text +2字] resp=resp_GXLQM 累计2字：「天津」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计3字：「是」
+🧾 [ai-text +3字] resp=resp_GXLQM 累计6字：「直辖市」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计7字：「，」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计9字：「位于」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计11字：「北京」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计13字：「东南」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计14字：「方」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计15字：「，」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计16字：「以」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计18字：「相声」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计19字：「、」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计20字：「狗」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计22字：「不理」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计23字：「包」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计25字：「子和」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计26字：「海」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计27字：「河」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计29字：「沿岸」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计30字：「的」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计32字：「欧式」
+⏱️ [hitch] main thread busy for 68ms
+🧾 [ai-text +2字] resp=resp_GXLQM 累计34字：「建筑」
+🧾 [ai-text +2字] resp=resp_GXLQM 累计36字：「闻名」
+🧾 [ai-text +1字] resp=resp_GXLQM 累计37字：「。」
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🎙️ 上行块 #400（64B）已发出
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🎙️ 上行块 #450（3200B）已发出
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🔊 [ai-audio块] resp=resp_GXLQM
+🎧 [response.done] id=resp_GXLQM2rNoEw
+📝 [写盘] 插到 #18：问「」 答「天津是直辖市，位于北京东南方，以相声、狗」
+🎙️ 上行块 #500（3200B）已发出
+⏱️ [hitch] main thread busy for 55ms
+🎙️ 上行块 #550（3200B）已发出
+🎙️ 上行块 #600（3200B）已发出
+⏱️ [hitch] main thread busy for 284ms
+⏱️ [hitch] main thread busy for 57ms
+💬 Ask 语音电话已挂断
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 119ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 45ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 42ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_ZG17GQh5dDB
+🧾 [ai-text +2字] resp=resp_ZG17G 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计5字：「我是」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计7字：「你的」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计8字：「多」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计10字：「语种」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计12字：「教练」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计13字：「。」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计14字：「请」
+⏱️ [hitch] main thread busy for 58ms
+🧾 [ai-text +3字] resp=resp_ZG17G 累计17字：「告诉我」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计19字：「你想」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计21字：「练习」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计23字：「哪种」
+🎙️ 上行块 #2（2720B）已发出
+🧾 [ai-text +2字] resp=resp_ZG17G 累计25字：「语言」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计26字：「（」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计28字：「日语」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计29字：「、」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计31字：「韩语」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计32字：「、」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计34字：「英语」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计35字：「、」
+🧾 [ai-text +4字] resp=resp_ZG17G 累计39字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计40字：「、」
+🎙️ 上行块 #3（3200B）已发出
+🧾 [ai-text +2字] resp=resp_ZG17G 累计42字：「德语」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计43字：「或」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计45字：「法语」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计47字：「），」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计49字：「或者」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计50字：「想」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计51字：「聊」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计53字：「什么」
+🧾 [ai-text +2字] resp=resp_ZG17G 累计55字：「话题」
+🧾 [ai-text +1字] resp=resp_ZG17G 累计56字：「？」
+⏱️ [hitch] main thread busy for 42ms
+🔊 [ai-audio块] resp=resp_ZG17G
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_ZG17G
+🔊 [ai-audio块] resp=resp_ZG17G
+🔊 [ai-audio块] resp=resp_ZG17G
+🔊 [ai-audio块] resp=resp_ZG17G
+🔊 [ai-audio块] resp=resp_ZG17G
+🔊 [ai-audio块] resp=resp_ZG17G
+🎙️ 上行块 #50（3200B）已发出
+🔊 [ai-audio块] resp=resp_ZG17G
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [response.done] id=resp_ZG17GQh5dDB
+🎙️ 上行块 #100（64B）已发出
+🎙️ 上行块 #150（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #200（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ZG17XChCNep
+🧾 [ai-text +2字] resp=resp_ZG17X 累计2字：「北京」
+🧾 [ai-text +3字] resp=resp_ZG17X 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_ZG17X 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_ZG17X 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_ZG17X 累计9字：「，」
+🧾 [ai-text +2字] resp=resp_ZG17X 累计11字：「位于」
+🧾 [ai-text +2字] resp=resp_ZG17X 累计13字：「华北」
+🧾 [ai-text +2字] resp=resp_ZG17X 累计15字：「平原」
+🧾 [ai-text +1字] resp=resp_ZG17X 累计16字：「的」
+🧾 [ai-text +2字] resp=resp_ZG17X 累计18字：「北部」
+🧾 [ai-text +1字] resp=resp_ZG17X 累计19字：「。」
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🎧 [user-transcript] item=item_ZG17LWz 「你知道北京在哪吗？」
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🔊 [ai-audio块] resp=resp_ZG17X
+🎧 [response.done] id=resp_ZG17XChCNep
+🎙️ 上行块 #250（2730B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #300（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ZG17VukcwRL
+🧾 [ai-text +2字] resp=resp_ZG17V 累计2字：「天津」
+🧾 [ai-text +3字] resp=resp_ZG17V 累计5字：「是中国」
+🧾 [ai-text +3字] resp=resp_ZG17V 累计8字：「直辖市」
+🧾 [ai-text +1字] resp=resp_ZG17V 累计9字：「，」
+🧾 [ai-text +2字] resp=resp_ZG17V 累计11字：「位于」
+🧾 [ai-text +2字] resp=resp_ZG17V 累计13字：「华北」
+🧾 [ai-text +2字] resp=resp_ZG17V 累计15字：「平原」
+🧾 [ai-text +2字] resp=resp_ZG17V 累计17字：「东部」
+🧾 [ai-text +1字] resp=resp_ZG17V 累计18字：「，」
+🧾 [ai-text +2字] resp=resp_ZG17V 累计20字：「紧邻」
+⏱️ [hitch] main thread busy for 63ms
+🧾 [ai-text +2字] resp=resp_ZG17V 累计22字：「渤海」
+🧾 [ai-text +1字] resp=resp_ZG17V 累计23字：「湾」
+🧾 [ai-text +1字] resp=resp_ZG17V 累计24字：「。」
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🎧 [user-transcript] item=item_ZG17BuP 「你知道天津在哪吗？」
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🔊 [ai-audio块] resp=resp_ZG17V
+🎧 [response.done] id=resp_ZG17VukcwRL
+🎙️ 上行块 #350（2730B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 144ms
+⏱️ [hitch] main thread busy for 111ms
+⏱️ [hitch] main thread busy for 242ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 384ms
+⏱️ [hitch] main thread busy for 92ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 296ms
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [hitch] main thread busy for 247ms
+⏱️ [hitch] main thread busy for 182ms
+⏱️ [hitch] main thread busy for 190ms
+⏱️ [hitch] main thread busy for 200ms
+⏱️ [hitch] main thread busy for 191ms
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 83ms
+🔊 [aecprobe] t=1790274164.822 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 134ms
+⏱️ [hitch] main thread busy for 238ms
+🔊 [aecprobe] t=1790274166.348 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+⏱️ [hitch] main thread busy for 45ms
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790274166.609 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790274166.609 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 59ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 58ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [hitch] main thread busy for 54ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 62ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 109ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 190ms
+⏱️ [hitch] main thread busy for 283ms
+⏱️ [hitch] main thread busy for 256ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [hitch] main thread busy for 64ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 79ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 178ms
+⏱️ [hitch] main thread busy for 198ms
+⏱️ [hitch] main thread busy for 277ms
+⏱️ [hitch] main thread busy for 254ms
+⏱️ [hitch] main thread busy for 249ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 319ms
+⏱️ [hitch] main thread busy for 49ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 91ms
+⏱️ [hitch] main thread busy for 65ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 199ms
+⏱️ [hitch] main thread busy for 255ms
+⏱️ [hitch] main thread busy for 207ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 93ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 215ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 189ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 259ms
+⏱️ [hitch] main thread busy for 258ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 118ms
+⏱️ [hitch] main thread busy for 198ms
+⏱️ [hitch] main thread busy for 229ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 88ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 207ms
+⏱️ [hitch] main thread busy for 245ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 356ms
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms

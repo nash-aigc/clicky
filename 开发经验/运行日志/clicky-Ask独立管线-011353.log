@@ -1,0 +1,21 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 7 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 265ms
+🔊 [aecprobe] t=1790270040.635 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+⏱️ [hitch] main thread busy for 134ms
+🔊 [aecprobe] t=1790270042.160 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790270042.420 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+💬 Ask 语音电话：全双工会话已开始（模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790270042.420 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 279ms

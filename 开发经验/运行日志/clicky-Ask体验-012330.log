@@ -1,0 +1,39 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 17 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 417ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话：会话已就绪 —— 状态切到「通话中」，可以开始说话
+🔊 [aecprobe] t=1790270679.820 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 47ms
+🔊 [aecprobe] t=1790270681.512 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790270681.589 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 80ms
+💬 Ask 语音电话：AI 第一次出声
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 75ms
+🗣️ Ask 语音电话：用户说「我看一下北京在哪里。」
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+🗣️ Ask 语音电话：用户说「是我的意思是」
+❌ 全双工会话服务端报错：message=Conversation has no active response. code=invalid_value type=invalid_request_error param=response.cancel
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms

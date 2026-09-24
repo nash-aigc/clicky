@@ -156,6 +156,8 @@ final class DuplexVoiceEngine {
     private static let bargeInPollIntervalSeconds: Double = 0.05
     /// 有没有收到 `session.created` —— `session.update` 的前置条件。
     private var didSeeSessionCreated = false
+    /// 有没有收到 `session.updated` —— `session.update` 已被服务端应用的确认。
+    private var didSeeSessionUpdated = false
     /// 这一场会话里有没有出声过（见 `Callbacks.onFirstAudioScheduled`）。
     private var hasScheduledFirstAudio = false
     /// 这一轮助手文字的累计值。
@@ -219,6 +221,8 @@ final class DuplexVoiceEngine {
         smoothedUplinkLevel = 0
         uplinkSequenceNumber = 0
         pendingUplinkAudio.removeAll()
+        didSeeSessionCreated = false
+        didSeeSessionUpdated = false
         startLocalBargeInWatch()
         let task = urlSession.webSocketTask(with: websocketRequest)
         webSocketTask = task
@@ -238,6 +242,11 @@ final class DuplexVoiceEngine {
         ])
         // 这一行是「音色到底有没有生效」的判据：它必须等于用户在音色面板里点的那个。
         print("💬 全双工会话：model=\(model) voice=\(voiceID)")
+
+        // **等配置确认再继续**：装 tap、返回调用方（随后就是问候语）都必须发生在
+        // 服务端应用完配置**之后** —— 否则问候语的 response.create 会被静默丢弃，
+        // 界面永远停在「连接中」（2026-09-25 实测）。
+        try await waitForSessionUpdated(timeoutSeconds: 8)
 
         // 麦克风上行。装在**共享播放引擎**上：voice processing 的回声消除只对它自己
         // 渲染的音频有效，所以话筒必须和「正在播的回答」在同一个引擎上，否则模型会
@@ -327,6 +336,7 @@ final class DuplexVoiceEngine {
         isRunning = false
 
         isStopped = true
+        didSeeSessionUpdated = false
         isResponseActive = false
         hasScheduledFirstAudio = false
         pendingUplinkAudio.removeAll()
@@ -520,6 +530,7 @@ final class DuplexVoiceEngine {
 
         switch type {
         case "session.updated":
+            didSeeSessionUpdated = true
             callbacks.onSessionConfigured()
 
         case "session.created":
@@ -608,6 +619,28 @@ final class DuplexVoiceEngine {
         let data = try JSONSerialization.data(withJSONObject: payload)
         guard let text = String(data: data, encoding: .utf8) else { return }
         try await webSocketTask.send(.string(text))
+    }
+
+    /// **等 `session.updated` 确认** —— 服务端应用完 `session.update` 才会发它。
+    ///
+    /// 不等它的后果（2026-09-25 实测，Ask 语音电话）：问候语的 `response.create`
+    /// 与服务端应用配置**赛跑**，配置还没应用完，`response.create` 被服务端**静默丢弃**
+    /// （没有任何报错、没有任何 response 事件）—— 界面永远停在「连接中」，15 秒兜底
+    /// 都等不到一声「你好」。日志证据：`session.updated` 排在问候语发出之后，且全程
+    /// 零个 `response.created`。
+    ///
+    /// 协议的事件顺序本身就是 `session.created → session.updated`（应用完的确认），
+    /// 所以"等它"是官方语义的一部分，不是 workaround。
+    private func waitForSessionUpdated(timeoutSeconds: Double) async throws {
+        let deadline = Date().addingTimeInterval(timeoutSeconds)
+        while didSeeSessionUpdated == false, Date() < deadline, !isStopped {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        guard didSeeSessionUpdated else {
+            throw BailianTTSClientError(
+                message: "全双工会话配置没有在 \(Int(timeoutSeconds)) 秒内被确认（session.updated 未到达）。"
+            )
+        }
     }
 
     private func waitForSessionCreated(timeoutSeconds: Double) async throws {

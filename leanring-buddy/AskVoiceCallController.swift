@@ -68,6 +68,14 @@ final class AskVoiceCallController: ObservableObject {
     var reportFailure: ((String) -> Void)?
     /// 共享播放引擎（全 app 唯一那台，从 `CompanionManager` 注入）。
     var playbackEngineProvider: (() -> VoicePlaybackEngine?)?
+    /// **热引擎**（与 Chatting 的 `warmUpVoiceEngine` 同一个动作）。
+    ///
+    /// Chatting 在起会话前先热引擎（首次 VPIO 使能要 ~2 秒，还可能走一次失败回退），
+    /// tap 装在**已经热好**的引擎上；Ask 原来没有这一步 —— tap 装在一次**冷 bring-up**
+    /// 的返回值上，而那条冷启动路径可能落在"被拆过 voice processing 的引擎"上，
+    /// 那种引擎的 tap 只送静音/0 帧且**不报错**（`VoicePlaybackEngine.swift` 的成文记录）。
+    /// 2026-09-25 两路调查都点了这一条。
+    var warmUpEngine: (() async -> Void)?
 
     private var engine: DuplexVoiceEngine?
     /// **等待配对**的那条 AI 回复在会话里的下标。
@@ -87,17 +95,17 @@ final class AskVoiceCallController: ObservableObject {
     /// 往往已经先到了 —— 直接往后追加就会得到「上一轮的答案排在下一轮提问之后」
     /// （用户 2026-09-25 实测的顺序错乱）。回合一开始就把下标定下来，写盘时按它**插入**。
     private var pendingAssistantInsertIndex: Int?
-    /// 已经在会话里、但还**没写进任何条目**的用户那句话。
-    ///
-    /// 用户的转写常常早于回答写盘（服务端先回答、转写最后补）。先攥在手里，
-    /// 写回答时把"问在上、答在下"放进**同一条**；否则才单独落一条。
+    /// 已经在会话里、但还**没写进任何条目**的用户那句话（转写先于回答的 done 到达时）。
     private var pendingUserTranscript: String?
-    /// 当前这一轮回答是不是**用户说话触发的**（只有它会去和用户那句话配对）。
+    /// 回答写了、用户转写还没补（常态：done 早于转写）—— 指向那条回答的下标。
+    private var pendingPairIndex: Int?
+    /// 当前这一轮回答是不是**用户说话触发的**（只有它才会写盘 / 配对）。
     private var isExpectingUserTranscriptForCurrentTurn = false
-    /// 这一轮回答是否由用户说话触发（开场白是 false）—— 只有 true 才允许配对。
+    /// 这一轮回答是否由用户说话触发（开场白是 false）—— 只有 true 才允许写盘。
     private var isCurrentTurnTriggeredByUserSpeech = false
-    /// 排名：每个回合用自己的序号找配对，避免跨回合错配。
-    private var currentTurnSequenceNumber = 0
+    /// 开场白回合：不写盘、不配对、期间不武装本地打断（AEC 未收敛，麦克风会听到
+    /// AI 自己的声音而误触发 —— 2026-09-25 日志实测）。
+    private var isGreetingTurn = true
 
     init() {
         voiceID = UserDefaults.standard.string(forKey: Self.voiceIDDefaultsKey)
@@ -123,6 +131,13 @@ final class AskVoiceCallController: ObservableObject {
         targetSessionID = sessionID
         liveUserTranscript = ""
         liveAssistantText = ""
+        // 会话的状态属于会话：上一通电话残留的配对状态绝不带进来
+        // （引擎侧在 start 里清自己的字段，这里清编排侧的）。
+        pendingUserTranscript = nil
+        pendingPairIndex = nil
+        isCurrentTurnTriggeredByUserSpeech = false
+        isExpectingUserTranscriptForCurrentTurn = false
+        isGreetingTurn = true
         phase = .connecting
         setNotchPhase?(.externalConnecting)
 
@@ -182,6 +197,9 @@ final class AskVoiceCallController: ObservableObject {
         Task { [weak self] in
             guard let self else { return }
             do {
+                // 与 Chatting 同一步：先把引擎热起来（首次 VPIO 使能 ~2 秒，还可能
+                // 走一次失败回退），tap 因此装在热引擎上而不是冷启动的返回值上。
+                await self.warmUpEngine?()
                 try await engine.start(
                     role: VoiceChatRole.makeDefaultRole(),
                     model: VoiceCatalog.defaultDuplexModel,
@@ -245,26 +263,30 @@ final class AskVoiceCallController: ObservableObject {
 
     // MARK: - 转录落进 Ask 会话
 
-    /// 用户说了一句（引擎给的是最终转写）→ 当成 Ask 会话里的一条用户消息落盘。
-    ///
-    /// 与打字发送走**同一条**存储路径，所以 Ask 页会照常把它渲染出来，
-    /// 而且它自然成为下一轮的上下文。
+    // **这一节是 Ask 管线的写盘状态机**，与 Chatting 的内存数组同构，但多了两条
+    // 协议约束（都是事件流日志实测的，2026-09-25）：
+    //
+    //   1. 服务端顺序是「先回答、转写最后补」：response.done 早于
+    //      input_audio_transcription.completed。所以回答先落盘（用户文本暂时为空）、
+    //      转写到达时**按下标补配**进同一条 —— 配对目标记住的是**我自己刚写的下标**，
+    //      绝不用"最后一条"去找（那会在下一轮开始后配错）。
+    //   2. **开场白回合不落盘**：它是接通信号，不是对话内容；落了盘就会变成一条
+    //      「问空答有」的记录，把用户第一问吸过去（问北京、答你好 就是这么来的）。
+    //
+    // 状态只有两个：`pendingUserTranscript`（用户说了、回答还没写）与
+    // `pendingPairIndex`（回答写了、用户转写还没补）。任何时刻至多一个非空。
+
+    /// 用户说了一句（引擎在 `transcription.completed` 给的是最终转写）。
     private func handleUserUtterance(_ transcript: String) {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         liveUserTranscript = ""
-        print("🗣️ [user-utterance 回调] 「\(trimmed)」")
+        isGreetingTurn = false
+        print("🗣️ [user-utterance] 「\(trimmed)」")
 
-        // **服务端是"先听到人说话就开始回答、转写最后才补"**（实测协议时序，与 Chatting
-        // 那边 `insertDuplexUserEntry` 同一条理由）。所以用户这句话到达时，AI 那一轮
-        // 的文本**往往已经落盘了** —— 直接往后追加就会出现「回复在提问上面」，
-        // 而且一问一答会错位（用户截图：问赵金麦、答杨幂）。
-        //
-        // 规矩：**按邻接配对** —— 如果最后一条正是"还没有用户文本的 AI 回复"，
-        // 就把这句话补进**那一条**的开头（一条记录 = 一个回合，问在上、答在下）。
+        // ① 有"刚写完、等着用户文本"的回答 → 补配进同一条（问在上、答在下）。
         if let session = currentTargetSession(),
-           let pairIndex = pendingAssistantEntryIndex,
-           isCurrentTurnTriggeredByUserSpeech,
+           let pairIndex = pendingPairIndex,
            session.entries.indices.contains(pairIndex),
            session.entries[pairIndex].userTranscript.isEmpty,
            !session.entries[pairIndex].assistantResponse.isEmpty {
@@ -281,31 +303,16 @@ final class AskVoiceCallController: ObservableObject {
                 sessionID: session.id
             )
             print("📝 [写盘] 补配 #\(pairIndex)：问「\(trimmed.prefix(20))」 答「\(pendingReply.prefix(20))」")
-            pendingAssistantEntryIndex = nil
+            pendingPairIndex = nil
             return
         }
 
-        // 还没有可配对的回答写盘（回答要等回合结束才写）→ **先攥住**，
-        // 写回答时把"问在上、答在下"放进同一条；这样即使转写比回答早到，
-        // 顺序也是对的。
-        pendingAssistantEntryIndex = nil
+        // ② 没有可配对的回答（回答要等它的 done）→ 攥住，等回合结束一起写。
         pendingUserTranscript = trimmed
-
-        ConversationSessionsStore.appendEntry(
-            ConversationHistoryEntry(
-                userTranscript: trimmed,
-                assistantResponse: "",
-                recordedWithActionTags: true
-            ),
-            targetSessionID: targetSessionID
-        )
     }
 
-    /// 助手这一轮开始了：**在这一刻就把条目该落的位置定下来**。
+    /// 助手这一轮开始了（`response.created`）：记录"这一轮是不是用户说话触发的"。
     private func noteAssistantTurnStarted() {
-        currentTurnSequenceNumber += 1
-        let entryCount = currentTargetSession()?.entries.count ?? 0
-        pendingAssistantInsertIndex = entryCount
         isCurrentTurnTriggeredByUserSpeech = isExpectingUserTranscriptForCurrentTurn
         isExpectingUserTranscriptForCurrentTurn = false
     }
@@ -316,83 +323,56 @@ final class AskVoiceCallController: ObservableObject {
         return ConversationSessionsStore.allSessions().first { $0.id == targetSessionID }
     }
 
-    /// 把 AI 这一轮说的话补进**这一轮那条记录**。
+    /// 回合结束 / 用户打断：把这一轮的回答写盘。
     ///
-    /// **一个回合只写一条记录**，与打字那条路同一个形状：用户说话时写一条
-    /// （`assistantResponse` 先空着），AI 说完把回复补进**同一条**。
-    ///
-    /// 之前这里写成了两条（用户一条、AI 另一条），后果在 Ask 页上一眼可见
-    /// （用户 2026-09-25 截图报的「总是发很多空白的区域给我」）：
-    /// 用户那条的 `assistantResponse` 是空的 → 渲染出一张**空白回复卡**；
-    /// AI 那条的 `userTranscript` 是空的 → 那一问一答看起来还被拆散了。
+    /// 三种情况：
+    ///   · 手里攥着用户的转写（转写比回答的 done 先到）→ 一条写全：问在上、答在下。
+    ///   · 这一轮是**用户说话触发**的 → 先写「问空答有」，`pendingPairIndex` 指向它，
+    ///     等转写到达补配。
+    ///   · **开场白 / 不是用户触发的回合 → 一个字都不写**：它不属于任何一轮提问，
+    ///     落了盘就会把用户的话吸过去（错位的根源）。
     private func commitAssistantTurn() {
         let spoken = liveAssistantText.trimmingCharacters(in: .whitespacesAndNewlines)
         liveAssistantText = ""
         guard !spoken.isEmpty, let sessionID = targetSessionID else { return }
 
-        // 这一轮的用户条目还在等回复（最后一条、用户有内容、回复还是空的）→ 补进去。
-        //
-        // `ConversationHistoryEntry` 的字段都是 `let`（它是一份不可变记录），所以这里是
-        // **整条替换**：用同样的用户文本 + 新的回复文本造一条新的，放回同一个下标。
-        if let session = currentTargetSession(),
-           let lastIndex = session.entries.indices.last,
-           !session.entries[lastIndex].userTranscript.isEmpty,
-           session.entries[lastIndex].assistantResponse.isEmpty {
-            let pendingEntry = session.entries[lastIndex]
-            var updatedEntries = session.entries
-            updatedEntries[lastIndex] = ConversationHistoryEntry(
-                userTranscript: pendingEntry.userTranscript,
-                assistantResponse: spoken,
-                recordedWithActionTags: true
+        // ① 用户的话攥在手里 → 一条写全。
+        if let userText = pendingUserTranscript {
+            pendingUserTranscript = nil
+            ConversationSessionsStore.appendEntry(
+                ConversationHistoryEntry(
+                    userTranscript: userText,
+                    assistantResponse: spoken,
+                    recordedWithActionTags: true
+                ),
+                targetSessionID: sessionID
             )
-            ConversationSessionsStore.replaceEntriesAndSummary(
-                entries: updatedEntries,
-                summary: session.summary,
-                sessionID: sessionID
-            )
+            print("📝 [写盘] 一条全写：问「\(userText.prefix(20))」 答「\(spoken.prefix(20))」")
             return
         }
 
-        // 到这里说明这一轮**还没有条目**（用户那句话还没配对成功）→ 按定格的下标
-        // **插入**一条：问在上（如果攥着）、答在下。顺序因此是"回合开始的先后"。
-        guard let session = currentTargetSession() else { return }
-        let pairedUserTranscript = isCurrentTurnTriggeredByUserSpeech
-            ? (pendingUserTranscript ?? "")
-            : ""
-        if isCurrentTurnTriggeredByUserSpeech { pendingUserTranscript = nil }
+        // ② 用户触发、但没有攥着的转写（常态：转写在 done 之后才到）→
+        //    先写「问空答有」，等转写补配。
+        if isCurrentTurnTriggeredByUserSpeech {
+            let insertIndex = currentTargetSession()?.entries.count ?? 0
+            ConversationSessionsStore.appendEntry(
+                ConversationHistoryEntry(
+                    userTranscript: "",
+                    assistantResponse: spoken,
+                    recordedWithActionTags: true
+                ),
+                targetSessionID: sessionID
+            )
+            pendingPairIndex = insertIndex
+            print("📝 [写盘] #\(insertIndex) 等转写补配：答「\(spoken.prefix(20))」")
+            return
+        }
 
-        let insertIndex = min(max(pendingAssistantInsertIndex ?? session.entries.count, 0),
-                              session.entries.count)
-        pendingAssistantInsertIndex = nil
-
-        var updatedEntries = session.entries
-        updatedEntries.insert(
-            ConversationHistoryEntry(
-                userTranscript: pairedUserTranscript,
-                assistantResponse: spoken,
-                recordedWithActionTags: true
-            ),
-            at: insertIndex
-        )
-        ConversationSessionsStore.replaceEntriesAndSummary(
-            entries: updatedEntries,
-            summary: session.summary,
-            sessionID: sessionID
-        )
-        print("📝 [写盘] 插到 #\(insertIndex)：问「\(pairedUserTranscript.prefix(20))」 答「\(spoken.prefix(20))」")
-        // 这条回答后面若还收到用户转写，就该配到它身上。
-        pendingAssistantEntryIndex = pairedUserTranscript.isEmpty ? insertIndex : nil
+        // ③ 开场白 / 非用户触发的回合：不写盘。文本只在 Ask 页的实时气泡里出现过。
+        print("📝 [写盘] 跳过（非用户触发的回合，如开场白）：「\(spoken.prefix(20))」")
     }
 }
 
-// MARK: - 上下文提示词
-
-/// 把 Ask 会话的历史拼成**带标签的提示词**（用户 2026-09-25 指定：
-/// 「把 ask 这部分的聊天历史记录当做提示词的前半部分，可以打一个标签……
-/// 然后在后面拼接"这是用户的问题"」）。
-///
-/// 它进的是全双工会话的 `session.instructions`，**只发一次** —— 这正是用户要的
-/// 「第一次发送时包含完整上下文，第二次只包含用户说的话」：后续回合上行只有音频。
 enum AskVoiceCallContext {
 
     /// 最近多少条进上下文。太多会把 instructions 撑大，而语音深聊通常只围绕最近一段。

@@ -1,0 +1,65 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 345ms
+⏱️ [hitch] main thread busy for 172ms
+🔊 [aecprobe] t=1790267431.285 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790267432.839 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790267432.890 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 255ms
+⏱️ [hitch] main thread busy for 164ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 132ms
+⏱️ [hitch] main thread busy for 113ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 42ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 72ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+⏱️ [hitch] main thread busy for 57ms
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 53ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 163ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 132ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 123ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 103ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 142ms
+⏱️ [hitch] main thread busy for 177ms
+⏱️ [hitch] main thread busy for 169ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 117ms
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 95ms

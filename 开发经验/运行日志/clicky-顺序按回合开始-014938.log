@@ -1,0 +1,100 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 310ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话：会话配置已接受
+🔊 [aecprobe] t=1790272206.309 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 142ms
+🔊 [aecprobe] t=1790272207.883 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790272208.093 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 67ms
+🗣️ Ask 语音电话：用户说「介绍一下200字的北京。」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 111ms
+🗣️ Ask 语音电话：用户说「介绍一下天津港买车。」
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 223ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 207ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 73ms
+⏱️ [hitch] main thread busy for 237ms
+⏱️ [hitch] main thread busy for 101ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 151ms
+⏱️ [hitch] main thread busy for 208ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 119ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 121ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 89ms
+⏱️ [hitch] main thread busy for 162ms
+⏱️ [hitch] main thread busy for 204ms
+⏱️ [hitch] main thread busy for 200ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 59ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 55ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 60ms
+🔥 语音聊天：音频引擎已预热
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 217ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 224ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 227ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 78ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 81ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 154ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 224ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 216ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms

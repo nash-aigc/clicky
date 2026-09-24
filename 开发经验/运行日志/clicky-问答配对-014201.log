@@ -1,0 +1,157 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 45 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 482ms
+⏱️ [hitch] main thread busy for 41ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话：会话配置已接受
+🔊 [aecprobe] t=1790271777.993 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790271779.641 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790271779.754 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+⏱️ [hitch] main thread busy for 87ms
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 118ms
+🗣️ Ask 语音电话：用户说「你知道今天的人吗？」
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 420ms
+⏱️ [hitch] main thread busy for 47ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 115ms
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Ask 语音电话：用户说「你跟我说一下昨天的这个。」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略
+⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略
+⏱️ [hitch] main thread busy for 196ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 80ms
+🗣️ Ask 语音电话：用户说「不是你给我说一下美国。」
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 81ms
+🗣️ Ask 语音电话：用户说「美国这个情况。」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 195ms
+⏱️ [hitch] main thread busy for 294ms
+⏱️ [hitch] main thread busy for 158ms
+⏱️ [hitch] main thread busy for 151ms
+⏱️ [hitch] main thread busy for 179ms
+🗣️ Ask 语音电话：用户说「我提供一个200字关于赵金麦的个人介绍。」
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [hitch] main thread busy for 149ms
+⏱️ [hitch] main thread busy for 211ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 113ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 216ms
+⏱️ [hitch] main thread busy for 97ms
+🗣️ Ask 语音电话：用户说「你帮我一个。」
+⏱️ [hitch] main thread busy for 187ms
+⏱️ [hitch] main thread busy for 263ms
+🗣️ Ask 语音电话：用户说「一共有几个关于200字的一个关于。」
+⏱️ [hitch] main thread busy for 167ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 504ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 199ms
+⏱️ [hitch] main thread busy for 118ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 231ms
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 57ms
+🗣️ Ask 语音电话：用户说「提供了一个200字的关于赵金麦的个人介绍。」
+⏱️ [hitch] main thread busy for 120ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 123ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 593ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 476ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 97ms
+⏱️ [hitch] main thread busy for 205ms
+🗣️ Ask 语音电话：用户说「那个听一下，你说一下杨幂的介绍。」
+⏱️ [hitch] main thread busy for 194ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 85ms
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 466ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms

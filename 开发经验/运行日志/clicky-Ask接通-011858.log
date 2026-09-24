@@ -1,0 +1,84 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 11 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 343ms
+⏱️ [hitch] main thread busy for 41ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话：会话已就绪 —— 状态切到「通话中」，可以开始说话
+🔊 [aecprobe] t=1790270353.627 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 133ms
+🔊 [aecprobe] t=1790270355.173 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790270355.411 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+⏱️ [hitch] main thread busy for 53ms
+🗣️ Ask 语音电话：用户说「你好，在吗？」
+💬 Ask 语音电话：AI 第一次出声
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 62ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话：会话已就绪 —— 状态切到「通话中」，可以开始说话
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 288ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话：会话已就绪 —— 状态切到「通话中」，可以开始说话
+⏱️ [hitch] main thread busy for 45ms
+🗣️ Ask 语音电话：用户说「你好，在吗。」
+💬 Ask 语音电话：AI 第一次出声
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 308ms
+⏱️ [hitch] main thread busy for 50ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 145ms
+⏱️ [hitch] main thread busy for 260ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话：会话已就绪 —— 状态切到「通话中」，可以开始说话
+⏱️ [hitch] main thread busy for 44ms
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 312ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+💬 Ask 语音电话：会话已就绪 —— 状态切到「通话中」，可以开始说话
+⏱️ [hitch] main thread busy for 53ms
+🗣️ Ask 语音电话：用户说「实现一个挂断的功能。」
+💬 Ask 语音电话：AI 第一次出声
+⏱️ [hitch] main thread busy for 336ms
+❌ 全双工会话服务端报错：message=Conversation has no active response. code=invalid_value type=invalid_request_error param=response.cancel
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 323ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 885ms

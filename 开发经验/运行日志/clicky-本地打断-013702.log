@@ -1,0 +1,56 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 37 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 490ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+💬 Ask 语音电话：会话配置已接受
+🔊 [aecprobe] t=1790271441.451 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790271442.948 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790271443.233 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+⏱️ [hitch] main thread busy for 41ms
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 51ms
+🗣️ Ask 语音电话：用户说「随便随便啊。」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 200ms
+🗣️ Ask 语音电话：用户说「你知道回家在哪里吗。」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 242ms
+🗣️ Ask 语音电话：用户说「那个你给我100字介绍一下赵金麦这个人。」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 121ms
+🗣️ Ask 语音电话：用户说「那个蒋密这个人你认识吗？」
+⏱️ [hitch] main thread busy for 55ms
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 43ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 138ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 51ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 74ms
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms

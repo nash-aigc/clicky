@@ -248,8 +248,17 @@ struct NotchHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(Array(entries.enumerated()), id: \.offset) { entryIndex, entry in
-                        turnView(entryIndex, entry)
-                            .id("entry-\(entryIndex)")
+                        // 通话进行中，**最后一条还没写完回答的条目**不渲染空卡 ——
+                        // 它的回答此刻在下面的流式气泡里（`askVoiceCallController.liveAssistantText`），
+                        // 回合结束写盘后这里自然恢复渲染。
+                        if askVoiceCallController.isActive,
+                           entryIndex == entries.count - 1,
+                           entry.assistantResponse.isEmpty {
+                            EmptyView()
+                        } else {
+                            turnView(entryIndex, entry)
+                                .id("entry-\(entryIndex)")
+                        }
                     }
 
                     // The question currently being answered shows as the

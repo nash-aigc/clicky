@@ -1,0 +1,293 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 223ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 40ms
+🔊 [aecprobe] t=1790291709.643 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 48ms
+🔊 [aecprobe] t=1790291711.341 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790291711.414 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🎧 [response.created] id=resp_ASFWB5jiN3U
+🧾 [ai-text +2字] resp=resp_ASFWB 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ASFWB 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_ASFWB 累计6字：「有什么」
+🧾 [ai-text +1字] resp=resp_ASFWB 累计7字：「想」
+🧾 [ai-text +1字] resp=resp_ASFWB 累计8字：「问」
+🧾 [ai-text +2字] resp=resp_ASFWB 累计10字：「的吗」
+🧾 [ai-text +1字] resp=resp_ASFWB 累计11字：「？」
+🔊 [ai-audio块] resp=resp_ASFWB
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_ASFWB
+🔊 [ai-audio块] resp=resp_ASFWB
+🔊 [ai-audio块] resp=resp_ASFWB
+🔊 [ai-audio块] resp=resp_ASFWB
+🔊 [ai-audio块] resp=resp_ASFWB
+🎧 [response.done] id=resp_ASFWB5jiN3U
+📝 [写盘] 跳过（非用户触发的回合，如开场白）：「你好！有什么想问的吗？」
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #100（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ASFWQTTepD9
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计3字：「，」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计5字：「我能」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计7字：「听到」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计9字：「你的」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计11字：「声音」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计12字：「，」
+🧾 [ai-text +3字] resp=resp_ASFWQ 累计15字：「有什么」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计16字：「事」
+⏱️ [hitch] main thread busy for 43ms
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计18字：「需要」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计19字：「我」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计21字：「帮忙」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计22字：「吗」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计23字：「？」
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🎧 [user-transcript] item=item_ASFWZQh 「Hello, can you see me? So can you say something to me? 」
+🗣️ [user-utterance] 「Hello, can you see me? So can you say something to me?」
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🎧 [response.done] id=resp_ASFWQTTepD9
+📝 [写盘] 一条全写：问「Hello, can you see m」 答「你好，我能听到你的声音，有什么事需要我帮」
+⏱️ [hitch] main thread busy for 40ms
+🎙️ 上行块 #150（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #200（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ASFWQxRip5q
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计2字：「抱歉」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计3字：「，」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计4字：「我」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计6字：「目前」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计8字：「无法」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计10字：「直接」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计12字：「操作」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计14字：「你的」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计16字：「设备」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计17字：「来」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计19字：「保存」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计21字：「文件」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计22字：「，」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计23字：「请」
+🧾 [ai-text +3字] resp=resp_ASFWQ 累计26字：「告诉我」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计28字：「具体」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计30字：「需要」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计32字：「保存」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计34字：「什么」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计36字：「内容」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计37字：「，」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计39字：「或者」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计40字：「你」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计42字：「希望」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计43字：「我」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计45字：「帮你」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计47字：「整理」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计49字：「哪些」
+🧾 [ai-text +2字] resp=resp_ASFWQ 累计51字：「文字」
+🧾 [ai-text +1字] resp=resp_ASFWQ 累计52字：「？」
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🎧 [user-transcript] item=item_ASFWK86 「Okay，and please say it's just a little ridiculous。」
+🗣️ [user-utterance] 「Okay，and please say it's just a little ridiculous。」
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🎙️ 上行块 #250（64B）已发出
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🔊 [ai-audio块] resp=resp_ASFWQ
+🎧 [response.done] id=resp_ASFWQxRip5q
+📝 [写盘] 一条全写：问「Okay，and please say 」 答「抱歉，我目前无法直接操作你的设备来保存文」
+🎙️ 上行块 #300（2720B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #400（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ASFWJv2ZImn
+🧾 [ai-text +2字] resp=resp_ASFWJ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ASFWJ 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_ASFWJ 累计6字：「有什么」
+🧾 [ai-text +2字] resp=resp_ASFWJ 累计8字：「可以」
+🧾 [ai-text +1字] resp=resp_ASFWJ 累计9字：「帮」
+🧾 [ai-text +2字] resp=resp_ASFWJ 累计11字：「你的」
+🧾 [ai-text +1字] resp=resp_ASFWJ 累计12字：「吗」
+⏱️ [hitch] main thread busy for 50ms
+🧾 [ai-text +1字] resp=resp_ASFWJ 累计13字：「？」
+🔊 [ai-audio块] resp=resp_ASFWJ
+🔊 [ai-audio块] resp=resp_ASFWJ
+🔊 [ai-audio块] resp=resp_ASFWJ
+🔊 [ai-audio块] resp=resp_ASFWJ
+🔊 [ai-audio块] resp=resp_ASFWJ
+🔊 [ai-audio块] resp=resp_ASFWJ
+🎧 [response.done] id=resp_ASFWJv2ZImn
+📝 [写盘] #12 等转写补配：答「你好！有什么可以帮你的吗？」
+🎧 [user-transcript] item=item_ASFWHUB 「こんにちは。ありがとうございます。」
+🗣️ [user-utterance] 「こんにちは。ありがとうございます。」
+📝 [写盘] 补配 #12：问「こんにちは。ありがとうございます。」 答「你好！有什么可以帮你的吗？」
+🎙️ 上行块 #450（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #500（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ASFWILGsXCD
+🧾 [ai-text +2字] resp=resp_ASFWI 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ASFWI 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_ASFWI 累计6字：「有什么」
+🧾 [ai-text +1字] resp=resp_ASFWI 累计7字：「想」
+🧾 [ai-text +1字] resp=resp_ASFWI 累计8字：「问」
+🧾 [ai-text +2字] resp=resp_ASFWI 累计10字：「的吗」
+🧾 [ai-text +1字] resp=resp_ASFWI 累计11字：「？」
+🔊 [ai-audio块] resp=resp_ASFWI
+🎧 [user-transcript] item=item_ASFWATL 「こんにちは。」
+🗣️ [user-utterance] 「こんにちは。」
+🔊 [ai-audio块] resp=resp_ASFWI
+⏱️ [hitch] main thread busy for 72ms
+🔊 [ai-audio块] resp=resp_ASFWI
+🔊 [ai-audio块] resp=resp_ASFWI
+🔊 [ai-audio块] resp=resp_ASFWI
+🎧 [response.done] id=resp_ASFWILGsXCD
+📝 [写盘] 一条全写：问「こんにちは。」 答「你好！有什么想问的吗？」
+🎙️ 上行块 #550（64B）已发出
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 上行块 #600（3200B）已发出
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 335ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 276ms
+⏱️ [hitch] main thread busy for 109ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎧 [response.created] id=resp_TbfyTbBeO9O
+🧾 [ai-text +2字] resp=resp_TbfyT 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_TbfyT 累计3字：「！」
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🧾 [ai-text +3字] resp=resp_TbfyT 累计6字：「有什么」
+🧾 [ai-text +1字] resp=resp_TbfyT 累计7字：「想」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +1字] resp=resp_TbfyT 累计8字：「问」
+🧾 [ai-text +2字] resp=resp_TbfyT 累计10字：「的吗」
+🧾 [ai-text +1字] resp=resp_TbfyT 累计11字：「？」
+🎙️ 上行块 #2（2720B）已发出
+⏱️ [hitch] main thread busy for 147ms
+🎙️ 上行块 #3（2720B）已发出
+🔊 [ai-audio块] resp=resp_TbfyT
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_TbfyT
+🔊 [ai-audio块] resp=resp_TbfyT
+🔊 [ai-audio块] resp=resp_TbfyT
+🔊 [ai-audio块] resp=resp_TbfyT
+🔊 [ai-audio块] resp=resp_TbfyT
+🎧 [response.done] id=resp_TbfyTbBeO9O
+📝 [写盘] 跳过（非用户触发的回合，如开场白）：「你好！有什么想问的吗？」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #50（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_TbfyYN83jYP
+🧾 [ai-text +2字] resp=resp_TbfyY 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_TbfyY 累计3字：「，」
+🧾 [ai-text +1字] resp=resp_TbfyY 累计4字：「能」
+🧾 [ai-text +2字] resp=resp_TbfyY 累计6字：「听到」
+🧾 [ai-text +2字] resp=resp_TbfyY 累计8字：「你的」
+🧾 [ai-text +2字] resp=resp_TbfyY 累计10字：「声音」
+🧾 [ai-text +1字] resp=resp_TbfyY 累计11字：「。」
+🧾 [ai-text +3字] resp=resp_TbfyY 累计14字：「有什么」
+🧾 [ai-text +2字] resp=resp_TbfyY 累计16字：「可以」
+⏱️ [hitch] main thread busy for 122ms
+🧾 [ai-text +1字] resp=resp_TbfyY 累计17字：「帮」
+🧾 [ai-text +2字] resp=resp_TbfyY 累计19字：「你的」
+🧾 [ai-text +1字] resp=resp_TbfyY 累计20字：「？」
+🔊 [ai-audio块] resp=resp_TbfyY
+🔊 [ai-audio块] resp=resp_TbfyY
+🎧 [user-transcript] item=item_TbfyWiK 「こんにちは。ありがとうございます。」
+🗣️ [user-utterance] 「こんにちは。ありがとうございます。」
+🔊 [ai-audio块] resp=resp_TbfyY
+🔊 [ai-audio块] resp=resp_TbfyY
+🔊 [ai-audio块] resp=resp_TbfyY
+🔊 [ai-audio块] resp=resp_TbfyY
+🔊 [ai-audio块] resp=resp_TbfyY
+🔊 [ai-audio块] resp=resp_TbfyY
+🎧 [response.done] id=resp_TbfyYN83jYP
+📝 [写盘] 一条全写：问「こんにちは。ありがとうございます。」 答「你好，能听到你的声音。有什么可以帮你的？」
+🎙️ 上行块 #100（2720B）已发出
+🎙️ 上行块 #150（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 43ms
