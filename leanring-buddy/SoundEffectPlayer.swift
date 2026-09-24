@@ -35,6 +35,10 @@ final class SoundEffectPlayer {
         case answerFinished = "agent-done"
         /// A question needs the user's attention.
         case attentionNeeded = "agent-needs-you"
+
+        /// 语音会话挂断（用户主动）：刘海右翼的挂断图标、语音聊天页的挂断按钮、
+        /// 以及再次按下连接快捷键 —— 全部走 `disconnectCurrentSession` 这一个漏斗。
+        case sessionHungUp = "session-hangup"
     }
 
     private var playersByEffect: [SoundEffect: AVAudioPlayer] = [:]

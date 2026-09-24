@@ -190,7 +190,11 @@ final class VoiceWebSessionController: ObservableObject {
 
     private static let serverProbeTimeoutSeconds: TimeInterval = 1
     private static let serverLaunchWaitSeconds: TimeInterval = 20
-    private static let connectionWaitSeconds: TimeInterval = 30
+    /// 60 s, not 30: a COLD Chrome (launch + session restore + page load +
+    /// patch + connect) was measured losing the 30 s race — the user's
+    /// 「chrome 没打开时一直是持续连接中，然后自动断开」. A warm connect lands
+    /// in ~4 s, so the deadline is only paid on genuine failure.
+    private static let connectionWaitSeconds: TimeInterval = 60
 
     init(presentAnswer: @escaping (String) -> Void,
          presentFailure: @escaping (String) -> Void,
@@ -470,6 +474,11 @@ final class VoiceWebSessionController: ObservableObject {
         sessionTask?.cancel()
         sessionTask = nil
         sendBridgeCommand(["action": "disconnect"])
+        // 用户主动挂断的确认音。挂断的所有入口 —— 刘海右翼的挂断图标、
+        // 语音聊天页的挂断按钮、再次按下连接快捷键 —— 都走这一个漏斗；
+        // 页面自己断线（pollSessionUntilDisconnected 观察到 disconnected）
+        // 不经过这里，所以远端挂掉不响，响的只是「你挂断了」。
+        SoundEffectPlayer.shared.play(.sessionHungUp)
         endSession()
     }
 
@@ -557,43 +566,25 @@ final class VoiceWebSessionController: ObservableObject {
     /// The live-report check IS the page check: any page that loaded reports
     /// to the bridge (state changes + a 10 s heartbeat), so a report within
     /// the server's 35 s expiry proves a page is open — no window/tab work at
-    /// all. Opening used to be decided by an in-app AppleScript raise, but
-    /// Clicky lacks the Chrome-automation TCC grant, so the script always
-    /// failed and the `open -a` fallback fired on EVERY press, stacking up
-    /// one duplicate VoiceWeb tab per press (three tabs from three presses —
-    /// measured 2026-09-23). The AppleScript is kept only as the
-    /// bring-to-front courtesy for a fresh open; a one-time "Clicky wants to
-    /// control Chrome" prompt is its price.
+    /// all. Opening is ALWAYS in the background (`open --background`): the
+    /// user's rule 2026-09-24 is that Chrome must never surface, cold or warm,
+    /// because the session's whole face is the notch and its audio. The old
+    /// AppleScript raise (and its one-time automation prompt) is gone.
     private func ensureVoiceWebPageIsAvailable() async {
         if let state = await fetchBridgeState(), state.phase != nil {
             return
         }
-        let raiseScript = """
-        tell application "Google Chrome"
-            repeat with w in windows
-                set tabIndex to 0
-                repeat with t in tabs of w
-                    set tabIndex to tabIndex + 1
-                    -- ":8890" rather than "localhost:8890" — Chrome also
-                    -- surfaces the page as http://127.0.0.1:8890
-                    if URL of t contains ":8890" then
-                        set index of w to 1
-                        set active tab index of w to tabIndex
-                        return
-                    end if
-                end repeat
-            end repeat
-        end tell
-        """
-        if let appleScript = NSAppleScript(source: raiseScript) {
-            var scriptError: NSDictionary?
-            appleScript.executeAndReturnError(&scriptError)
-        }
         // No live page report means no VoiceWeb page is loaded anywhere, so
-        // opening a tab here cannot duplicate an existing one.
+        // opening a tab here cannot duplicate an existing one. `--background`
+        // is load-bearing (user 2026-09-24): Chrome — cold or warm — must
+        // NEVER come to the foreground; the whole session lives in the notch
+        // and the audio, and a browser window stealing focus mid-conversation
+        // is the failure the user described. The old AppleScript "raise an
+        // existing :8890 tab" courtesy did the opposite (set index of w to 1
+        // IS a foreground raise) and is gone with it.
         let openProcess = Process()
         openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        openProcess.arguments = ["-a", "Google Chrome", "http://localhost:8890/client/"]
+        openProcess.arguments = ["-a", "Google Chrome", "--background", "http://localhost:8890/client/"]
         try? openProcess.run()
     }
 
@@ -909,7 +900,7 @@ enum VoiceWebSessionError: LocalizedError {
         case .connectionFailed:
             return "连接失败（页面回报 failed，详情见 VoiceWeb 窗口）"
         case .connectionTimedOut:
-            return "连接超时（30 秒内没有就绪）"
+            return "连接超时（60 秒内页面没有就绪；Chrome 冷启动时可能较慢）"
         case .httpStatus:
             return "服务返回了非 200 状态"
         }
