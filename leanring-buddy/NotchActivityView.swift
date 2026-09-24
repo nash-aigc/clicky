@@ -910,11 +910,22 @@ struct NotchExpandedSheetView: View {
                 audioHistoryProvider: audioHistoryProvider
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // 内容入场三件套（参考页 .unit.line → .unit.in）：透明、模糊、
-            // 下移 8pt，同时归零。reduceMotion 时直接落在清晰态。
+            // 内容入场两件套：透明、模糊，同时归零。reduceMotion 时直接落在
+            // 清晰态。
+            //
+            // 参考页的三件套还有第三件 —— translateY(8px)（.unit.line 的
+            // from{transform:translateY(8px)}，仓库自己的移植记录
+            // design-preview/中心缩放-重设计演示.html:129 写的就是它）——这里
+            // **故意不移植**，2026-09-24：参考页那 8px 是在一个静态演示面板上
+            // 播的，没有滚动、没有实时列表，谁也不挡谁；这里是活的对话列，
+            // onAppear 的滚动和这 8pt 的上滑叠加（SwiftUI 接口证实
+            // _OffsetEffect 可插值），滚动 0.2s 硬停、偏移继续到 0.34s——
+            // 两个停止点被眼睛读成「弹一下」，即用户报的
+            // 「所有消息整体向上抖动一下，然后又下来」，左右两列都有
+            // （侧栏没有滚动，它看到的抖动只能来自这个偏移）。淡入 + 模糊
+            // 仍然是参考页的入场语言；丢掉的只有那 8pt。
             .opacity(hasContentSettledIn ? 1 : 0)
             .blur(radius: hasContentSettledIn ? 0 : 8)
-            .offset(y: hasContentSettledIn ? 0 : 8)
             .onAppear {
                 guard !shouldReduceMotion else {
                     hasContentSettledIn = true

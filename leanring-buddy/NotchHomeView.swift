@@ -332,7 +332,7 @@ struct NotchHomeView: View {
                 scrollToBottom(proxy)
             }
             .onAppear {
-                scrollToBottom(proxy)
+                scrollToBottomInstantly(proxy)
             }
             .onReceive(NotificationCenter.default.publisher(for: .clickyAppSettingsChanged)) { _ in
                 answerCardStyle = AppSettingsStore.snapshot().answerCardStyle
@@ -348,6 +348,21 @@ struct NotchHomeView: View {
         withAnimation(.easeOut(duration: 0.2)) {
             proxy.scrollTo(Self.conversationBottomAnchorID, anchor: .bottom)
         }
+    }
+
+    /// The same scroll, without animation — the panel-open landing.
+    ///
+    /// A fresh `ScrollView` starts at offset 0, and the old onAppear ran the
+    /// ANIMATED scroll: the whole list slid up over 0.2 s while the panel was
+    /// still revealing. Worse, that animated target then fought the other
+    /// movers in the same window (the entrance slide, the cards' first-frame
+    /// re-measure), and the scroll's 0.2 s hard stop against their longer runs
+    /// read as a bounce. Landing instantly means the content is already at the
+    /// bottom BEFORE the entrance makes any of it visible (~115 ms in at 2×),
+    /// so nothing the eye can see moves except the entrance itself. Content
+    /// changes keep the animated scroll — those are real new content arriving.
+    private func scrollToBottomInstantly(_ proxy: ScrollViewProxy) {
+        proxy.scrollTo(Self.conversationBottomAnchorID, anchor: .bottom)
     }
 
     /// One turn of the main loop later, then scroll. Used when the thing that
