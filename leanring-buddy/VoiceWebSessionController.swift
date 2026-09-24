@@ -164,6 +164,9 @@ final class VoiceWebSessionController: ObservableObject {
     /// The standing Chrome keep-alive job — see `startChromeKeepAlive`.
     private var chromeKeepAliveTask: Task<Void, Never>?
 
+    /// The single-flight guard for `prepareForConnect` — see its comment.
+    private var prepareForConnectTask: Task<Void, Never>?
+
     /// The VoiceWeb server this controller launched (nil when the server was
     /// already running). Deliberately NOT terminated on teardown: the server
     /// is a resident service the user may use outside Clicky.
@@ -270,6 +273,39 @@ final class VoiceWebSessionController: ObservableObject {
     }
 
     // MARK: - Role presets (sidebar list)
+
+    /// Warms everything a connect will need, the moment the user opens the
+    /// 语音聊天 section — the third of the three detection points (user's design,
+    /// 2026-09-24):
+    ///
+    ///   1. every three minutes, from `startChromeKeepAlive`;
+    ///   2. on the connect press itself, from `runSession` → `ensureVoiceWebPageIsAvailable`;
+    ///   3. HERE, on entering the section.
+    ///
+    /// The third one is the one that makes it feel seamless rather than merely
+    /// correct: the user still has to read the roles and move the mouse to 连接,
+    /// which is two or three seconds, and that is exactly the budget a cold
+    /// Chrome launch and a page restore need. By the time 连接 is pressed there
+    /// is nothing left to wait for.
+    ///
+    /// Fire-and-forget and single-flight: entering the tab twice must not race two
+    /// Chrome launches, and nothing here may block the tab from drawing.
+    func prepareForConnect() {
+        guard prepareForConnectTask == nil else { return }
+        prepareForConnectTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.prepareForConnectTask = nil }
+            do {
+                try await self.ensureVoiceWebServerIsReachable()
+                try await self.ensureVoiceWebPageIsAvailable()
+                print("🌐 VoiceWeb: 进入语音聊天时已预热（服务器 + Chrome + 页面）")
+            } catch {
+                // Deliberately quiet: the user has not asked to connect yet, and a
+                // failure here is reported properly by `runSession` when they do.
+                print("🌐 VoiceWeb: 预热未完成（\(error.localizedDescription)）—— 点连接时会再试一次")
+            }
+        }
+    }
 
     /// Refreshes the VoiceWeb role presets for the sidebar list. Runs on the
     /// section's every appearance — cheap (one GET), and it heals the list

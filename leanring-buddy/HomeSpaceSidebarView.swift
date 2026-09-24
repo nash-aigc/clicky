@@ -526,7 +526,12 @@ struct HomeSpaceSidebarView: View {
             .padding(.horizontal, 8)
             .padding(.top, 2)
         }
-        .onAppear { voiceWebSessionController.refreshRolePresets() }
+        .onAppear {
+            voiceWebSessionController.refreshRolePresets()
+            // 进入这个分区就开始预热（服务器 + Chrome + 页面），把用户选角色、
+            // 把鼠标移到「连接」的那两三秒用掉 —— 等真正点连接时就没有可等的了。
+            voiceWebSessionController.prepareForConnect()
+        }
     }
 
     /// The role rows, filtered by the shared search field.
