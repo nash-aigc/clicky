@@ -666,159 +666,104 @@ final class VoiceWebSessionController: ObservableObject {
         //
         // Chrome not running means no report can be live, whatever the bridge
         // says, so the page is opened unconditionally in that case.
-        VoiceWebConnectTiming.shared.mark("页面检查：Chrome 存活=\(isChromeRunning() ? "是" : "否")")
-        guard isChromeRunning() else {
-            didStartSomethingDuringThisConnect = true
-            // TWO STEPS, NOT ONE, and this is the cold-launch fix.
-            //
-            // Handing the URL to `open` while Chrome is ALSO being launched makes
-            // that single request do two things at once, and the URL is the half
-            // that forces a window to be created — and creating a window is where
-            // Chrome raises itself, which `-g` cannot prevent (the flag binds
-            // LaunchServices, not the app; see `openVoiceWebPageInBackground`).
-            // Launching Chrome bare first lets it restore its own session, so the
-            // URL then lands in a window that already exists and nothing has to be
-            // created. Reported as 「它拉起来之后是前端拉起来的…直接覆盖了我窗口的
-            // 界面」.
-            launchChromeWithoutOpeningAnything()
-            await waitForChromeToComeUp()
-            openVoiceWebPageInBackground()
-            return
-        }
+        VoiceWebConnectTiming.shared.mark("页面检查：自有 Chrome 实例存活=\(isOwnedChromeRunning() ? "是" : "否")")
 
         if let state = await fetchBridgeState(), bridgeReportsALivePage(state) {
             VoiceWebConnectTiming.shared.mark("已有活页面，什么都不做")
             return
         }
-        VoiceWebConnectTiming.shared.mark("没有活页面 —— 打开页面")
+
+        // No live page: bring the owned instance up WITH the page. It runs with
+        // --auto-select-desktop-capture-source and DisplayCaptureRequiresUserGesture
+        // disabled, so the page's bridge tick can call enableScreenShare
+        // programmatically — no human click, no picker (see the Chrome-liveness
+        // section for the flag list and why borrowing the user's own Chrome could
+        // never do this).
+        VoiceWebConnectTiming.shared.mark("没有活页面 —— 在自有实例里打开页面")
         didStartSomethingDuringThisConnect = true
-        // Chrome is up and no page is reporting: open the page. `-g` governs
-        // THIS case correctly — nothing is running, so LaunchServices really is
-        // launching, and the flag is honoured at that moment.
-        openVoiceWebPageInBackground()
+        launchOwnedChrome(openingPage: true)
     }
 
-    // MARK: - Chrome liveness
+    // MARK: - Clicky-owned Chrome instance
 
-    private static let chromeBundleIdentifier = "com.google.Chrome"
-
-    /// Whether Google Chrome is running at all.
+    /// The dedicated Chrome identity Clicky's voice chat runs in.
     ///
-    /// `NSWorkspace.runningApplications` rather than `pgrep`: it asks the same
-    /// registry LaunchServices routes to, so "running" here means exactly "able to
-    /// receive a URL", which is the question that matters.
-    /// Starts Chrome with no URL and no window of ours to make.
-    private func launchChromeWithoutOpeningAnything() {
-        print("🌐 VoiceWeb: Chrome 没有运行 —— 先把它自己拉起来（不带页面）")
-        let launchProcess = Process()
-        launchProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        // `-j` (--hide) as well as `-g`: LS asks the freshly launched app to hide
-        // as soon as it checks in, so a COLD Chrome never appears at all. Safe
-        // here precisely because this path only runs when Chrome is not running —
-        // against a running Chrome the same flag would hide the user's own
-        // windows, which is why it is not used on the warm path.
-        launchProcess.arguments = ["-g", "-j", "-a", "Google Chrome"]
-        try? launchProcess.run()
-    }
+    /// THE REASON THIS EXISTS (user 2026-09-24: 「还是说你有一个更好的方案？」):
+    /// borrowing the user's own Chrome can never be fully automated —
+    ///   · the capture picker needs a human click, because getDisplayMedia needs
+    ///     a real gesture and the bridge poll has none;
+    ///   · `-g` cannot stop a running Chrome raising itself when the URL arrives,
+    ///     because the flag binds LaunchServices and the activation is Chrome's
+    ///     own answer to the Apple Event (measured: every open left Chrome
+    ///     frontmost);
+    ///   · camera permission lives in the user's profile and prompts.
+    /// An instance with its OWN --user-data-dir solves all three at once, with
+    /// launch flags that only a process we start can carry:
+    ///   `--auto-select-desktop-capture-source=Entire screen` — getDisplayMedia
+    ///     resolves with no picker at all;
+    ///   `--disable-features=UseSCContentSharingPicker` — the macOS native SCK
+    ///     picker would bypass that flag (verified in the binary, agent audit);
+    ///   `--use-fake-ui-for-media-stream` — camera/mic auto-accepted, inside THIS
+    ///     instance only (the user's Chrome never runs with it);
+    ///   `DisplayCaptureRequiresUserGesture` disabled — without it, getDisplayMedia
+    ///     still demands a real gesture and the bridge's poll tick would be refused
+    ///     even with the source auto-selected (this is what finally makes the
+    ///     screen button light itself);
+    ///   `-n -j -g` through `open` — new instance, hidden, never foregrounded.
+    /// The user's own Chrome receives no Apple Event and no tab, ever. macOS TCC
+    /// is per-app, so the camera grant the user's Chrome already has covers this
+    /// instance too.
+    private static let ownedChromeUserDataDir =
+        NSHomeDirectory() + "/Library/Application Support/Clicky/VoiceWebChrome"
+    /// The source name the auto-select flag matches against. The binary contains
+    /// both "Entire screen" and "Entire Screen"; the historical source name is
+    /// lowercase — if screen share ever silently fails, try the other casing.
+    private static let autoSelectCaptureSource = "Entire screen"
 
-    /// Waits for Chrome to be up and restoring, so the page open that follows has
-    /// a window to land in rather than creating one.
+    /// Whether the Clicky-owned instance is running.
     ///
-    /// 8 s and not more: this is one step of a connect, and the connect's own
-    /// budget is 60 s. If it times out the page open still runs — it just takes
-    /// the old, creation-prone path.
-    private func waitForChromeToComeUp() async {
-        let deadline = Date().addingTimeInterval(8)
-        while Date() < deadline {
-            if isChromeRunning() { break }
-            try? await Task.sleep(nanoseconds: 400_000_000)
+    /// `NSRunningApplication` cannot tell two Chrome processes apart (same bundle
+    /// id), and the user's own Chrome must never be mistaken for ours — so this
+    /// asks the process table for the one argument only our instance carries.
+    private func isOwnedChromeRunning() -> Bool {
+        let probe = Process()
+        probe.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        probe.arguments = ["-f", "--user-data-dir=\(Self.ownedChromeUserDataDir)"]
+        let pipe = Pipe()
+        probe.standardOutput = pipe
+        probe.standardError = Pipe()
+        do {
+            try probe.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            probe.waitUntilExit()
+            return probe.terminationStatus == 0
+        } catch {
+            return false
         }
-        // A beat for session restore, so the window exists before the URL does.
-        try? await Task.sleep(nanoseconds: 1_200_000_000)
     }
 
-    private func isChromeRunning() -> Bool {
-        NSWorkspace.shared.runningApplications.contains {
-            $0.bundleIdentifier == Self.chromeBundleIdentifier
-        }
-    }
-
-    /// Opens the VoiceWeb page in Chrome in the background.
+    /// Starts (or hands a URL to) the owned instance, always hidden.
     ///
-    /// `-g` / `--background` is a LAUNCH flag (`man open`: "Do not bring the
-    /// application to the foreground"), and it is honoured when LaunchServices
-    /// actually launches — which is this method's only guaranteed-safe case
-    /// (Chrome was not running). When Chrome IS running, no launch happens: the
-    /// URL travels to the live Chrome as an Apple Event and any focus change that
-    /// follows is Chrome's own behaviour, which `-g` cannot govern. That is why
-    /// the earlier attempt at this same command did not stop the window surfacing
-    /// for a user who had Chrome open already (measured and explained 2026-09-24).
-    private func openVoiceWebPageInBackground() {
-        // What the user is looking at RIGHT NOW, so the surface can be undone.
-        //
-        // `-g` provably does not stop Chrome surfacing (measured: every open left
-        // Chrome frontmost) because the flag binds LaunchServices and the URL is
-        // delivered to a running Chrome as an Apple Event that Chrome itself
-        // answers by activating. Since the surface cannot be prevented from this
-        // side, it is UNDONE: if Chrome comes forward, the app the user was in
-        // goes back to the front. The user sees at most a flicker and never loses
-        // their place — 「用户不希望它干扰自己正在做的事情」.
-        //
-        // Deliberately NOT `NSRunningApplication.hide()` on Chrome, which is the
-        // other reading of 「瞬间隐藏掉」: that hides the user's OWN Chrome
-        // windows — every tab they had open disappears from the screen — which is
-        // a far bigger interruption than the one it prevents. Restoring their app
-        // touches nothing of theirs.
-        let appUserWasUsing = NSWorkspace.shared.frontmostApplication
-
+    /// `-n` forces a new process; with the profile dir already owned by a live
+    /// one, Chrome's ProcessSingleton forwards the URL to it and the new process
+    /// exits immediately — so this one call both cold-launches and warm-delivers.
+    /// `-j` (hide) and `-g` (no foreground) apply to whatever process is created;
+    /// the forwarded-into instance stays as hidden as it was.
+    private func launchOwnedChrome(openingPage: Bool) {
         let openProcess = Process()
         openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        openProcess.arguments = ["-g", "-a", "Google Chrome", "http://localhost:8890/client/"]
-        try? openProcess.run()
-        verifyChromeStayedInTheBackground(restoring: appUserWasUsing)
-    }
-
-    /// Reports whether that open brought Chrome forward.
-    ///
-    /// `-g` binds LaunchServices, NOT Chrome (they compile to the same request —
-    /// `kLSLaunchDontSwitch` == `NSWorkspaceLaunchWithoutActivation` ==
-    /// `OpenConfiguration.activates = false` — so no API swap changes anything).
-    /// When Chrome has no window, the URL's Apple Event forces one to be created,
-    /// and creating a window is where an app raises itself; the flag cannot reach
-    /// that. Whether it happens is therefore a fact about Chrome, not something
-    /// this code can decide by reading headers — so it is MEASURED, at the two
-    /// moments it would show (2026-09-24, per the audit).
-    ///
-    /// If this ever logs a frontmost Chrome, the flag has failed and the reserve
-    /// is warranted: Clicky owning a separate Chrome identity
-    /// (`--user-data-dir`, launched as a child process, never through
-    /// LaunchServices), so the user's own Chrome never receives the event at all.
-    private func verifyChromeStayedInTheBackground(restoring appUserWasUsing: NSRunningApplication?) {
-        Task { @MainActor in
-            for attempt in 0..<5 {
-                try? await Task.sleep(for: .seconds(attempt == 0 ? 0.35 : 0.5))
-
-                let frontmost = NSWorkspace.shared.frontmostApplication
-                guard frontmost?.bundleIdentifier == Self.chromeBundleIdentifier else {
-                    if attempt == 0 {
-                        print("🌐 VoiceWeb: 打开页面后前台仍是 \(frontmost?.bundleIdentifier ?? "?") —— Chrome 没有被提起来")
-                    }
-                    return
-                }
-
-                // Chrome took the front. Put the user back, once — repeating it
-                // would fight a user who has deliberately switched to Chrome.
-                guard attempt == 0,
-                      let appUserWasUsing,
-                      appUserWasUsing.bundleIdentifier != Self.chromeBundleIdentifier,
-                      !appUserWasUsing.isTerminated else {
-                    print("⚠️ VoiceWeb: 打开页面后 Chrome 被提到了前台，且无法把用户放回原处（原 App：\(appUserWasUsing?.bundleIdentifier ?? "无")）")
-                    return
-                }
-                appUserWasUsing.activate(options: [])
-                print("🌐 VoiceWeb: Chrome 被提起来了 —— 已把用户放回 \(appUserWasUsing.bundleIdentifier ?? "?")")
-            }
+        var arguments = ["-n", "-j", "-g", "-a", "Google Chrome", "--args",
+                         "--user-data-dir=\(Self.ownedChromeUserDataDir)",
+                         "--no-first-run",
+                         "--no-default-browser-check",
+                         "--use-fake-ui-for-media-stream",
+                         "--auto-select-desktop-capture-source=\(Self.autoSelectCaptureSource)",
+                         "--disable-features=UseSCContentSharingPicker,DisplayCaptureRequiresUserGesture"]
+        if openingPage {
+            arguments.append("http://localhost:8890/client/")
         }
+        openProcess.arguments = arguments
+        try? openProcess.run()
     }
 
     /// Keeps Chrome running for as long as Clicky runs.
@@ -838,32 +783,11 @@ final class VoiceWebSessionController: ObservableObject {
         chromeKeepAliveTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
-                if !self.isChromeRunning() {
-                    print("🌐 VoiceWeb: Chrome 没有运行 —— 在后台把它启动起来")
-                    let launchProcess = Process()
-                    launchProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                    launchProcess.arguments = ["-g", "-a", "Google Chrome"]
-                    try? launchProcess.run()
-                    // A freshly launched Chrome has restored its session but not
-                    // this page; the prewarm below opens it.
-                    try? await Task.sleep(for: .seconds(8))
-                    guard !Task.isCancelled else { return }
-                }
-
-                // PREWARM THE PAGE, and this is the countermeasure rather than a
-                // nicety. A URL delivered to a Chrome with NO WINDOW forces one to
-                // be created, and window creation is where Chrome raises itself —
-                // which `-g` cannot prevent, because the flag binds LaunchServices
-                // and not the running app. Keeping the tab alive means the URL
-                // delivery is a same-window operation instead, so the
-                // window-creating path is never the one a connect takes.
-                //
-                // It also has to happen HERE rather than only at connect: done at
-                // connect time it is a visible raise in the middle of the user's
-                // session, done while idle it is at worst a window appearing
-                // behind whatever they are looking at.
+                // The owned instance AND its page in one call: it launches the
+                // hidden Chrome (with all the automation flags) whenever the page
+                // report is missing — covers cold start, a closed tab, and a quit
+                // Chrome alike.
                 await self.ensureVoiceWebPageIsAvailable()
-
                 try? await Task.sleep(for: .seconds(Self.chromeKeepAlivePollSeconds))
             }
         }
