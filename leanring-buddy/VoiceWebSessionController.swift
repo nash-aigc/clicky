@@ -668,8 +668,10 @@ final class VoiceWebSessionController: ObservableObject {
         // says, so the page is opened unconditionally in that case.
         VoiceWebConnectTiming.shared.mark("页面检查：自有 Chrome 实例存活=\(isOwnedChromeRunning() ? "是" : "否")")
 
-        if let state = await fetchBridgeState(), bridgeReportsALivePage(state) {
-            VoiceWebConnectTiming.shared.mark("已有活页面，什么都不做")
+        if let state = await fetchBridgeState(), bridgeReportsAPage(state) {
+            // 页面真的活着 —— 清掉「开了页却没回报」的连续计数，让下一次补页重新可用。
+            consecutivePageOpensWithoutAnyReport = 0
+            VoiceWebConnectTiming.shared.mark("已有活页面（自有实例=\(state.owned == true ? "是" : "否")），什么都不做")
             return
         }
 
@@ -679,8 +681,23 @@ final class VoiceWebSessionController: ObservableObject {
         // programmatically — no human click, no picker (see the Chrome-liveness
         // section for the flag list and why borrowing the user's own Chrome could
         // never do this).
+        guard consecutivePageOpensWithoutAnyReport < Self.maximumPageOpensWithoutAnyReport else {
+            VoiceWebConnectTiming.shared.mark(
+                "已连开 \(consecutivePageOpensWithoutAnyReport) 次页面都没有回报 —— 停止开页，避免标签页堆积")
+            return
+        }
         VoiceWebConnectTiming.shared.mark("没有活页面 —— 在自有实例里打开页面")
+        guard Date().timeIntervalSince(lastOwnedPageOpenAt) >= Self.ownedPageOpenDebounceSeconds else {
+            VoiceWebConnectTiming.shared.mark("\(Self.ownedPageOpenDebounceSeconds)s 内已开过 —— 防重跳过")
+            return
+        }
+        consecutivePageOpensWithoutAnyReport += 1
         didStartSomethingDuringThisConnect = true
+        // 实例还活着就先退掉，让这一次走冷路径（见 `quitOwnedChromeAndWait`：
+        // 只有冷路径不抢焦点，而抢焦点正是用户「完全打不开刘海屏」的成因）。
+        if isOwnedChromeRunning() {
+            await quitOwnedChromeAndWait()
+        }
         launchOwnedChrome(openingPage: true)
     }
 
@@ -720,15 +737,25 @@ final class VoiceWebSessionController: ObservableObject {
     /// lowercase — if screen share ever silently fails, try the other casing.
     private static let autoSelectCaptureSource = "Entire screen"
 
-    /// Whether the Clicky-owned instance is running.
+    /// pgrep 用的模式串，**两处共用一份**（存活判定 + hide），免得改了这头忘了那头。
     ///
-    /// `NSRunningApplication` cannot tell two Chrome processes apart (same bundle
-    /// id), and the user's own Chrome must never be mistaken for ours — so this
-    /// asks the process table for the one argument only our instance carries.
-    private func isOwnedChromeRunning() -> Bool {
+    /// 两个细节都是量出来的（2026-09-24），少一个就静默出错：
+    ///  · **模式不能以 `-` 开头**。`pgrep -f "--user-data-dir=…"` 会直接
+    ///    `illegal option -- -` 退出（退出码 2），于是 `isOwnedChromeRunning()`
+    ///    **永远返回 false** —— 日志里那句「自有 Chrome 实例存活=否」从头到尾都是假的。
+    ///    前面挂一个 `.*` 就正常了。
+    ///  · **锚定到浏览器主进程**。`--user-data-dir` 会被十来个 Helper 子进程继承，
+    ///    而只有 `/Contents/MacOS/Google Chrome` 那个进程有窗口：存活要问它，
+    ///    `hide()` 也只对它有意义。
+    private static let ownedChromeProcessPattern =
+        "^/Applications/Google Chrome.app/Contents/MacOS/Google Chrome .*--user-data-dir="
+        + ownedChromeUserDataDir
+
+    /// 自有实例的主进程号。没在跑、pgrep 出错、没匹配到，一律返回空数组。
+    private func ownedChromeProcessIDs() -> [Int] {
         let probe = Process()
         probe.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-        probe.arguments = ["-f", "--user-data-dir=\(Self.ownedChromeUserDataDir)"]
+        probe.arguments = ["-f", Self.ownedChromeProcessPattern]
         let pipe = Pipe()
         probe.standardOutput = pipe
         probe.standardError = Pipe()
@@ -736,10 +763,21 @@ final class VoiceWebSessionController: ObservableObject {
             try probe.run()
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             probe.waitUntilExit()
-            return probe.terminationStatus == 0
+            guard probe.terminationStatus == 0 else { return [] }
+            return String(data: data, encoding: .utf8)?
+                .split(separator: "\n").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) } ?? []
         } catch {
-            return false
+            return []
         }
+    }
+
+    /// Whether the Clicky-owned instance is running.
+    ///
+    /// `NSRunningApplication` cannot tell two Chrome processes apart (same bundle
+    /// id), and the user's own Chrome must never be mistaken for ours — so this
+    /// asks the process table for the one argument only our instance carries.
+    private func isOwnedChromeRunning() -> Bool {
+        !ownedChromeProcessIDs().isEmpty
     }
 
     /// Starts (or hands a URL to) the owned instance, always hidden.
@@ -749,6 +787,71 @@ final class VoiceWebSessionController: ObservableObject {
     /// exits immediately — so this one call both cold-launches and warm-delivers.
     /// `-j` (hide) and `-g` (no foreground) apply to whatever process is created;
     /// the forwarded-into instance stays as hidden as it was.
+    /// 最小开页间隔。进入语音聊天分区、定时器、点连接可能在自有实例还没回报
+    /// 的窗口里连续触发，`open -n` 每次都会**新开一个标签页**——用户实测
+    /// 「每次点击时，它都会自动退出这个窗口，然后显示你的界面」的来源之一。
+    private var lastOwnedPageOpenAt = Date.distantPast
+    private static let ownedPageOpenDebounceSeconds: TimeInterval = 30
+
+    /// 开页之后，**必须先看到这个页面真的回报过一次**，才允许再开下一个。
+    ///
+    /// 防抖只能把频率压到「每 30 秒一个」，压不住「页面打开了但永远不回报」这种
+    /// 情况——那时定时器会每 30 秒补一个标签页，跑一小时就是一百多个，正是用户
+    /// 担心的「几千个、几万个」。所以这里给的是一个**硬上限**：连续两次开页都没
+    /// 换来一次上报，就停止开页并说明原因，直到有页面真的活过来（计数清零）。
+    /// 正常路径永远走不到这个上限：页面挂载后几秒内就会心跳。
+    private var consecutivePageOpensWithoutAnyReport = 0
+    private static let maximumPageOpensWithoutAnyReport = 2
+
+    /// 把自有实例藏起来（它是独立进程，hide 只影响它，不碰用户自己的 Chrome）。
+    ///
+    /// 启动后窗口创建有先后，所以藏三次：立即、+1.2s、+2.8s——Chrome 可能在
+    /// check-in 之后才建窗，一次 hide 接不住。
+    ///
+    /// **它是兜底，不是主防线，而且这一点是量出来的**：`NSRunningApplication.hide()`
+    /// 在**调用者不是当前活跃 App** 时返回 false 且什么都不做（2026-09-24 实测：从
+    /// 未激活的进程里对自有实例调 hide，两次都返回 false，自己 `activate` 也不生效，
+    /// frontmost 始终是别人的 App）。这是文档写明的协作式激活规则——「Only the active
+    /// app can influence the activation context」。用户在点刘海的那一刻 Clicky 是活跃的，
+    /// 所以真实运行时它可能生效；但**正确性绝不能押在它身上**——主防线是上面那条：
+    /// 页面活着就一个标签页都不开，不开就不会有 Chrome 浮起来这回事。
+    /// 顺便说明 pgrep 为什么要锚定：`--user-data-dir` 会被十来个 Helper 子进程继承，
+    /// 而只有 `/Contents/MacOS/Google Chrome` 那个主进程有窗口，hide 才有意义。
+    @discardableResult
+    private func hideOwnedChrome() -> Bool {
+        var hidAnything = false
+        for pid in ownedChromeProcessIDs()
+        where NSRunningApplication(processIdentifier: pid_t(pid))?.hide() == true {
+            hidAnything = true
+        }
+        VoiceWebConnectTiming.shared.mark("隐藏自有实例：\(hidAnything ? "成功" : "未生效（hide 在非活跃上下文返回 false）")")
+        return hidAnything
+    }
+
+    /// 把自有实例整个退掉，等它真的走干净。
+    ///
+    /// 这一步存在的唯一理由：**抢焦点的只有"把 URL 交给已经在跑的 Chrome"这一条路**，
+    /// 而它无法撤销。实测（2026-09-24，自有实例冷/热两条路各测一次）：
+    ///  · 冷路径：`open -n -j -g … URL` 建出实例后，16 秒采样里前台应用**一次都没变**
+    ///    —— `-j`（隐藏）+ `-g`（不前置）在**真正的启动**上是有效的；
+    ///  · 热路径：对于一个**已经在跑**的实例，`-g` 管不到，Chrome 自己会浮起来，
+    ///    而 `NSRunningApplication.hide()` 在调用者不是活跃 App 时返回 false、
+    ///    什么都不做（同一次实测，三次都返回 false）。
+    /// 所以页面没了而实例还在时，正确做法不是"再补一个标签页"，而是**把它关掉重开**，
+    /// 让这一次重新走回那条不抢焦点的冷路径。代价是几秒冷启动，而这条分支只在
+    /// 「Chrome 活着但页面没了」时才走到。
+    private func quitOwnedChromeAndWait() async {
+        for pid in ownedChromeProcessIDs() {
+            kill(pid_t(pid), SIGTERM)
+        }
+        // 最多等 5 秒；关不干净也要往下走，`open` 会接管（最坏情况是又走回热路径）。
+        for _ in 0..<25 {
+            if !isOwnedChromeRunning() { break }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        VoiceWebConnectTiming.shared.mark("自有实例已退出：\(isOwnedChromeRunning() ? "否（仍在运行）" : "是")")
+    }
+
     private func launchOwnedChrome(openingPage: Bool) {
         let openProcess = Process()
         openProcess.executableURL = URL(fileURLWithPath: "/usr/bin/open")
@@ -764,6 +867,15 @@ final class VoiceWebSessionController: ObservableObject {
         }
         openProcess.arguments = arguments
         try? openProcess.run()
+        lastOwnedPageOpenAt = Date()
+        // 立即 + 两轮延迟补藏：窗口可能在启动完成后才出现。
+        hideOwnedChrome()
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.2))
+            self.hideOwnedChrome()
+            try? await Task.sleep(for: .seconds(1.6))
+            self.hideOwnedChrome()
+        }
     }
 
     /// Keeps Chrome running for as long as Clicky runs.
@@ -921,13 +1033,23 @@ final class VoiceWebSessionController: ObservableObject {
     /// The age comes from the server (`report_age_seconds`); a server that predates
     /// the field returns none, and then this falls back to the old behaviour rather
     /// than refusing to work at all.
-    private func bridgeReportsALivePage(_ state: BridgeState) -> Bool {
-        // OUR page only. A report from a page in the user's own Chrome (no
-        // `owned` flag — an old tab on an old patch) does not count: screen
-        // automation lives in the owned instance's launch flags, so a live-but-
-        // foreign page would both skip our launch AND consume connect commands
-        // without being able to light the screen. Missing flag = not ours.
-        guard state.owned == true else { return false }
+    private func bridgeReportsAPage(_ state: BridgeState) -> Bool {
+        // WHOSE PAGE IT IS IS NOT ASKED HERE, and that is the fix for the tab
+        // disaster of 2026-09-24. `owned` answers 「can this page light the screen
+        // by itself?」 — a fact about our launch flags, not about whether a page is
+        // open — and gating on it made one missing field catastrophic: a page whose
+        // patch predates the flag (a cached script, an old tab) reported liveness
+        // WITHOUT it, this returned false on every single poll, and every trigger
+        // answered by opening ANOTHER tab — the section entry, the 3-minute
+        // keep-alive, and the 8-second self-heal inside a connect, which alone
+        // could fire seven times in one budget. That is the user's
+        // 「每次点击时…它会自动打开 Chrome，并新建一个全新的标签页」 and their
+        // 「无论我断开多少次，它永远都是一个标签页」 requirement in one sentence.
+        //
+        // A fresh report means a page is open. Full stop. Whether it is ours is the
+        // caller's business, and there it is only ever a log line — a live page we
+        // did not open is still a page, and opening a second one would give the
+        // server two reporters and put us back in the 「十个页面互相踩」 failure.
         guard state.phase != nil else { return false }
         guard let reportAgeSeconds = state.reportAgeSeconds else { return true }
         return reportAgeSeconds < Self.pageReportStaleAfterSeconds

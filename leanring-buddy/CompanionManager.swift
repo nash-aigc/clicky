@@ -550,6 +550,12 @@ final class CompanionManager: ObservableObject {
     }
 
     func start() {
+        // 行缓冲 stdout。macOS 上 `print` 到管道/文件是**块缓冲**的，所以本项目的
+        // 所有探针（`⏱️ [voiceweb]` / `⏱️ [hitch]` / `[listen]`）在从终端带重定向
+        // 启动时都会攒在 4KB 缓冲里，不到 4KB 就什么都看不到——2026-09-24 排查
+        // 标签页问题时实测：应用跑了两分钟，日志文件仍然是 0 字节，而窗口里其实
+        // 已经有输出。改成行缓冲后 `> 日志文件` 能实时看到，探针才真的能用。
+        setvbuf(stdout, nil, _IOLBF, 0)
         // TEMPORARY (2026-09-24): starts reporting main-thread stalls. See
         // `MainThreadHitchProbe`.
         MainThreadHitchProbe.shared.start()

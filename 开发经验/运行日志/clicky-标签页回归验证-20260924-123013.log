@@ -1,0 +1,26 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [voiceweb] 页面检查：自有 Chrome 实例存活=否 — +0ms（总）, +0ms（自上一标记）
+⏱️ [voiceweb] 没有活页面 —— 在自有实例里打开页面 — +0ms（总）, +21ms（自上一标记）
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [voiceweb] 隐藏自有实例：未生效（hide 在非活跃上下文返回 false） — +0ms（总）, +30ms（自上一标记）
+⏱️ [voiceweb] 隐藏自有实例：未生效（hide 在非活跃上下文返回 false） — +0ms（总）, +1236ms（自上一标记）
+⏱️ [voiceweb] 隐藏自有实例：未生效（hide 在非活跃上下文返回 false） — +0ms（总）, +1689ms（自上一标记）
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms

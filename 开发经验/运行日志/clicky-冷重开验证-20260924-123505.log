@@ -1,0 +1,57 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [voiceweb] 页面检查：自有 Chrome 实例存活=是 — +0ms（总）, +0ms（自上一标记）
+⏱️ [voiceweb] 没有活页面 —— 在自有实例里打开页面 — +0ms（总）, +12ms（自上一标记）
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [voiceweb] 自有实例已退出：是 — +0ms（总）, +367ms（自上一标记）
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [voiceweb] 隐藏自有实例：未生效（hide 在非活跃上下文返回 false） — +0ms（总）, +31ms（自上一标记）
+⏱️ [voiceweb] 隐藏自有实例：未生效（hide 在非活跃上下文返回 false） — +0ms（总）, +1306ms（自上一标记）
+⏱️ [voiceweb] 隐藏自有实例：未生效（hide 在非活跃上下文返回 false） — +0ms（总）, +1643ms（自上一标记）
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 244ms
+⏱️ [voiceweb] 页面检查：自有 Chrome 实例存活=是 — +0ms（总）, +69097ms（自上一标记）
+⏱️ [voiceweb] 已有活页面（自有实例=是），什么都不做 — +0ms（总）, +20ms（自上一标记）
+🌐 VoiceWeb: 进入语音聊天时已预热（服务器 + Chrome + 页面）
+⏱️ [hitch] main thread busy for 122ms
+⏱️ [voiceweb] ── 连接开始 ──
+⏱️ [voiceweb] 服务器就绪 — +26ms（总）, +26ms（自上一标记）
+⏱️ [voiceweb] 页面检查：自有 Chrome 实例存活=是 — +57ms（总）, +31ms（自上一标记）
+⏱️ [voiceweb] 已有活页面（自有实例=是），什么都不做 — +58ms（总）, +2ms（自上一标记）
+⏱️ [voiceweb] 页面检查/打开完成 — +58ms（总）, +0ms（自上一标记）
+⏱️ [voiceweb] 页面回报 phase=disconnected age=2.6s — +773ms（总）, +715ms（自上一标记）
+⏱️ [voiceweb] 页面回报 phase=ready age=0.2s — +3358ms（总）, +2585ms（自上一标记）
+⏱️ [voiceweb] 页面 ready —— 连接成功 — +3358ms（总）, +0ms（自上一标记）
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 170ms
+⏱️ [voiceweb] 页面检查：自有 Chrome 实例存活=否 — +50390ms（总）, +47032ms（自上一标记）
+⏱️ [voiceweb] 已有活页面（自有实例=是），什么都不做 — +50394ms（总）, +3ms（自上一标记）
+🌐 VoiceWeb: 进入语音聊天时已预热（服务器 + Chrome + 页面）
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 84ms
+⏱️ [hitch] main thread busy for 110ms
