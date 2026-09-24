@@ -1109,6 +1109,15 @@ final class VoiceWebSessionController: ObservableObject {
         }
         liveMirroredLineCount = 0
 
+        // CONSECUTIVE BOT LINES ARE ONE REPLY, not one bubble each.
+        //
+        // The page's botTranscript arrives PER SENTENCE (pipecat observer 的
+        // _handle_llm_text_frame 每句发一条)，and mirroring one line per entry
+        // shattered a numbered reply into 「1.」「2.」「3.」 bubbles each holding a
+        // fragment (user report, 2026-09-24, with the screenshot). The answer
+        // BUBBLE already presents the concatenation (below); the transcript now
+        // does the same grouping: a user line is its own entry, a RUN of bot
+        // lines is ONE entry that grows as each sentence lands.
         var botLineCount = 0
         var appendedEntries: [VoiceWebTranscriptEntry] = []
         for line in liveLines {
@@ -1117,10 +1126,17 @@ final class VoiceWebSessionController: ObservableObject {
                 // live lines are the only place the typed line appears (the
                 // optimistic append doesn't exist, and the history file is
                 // written at disconnect when polling has already stopped).
+                appendedEntries.append(VoiceWebTranscriptEntry(isUser: true, text: line.text))
             } else {
                 botLineCount += 1
+                if let last = appendedEntries.last, !last.isUser {
+                    // Same reply still arriving: grow the existing entry in place.
+                    appendedEntries[appendedEntries.count - 1] =
+                        VoiceWebTranscriptEntry(isUser: false, text: last.text + line.text)
+                } else {
+                    appendedEntries.append(VoiceWebTranscriptEntry(isUser: false, text: line.text))
+                }
             }
-            appendedEntries.append(VoiceWebTranscriptEntry(isUser: line.isUser, text: line.text))
         }
         transcriptEntries.append(contentsOf: appendedEntries)
         liveMirroredLineCount = appendedEntries.count
