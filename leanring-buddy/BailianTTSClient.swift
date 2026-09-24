@@ -134,7 +134,7 @@ final class BailianTTSClient {
         try Task.checkCancellation()
 
         isSpeakingChunkSequence = true
-        playAudioData(
+        await playAudioData(
             firstChunkAudioData,
             chunkIndex: 1,
             chunkCount: speakableChunks.count,
@@ -218,16 +218,6 @@ final class BailianTTSClient {
     /// - Throws: the same configuration error `speakText` would throw when the
     ///   👄 role is unusable — callers that catch it simply fall back to the
     ///   whole-reply path, which re-throws the identical error.
-    /// Starts the audio engine now, while the reply is still being written.
-    ///
-    /// Called by the response pipeline the moment streaming speech begins —
-    /// which is a network round trip before the first segment can possibly be
-    /// ready. See `VoicePlaybackEngine.prepareForPlayback` for the measurement
-    /// that makes this the fix for the ~3 s between the card and the first sound.
-    func prepareForPlayback() {
-        voicePlaybackEngine.prepareForPlayback()
-    }
-
     func beginStreamingSpeech() throws -> StreamingSpeechSession {
         stopPlayback()
         let resolvedSpeechRole = try resolveSpeechRole()
@@ -392,9 +382,9 @@ final class BailianTTSClient {
         chunkIndex: Int,
         chunkCount: Int,
         playbackConfiguration: SpeechPlaybackConfiguration
-    ) {
+    ) async {
         do {
-            try voicePlaybackEngine.playWAVData(
+            try await voicePlaybackEngine.playWAVData(
                 audioData,
                 rate: playbackConfiguration.rate,
                 volume: playbackConfiguration.volume
@@ -414,7 +404,7 @@ final class BailianTTSClient {
         chunkCount: Int,
         playbackConfiguration: SpeechPlaybackConfiguration
     ) async {
-        playAudioData(
+        await playAudioData(
             audioData,
             chunkIndex: chunkIndex,
             chunkCount: chunkCount,

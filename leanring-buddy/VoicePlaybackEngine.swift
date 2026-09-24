@@ -347,36 +347,6 @@ final class VoicePlaybackEngine {
         print("🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)")
     }
 
-    /// Starts the engine — and with it voice processing — ahead of the first
-    /// chunk, so the cost lands while the reply is still being written.
-    ///
-    /// Measured 2026-09-24: the user reports ~3 s between the reply's card
-    /// appearing and the first sound, and the log shows the reason — the
-    /// segments are all queued long before `engine started` is printed:
-    ///
-    ///     🗣️ Streaming speech: queued segment 1 (3 chars)
-    ///     🗣️ Streaming speech: queued segment 2 (36 chars)
-    ///     🔊 VoicePlaybackEngine: engine started (...)
-    ///     🔊 Bailian TTS: playing segment 1
-    ///
-    /// The text is on screen, the audio is ready, and the whole wait is this
-    /// start. It is not cheap: enabling voice processing reconfigures the entire
-    /// IO (44.1 kHz / 1 ch → 48 kHz / 9 ch by this file's own measurement), and
-    /// the verification added earlier can restart the engine a second time. None
-    /// of that needs to be on the critical path — the reply has not been written
-    /// yet when this is called.
-    func prepareForPlayback() {
-        guard !isEngineStarted || !engine.isRunning else { return }
-        do {
-            try ensureEngineStarted()
-        } catch {
-            print("⚠️ VoicePlaybackEngine: could not start the engine ahead of playback (\(error.localizedDescription)) — it will be retried when the first chunk arrives")
-        }
-    }
-
-    /// The live engine state, for diagnostics.
-    var isPlaybackEngineRunning: Bool { engine.isRunning }
-
     /// Installs the continuous-listening mic tap on whichever engine
     /// `prepareCaptureHost` chose, starting that engine if it is the
     /// capture-only one.
@@ -389,7 +359,7 @@ final class VoicePlaybackEngine {
     /// The handler and buffer size are remembered so the tap can be moved when
     /// playback starts or ends — see `handCaptureToCaptureOnlyEngine` and
     /// `takeCaptureBackForPlayback`.
-    func installInputTap(bufferSize: AVAudioFrameCount, handler: @escaping AVAudioNodeTapBlock) throws {
+    func installInputTap(bufferSize: AVAudioFrameCount, handler: @escaping AVAudioNodeTapBlock) async throws {
         installedInputTapHandler = handler
         installedInputTapBufferSize = bufferSize
 
@@ -400,7 +370,7 @@ final class VoicePlaybackEngine {
         // playing there is nothing to cancel, and the engine is simply left
         // running until the window closes.
         if !isEngineStarted {
-            try ensureEngineStarted()
+            try await ensureEngineStarted()
         }
         installTapOnPlaybackEngine(handler: handler, bufferSize: bufferSize)
     }
@@ -696,14 +666,22 @@ final class VoicePlaybackEngine {
     /// `warmUpMainMixerNode`.
     private func restorePlaybackEngineTap(handler: @escaping AVAudioNodeTapBlock) {
         do {
-            warmUpMainMixerNode()
-            isEchoCancellationActive = enableEchoCancellationIfWanted(on: engine.inputNode)
+            Self.warmUpMainMixerNode(on: engine)
+            isEchoCancellationActive = Self.enableEchoCancellationIfWanted(
+                on: engine.inputNode,
+                wanted: isEchoCancellationWantedProvider?() ?? false
+            )
 
             // Disconnected first, matching every other restart in this file:
             // `connectGraphAndStart` re-connects the same nodes.
             engine.disconnectNodeOutput(playerNode)
             engine.disconnectNodeOutput(timePitchNode)
-            try connectGraphAndStart()
+            canonicalPlaybackFormat = try Self.connectGraphAndStart(
+                engine: engine,
+                playerNode: playerNode,
+                timePitchNode: timePitchNode
+            )
+            isEngineStarted = engine.isRunning
 
             installTapOnPlaybackEngine(handler: handler, bufferSize: installedInputTapBufferSize)
         } catch {
@@ -716,8 +694,8 @@ final class VoicePlaybackEngine {
     /// Decodes `audioData` (a finished WAV from the synthesis endpoint) and
     /// plays it through the player node. Returns immediately; whether the
     /// chunk is audible is tracked in `isChunkPlaying`.
-    func playWAVData(_ audioData: Data, rate: Float, volume: Float) throws {
-        try ensureEngineStarted()
+    func playWAVData(_ audioData: Data, rate: Float, volume: Float) async throws {
+        try await ensureEngineStarted()
 
         // A dead engine must not become an unending reply. With nothing being
         // rendered, `scheduleBuffer`'s `.dataPlayedBack` never fires, so
@@ -746,7 +724,7 @@ final class VoicePlaybackEngine {
                 consecutiveUnplayableChunkCount = 0
                 engine.stop()
                 isEngineStarted = false
-                try? ensureEngineStarted()
+                try? await ensureEngineStarted()
             }
             return
         }
@@ -801,7 +779,7 @@ final class VoicePlaybackEngine {
 
     // MARK: - Engine lifecycle
 
-    private func ensureEngineStarted() throws {
+    private func ensureEngineStarted() async throws {
         if isEngineStarted, engine.isRunning {
             // Already running: an answer is in progress, so the microphone is
             // already here (or there is no listening window open at all).
@@ -847,41 +825,44 @@ final class VoicePlaybackEngine {
         // on — see `warmUpMainMixerNode`. Without it the engine cannot start at
         // all with voice processing on, which is what used to cost the first
         // TTS chunk of every reply.
-        warmUpMainMixerNode()
-
-        // Voice processing goes BEFORE the playback graph's format is read: it
-        // can only be configured while the engine is stopped (AVAudioIONode.h),
+        //
+        // Voice processing then goes BEFORE the playback graph's format is read:
+        // it can only be configured while the engine is stopped (AVAudioIONode.h),
         // and it reconfigures the IO — so the formats below have to be read from
         // the voice-processing hardware, not from whatever it was before.
-        //
-        // Enabling it on the input node is enough on its own: the header says
+        // (Enabling it on the input node is enough on its own: the header says
         // voice processing "requires both input and output nodes to be in the
-        // voice processing mode", and then that "enabling this mode on either
-        // of the IO nodes automatically enables it on the other IO node" — the
-        // same line covers disabling.
-        let inputNode = engine.inputNode
-        isEchoCancellationActive = enableEchoCancellationIfWanted(on: inputNode)
+        // voice processing mode", and then that "enabling this mode on either of
+        // the IO nodes automatically enables it on the other IO node" — the same
+        // line covers disabling.)
+        //
+        // ALL OF IT RUNS OFF THE MAIN ACTOR. Measured 2026-09-24, first question
+        // of a session, main thread inside the whole time:
+        //
+        //     +1778ms  engine start requested (main thread: true)
+        //     +3792ms  engine start finished — isRunning=FALSE, took 2014ms
+        //     +3881ms  engine start requested again
+        //     +3976ms  engine start finished — isRunning=true, took 95ms
+        //
+        // The 2 s is enabling voice processing for the first time, which
+        // reconfigures the whole IO (44.1 kHz/1 ch → 48 kHz/9 ch) and fails on
+        // that first attempt; the engine's own start is 95 ms. And because it
+        // ran on the main thread, those 2 s were a main-thread stall — the
+        // stutter reported while the reply was streaming.
+        //
+        // `await` on a detached task SUSPENDS the main actor rather than
+        // blocking it, so the run loop keeps turning and the card keeps
+        // streaming while the device is reconfigured.
+        let bringUpResult = try await Self.bringUpEngineOffMainActor(
+            engine: engine,
+            playerNode: playerNode,
+            timePitchNode: timePitchNode,
+            echoCancellationWanted: isEchoCancellationWantedProvider?() ?? false
+        )
 
-        do {
-            try connectGraphAndStart()
-        } catch where isEchoCancellationActive {
-            // The header also warns that "the output format of the input node
-            // and the input format of the output node have to be the same" —
-            // an input and output device pair that disagrees (a Bluetooth
-            // headset in a call profile is the usual one) fails HERE rather
-            // than at the setVoiceProcessingEnabled call above. Losing all
-            // speech to save the echo canceller would be a far worse trade
-            // than the echo, so voice processing is given up and the graph
-            // rebuilt without it.
-            print("⚠️ VoicePlaybackEngine: the engine would not start with voice processing on (\(error)) — retrying without echo cancellation")
-            try? inputNode.setVoiceProcessingEnabled(false)
-            isEchoCancellationActive = false
-            // Turned off, voice processing hands the IO back its own formats,
-            // so the connections made above are stale and have to be redone.
-            engine.disconnectNodeOutput(playerNode)
-            engine.disconnectNodeOutput(timePitchNode)
-            try connectGraphAndStart()
-        }
+        isEchoCancellationActive = bringUpResult.echoCancellationActive
+        canonicalPlaybackFormat = bringUpResult.canonicalPlaybackFormat
+        isEngineStarted = bringUpResult.isEngineRunning
 
         // Hand-off #2: the listening window may be open with its microphone on
         // the capture-only engine (see `releaseEngineWhenIdle`). Playback is the
@@ -893,14 +874,124 @@ final class VoicePlaybackEngine {
             takeCaptureBackForPlayback(handler: tapHandlerToMove)
         }
 
-        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min, AGC off)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(inputNode.outputFormat(forBus: 0).channelCount) ch)")
+        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min, AGC off)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(engine.inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(engine.inputNode.outputFormat(forBus: 0).channelCount) ch)")
         // TEMPORARY (2026-09-24): the duration of the whole bring-up, and the
-        // number the decision above depends on.
+        // number the decision above depends on. This should now be off the main
+        // thread — the mark reports which thread it lands on.
         TurnTimingProbe.shared.mark(String(
-            format: "engine start finished (isRunning=%@, took %.0fms on the main actor)",
+            format: "engine start finished (isRunning=%@, took %.0fms, main thread: %@)",
             engine.isRunning ? "true" : "false",
-            Date().timeIntervalSince(engineStartBeganAt) * 1000
+            Date().timeIntervalSince(engineStartBeganAt) * 1000,
+            Thread.isMainThread ? "true" : "false"
         ))
+    }
+
+    /// What the off-main-actor bring-up hands back to the main actor.
+    ///
+    /// `@unchecked Sendable` because `AVAudioFormat` is not `Sendable` and this
+    /// crosses the `Task.detached` boundary. The value is a freshly read,
+    /// immutable format object that nothing else mutates, and the alternative —
+    /// applying it inside the task — would mean touching this class's state from
+    /// two threads. This is the smaller hazard.
+    private struct EngineBringUpResult: @unchecked Sendable {
+        let isEngineRunning: Bool
+        let echoCancellationActive: Bool
+        let canonicalPlaybackFormat: AVAudioFormat?
+    }
+
+    /// Runs `performBringUp` on a detached task and hands the result back.
+    ///
+    /// Detached, not merely `Task`, and that is the point: the caller is the
+    /// main actor, so awaiting this SUSPENDS it. The run loop keeps turning, the
+    /// answer card keeps streaming, and the ~2 s the voice-processing IO
+    /// reconfiguration can take stops being a visible stall.
+    nonisolated private static func bringUpEngineOffMainActor(
+        engine: AVAudioEngine,
+        playerNode: AVAudioPlayerNode,
+        timePitchNode: AVAudioUnitTimePitch,
+        echoCancellationWanted: Bool
+    ) async throws -> EngineBringUpResult {
+        try await Task.detached(priority: .userInitiated) {
+            try performBringUp(
+                engine: engine,
+                playerNode: playerNode,
+                timePitchNode: timePitchNode,
+                echoCancellationWanted: echoCancellationWanted
+            )
+        }.value
+    }
+
+    /// The bring-up itself, on whatever executor the caller runs on.
+    ///
+    /// Every AVAudioEngine call it makes is a control call (attach/connect/
+    /// prepare/start and the voice-processing toggle), which is the set that is
+    /// safe to make away from the render thread. The rendering-side calls the
+    /// main actor makes — `scheduleBuffer` and `play` on the player node — are
+    /// never made concurrently with it: they only happen once this has returned
+    /// and set `isEngineStarted`.
+    nonisolated private static func performBringUp(
+        engine: AVAudioEngine,
+        playerNode: AVAudioPlayerNode,
+        timePitchNode: AVAudioUnitTimePitch,
+        echoCancellationWanted: Bool
+    ) throws -> EngineBringUpResult {
+        // TEMPORARY (2026-09-24): measured HERE, inside the work, because a mark
+        // taken after the `await` resumes on the main actor and would report the
+        // main thread no matter where the bring-up actually ran.
+        let bringUpBeganAt = Date()
+        TurnTimingProbe.shared.mark("bring-up running (main thread: \(Thread.isMainThread))")
+
+        warmUpMainMixerNode(on: engine)
+
+        let inputNode = engine.inputNode
+        var echoCancellationActive = enableEchoCancellationIfWanted(
+            on: inputNode,
+            wanted: echoCancellationWanted
+        )
+
+        var canonicalFormat: AVAudioFormat?
+        do {
+            canonicalFormat = try connectGraphAndStart(
+                engine: engine,
+                playerNode: playerNode,
+                timePitchNode: timePitchNode
+            )
+        } catch where echoCancellationActive {
+            // The header also warns that "the output format of the input node
+            // and the input format of the output node have to be the same" — an
+            // input and output device pair that disagrees (a Bluetooth headset
+            // in a call profile is the usual one) fails HERE rather than at the
+            // setVoiceProcessingEnabled call above. Losing all speech to save
+            // the echo canceller would be a far worse trade than the echo, so
+            // voice processing is given up and the graph rebuilt without it.
+            print("⚠️ VoicePlaybackEngine: the engine would not start with voice processing on (\(error)) — retrying without echo cancellation")
+            try? inputNode.setVoiceProcessingEnabled(false)
+            echoCancellationActive = false
+            // Turned off, voice processing hands the IO back its own formats, so
+            // the connections made above are stale and have to be redone.
+            engine.disconnectNodeOutput(playerNode)
+            engine.disconnectNodeOutput(timePitchNode)
+            canonicalFormat = try? connectGraphAndStart(
+                engine: engine,
+                playerNode: playerNode,
+                timePitchNode: timePitchNode
+            )
+        }
+
+        // TEMPORARY (2026-09-24): the duration the bring-up itself took, printed
+        // from inside it so both the time and the thread are the work's own.
+        TurnTimingProbe.shared.mark(String(
+            format: "bring-up finished (isRunning=%@, took %.0fms, main thread: %@)",
+            engine.isRunning ? "true" : "false",
+            Date().timeIntervalSince(bringUpBeganAt) * 1000,
+            Thread.isMainThread ? "true" : "false"
+        ))
+
+        return EngineBringUpResult(
+            isEngineRunning: engine.isRunning,
+            echoCancellationActive: echoCancellationActive,
+            canonicalPlaybackFormat: canonicalFormat
+        )
     }
 
     /// Hand-off #2, from the other side: playback is starting, so the
@@ -948,7 +1039,13 @@ final class VoicePlaybackEngine {
     /// recovery dropped voice processing, which reconfigures the IO a second
     /// time and fails the same way. The return value is deliberately discarded —
     /// this is an ordered side effect, not a format to keep.
-    private func warmUpMainMixerNode() {
+    /// Forces the main mixer node into existence and connects it to the output
+    /// node — and it is the whole difference between an engine that starts with
+    /// voice processing on and one that dies with `-10875`.
+    ///
+    /// `nonisolated static` taking the engine, rather than an instance method,
+    /// because it is called from `performBringUp`, which runs off the main actor.
+    nonisolated private static func warmUpMainMixerNode(on engine: AVAudioEngine) {
         _ = engine.mainMixerNode.outputFormat(forBus: 0)
     }
 
@@ -956,16 +1053,22 @@ final class VoicePlaybackEngine {
     /// to be redone when a start with voice processing is retried without it,
     /// which is also why the formats are read here rather than earlier:
     /// toggling voice processing is exactly what changes them.
-    private func connectGraphAndStart() throws {
-        // Re-warmed here as well as in `ensureEngineStarted`, because the
-        // fallback path has just toggled voice processing OFF — which
-        // reconfigures the IO a second time, and leaves the mixer holding the
-        // format of a configuration that no longer exists. See
-        // `warmUpMainMixerNode` for the measurement.
-        warmUpMainMixerNode()
+    ///
+    /// `nonisolated static` for the same reason as `warmUpMainMixerNode`: its
+    /// caller, `performBringUp`, runs off the main actor.
+    nonisolated private static func connectGraphAndStart(
+        engine: AVAudioEngine,
+        playerNode: AVAudioPlayerNode,
+        timePitchNode: AVAudioUnitTimePitch
+    ) throws -> AVAudioFormat {
+        // Re-warmed here as well as in `performBringUp`, because the fallback
+        // path has just toggled voice processing OFF — which reconfigures the IO
+        // a second time, and leaves the mixer holding the format of a
+        // configuration that no longer exists. See `warmUpMainMixerNode` for the
+        // measurement.
+        warmUpMainMixerNode(on: engine)
 
         let mixerOutputFormat = engine.mainMixerNode.outputFormat(forBus: 0)
-        canonicalPlaybackFormat = mixerOutputFormat
 
         engine.connect(playerNode, to: timePitchNode, format: mixerOutputFormat)
         engine.connect(timePitchNode, to: engine.mainMixerNode, format: mixerOutputFormat)
@@ -996,23 +1099,19 @@ final class VoicePlaybackEngine {
         if !engine.isRunning {
             print("⚠️ VoicePlaybackEngine: engine.start() returned but the engine is not running — rebuilding the IO and starting again")
             engine.stop()
-            warmUpMainMixerNode()
+            warmUpMainMixerNode(on: engine)
             engine.prepare()
             try engine.start()
         }
 
-        installPlaybackRenderProbe()
-        // NEVER claim the engine is up when it is not. This flag is what makes
-        // `ensureEngineStarted` skip its own work, so a false `true` set here —
-        // which this line did unconditionally, including on the "still not
-        // running after a rebuild" branch below — is the latch that silences
-        // every later reply and only a relaunch clears.
-        isEngineStarted = engine.isRunning
-        if engine.isRunning {
-            print("🔊 [probe] connectGraphAndStart done: isRunning=true outputFormat=\(engine.outputNode.outputFormat(forBus: 0).sampleRate)Hz/\(engine.outputNode.outputFormat(forBus: 0).channelCount)ch")
-        } else {
+        // The caller owns every flag this used to set here (`isEngineStarted`,
+        // `canonicalPlaybackFormat`) — this function runs off the main actor and
+        // must not touch them.
+        if !engine.isRunning {
             print("⚠️ VoicePlaybackEngine: the engine still is not running after a rebuild — playback will be silent for this reply. Input format \(engine.inputNode.outputFormat(forBus: 0).sampleRate)Hz/\(engine.inputNode.outputFormat(forBus: 0).channelCount)ch (3 ch is the raw device format, i.e. voice processing did not engage; 9 ch is the processed one)")
         }
+
+        return mixerOutputFormat
     }
 
     /// TEMPORARY PROBE (2026-09-24) — remove once the silence is explained.
@@ -1055,8 +1154,11 @@ final class VoicePlaybackEngine {
     /// a microphone permission that has not been granted, must degrade to "no
     /// AEC" — the text-level echo filter in BuddyDictationManager is still
     /// there underneath — rather than take playback down with it.
-    private func enableEchoCancellationIfWanted(on inputNode: AVAudioInputNode) -> Bool {
-        guard isEchoCancellationWantedProvider?() ?? false else { return false }
+    nonisolated private static func enableEchoCancellationIfWanted(
+        on inputNode: AVAudioInputNode,
+        wanted: Bool
+    ) -> Bool {
+        guard wanted else { return false }
 
         do {
             try inputNode.setVoiceProcessingEnabled(true)
@@ -1096,14 +1198,14 @@ final class VoicePlaybackEngine {
     /// recognizer both read the browser AEC's own output — the same class of
     /// failure it records as 坑 1 (实现方案/08-踩坑总表.md:11), "capture and
     /// playback must both travel through the AEC for it to work".
-    private func disableAutomaticGainControlOnProcessedUplink(on inputNode: AVAudioInputNode) {
+    nonisolated private static func disableAutomaticGainControlOnProcessedUplink(on inputNode: AVAudioInputNode) {
         inputNode.isVoiceProcessingAGCEnabled = false
     }
 
     /// The mildest ducking macOS offers, and never the activity-driven extra:
     /// the ducking, not the AEC, is what took voice processing out of this app
     /// earlier on 2026-09-23 (see the file header).
-    private func applyMildestOtherAudioDuckingConfiguration(on inputNode: AVAudioInputNode) {
+    nonisolated private static func applyMildestOtherAudioDuckingConfiguration(on inputNode: AVAudioInputNode) {
         inputNode.voiceProcessingOtherAudioDuckingConfiguration =
             AVAudioVoiceProcessingOtherAudioDuckingConfiguration(
                 enableAdvancedDucking: false,

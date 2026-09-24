@@ -856,7 +856,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                 // The format is the engine's business, not ours: the two engines
                 // run at different formats, and a tap installed with the other
                 // one's format delivers silence rather than an error.
-                try sharedEngine.installInputTap(bufferSize: 1024) { [weak self] buffer, _ in
+                try await sharedEngine.installInputTap(bufferSize: 1024) { [weak self] buffer, _ in
                     self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
                     self?.updateAudioPowerLevel(from: buffer)
                 }
