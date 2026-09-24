@@ -88,7 +88,9 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
             name: "默认角色",
             note: "",
             systemPrompt: VoiceChatRole.defaultSystemPrompt,
-            chatEngine: "pipeline",
+            // 用户 2026-09-25：「右侧默认应该选择的是语音聊天……默认应该是全双工 3.0 Flash」。
+            // 预设回落也跟着这条走（见控制器 currentPreset 的回落链）。
+            chatEngine: VoiceChatEngine.duplexVoice.rawValue,
             ttsVoice: "",
             omniVoice: "Ethan",
             duplexVoice: "longanqian",
@@ -204,7 +206,10 @@ extension VoiceChatRole {
         // （2026-09-24 用户报的正是这个。）
         switch VoiceChatEngine(rawValue: chatEngine) {
         case .duplexVoice, .omni: return .duplexVoice
-        default: return .threeStage
+        // 没写过 / 写坏了也按**全双工**读 —— 用户定的默认模式。
+        // （"pipeline" 是历史值，只有显式存过它才走三段式。）
+        case .threeStage: return .threeStage
+        default: return .duplexVoice
         }
     }
 

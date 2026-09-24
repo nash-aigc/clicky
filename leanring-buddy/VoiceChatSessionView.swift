@@ -442,6 +442,8 @@ struct VoiceChatSessionView: View {
             Text(channel.displayName)
                 .font(.system(size: Self.headerControlFontSize,
                               weight: isSelected ? .semibold : .regular))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 // 绿底上用深色字才有对比；未选中是白字。
                 .foregroundStyle(isSelected ? Color.black.opacity(0.82) : DS.Colors.textSecondary)
                 .padding(.horizontal, 12)
@@ -473,6 +475,10 @@ struct VoiceChatSessionView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
+        // **限宽**：克隆音色的 id 可能很长（用户实测 `qwen-aud…99220aa` 把「视频聊天」
+        // 两个按钮挤成两行、把布局挤畸形）。给它一个上限，放不下就中部截断 ——
+        // 右侧的摄像头/屏幕/语速三颗永远完整。
+        .frame(maxWidth: 150)
         .foregroundStyle(DS.Colors.success)
     }
 

@@ -81,7 +81,7 @@ final class VoiceChatController: ObservableObject {
             reloadDeviceSwitches()
         }
     }
-    @Published var selectedMode: VoiceChatEngine = .threeStage {
+    @Published var selectedMode: VoiceChatEngine = .duplexVoice {
         didSet {
             guard selectedMode != oldValue else { return }
             // 屏幕/摄像头两个开关是按模式决定可用性的（全双工语音不能送画面），

@@ -399,16 +399,28 @@ struct VoiceChatRoleSettingsView: View {
         let channel = VoiceChatChannel(rawValue: role.chatChannel ?? "") ?? .voice
         fieldSection(title: "聊天", hint: "跟着角色走 —— 换角色就把这一整套换过去") {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    ForEach(VoiceChatChannel.allCases) { option in
-                        chatChoiceCard(
-                            title: option.displayName,
-                            detail: option == .video
-                                ? "能开屏幕和摄像头（模型要能吃画面）"
-                                : "只用声音，屏幕和摄像头置灰",
-                            isChosen: channel == option
-                        ) {
-                            chooseChannel(role, channel: option)
+                // **默认模式**（用户 2026-09-25：「可以在红色框上方加一个默认模式，下面选择
+                // 语音聊天，即默认模式为语音聊天。这样用户在打开 chatting 界面选择某个角色时，
+                // 会自动应用该默认设置」）—— 它就是"打开 Chatting 时自动套上的那一套"，
+                // 默认是**语音聊天 + 全双工 3.0 Flash**。
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("默认模式")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textSecondary)
+                    Text("打开 Chatting 选中这个角色时，自动套用这一套（默认：语音聊天 + 全双工 3.0 Flash）")
+                        .font(.system(size: 10))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                    HStack(spacing: 6) {
+                        ForEach(VoiceChatChannel.allCases) { option in
+                            chatChoiceCard(
+                                title: option.displayName,
+                                detail: option == .video
+                                    ? "能开屏幕和摄像头（模型要能吃画面）"
+                                    : "只用声音，屏幕和摄像头置灰",
+                                isChosen: channel == option
+                            ) {
+                                chooseChannel(role, channel: option)
+                            }
                         }
                     }
                 }
