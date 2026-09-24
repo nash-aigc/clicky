@@ -484,11 +484,16 @@ final class VoiceChatController: ObservableObject {
         isSessionLive = true
         connectionPhase = .connected
         setNotchOverride(.externalChatting)
-        // 连接成功的确认音。原来这一声在 Chrome 版的控制器里响，换成原生之后
-        // 我漏了这一处 —— 用户 2026-09-24 报「挂断没有声音了」，同一批漏掉的
-        // 还有这一声。两个音是配对的反向双音（上行 / 下行），所以必须成对出现，
-        // 只补一个会让「连上」和「挂断」听起来不对称。
-        SoundEffectPlayer.shared.play(.sessionConnected)
+        // 连接**不**响音效（用户 2026-09-24：「连接时，用户点击连接按钮的声音要去掉，
+        // 挂断时的声音保留」）。
+        //
+        // 这里原来响 `.sessionConnected`，理由是「两个音是配对的反向双音，只响一个
+        // 会不对称」——那个理由在 2026-09-24 之前成立，因为它描述的是**旧版面**的
+        // 交互：连接要走一遍 Chrome 页面自启动，用户等好几秒才连上，那一声是"好了"
+        // 的确认。原生实现之后连接几乎是即时的，同一个音就从"确认"变成了"用户刚点
+        // 完按钮就被自己的 App 喊了一声"，而且它响在用户**刚做过的那个动作**之后，
+        // 不携带任何新信息。挂断保留：挂断是结束一段会话，那一声是收尾，且它必须
+        // 响在 `restoreSpeakerMuteNow()` 之后（见下）。
 
         // 按角色的「连接时自动开启什么」把采集真的起起来。
         // 与 `setScreenSharingEnabled` 走同一条路，所以「角色默认开」和「用户手动开」

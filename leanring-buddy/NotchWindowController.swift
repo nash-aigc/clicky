@@ -260,7 +260,13 @@ final class NotchWindowController {
                 revealSheetAction: { [weak self] in
                     self?.revealSheetAfterTemporaryHide()
                 },
-                companionManager: companionManager
+                companionManager: companionManager,
+                // 展开态那条状态带的几何。算在这里是因为只有这里手里有
+                // `NSScreen` —— 视图那边只拿数字，不去碰 AppKit 的屏幕。
+                notchBandHeight: NotchSupport.expandedWingBandHeight(on: screen),
+                notchCenterXInWindow: NotchSupport.notchBandCenterXInExpandedWindow(on: screen) ?? 0,
+                wingBandWidth: NotchSupport.restingWingBandWidth(on: screen),
+                restingPillWidth: NotchSupport.restingPillWidth(on: screen)
             )
             let hostingView = NSHostingView(rootView: rootView)
             hostingView.frame = NSRect(origin: .zero, size: panel.contentView!.bounds.size)
@@ -1370,11 +1376,18 @@ final class NotchWindowController {
         activityPhaseHoldIsSuppressed = true
         activityPhaseHoldTask?.cancel()
         activityPhaseHoldTask = nil
-        // Set it here rather than waiting for the voice state to catch up. The
-        // stop is the user's, and it must be visible on this run-loop turn —
-        // the voice state's own arrival is a separate hop that may not land for
-        // another cycle, and the whole complaint is about that gap.
-        panelModel.activityPhase = .idle
+        // **语音聊天还连着的时候，这一下不能把「Chatting」也清掉**（用户
+        // 2026-09-24：「用户在对话页面时也应该有这个动画效果，无论是正常对话、
+        // 打断，还是未挂断的运行状态，都要能看到当前状态」）。
+        //
+        // `forceActivityPhaseIdle` 是**对话页**那条停止路径的入口，它清掉的是
+        // 这一轮的聆听/思考/播报相位。而 `externalSessionOverride` 描述的不是
+        // 一轮对话，是**一整段还没挂断的会话** —— 用户在对话页按一次停止，会话
+        // 并没有结束，刘海却会退成 idle 并一直停在那里：`refreshActivityPhase`
+        // 只在语音状态**变化**时才重算，而停止之后语音状态就停在 idle 不动了，
+        // 所以那次清空没有任何东西会把它改回来。这就是「要么没有显示，要么被
+        // 窗口覆盖了」里"没有显示"的那一半。
+        panelModel.activityPhase = panelModel.externalSessionOverride ?? .idle
     }
 
     private func refreshActivityPhase() {

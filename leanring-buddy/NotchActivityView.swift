@@ -826,6 +826,12 @@ struct NotchPanelRootSwitchingView: View {
     var hideSheetAction: () -> Void
     var revealSheetAction: () -> Void
     var companionManager: CompanionManager
+    /// 展开态那条状态带的几何。由 `NotchWindowController` 在装配这个视图时算好
+    /// （它手里才有 `NSScreen`），见 `NotchExpandedWingBand`。
+    var notchBandHeight: CGFloat = 0
+    var notchCenterXInWindow: CGFloat = 0
+    var wingBandWidth: CGFloat = 0
+    var restingPillWidth: CGFloat = 0
 
     var body: some View {
         if panelModel.isExpanded {
@@ -837,6 +843,25 @@ struct NotchPanelRootSwitchingView: View {
                 revealSheetAction: revealSheetAction,
                 companionManager: companionManager
             )
+            // 状态带压在整块面板**之上**（用户 2026-09-24：「在整个对话界面顶部，
+            // 刘海屏左右两侧应该持续显示 chatting 和挂断按钮，并覆盖在窗口上方」）。
+            // 收起态那条带子是 `NotchPillRootView` 画的，展开态这里补上同一条，
+            // 两态的几何由 `NotchSupport` 的同一批函数给出，所以切换时不跳。
+            .overlay(alignment: .top) {
+                if panelModel.activityPhase != .idle {
+                    NotchExpandedWingBand(
+                        phase: panelModel.activityPhase,
+                        audioHistoryProvider: audioHistoryProvider,
+                        notchCenterXInWindow: notchCenterXInWindow,
+                        notchBandHeight: notchBandHeight,
+                        wingBandWidth: wingBandWidth,
+                        restingPillWidth: restingPillWidth,
+                        hangUpAction: {
+                            companionManager.voiceChatController.disconnectCurrentSession()
+                        }
+                    )
+                }
+            }
         } else if panelModel.expansionProgress > 0.01 {
             // 收起的这一路：`isExpanded` 已经翻成 false，窗口 frame 正沿收起
             // 曲线缩回刘海，`expansionProgress` 同步插值到 0——只画轮廓不画
@@ -850,6 +875,110 @@ struct NotchPanelRootSwitchingView: View {
                 audioHistoryProvider: audioHistoryProvider
             )
         }
+    }
+}
+
+// MARK: - Expanded-state wing band
+
+/// 展开态下压在面板之上的那条状态带（2026-09-24）。
+///
+/// **为什么需要它。** 收起态的窗口里，`NotchPillRootView` 画了「左翼 + 中段 +
+/// 右翼」这条带子；展开态的窗口里 `NotchPanelRootSwitchingView` 只画
+/// `NotchExpandedSheetView` —— 那条带子**根本不参与布局**。于是用户在对话界面上
+/// （面板几乎总是展开的）看不到任何状态：语音聊天连着的时候看不见「Chatting」和
+/// 挂断按钮，普通对话时看不见 Listening / Thinking / Speaking。用户 2026-09-24
+/// 的原话是「在整个对话界面顶部，刘海屏左右两侧应该持续显示 chatting 和挂断按钮，
+/// 并覆盖在窗口上方。现在要么没有显示，要么被窗口覆盖了」。
+///
+/// **位置与收起态逐像素一致**，办法是把带子放回一个与收起窗口**同宽**的虚拟窗口
+/// 里居中（`.position` 定的是中心点），而不是在展开窗口里另推一套几何。所以两态
+/// 之间切换时带子不会横向跳一下，收起态那条翼和展开态这条翼落在同一排像素上。
+///
+/// **只有右翼那颗按钮吃点击。** 面板展开时它自己是接收事件的（`ignoresMouseEvents`
+/// 在 `expand` 里被翻成 false），所以挂断这一下走真实控件；而带子的装饰部分必须
+/// 完全不吃点击，否则「再点一次刘海收起」（`handleGlobalClick` 展开分支的第一条）
+/// 会被它吞掉，用户就会发现刘海点不动了。做法是 ZStack 分两层：装饰层整体
+/// `.allowsHitTesting(false)`，按钮是它的兄弟节点，各管各的命中。
+///
+/// 右翼的命中矩形由 `NotchSupport.trailingWingOriginX(inWindowOfWidth:)` 给出 ——
+/// 和收起态点击命中的 `restingTrailingWingFrame` 同一个函数，所以画的和点的不会
+/// 各推一遍几何、错位了还不报错。
+struct NotchExpandedWingBand: View {
+
+    let phase: NotchActivityPhase
+    var audioHistoryProvider: () -> [CGFloat]
+    /// 刘海中心在展开窗口里的 x（窗口左上角为 0）。
+    let notchCenterXInWindow: CGFloat
+    /// 刘海本身的高度 —— 也是收起态两条翼的高度。
+    let notchBandHeight: CGFloat
+    /// 收起态那条带子的总宽和它中段的宽，都由 `NotchSupport` 给出。
+    let wingBandWidth: CGFloat
+    let restingPillWidth: CGFloat
+    /// 语音聊天进行中，右翼是一颗真的挂断按钮。
+    var hangUpAction: (() -> Void)?
+
+    /// 右翼左边界在**展开窗口**里的 x。
+    ///
+    /// 带子整体居中在刘海中心上，所以带子的左边界要先算出来，再加上
+    /// `trailingWingOriginX(inBandOfWidth:)` —— 那个函数给的是右翼在**带子里**
+    /// 的偏移。传的是带子宽，不是窗口宽：两者差两个 `activeFlankWidth`。
+    private var trailingWingLeftXInWindow: CGFloat {
+        let bandLeftX = notchCenterXInWindow - wingBandWidth / 2
+        return bandLeftX + NotchSupport.trailingWingOriginX(inBandOfWidth: wingBandWidth)
+    }
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // 装饰层：整条都不吃点击 —— 见类型注释里「只有右翼那颗按钮吃点击」。
+            HStack(spacing: -2) {
+                NotchWingView(
+                    phase: phase,
+                    audioHistoryProvider: audioHistoryProvider,
+                    isLeading: true
+                )
+                .frame(width: NotchSupport.leadingWingWidth, height: notchBandHeight)
+                .clipped()
+
+                // 中段永远是方的（radius 0）：带子只要出场，中段和两条翼就是
+                // 一整条黑带，圆角只留在两个外端 —— 与 `NotchPillRootView` 在
+                // `isActive` 时的取值一致，所以两态看起来是同一条带子。
+                PillShape(bottomCornerRadius: 0)
+                    .fill(Color.black)
+                    .frame(width: restingPillWidth, height: notchBandHeight)
+
+                NotchWingView(
+                    phase: phase,
+                    audioHistoryProvider: audioHistoryProvider,
+                    isLeading: false
+                )
+                .frame(width: NotchSupport.trailingWingWidth, height: notchBandHeight)
+                .clipped()
+            }
+            // `.position` 把视图的**中心**放在这一点上，而收起窗口的中心正是
+            // 刘海的中心，所以这一行就是「和收起态对齐」的全部。
+            .position(x: notchCenterXInWindow, y: notchBandHeight / 2)
+            .allowsHitTesting(false)
+
+            // 语音聊天进行中：右翼那颗红色的挂断，是这一层唯一吃点击的东西。
+            if phase == .externalChatting, let hangUpAction {
+                Button(action: hangUpAction) {
+                    // 图形由下面的装饰层画（`NotchHangUpGlyph` 在
+                    // `NotchWingView` 里），这里只要一块透明的命中区 —— 用
+                    // `Color.clear` 加 `contentShape` 而不是让按钮自己画，
+                    // 免得同一颗图标有两份来源。
+                    Color.clear
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .frame(width: NotchSupport.trailingWingWidth, height: notchBandHeight)
+                .position(
+                    x: trailingWingLeftXInWindow + NotchSupport.trailingWingWidth / 2,
+                    y: notchBandHeight / 2
+                )
+                .help("挂断")
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: notchBandHeight, alignment: .topLeading)
     }
 }
 

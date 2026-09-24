@@ -422,12 +422,7 @@ nonisolated enum NotchSupport {
     static func restingTrailingWingFrame(on screen: NSScreen) -> CGRect? {
         guard let windowFrame = restingWindowFrame(on: screen) else { return nil }
 
-        let pillWidth = windowFrame.width - activeFlankWidth * 2
-        let wingOriginX = activeFlankWidth
-            + leadingWingWidth / 2
-            - trailingWingWidth / 2
-            + pillWidth
-            - 2
+        let wingOriginX = trailingWingOriginX(inWindowOfWidth: windowFrame.width)
         let wingHeight = windowFrame.height - restingPillAnimationHeadroom
 
         return CGRect(
@@ -436,6 +431,77 @@ nonisolated enum NotchSupport {
             width: trailingWingWidth,
             height: wingHeight
         )
+    }
+
+    /// 右翼在**那条带子里**的左边界 x（带子左端为 0）。
+    ///
+    /// 它就是带子的最后一段，所以左边界 = 带子总宽 − 右翼宽 —— 这一步是**定义**，
+    /// 不是推导；写成一个函数是为了让「带子」这个坐标系有一个明确的名字。
+    ///
+    /// 参数是**带子**总宽（左翼 + 中段 + 右翼 − 两处 2pt 负间距）。它和收起**窗口**
+    /// 的宽度差着两个 `activeFlankWidth`，而带子在窗口里是居中的 —— 这两个宽度
+    /// 混用过一次（2026-09-24）：把带子宽当成窗口宽传进去，画出来的红色挂断图标
+    /// 和点得到的矩形差了 71pt，而屏幕上完全看不出来（图标照画，只是点不准）。
+    static func trailingWingOriginX(inBandOfWidth bandWidth: CGFloat) -> CGFloat {
+        bandWidth - trailingWingWidth
+    }
+
+    /// 同一个值，但相对于**收起窗口**的左边界 —— 收起态的命中矩形用的是这个。
+    ///
+    /// 带子在窗口里居中，所以先把窗口坐标还原成带子坐标，再问上面那个函数：
+    /// 「右翼是带子的最后一段」这句话全仓库只有一份。
+    static func trailingWingOriginX(inWindowOfWidth windowWidth: CGFloat) -> CGFloat {
+        let bandWidth = windowWidth - activeFlankWidth * 2
+            + leadingWingWidth + trailingWingWidth - 4
+        return (windowWidth - bandWidth) / 2
+            + trailingWingOriginX(inBandOfWidth: bandWidth)
+    }
+
+    /// 刘海本身的高度 —— 收起态两条翼的高度。
+    /// （`NotchPillRootView` 用的是窗口高减掉 `restingPillAnimationHeadroom`，
+    /// 两者相等，因为收起窗口正是「刘海 + 那点动画余量」。）
+    static func notchBandHeight(on screen: NSScreen) -> CGFloat {
+        notchRect(on: screen)?.height ?? 0
+    }
+
+    /// 展开态那条状态带的高度。
+    ///
+    /// **比刘海矮一点是有意的**：面板内容从 `sheetHeaderTopInset`（= 22 + 8 = 30）
+    /// 那一条开始画，而刘海是 32 高 —— 直接照刘海的高度铺，这条带子就会压掉页头
+    /// 控件的上沿 2pt。右翼横跨刘海右侧 ~88pt，那一段正落在内容列页头那一排按钮
+    /// （摄像头 / 屏幕 / 三段式）的左端，所以这 2pt 是真的会露出来的。
+    ///
+    /// 取两者的较小值，两个数各自改动时都不会重新长出这条压边；代价是展开态的翼
+    /// 比收起态矮 2pt，肉眼不可见，而且收起/展开之间横向本来就对齐。
+    static func expandedWingBandHeight(on screen: NSScreen) -> CGFloat {
+        min(notchBandHeight(on: screen), sheetHeaderTopInset)
+    }
+
+    /// 收起态那条带子的总宽（左翼 + 中段 + 右翼，含两处 −2 负间距）。
+    ///
+    /// 展开态的状态带按**同一个宽度**布局才能和收起态逐像素对齐：它把带子放回
+    /// 一个同宽的虚拟窗口里居中，而不是在展开窗口里另推一套几何。两态切换时
+    /// 带子因此不会横向跳一下。
+    static func restingWingBandWidth(on screen: NSScreen) -> CGFloat {
+        guard notchRect(on: screen) != nil else { return 0 }
+        return leadingWingWidth + restingPillWidth(on: screen) + trailingWingWidth - 4
+    }
+
+    /// 收起态那条带子的「中段」宽度（就是那颗 pill）。
+    static func restingPillWidth(on screen: NSScreen) -> CGFloat {
+        guard let notchRect = notchRect(on: screen) else { return 0 }
+        return notchRect.width + restingPillExtraWidthPerSide * 2
+    }
+
+    /// 展开态那条状态带里，刘海中心相对于**展开窗口**左上角的 x。
+    ///
+    /// 收起窗口和展开窗口都水平居中在屏幕上，看起来 `width / 2` 就够了 ——
+    /// 但那是**屏幕**的中心，而刘海是「辅助顶栏之间的空隙」，不保证正好在屏幕
+    /// 正中。所以这里拿两个真实矩形相减，而不是假设。
+    static func notchBandCenterXInExpandedWindow(on screen: NSScreen) -> CGFloat? {
+        guard let notchRect = notchRect(on: screen) else { return nil }
+        let expandedFrame = expandedSheetFrame(on: screen)
+        return screen.frame.minX + notchRect.midX - expandedFrame.minX
     }
 
     /// The expanded sheet's frame: `expandedSheetSize(on:)`, centered

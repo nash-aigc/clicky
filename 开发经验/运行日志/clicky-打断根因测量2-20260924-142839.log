@@ -1,0 +1,1380 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 295ms
+⏱️ [hitch] main thread busy for 131ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 237ms
+⏱️ [hitch] main thread busy for 41ms
+2026-09-24 14:29:13.060 Clicky[71511:8181592] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-24 14:29:13.068 Clicky[71511:8181592] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 49ms
+🗣️ Streaming speech: queued segment 1 (3 chars)
+⏱️ [hitch] main thread busy for 210ms
+🗣️ Streaming speech: queued segment 2 (39 chars)
+⏱️ [hitch] main thread busy for 196ms
+🗣️ Streaming speech: queued segment 3 (30 chars)
+⏱️ [hitch] main thread busy for 96ms
+🎙️ BuddyDictationManager: continuous listening requested
+🔊 [aecprobe] t=1790231356.017 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🗣️ Streaming speech: queued segment 4 (35 chars)
+⏱️ [hitch] main thread busy for 107ms
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 5 (19 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 93ms
+⏱️ [hitch] main thread busy for 84ms
+🔊 [aecprobe] t=1790231357.601 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790231357.794 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790231357.794 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790231357.794 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 [aecprobe] t=1790231357.807 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (48KB)
+🎙️ [aecprobe] t=1790231357.861 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231357.968 event=level botSpeaking=true level=0.068 peak0.5s=0.068 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.070 event=level botSpeaking=true level=0.080 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.177 event=level botSpeaking=true level=0.084 peak0.5s=0.084 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.284 event=level botSpeaking=true level=0.065 peak0.5s=0.084 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.388 event=level botSpeaking=true level=0.047 peak0.5s=0.084 utteranceActive=no
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "是", recent mic peak 0.084)
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "是。", recent mic peak 0.084)
+🎙️ [aecprobe] t=1790231358.489 event=level botSpeaking=true level=0.034 peak0.5s=0.084 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.613 event=level botSpeaking=true level=0.024 peak0.5s=0.084 utteranceActive=no
+🔊 [aecprobe] t=1790231358.680 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (363KB)
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "对", recent mic peak 0.084)
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "对。", recent mic peak 0.084)
+🎙️ [aecprobe] t=1790231358.721 event=level botSpeaking=true level=0.038 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.826 event=level botSpeaking=true level=0.077 peak0.5s=0.077 utteranceActive=no
+🎙️ [aecprobe] t=1790231358.933 event=level botSpeaking=true level=0.078 peak0.5s=0.078 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.039 event=level botSpeaking=true level=0.069 peak0.5s=0.078 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.143 event=level botSpeaking=true level=0.050 peak0.5s=0.078 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.247 event=level botSpeaking=true level=0.036 peak0.5s=0.078 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.349 event=level botSpeaking=true level=0.044 peak0.5s=0.078 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.454 event=level botSpeaking=true level=0.041 peak0.5s=0.078 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.557 event=level botSpeaking=true level=0.031 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.661 event=level botSpeaking=true level=0.023 peak0.5s=0.050 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.765 event=level botSpeaking=true level=0.032 peak0.5s=0.044 utteranceActive=no
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ [aecprobe] t=1790231359.873 event=level botSpeaking=true level=0.061 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231359.980 event=level botSpeaking=true level=0.044 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.084 event=level botSpeaking=true level=0.032 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.189 event=level botSpeaking=true level=0.023 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.293 event=level botSpeaking=true level=0.016 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.395 event=level botSpeaking=true level=0.060 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.498 event=level botSpeaking=true level=0.043 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.608 event=level botSpeaking=true level=0.031 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.713 event=level botSpeaking=true level=0.023 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.816 event=level botSpeaking=true level=0.012 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231360.918 event=level botSpeaking=true level=0.028 peak0.5s=0.043 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.023 event=level botSpeaking=true level=0.080 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.126 event=level botSpeaking=true level=0.074 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.230 event=level botSpeaking=true level=0.054 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.333 event=level botSpeaking=true level=0.039 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.436 event=level botSpeaking=true level=0.028 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.540 event=level botSpeaking=true level=0.020 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.680 event=level botSpeaking=true level=0.014 peak0.5s=0.074 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.784 event=level botSpeaking=true level=0.010 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.888 event=level botSpeaking=true level=0.007 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231361.991 event=level botSpeaking=true level=0.005 peak0.5s=0.028 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.096 event=level botSpeaking=true level=0.004 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.204 event=level botSpeaking=true level=0.010 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.309 event=level botSpeaking=true level=0.080 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.411 event=level botSpeaking=true level=0.080 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.513 event=level botSpeaking=true level=0.041 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.617 event=level botSpeaking=true level=0.030 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.724 event=level botSpeaking=true level=0.021 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.828 event=level botSpeaking=true level=0.047 peak0.5s=0.080 utteranceActive=no
+🎙️ [aecprobe] t=1790231362.931 event=level botSpeaking=true level=0.034 peak0.5s=0.057 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.037 event=level botSpeaking=true level=0.024 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.138 event=level botSpeaking=true level=0.018 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.240 event=level botSpeaking=true level=0.013 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.347 event=level botSpeaking=true level=0.009 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.451 event=level botSpeaking=true level=0.007 peak0.5s=0.034 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.555 event=level botSpeaking=true level=0.005 peak0.5s=0.024 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.665 event=level botSpeaking=true level=0.003 peak0.5s=0.018 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.772 event=level botSpeaking=true level=0.002 peak0.5s=0.013 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.877 event=level botSpeaking=true level=0.002 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231363.980 event=level botSpeaking=true level=0.001 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.084 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.185 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.288 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🔊 [aecprobe] t=1790231364.346 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (266KB)
+🎙️ [aecprobe] t=1790231364.399 event=level botSpeaking=true level=0.026 peak0.5s=0.026 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.503 event=level botSpeaking=true level=0.073 peak0.5s=0.073 utteranceActive=no
+⏱️ [hitch] main thread busy for 43ms
+🎙️ [aecprobe] t=1790231364.631 event=level botSpeaking=true level=0.082 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.735 event=level botSpeaking=true level=0.072 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.842 event=level botSpeaking=true level=0.052 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231364.946 event=level botSpeaking=true level=0.037 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.053 event=level botSpeaking=true level=0.027 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.157 event=level botSpeaking=true level=0.019 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.261 event=level botSpeaking=true level=0.014 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.368 event=level botSpeaking=true level=0.010 peak0.5s=0.052 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.472 event=level botSpeaking=true level=0.007 peak0.5s=0.037 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.575 event=level botSpeaking=true level=0.005 peak0.5s=0.027 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.680 event=level botSpeaking=true level=0.004 peak0.5s=0.019 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.781 event=level botSpeaking=true level=0.003 peak0.5s=0.014 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.885 event=level botSpeaking=true level=0.002 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231365.989 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.115 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.220 event=level botSpeaking=true level=0.033 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.324 event=level botSpeaking=true level=0.024 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.427 event=level botSpeaking=true level=0.082 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.530 event=level botSpeaking=true level=0.065 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.634 event=level botSpeaking=true level=0.047 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.738 event=level botSpeaking=true level=0.034 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.841 event=level botSpeaking=true level=0.024 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231366.946 event=level botSpeaking=true level=0.017 peak0.5s=0.082 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.049 event=level botSpeaking=true level=0.013 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.152 event=level botSpeaking=true level=0.009 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.256 event=level botSpeaking=true level=0.007 peak0.5s=0.034 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.358 event=level botSpeaking=true level=0.005 peak0.5s=0.024 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.462 event=level botSpeaking=true level=0.003 peak0.5s=0.017 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.566 event=level botSpeaking=true level=0.002 peak0.5s=0.013 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.670 event=level botSpeaking=true level=0.002 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.776 event=level botSpeaking=true level=0.001 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.880 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231367.987 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231368.093 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231368.200 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231368.306 event=level botSpeaking=true level=0.023 peak0.5s=0.023 utteranceActive=no
+🎙️ [aecprobe] t=1790231368.412 event=level botSpeaking=true level=0.019 peak0.5s=0.026 utteranceActive=no
+🎙️ [aecprobe] t=1790231368.518 event=level botSpeaking=true level=0.014 peak0.5s=0.026 utteranceActive=no
+🔊 [aecprobe] t=1790231368.537 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (247KB)
+🎙️ [aecprobe] t=1790231368.623 event=level botSpeaking=true level=0.010 peak0.5s=0.026 utteranceActive=no
+🎙️ [aecprobe] t=1790231368.727 event=level botSpeaking=true level=0.007 peak0.5s=0.026 utteranceActive=no
+🎙️ ⚠️ 连续监听请求被忽略：**已经有一个窗口开着**（门槛 4）。调用方若以为这是自己开的窗口，它的说话就不会被自己收到。
+🎙️ [aecprobe] t=1790231368.862 event=level botSpeaking=true level=0.025 peak0.5s=0.026 utteranceActive=no
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ [aecprobe] t=1790231369.282 event=level botSpeaking=true level=0.072 peak0.5s=0.072 utteranceActive=no
+⏱️ [hitch] main thread busy for 532ms
+🎙️ [aecprobe] t=1790231369.389 event=level botSpeaking=true level=0.072 peak0.5s=0.072 utteranceActive=no
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ [aecprobe] t=1790231369.492 event=level botSpeaking=true level=0.052 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231369.597 event=level botSpeaking=true level=0.037 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231369.703 event=level botSpeaking=true level=0.027 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231369.810 event=level botSpeaking=true level=0.014 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231369.916 event=level botSpeaking=true level=0.010 peak0.5s=0.052 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.021 event=level botSpeaking=true level=0.007 peak0.5s=0.037 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.128 event=level botSpeaking=true level=0.005 peak0.5s=0.027 utteranceActive=no
+📷 [camera] startRunning 934ms（总 1332ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1386ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790231370.232 event=level botSpeaking=true level=0.004 peak0.5s=0.019 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.336 event=level botSpeaking=true level=0.003 peak0.5s=0.014 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.442 event=level botSpeaking=true level=0.002 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.547 event=level botSpeaking=true level=0.001 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.668 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.773 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.876 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231370.980 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.081 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.185 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.292 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.408 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.512 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.616 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.719 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.824 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231371.927 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.032 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.135 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.242 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.343 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🔊 [aecprobe] t=1790231372.443 event=chunkStart segment 5
+🔊 Bailian TTS: playing segment 5 (206KB)
+🎙️ [aecprobe] t=1790231372.450 event=level botSpeaking=true level=0.005 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.550 event=level botSpeaking=true level=0.071 peak0.5s=0.071 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.652 event=level botSpeaking=true level=0.073 peak0.5s=0.073 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.754 event=level botSpeaking=true level=0.076 peak0.5s=0.076 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.861 event=level botSpeaking=true level=0.055 peak0.5s=0.076 utteranceActive=no
+🎙️ [aecprobe] t=1790231372.964 event=level botSpeaking=true level=0.039 peak0.5s=0.076 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.070 event=level botSpeaking=true level=0.028 peak0.5s=0.076 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.174 event=level botSpeaking=true level=0.020 peak0.5s=0.076 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.276 event=level botSpeaking=true level=0.015 peak0.5s=0.076 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.381 event=level botSpeaking=true level=0.011 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.485 event=level botSpeaking=true level=0.008 peak0.5s=0.028 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.618 event=level botSpeaking=true level=0.005 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.724 event=level botSpeaking=true level=0.003 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.828 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231373.932 event=level botSpeaking=true level=0.001 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.039 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.143 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.247 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.354 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.463 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.567 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.672 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.778 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.884 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231374.987 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231375.118 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231375.222 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231375.325 event=level botSpeaking=true level=0.009 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231375.430 event=level botSpeaking=true level=0.007 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231375.537 event=level botSpeaking=true level=0.005 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231375.640 event=level botSpeaking=true level=0.003 peak0.5s=0.009 utteranceActive=no
+🔊 [aecprobe] t=1790231375.726 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 47ms
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790231385.388 event=level botSpeaking=true level=0.058 peak0.5s=0.062 utteranceActive=no
+🎙️ [aecprobe] t=1790231385.491 event=level botSpeaking=true level=0.064 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231385.619 event=level botSpeaking=true level=0.058 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231385.725 event=level botSpeaking=true level=0.058 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231385.832 event=level botSpeaking=true level=0.055 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231385.937 event=level botSpeaking=true level=0.056 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.042 event=level botSpeaking=true level=0.055 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.147 event=level botSpeaking=true level=0.053 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.252 event=level botSpeaking=true level=0.049 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.357 event=level botSpeaking=true level=0.053 peak0.5s=0.056 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.462 event=level botSpeaking=true level=0.054 peak0.5s=0.056 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.568 event=level botSpeaking=true level=0.055 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.674 event=level botSpeaking=true level=0.055 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.778 event=level botSpeaking=true level=0.059 peak0.5s=0.059 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.884 event=level botSpeaking=true level=0.060 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231386.988 event=level botSpeaking=true level=0.058 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.117 event=level botSpeaking=true level=0.064 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.225 event=level botSpeaking=true level=0.061 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.327 event=level botSpeaking=true level=0.064 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.432 event=level botSpeaking=true level=0.065 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.535 event=level botSpeaking=true level=0.066 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.640 event=level botSpeaking=true level=0.060 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.744 event=level botSpeaking=true level=0.059 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.850 event=level botSpeaking=true level=0.060 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231387.957 event=level botSpeaking=true level=0.062 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.061 event=level botSpeaking=true level=0.064 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.167 event=level botSpeaking=true level=0.063 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.269 event=level botSpeaking=true level=0.056 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.372 event=level botSpeaking=true level=0.056 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.474 event=level botSpeaking=true level=0.062 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.579 event=level botSpeaking=true level=0.062 peak0.5s=0.063 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.682 event=level botSpeaking=true level=0.064 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.789 event=level botSpeaking=true level=0.060 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.894 event=level botSpeaking=true level=0.069 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231388.999 event=level botSpeaking=true level=0.061 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.103 event=level botSpeaking=true level=0.062 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.207 event=level botSpeaking=true level=0.060 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.309 event=level botSpeaking=true level=0.060 peak0.5s=0.069 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (11 chars)
+🎙️ [aecprobe] t=1790231389.413 event=level botSpeaking=true level=0.065 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.517 event=level botSpeaking=true level=0.065 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.623 event=level botSpeaking=true level=0.072 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.729 event=level botSpeaking=true level=0.061 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231389.835 event=level botSpeaking=true level=0.065 peak0.5s=0.072 utteranceActive=no
+🗣️ Streaming speech: queued segment 2 (31 chars)
+🎙️ [aecprobe] t=1790231389.941 event=level botSpeaking=true level=0.063 peak0.5s=0.072 utteranceActive=no
+🔊 [aecprobe] t=1790231390.031 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (112KB)
+🎙️ [aecprobe] t=1790231390.049 event=level botSpeaking=true level=0.065 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231390.175 event=level botSpeaking=true level=0.058 peak0.5s=0.072 utteranceActive=no
+🎙️ [aecprobe] t=1790231390.282 event=level botSpeaking=true level=0.061 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231390.388 event=level botSpeaking=true level=0.062 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231390.496 event=level botSpeaking=true level=0.050 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231390.606 event=level botSpeaking=true level=0.026 peak0.5s=0.065 utteranceActive=no
+🗣️ Streaming speech: queued segment 3 (35 chars)
+🎙️ [aecprobe] t=1790231390.712 event=level botSpeaking=true level=0.026 peak0.5s=0.062 utteranceActive=no
+🎙️ [aecprobe] t=1790231390.819 event=level botSpeaking=true level=0.013 peak0.5s=0.062 utteranceActive=no
+🗣️ Streaming speech: queued segment 4 (12 chars)
+🎙️ [aecprobe] t=1790231390.923 event=level botSpeaking=true level=0.010 peak0.5s=0.050 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.026 event=level botSpeaking=true level=0.007 peak0.5s=0.036 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.130 event=level botSpeaking=true level=0.005 peak0.5s=0.026 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.233 event=level botSpeaking=true level=0.004 peak0.5s=0.019 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.339 event=level botSpeaking=true level=0.003 peak0.5s=0.013 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.441 event=level botSpeaking=true level=0.002 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.547 event=level botSpeaking=true level=0.001 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.676 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.780 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🔊 [aecprobe] t=1790231391.880 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (281KB)
+🎙️ [aecprobe] t=1790231391.885 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231391.989 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.096 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.201 event=level botSpeaking=true level=0.005 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.306 event=level botSpeaking=true level=0.058 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.413 event=level botSpeaking=true level=0.030 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.516 event=level botSpeaking=true level=0.022 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.623 event=level botSpeaking=true level=0.016 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.728 event=level botSpeaking=true level=0.011 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.833 event=level botSpeaking=true level=0.008 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231392.936 event=level botSpeaking=true level=0.006 peak0.5s=0.030 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.042 event=level botSpeaking=true level=0.004 peak0.5s=0.022 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.166 event=level botSpeaking=true level=0.003 peak0.5s=0.016 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.273 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.376 event=level botSpeaking=true level=0.002 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.480 event=level botSpeaking=true level=0.001 peak0.5s=0.006 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.586 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.693 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.799 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231393.903 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.008 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.113 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.219 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.325 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.427 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.530 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.634 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.739 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.842 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231394.948 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.056 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.160 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.263 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.369 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.474 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.578 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.687 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.792 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231395.895 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.001 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.118 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.225 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🔊 [aecprobe] t=1790231396.279 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (322KB)
+🎙️ [aecprobe] t=1790231396.331 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.437 event=level botSpeaking=true level=0.012 peak0.5s=0.012 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.542 event=level botSpeaking=true level=0.056 peak0.5s=0.056 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.647 event=level botSpeaking=true level=0.061 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.749 event=level botSpeaking=true level=0.055 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.854 event=level botSpeaking=true level=0.039 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231396.959 event=level botSpeaking=true level=0.028 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.065 event=level botSpeaking=true level=0.020 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.172 event=level botSpeaking=true level=0.015 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.279 event=level botSpeaking=true level=0.011 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.382 event=level botSpeaking=true level=0.008 peak0.5s=0.028 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.487 event=level botSpeaking=true level=0.005 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.615 event=level botSpeaking=true level=0.004 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.719 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.826 event=level botSpeaking=true level=0.001 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231397.931 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.038 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.143 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.245 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.348 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.452 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.558 event=level botSpeaking=true level=0.001 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.662 event=level botSpeaking=true level=0.002 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.767 event=level botSpeaking=true level=0.002 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.871 event=level botSpeaking=true level=0.002 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231398.972 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.075 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.180 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.284 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.387 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.494 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.600 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.705 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.809 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231399.913 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.019 event=level botSpeaking=true level=0.015 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.123 event=level botSpeaking=true level=0.014 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.225 event=level botSpeaking=true level=0.010 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.334 event=level botSpeaking=true level=0.007 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.438 event=level botSpeaking=true level=0.005 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.542 event=level botSpeaking=true level=0.004 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.670 event=level botSpeaking=true level=0.003 peak0.5s=0.014 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.775 event=level botSpeaking=true level=0.002 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.880 event=level botSpeaking=true level=0.001 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231400.983 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.089 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.197 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.301 event=level botSpeaking=true level=0.004 peak0.5s=0.004 utteranceActive=no
+🔊 [aecprobe] t=1790231401.316 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (138KB)
+🎙️ [aecprobe] t=1790231401.405 event=level botSpeaking=true level=0.025 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.508 event=level botSpeaking=true level=0.053 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.612 event=level botSpeaking=true level=0.053 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.715 event=level botSpeaking=true level=0.042 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.819 event=level botSpeaking=true level=0.030 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231401.923 event=level botSpeaking=true level=0.022 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.026 event=level botSpeaking=true level=0.016 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.128 event=level botSpeaking=true level=0.011 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.233 event=level botSpeaking=true level=0.008 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.338 event=level botSpeaking=true level=0.006 peak0.5s=0.030 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.445 event=level botSpeaking=true level=0.004 peak0.5s=0.022 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.547 event=level botSpeaking=true level=0.003 peak0.5s=0.016 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.651 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.757 event=level botSpeaking=true level=0.002 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.861 event=level botSpeaking=true level=0.001 peak0.5s=0.006 utteranceActive=no
+🎙️ [aecprobe] t=1790231402.962 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231403.066 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231403.174 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231403.277 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231403.380 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231403.487 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🔊 [aecprobe] t=1790231403.542 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening window closing (listening window expired); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (9 chars)
+🔊 [aecprobe] t=1790231438.980 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (108KB)
+🗣️ Streaming speech: queued segment 2 (39 chars)
+🔊 [aecprobe] t=1790231440.796 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (176KB)
+🗣️ Streaming speech: queued segment 3 (34 chars)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790231441.512 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 367ms
+⏱️ [hitch] main thread busy for 202ms
+⏱️ [hitch] main thread busy for 40ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 78ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🔊 [aecprobe] t=1790231612.251 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=false agc=false
+📷 [camera] startRunning 1273ms（总 1299ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+🔊 [aecprobe] t=1790231613.755 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790231614.036 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 2026ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790231623.672 event=level botSpeaking=true level=0.061 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231623.778 event=level botSpeaking=true level=0.066 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231623.884 event=level botSpeaking=true level=0.064 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231623.991 event=level botSpeaking=true level=0.067 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.121 event=level botSpeaking=true level=0.063 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.226 event=level botSpeaking=true level=0.062 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.328 event=level botSpeaking=true level=0.062 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.434 event=level botSpeaking=true level=0.062 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.540 event=level botSpeaking=true level=0.070 peak0.5s=0.070 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.647 event=level botSpeaking=true level=0.062 peak0.5s=0.070 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.754 event=level botSpeaking=true level=0.067 peak0.5s=0.070 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.856 event=level botSpeaking=true level=0.063 peak0.5s=0.070 utteranceActive=no
+🎙️ [aecprobe] t=1790231624.963 event=level botSpeaking=true level=0.064 peak0.5s=0.070 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (9 chars)
+🗣️ Streaming speech: queued segment 2 (32 chars)
+🎙️ [aecprobe] t=1790231625.073 event=level botSpeaking=true level=0.066 peak0.5s=0.067 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.176 event=level botSpeaking=true level=0.069 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.281 event=level botSpeaking=true level=0.059 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.385 event=level botSpeaking=true level=0.063 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.489 event=level botSpeaking=true level=0.066 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.615 event=level botSpeaking=true level=0.057 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.717 event=level botSpeaking=true level=0.065 peak0.5s=0.069 utteranceActive=no
+🎙️ [aecprobe] t=1790231625.818 event=level botSpeaking=true level=0.062 peak0.5s=0.066 utteranceActive=no
+🔊 [aecprobe] t=1790231625.821 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (120KB)
+🎙️ [aecprobe] t=1790231625.921 event=level botSpeaking=true level=0.056 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.027 event=level botSpeaking=true level=0.064 peak0.5s=0.066 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.132 event=level botSpeaking=true level=0.061 peak0.5s=0.065 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.237 event=level botSpeaking=true level=0.062 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.344 event=level botSpeaking=true level=0.062 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.448 event=level botSpeaking=true level=0.056 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.552 event=level botSpeaking=true level=0.040 peak0.5s=0.062 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.659 event=level botSpeaking=true level=0.085 peak0.5s=0.085 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.763 event=level botSpeaking=true level=0.077 peak0.5s=0.085 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.867 event=level botSpeaking=true level=0.055 peak0.5s=0.085 utteranceActive=no
+🎙️ [aecprobe] t=1790231626.972 event=level botSpeaking=true level=0.040 peak0.5s=0.085 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.077 event=level botSpeaking=true level=0.029 peak0.5s=0.085 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.180 event=level botSpeaking=true level=0.021 peak0.5s=0.085 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.285 event=level botSpeaking=true level=0.015 peak0.5s=0.077 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.392 event=level botSpeaking=true level=0.013 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.497 event=level botSpeaking=true level=0.009 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.601 event=level botSpeaking=true level=0.007 peak0.5s=0.029 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.703 event=level botSpeaking=true level=0.005 peak0.5s=0.021 utteranceActive=no
+🔊 [aecprobe] t=1790231627.789 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (236KB)
+🎙️ [aecprobe] t=1790231627.809 event=level botSpeaking=true level=0.017 peak0.5s=0.017 utteranceActive=no
+🎙️ [aecprobe] t=1790231627.915 event=level botSpeaking=true level=0.052 peak0.5s=0.052 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.018 event=level botSpeaking=true level=0.057 peak0.5s=0.057 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.122 event=level botSpeaking=true level=0.060 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.225 event=level botSpeaking=true level=0.055 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.330 event=level botSpeaking=true level=0.040 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.434 event=level botSpeaking=true level=0.028 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.538 event=level botSpeaking=true level=0.021 peak0.5s=0.060 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.675 event=level botSpeaking=true level=0.011 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.780 event=level botSpeaking=true level=0.008 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.882 event=level botSpeaking=true level=0.006 peak0.5s=0.028 utteranceActive=no
+🎙️ [aecprobe] t=1790231628.988 event=level botSpeaking=true level=0.004 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.094 event=level botSpeaking=true level=0.003 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.197 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.302 event=level botSpeaking=true level=0.001 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.407 event=level botSpeaking=true level=0.001 peak0.5s=0.006 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.514 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.617 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.734 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.840 event=level botSpeaking=true level=0.020 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231629.944 event=level botSpeaking=true level=0.011 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.047 event=level botSpeaking=true level=0.008 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.168 event=level botSpeaking=true level=0.005 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.273 event=level botSpeaking=true level=0.004 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.377 event=level botSpeaking=true level=0.003 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.482 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.583 event=level botSpeaking=true level=0.001 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.685 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.791 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231630.895 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231631.000 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231631.104 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231631.209 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231631.313 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231631.418 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🔊 [aecprobe] t=1790231631.506 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 40ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 486ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790231831.580 event=vpToggleBefore device="MacBook Pro麦克风" node=44100Hz/2ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 106ms
+🔊 [aecprobe] t=1790231833.130 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790231833.331 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [hitch] main thread busy for 41ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 90ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1297ms（总 1323ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1363ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ [aecprobe] t=1790231845.830 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.641, transcript: "对。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790231846.041 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790231850.634 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790231851.006 event=level botSpeaking=true level=0.056 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.112 event=level botSpeaking=true level=0.058 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.217 event=level botSpeaking=true level=0.053 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.321 event=level botSpeaking=true level=0.056 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.427 event=level botSpeaking=true level=0.053 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.533 event=level botSpeaking=true level=0.054 peak0.5s=0.058 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.641 event=level botSpeaking=true level=0.053 peak0.5s=0.056 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.748 event=level botSpeaking=true level=0.050 peak0.5s=0.056 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.855 event=level botSpeaking=true level=0.053 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231851.962 event=level botSpeaking=true level=0.053 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231852.064 event=level botSpeaking=true level=0.049 peak0.5s=0.053 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (4 chars)
+🎙️ [aecprobe] t=1790231852.178 event=level botSpeaking=true level=0.050 peak0.5s=0.053 utteranceActive=no
+⏱️ [hitch] main thread busy for 43ms
+🗣️ Streaming speech: queued segment 2 (33 chars)
+🎙️ [aecprobe] t=1790231852.293 event=level botSpeaking=true level=0.053 peak0.5s=0.053 utteranceActive=no
+🗣️ Streaming speech: queued segment 3 (21 chars)
+🎙️ [aecprobe] t=1790231852.401 event=level botSpeaking=true level=0.049 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231852.507 event=level botSpeaking=true level=0.048 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231852.611 event=level botSpeaking=true level=0.046 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231852.714 event=level botSpeaking=true level=0.052 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231852.819 event=level botSpeaking=true level=0.051 peak0.5s=0.052 utteranceActive=no
+🔊 [aecprobe] t=1790231852.839 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (67KB)
+🎙️ [aecprobe] t=1790231852.925 event=level botSpeaking=true level=0.051 peak0.5s=0.052 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.029 event=level botSpeaking=true level=0.055 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.130 event=level botSpeaking=true level=0.053 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.235 event=level botSpeaking=true level=0.049 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.339 event=level botSpeaking=true level=0.049 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.443 event=level botSpeaking=true level=0.050 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.547 event=level botSpeaking=true level=0.201 peak0.5s=0.201 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.671 event=level botSpeaking=true level=0.104 peak0.5s=0.201 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.775 event=level botSpeaking=true level=0.094 peak0.5s=0.201 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.880 event=level botSpeaking=true level=0.068 peak0.5s=0.201 utteranceActive=no
+🎙️ [aecprobe] t=1790231853.984 event=level botSpeaking=true level=0.049 peak0.5s=0.201 utteranceActive=no
+🔊 [aecprobe] t=1790231854.004 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (288KB)
+🎙️ [aecprobe] t=1790231854.086 event=level botSpeaking=true level=0.038 peak0.5s=0.145 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.192 event=level botSpeaking=true level=0.049 peak0.5s=0.104 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.294 event=level botSpeaking=true level=0.056 peak0.5s=0.094 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.399 event=level botSpeaking=true level=0.061 peak0.5s=0.068 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.501 event=level botSpeaking=true level=0.051 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.606 event=level botSpeaking=true level=0.037 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.709 event=level botSpeaking=true level=0.027 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.812 event=level botSpeaking=true level=0.019 peak0.5s=0.061 utteranceActive=no
+🎙️ [aecprobe] t=1790231854.918 event=level botSpeaking=true level=0.014 peak0.5s=0.051 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.019 event=level botSpeaking=true level=0.010 peak0.5s=0.037 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.124 event=level botSpeaking=true level=0.007 peak0.5s=0.027 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.226 event=level botSpeaking=true level=0.005 peak0.5s=0.019 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.332 event=level botSpeaking=true level=0.004 peak0.5s=0.014 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.435 event=level botSpeaking=true level=0.003 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.538 event=level botSpeaking=true level=0.002 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.642 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.749 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.851 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231855.955 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.057 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.161 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.267 event=level botSpeaking=true level=0.004 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.371 event=level botSpeaking=true level=0.047 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.477 event=level botSpeaking=true level=0.034 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.579 event=level botSpeaking=true level=0.024 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.685 event=level botSpeaking=true level=0.017 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.787 event=level botSpeaking=true level=0.013 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.889 event=level botSpeaking=true level=0.009 peak0.5s=0.047 utteranceActive=no
+🎙️ [aecprobe] t=1790231856.991 event=level botSpeaking=true level=0.007 peak0.5s=0.034 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.099 event=level botSpeaking=true level=0.005 peak0.5s=0.024 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.206 event=level botSpeaking=true level=0.003 peak0.5s=0.017 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.309 event=level botSpeaking=true level=0.004 peak0.5s=0.013 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.415 event=level botSpeaking=true level=0.003 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.519 event=level botSpeaking=true level=0.004 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.624 event=level botSpeaking=true level=0.003 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.727 event=level botSpeaking=true level=0.002 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.831 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231857.933 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.037 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.140 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.246 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.348 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.450 event=level botSpeaking=true level=0.012 peak0.5s=0.012 utteranceActive=no
+🔊 [aecprobe] t=1790231858.538 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (210KB)
+🎙️ [aecprobe] t=1790231858.555 event=level botSpeaking=true level=0.037 peak0.5s=0.037 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.659 event=level botSpeaking=true level=0.052 peak0.5s=0.052 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.764 event=level botSpeaking=true level=0.053 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.870 event=level botSpeaking=true level=0.053 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231858.978 event=level botSpeaking=true level=0.038 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.086 event=level botSpeaking=true level=0.027 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.192 event=level botSpeaking=true level=0.020 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.295 event=level botSpeaking=true level=0.014 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.399 event=level botSpeaking=true level=0.010 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.504 event=level botSpeaking=true level=0.007 peak0.5s=0.038 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.616 event=level botSpeaking=true level=0.005 peak0.5s=0.027 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.720 event=level botSpeaking=true level=0.004 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.822 event=level botSpeaking=true level=0.003 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231859.923 event=level botSpeaking=true level=0.002 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.027 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.131 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.235 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.344 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.448 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.555 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.661 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.765 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.869 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231860.974 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.079 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.185 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.287 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.391 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.495 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.600 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.706 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231861.811 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🔊 [aecprobe] t=1790231861.852 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790231863.044 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.633, transcript: "能听到吗？")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790231863.342 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790231869.417 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790231869.666 event=level botSpeaking=true level=0.043 peak0.5s=0.043 utteranceActive=no
+🎙️ [aecprobe] t=1790231869.772 event=level botSpeaking=true level=0.043 peak0.5s=0.043 utteranceActive=no
+🎙️ [aecprobe] t=1790231869.877 event=level botSpeaking=true level=0.045 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231869.978 event=level botSpeaking=true level=0.042 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231870.083 event=level botSpeaking=true level=0.045 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231870.185 event=level botSpeaking=true level=0.046 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231870.294 event=level botSpeaking=true level=0.047 peak0.5s=0.047 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🎙️ [aecprobe] t=1790231870.398 event=level botSpeaking=true level=0.048 peak0.5s=0.048 utteranceActive=no
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 2 (31 chars)
+🎙️ [aecprobe] t=1790231870.503 event=level botSpeaking=true level=0.051 peak0.5s=0.051 utteranceActive=no
+🎙️ [aecprobe] t=1790231870.624 event=level botSpeaking=true level=0.049 peak0.5s=0.051 utteranceActive=no
+🗣️ Streaming speech: queued segment 3 (43 chars)
+🎙️ [aecprobe] t=1790231870.740 event=level botSpeaking=true level=0.052 peak0.5s=0.052 utteranceActive=no
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 4 (27 chars)
+🎙️ [aecprobe] t=1790231870.854 event=level botSpeaking=true level=0.053 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231870.961 event=level botSpeaking=true level=0.051 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.062 event=level botSpeaking=true level=0.051 peak0.5s=0.053 utteranceActive=no
+🔊 [aecprobe] t=1790231871.079 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (123KB)
+🎙️ [aecprobe] t=1790231871.167 event=level botSpeaking=true level=0.055 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.268 event=level botSpeaking=true level=0.052 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.372 event=level botSpeaking=true level=0.052 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.478 event=level botSpeaking=true level=0.053 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.583 event=level botSpeaking=true level=0.050 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.690 event=level botSpeaking=true level=0.044 peak0.5s=0.055 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.795 event=level botSpeaking=true level=0.032 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231871.902 event=level botSpeaking=true level=0.023 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.008 event=level botSpeaking=true level=0.016 peak0.5s=0.053 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.110 event=level botSpeaking=true level=0.012 peak0.5s=0.050 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.216 event=level botSpeaking=true level=0.009 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.322 event=level botSpeaking=true level=0.006 peak0.5s=0.023 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.426 event=level botSpeaking=true level=0.004 peak0.5s=0.016 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.528 event=level botSpeaking=true level=0.003 peak0.5s=0.012 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.629 event=level botSpeaking=true level=0.002 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.730 event=level botSpeaking=true level=0.002 peak0.5s=0.006 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.834 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231872.938 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.042 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🔊 [aecprobe] t=1790231873.124 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (217KB)
+🎙️ [aecprobe] t=1790231873.172 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.276 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.380 event=level botSpeaking=true level=0.044 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.484 event=level botSpeaking=true level=0.041 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.588 event=level botSpeaking=true level=0.029 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.692 event=level botSpeaking=true level=0.021 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.794 event=level botSpeaking=true level=0.015 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231873.896 event=level botSpeaking=true level=0.011 peak0.5s=0.044 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.000 event=level botSpeaking=true level=0.008 peak0.5s=0.041 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.107 event=level botSpeaking=true level=0.006 peak0.5s=0.029 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.209 event=level botSpeaking=true level=0.004 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.315 event=level botSpeaking=true level=0.003 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.419 event=level botSpeaking=true level=0.002 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.526 event=level botSpeaking=true level=0.064 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.627 event=level botSpeaking=true level=0.046 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.732 event=level botSpeaking=true level=0.033 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.836 event=level botSpeaking=true level=0.024 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231874.943 event=level botSpeaking=true level=0.017 peak0.5s=0.064 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.051 event=level botSpeaking=true level=0.009 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.156 event=level botSpeaking=true level=0.006 peak0.5s=0.033 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.260 event=level botSpeaking=true level=0.005 peak0.5s=0.024 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.367 event=level botSpeaking=true level=0.003 peak0.5s=0.017 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.469 event=level botSpeaking=true level=0.002 peak0.5s=0.012 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.572 event=level botSpeaking=true level=0.002 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.680 event=level botSpeaking=true level=0.001 peak0.5s=0.006 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.784 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.886 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231875.990 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.117 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.219 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.322 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.426 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.528 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🔊 [aecprobe] t=1790231876.538 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (390KB)
+🎙️ [aecprobe] t=1790231876.635 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.740 event=level botSpeaking=true level=0.035 peak0.5s=0.035 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.843 event=level botSpeaking=true level=0.054 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231876.955 event=level botSpeaking=true level=0.049 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.061 event=level botSpeaking=true level=0.037 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.164 event=level botSpeaking=true level=0.027 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.272 event=level botSpeaking=true level=0.019 peak0.5s=0.054 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.377 event=level botSpeaking=true level=0.014 peak0.5s=0.050 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.481 event=level botSpeaking=true level=0.010 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.586 event=level botSpeaking=true level=0.007 peak0.5s=0.037 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.691 event=level botSpeaking=true level=0.005 peak0.5s=0.027 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.796 event=level botSpeaking=true level=0.004 peak0.5s=0.019 utteranceActive=no
+🎙️ [aecprobe] t=1790231877.900 event=level botSpeaking=true level=0.003 peak0.5s=0.014 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.008 event=level botSpeaking=true level=0.002 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.116 event=level botSpeaking=true level=0.001 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.219 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.324 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.428 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.532 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.638 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.746 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.849 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231878.955 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.057 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.171 event=level botSpeaking=true level=0.040 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.275 event=level botSpeaking=true level=0.029 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.382 event=level botSpeaking=true level=0.021 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.486 event=level botSpeaking=true level=0.015 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.590 event=level botSpeaking=true level=0.011 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.694 event=level botSpeaking=true level=0.008 peak0.5s=0.040 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.799 event=level botSpeaking=true level=0.006 peak0.5s=0.029 utteranceActive=no
+🎙️ [aecprobe] t=1790231879.905 event=level botSpeaking=true level=0.004 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.010 event=level botSpeaking=true level=0.003 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.115 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.222 event=level botSpeaking=true level=0.001 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.327 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.430 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.535 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.642 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.746 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.851 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231880.957 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.062 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.169 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.276 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.379 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.486 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.591 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.697 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.799 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231881.907 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.012 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.126 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.232 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.334 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.440 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.544 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🔊 [aecprobe] t=1790231882.608 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (221KB)
+🎙️ [aecprobe] t=1790231882.650 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.757 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.867 event=level botSpeaking=true level=0.035 peak0.5s=0.035 utteranceActive=no
+🎙️ [aecprobe] t=1790231882.972 event=level botSpeaking=true level=0.039 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.079 event=level botSpeaking=true level=0.028 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.182 event=level botSpeaking=true level=0.020 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.288 event=level botSpeaking=true level=0.014 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.390 event=level botSpeaking=true level=0.010 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.494 event=level botSpeaking=true level=0.008 peak0.5s=0.039 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.620 event=level botSpeaking=true level=0.164 peak0.5s=0.164 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.724 event=level botSpeaking=true level=0.994 peak0.5s=0.994 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.828 event=level botSpeaking=true level=0.716 peak0.5s=0.994 utteranceActive=no
+🎙️ [aecprobe] t=1790231883.829 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.994, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790231883.829 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790231884.158 event=speakersMuted
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790231888.258 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790231888.390 event=level botSpeaking=true level=0.042 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231888.493 event=level botSpeaking=true level=0.039 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231888.597 event=level botSpeaking=true level=0.040 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231888.702 event=level botSpeaking=true level=0.042 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231888.809 event=level botSpeaking=true level=0.040 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231888.911 event=level botSpeaking=true level=0.041 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.022 event=level botSpeaking=true level=0.042 peak0.5s=0.042 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.135 event=level botSpeaking=true level=0.041 peak0.5s=0.042 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (15 chars)
+🎙️ [aecprobe] t=1790231889.249 event=level botSpeaking=true level=0.045 peak0.5s=0.045 utteranceActive=no
+🗣️ Streaming speech: queued segment 2 (43 chars)
+🗣️ Streaming speech: queued segment 3 (11 chars)
+🎙️ [aecprobe] t=1790231889.353 event=level botSpeaking=true level=0.042 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.455 event=level botSpeaking=true level=0.042 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.558 event=level botSpeaking=true level=0.042 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.670 event=level botSpeaking=true level=0.040 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.777 event=level botSpeaking=true level=0.043 peak0.5s=0.045 utteranceActive=no
+🔊 [aecprobe] t=1790231889.852 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (165KB)
+🎙️ [aecprobe] t=1790231889.879 event=level botSpeaking=true level=0.045 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231889.983 event=level botSpeaking=true level=0.046 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.088 event=level botSpeaking=true level=0.046 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.194 event=level botSpeaking=true level=0.045 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.298 event=level botSpeaking=true level=0.032 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.404 event=level botSpeaking=true level=0.023 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.506 event=level botSpeaking=true level=0.017 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.608 event=level botSpeaking=true level=0.012 peak0.5s=0.046 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.714 event=level botSpeaking=true level=0.009 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.821 event=level botSpeaking=true level=0.006 peak0.5s=0.032 utteranceActive=no
+🎙️ [aecprobe] t=1790231890.926 event=level botSpeaking=true level=0.005 peak0.5s=0.017 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.029 event=level botSpeaking=true level=0.003 peak0.5s=0.012 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.134 event=level botSpeaking=true level=0.002 peak0.5s=0.009 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.235 event=level botSpeaking=true level=0.086 peak0.5s=0.086 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.341 event=level botSpeaking=true level=0.062 peak0.5s=0.086 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.445 event=level botSpeaking=true level=0.045 peak0.5s=0.086 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.550 event=level botSpeaking=true level=0.023 peak0.5s=0.086 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.655 event=level botSpeaking=true level=0.017 peak0.5s=0.086 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.757 event=level botSpeaking=true level=0.012 peak0.5s=0.062 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.861 event=level botSpeaking=true level=0.009 peak0.5s=0.045 utteranceActive=no
+🎙️ [aecprobe] t=1790231891.967 event=level botSpeaking=true level=0.006 peak0.5s=0.032 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.070 event=level botSpeaking=true level=0.004 peak0.5s=0.023 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.173 event=level botSpeaking=true level=0.003 peak0.5s=0.017 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.279 event=level botSpeaking=true level=0.002 peak0.5s=0.012 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.383 event=level botSpeaking=true level=0.002 peak0.5s=0.009 utteranceActive=no
+🔊 [aecprobe] t=1790231892.486 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (348KB)
+🎙️ [aecprobe] t=1790231892.486 event=level botSpeaking=true level=0.007 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.588 event=level botSpeaking=true level=0.005 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.692 event=level botSpeaking=true level=0.003 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.797 event=level botSpeaking=true level=0.033 peak0.5s=0.033 utteranceActive=no
+🎙️ [aecprobe] t=1790231892.900 event=level botSpeaking=true level=0.038 peak0.5s=0.038 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.005 event=level botSpeaking=true level=0.027 peak0.5s=0.038 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.107 event=level botSpeaking=true level=0.020 peak0.5s=0.038 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.211 event=level botSpeaking=true level=0.014 peak0.5s=0.038 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.313 event=level botSpeaking=true level=0.010 peak0.5s=0.038 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.416 event=level botSpeaking=true level=0.007 peak0.5s=0.027 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.521 event=level botSpeaking=true level=0.005 peak0.5s=0.020 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.626 event=level botSpeaking=true level=0.004 peak0.5s=0.014 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.729 event=level botSpeaking=true level=0.003 peak0.5s=0.010 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.836 event=level botSpeaking=true level=0.002 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231893.943 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.048 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.173 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.279 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.382 event=level botSpeaking=true level=0.025 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.486 event=level botSpeaking=true level=0.018 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.593 event=level botSpeaking=true level=0.013 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.704 event=level botSpeaking=true level=0.009 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.807 event=level botSpeaking=true level=0.007 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231894.909 event=level botSpeaking=true level=0.005 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.012 event=level botSpeaking=true level=0.003 peak0.5s=0.018 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.114 event=level botSpeaking=true level=0.002 peak0.5s=0.013 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.219 event=level botSpeaking=true level=0.002 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.326 event=level botSpeaking=true level=0.001 peak0.5s=0.005 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.431 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.537 event=level botSpeaking=true level=0.001 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.640 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.744 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.848 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231895.953 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.058 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.163 event=level botSpeaking=true level=0.000 peak0.5s=0.000 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.265 event=level botSpeaking=true level=0.021 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.370 event=level botSpeaking=true level=0.015 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.475 event=level botSpeaking=true level=0.011 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.579 event=level botSpeaking=true level=0.008 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.685 event=level botSpeaking=true level=0.006 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.788 event=level botSpeaking=true level=0.004 peak0.5s=0.021 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.895 event=level botSpeaking=true level=0.003 peak0.5s=0.015 utteranceActive=no
+🎙️ [aecprobe] t=1790231896.999 event=level botSpeaking=true level=0.002 peak0.5s=0.011 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.122 event=level botSpeaking=true level=0.002 peak0.5s=0.008 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.225 event=level botSpeaking=true level=0.001 peak0.5s=0.006 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.329 event=level botSpeaking=true level=0.001 peak0.5s=0.004 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.432 event=level botSpeaking=true level=0.001 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.534 event=level botSpeaking=true level=0.000 peak0.5s=0.002 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.638 event=level botSpeaking=true level=0.001 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.744 event=level botSpeaking=true level=0.001 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231897.850 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🔊 [aecprobe] t=1790231897.897 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (108KB)
+🎙️ [aecprobe] t=1790231897.955 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.059 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.164 event=level botSpeaking=true level=0.000 peak0.5s=0.001 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.267 event=level botSpeaking=true level=0.003 peak0.5s=0.003 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.370 event=level botSpeaking=true level=0.025 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.474 event=level botSpeaking=true level=0.049 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.578 event=level botSpeaking=true level=0.035 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.685 event=level botSpeaking=true level=0.025 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.790 event=level botSpeaking=true level=0.018 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.894 event=level botSpeaking=true level=0.013 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231898.999 event=level botSpeaking=true level=0.009 peak0.5s=0.049 utteranceActive=no
+🎙️ [aecprobe] t=1790231899.100 event=level botSpeaking=true level=0.007 peak0.5s=0.035 utteranceActive=no
+🎙️ [aecprobe] t=1790231899.205 event=level botSpeaking=true level=0.005 peak0.5s=0.025 utteranceActive=no
+🎙️ [aecprobe] t=1790231899.309 event=level botSpeaking=true level=0.004 peak0.5s=0.018 utteranceActive=no
+🎙️ [aecprobe] t=1790231899.414 event=level botSpeaking=true level=0.003 peak0.5s=0.013 utteranceActive=no
+🎙️ [aecprobe] t=1790231899.516 event=level botSpeaking=true level=0.002 peak0.5s=0.007 utteranceActive=no
+🎙️ [aecprobe] t=1790231899.618 event=level botSpeaking=true level=0.002 peak0.5s=0.005 utteranceActive=no
+🔊 [aecprobe] t=1790231899.660 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 45ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 186ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 182ms
+⏱️ [hitch] main thread busy for 49ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 163ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 15ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 108ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1279ms（总 1309ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1367ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 1276ms（总 1302ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1342ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 40ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 201ms
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 194ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 108ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 95ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+⏱️ [hitch] main thread busy for 40ms
+📷 [camera] startRunning 1290ms（总 1315ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1347ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 182ms
+🎙️ [aecprobe] t=1790231985.542 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.618, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers were already muted before recording — recording proceeds, nothing to change
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 195ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 204ms
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790232000.621 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790232000.934 event=level botSpeaking=true level=0.260 peak0.5s=1.000 utteranceActive=no
+🎙️ [aecprobe] t=1790232000.987 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.934, transcript: "")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🎙️ [aecprobe] t=1790232001.038 event=level botSpeaking=true level=0.934 peak0.5s=0.934 utteranceActive=yes
+🎙️ [aecprobe] t=1790232001.141 event=level botSpeaking=true level=1.000 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232001.245 event=level botSpeaking=true level=0.720 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232001.495 event=level botSpeaking=true level=0.518 peak0.5s=1.000 utteranceActive=yes
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 216ms
+🎙️ [aecprobe] t=1790232001.601 event=level botSpeaking=true level=1.000 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232001.706 event=level botSpeaking=true level=0.916 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232001.819 event=level botSpeaking=true level=0.659 peak0.5s=1.000 utteranceActive=yes
+⏱️ [hitch] main thread busy for 47ms
+🎙️ [aecprobe] t=1790232001.926 event=level botSpeaking=true level=0.888 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232002.036 event=level botSpeaking=true level=0.639 peak0.5s=1.000 utteranceActive=yes
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🎙️ [aecprobe] t=1790232002.148 event=level botSpeaking=true level=0.460 peak0.5s=1.000 utteranceActive=yes
+🗣️ Streaming speech: queued segment 2 (35 chars)
+🎙️ [aecprobe] t=1790232002.266 event=level botSpeaking=true level=0.331 peak0.5s=0.916 utteranceActive=yes
+⏱️ [hitch] main thread busy for 73ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🗣️ Streaming speech: queued segment 3 (31 chars)
+🎙️ [aecprobe] t=1790232002.376 event=level botSpeaking=true level=0.239 peak0.5s=0.888 utteranceActive=yes
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🗣️ Streaming speech: queued segment 4 (40 chars)
+🎙️ [aecprobe] t=1790232002.485 event=level botSpeaking=true level=0.137 peak0.5s=0.888 utteranceActive=yes
+🎙️ [aecprobe] t=1790232002.590 event=level botSpeaking=true level=1.000 peak0.5s=1.000 utteranceActive=yes
+⏱️ [listen] speech resumed — the silence countdown is reset
+🎙️ [aecprobe] t=1790232002.696 event=level botSpeaking=true level=0.720 peak0.5s=1.000 utteranceActive=yes
+🔊 [aecprobe] t=1790232002.751 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (60KB)
+🎙️ [aecprobe] t=1790232002.799 event=level botSpeaking=true level=0.847 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232002.903 event=level botSpeaking=true level=1.000 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.008 event=level botSpeaking=true level=0.913 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.111 event=level botSpeaking=true level=0.706 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.218 event=level botSpeaking=true level=0.508 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.322 event=level botSpeaking=true level=0.438 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.425 event=level botSpeaking=true level=0.633 peak0.5s=1.000 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.530 event=level botSpeaking=true level=0.456 peak0.5s=0.913 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.637 event=level botSpeaking=true level=0.759 peak0.5s=0.759 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.744 event=level botSpeaking=true level=0.804 peak0.5s=0.804 utteranceActive=yes
+🔊 [aecprobe] t=1790232003.824 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (360KB)
+🎙️ [aecprobe] t=1790232003.850 event=level botSpeaking=true level=0.579 peak0.5s=0.804 utteranceActive=yes
+🎙️ [aecprobe] t=1790232003.955 event=level botSpeaking=true level=0.417 peak0.5s=0.804 utteranceActive=yes
+🎙️ [aecprobe] t=1790232004.070 event=level botSpeaking=true level=0.566 peak0.5s=0.804 utteranceActive=yes
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790232004.164 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 192ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 125ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 47ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 356ms
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms

@@ -690,11 +690,6 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// it takes to refill. It is cleared when the listening WINDOW opens and
     /// closes.
     private var continuousListeningRecentAudioLevels: [CGFloat] = []
-
-    /// TEMPORARY PROBE (2026-09-24) — see the print site in
-    /// `runContinuousListeningVADLoop`. At most ten leak-curve lines a second.
-    private var lastBotSpeakingLevelProbePrintAt: TimeInterval = 0
-    private static let botSpeakingLevelProbeIntervalSeconds: TimeInterval = 0.1
     /// The loudest the microphone has been inside that window.
     private var continuousListeningRecentPeakAudioLevel: CGFloat {
         continuousListeningRecentAudioLevels.max() ?? 0
@@ -1264,8 +1259,13 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             let isAssistantSpeakingNow = isBotSpeakingProvider?() ?? false
             if isAssistantSpeakingNow {
                 let probeNow = Date().timeIntervalSince1970
-                if probeNow - lastBotSpeakingLevelProbePrintAt >= Self.botSpeakingLevelProbeIntervalSeconds {
-                    lastBotSpeakingLevelProbePrintAt = probeNow
+                // 只在电平**值得看**的时候打（2026-09-24 收紧）。原来是无条件
+                // 每 100ms 一行，用来画那条泄漏曲线；曲线已经拿到了（自身音频
+                // 0.05–0.08，阈值 0.25），而它每秒十次的主线程 I/O 会和用户正在
+                // 评判的刘海动画抢同一条线程。阈值放到 0.15：健康的残留在 0.09
+                // 以下，任何能触发打断的泄漏都远在 0.25 之上，所以「有泄漏」
+                // 这件事一个也不会漏掉，安静时不再写日志。
+                if audioLevel >= 0.15 || continuousListeningRecentPeakAudioLevel >= 0.15 {
                     print("🎙️ [aecprobe] t=\(String(format: "%.3f", probeNow)) event=level botSpeaking=true level=\(String(format: "%.3f", Double(audioLevel))) peak0.5s=\(String(format: "%.3f", Double(continuousListeningRecentPeakAudioLevel))) utteranceActive=\(continuousListeningUtteranceActive ? "yes" : "no")")
                 }
             }
