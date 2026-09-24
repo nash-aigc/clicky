@@ -1628,27 +1628,51 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         print("🎙️ BuddyDictationManager: provider ready, starting audio engine")
         PressPathProbe.shared.mark("ASR session ready — tap + engine next")
 
-        let inputNode = audioEngine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
-
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
+        // THE WHOLE TAIL RUNS OFF THE MAIN ACTOR, and this is the fix for the
+        // notch's mid-slide hitch.
+        //
+        // Measured 2026-09-24 in the build that already had four other fixes:
+        // the phase is published at press+54…+68 ms, so the wings' 380 ms slide
+        // occupies press+60…+440; the main actor is then busy for 102 ms on one
+        // press and 166 ms on another, at press+202…+304 and press+218…+384 —
+        // i.e. right through the MIDDLE of the slide. `easeInOut` has its
+        // maximum velocity at exactly t = 0.5, so a stall there does not read as
+        // a slow animation; the wings stop at half and jump the rest. That is
+        // the 「卡一半」 the user reports.
+        //
+        // An earlier round ruled this out by timing only `prepare()` + `start()`
+        // (64–80 ms) and calling it too small to see. **That instrument was too
+        // narrow**: the same main-actor span also instantiates `inputNode`, makes
+        // a synchronous HAL query for `outputFormat(forBus: 0)`, and removes and
+        // installs the tap — and those are outside every mark. The two spans
+        // above are 102 and 166 ms against engine starts of 77 and 69 ms, so
+        // roughly a third to a half of the stall was invisible to it.
+        //
+        // Same shape as `VoicePlaybackEngine.performBringUp` (commit 350b228):
+        // the AVAudioEngine control calls move to a detached task, and the main
+        // actor awaits — which suspends it rather than blocking it, so the run
+        // loop keeps turning and the wings keep sliding.
+        let tapHandler: AVAudioNodeTapBlock = { [weak self] buffer, _ in
             self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
             self?.updateAudioPowerLevel(from: buffer)
         }
-
-        // TEMPORARY (2026-09-24). The user reports that the notch's expansion
-        // into `listening` stutters ONCE per listening cycle and is smooth
-        // afterwards — which is the shape of this start: it is synchronous on
-        // the main actor, and the wings are animating on the main actor at that
-        // same instant. This engine is the third `AVAudioEngine` in the app, it
-        // has no voice processing, and it is started per press and stopped per
-        // release — so a cycle pays whatever the device needs for a fresh IO,
-        // right where the animation is.
-        let pushToTalkEngineStartBeganAt = Date()
-        audioEngine.prepare()
-        try audioEngine.start()
-        print("⏱️ [timing] push-to-talk engine start took \(Int(Date().timeIntervalSince(pushToTalkEngineStartBeganAt) * 1000))ms (main thread: \(Thread.isMainThread))")
+        let engineToStart = audioEngine
+        let engineStartFailure: Error? = await Task.detached(priority: .userInitiated) {
+            let inputNode = engineToStart.inputNode
+            let inputFormat = inputNode.outputFormat(forBus: 0)
+            inputNode.removeTap(onBus: 0)
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat, block: tapHandler)
+            engineToStart.prepare()
+            do {
+                try engineToStart.start()
+                return nil
+            } catch {
+                return error
+            }
+        }.value
+        if let engineStartFailure {
+            throw engineStartFailure
+        }
         PressPathProbe.shared.mark("audio engine started — recording is live")
     }
 
