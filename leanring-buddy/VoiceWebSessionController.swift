@@ -505,6 +505,7 @@ final class VoiceWebSessionController: ObservableObject {
     private func runSession(mode: VoiceWebMode) async {
         do {
             VoiceWebConnectTiming.shared.begin()
+            didStartSomethingDuringThisConnect = false
             try await ensureVoiceWebServerIsReachable()
             VoiceWebConnectTiming.shared.mark("服务器就绪")
             try await ensureVoiceWebPageIsAvailable()
@@ -667,6 +668,7 @@ final class VoiceWebSessionController: ObservableObject {
         // says, so the page is opened unconditionally in that case.
         VoiceWebConnectTiming.shared.mark("页面检查：Chrome 存活=\(isChromeRunning() ? "是" : "否")")
         guard isChromeRunning() else {
+            didStartSomethingDuringThisConnect = true
             // TWO STEPS, NOT ONE, and this is the cold-launch fix.
             //
             // Handing the URL to `open` while Chrome is ALSO being launched makes
@@ -689,6 +691,7 @@ final class VoiceWebSessionController: ObservableObject {
             return
         }
         VoiceWebConnectTiming.shared.mark("没有活页面 —— 打开页面")
+        didStartSomethingDuringThisConnect = true
         // Chrome is up and no page is reporting: open the page. `-g` governs
         // THIS case correctly — nothing is running, so LaunchServices really is
         // launching, and the flag is honoured at that moment.
@@ -899,6 +902,21 @@ final class VoiceWebSessionController: ObservableObject {
     /// background tab, so the beat can slip — hence two periods rather than one.
     private static let pageReportStaleAfterSeconds: Double = 20
 
+    /// The budget when this connect had to start Chrome or open the page. A cold
+    /// Chrome alone measured past 30 s; with the page load, the bridge patch and
+    /// the WebRTC handshake behind it, 60 s regularly loses.
+    private static let coldStartConnectionWaitSeconds: TimeInterval = 150
+
+    /// How often the wait re-asks whether a page exists — see `waitForConnection`.
+    /// Long enough not to spam a launch, short enough that a stale report's
+    /// expiry is not the only thing that can rescue the connect.
+    private static let pageRecheckIntervalSeconds: TimeInterval = 8
+
+    /// Set by `ensureVoiceWebPageIsAvailable` when it had to launch Chrome or open
+    /// the page; read by `waitForConnection` to pick its budget. Cleared at the
+    /// start of every connect.
+    private var didStartSomethingDuringThisConnect = false
+
     private func fetchBridgeState() async -> BridgeState? {
         guard let data = try? await httpGET(path: "/external/state") else { return nil }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
@@ -946,8 +964,38 @@ final class VoiceWebSessionController: ObservableObject {
     /// page was still connecting — and the fresh page's "disconnected" report
     /// then ended the session two polls later.
     private func waitForConnection() async throws {
-        let deadline = Date().addingTimeInterval(Self.connectionWaitSeconds)
+        // THE WAIT MUST BE ABLE TO FIX ITSELF, and it must know how long it is
+        // allowed to take. Both come from one measured failure (2026-09-24):
+        //
+        //     +0ms      页面检查：Chrome 存活=是
+        //     +0ms      已有活页面，什么都不做      ← a DEAD tab's report
+        //     +720ms    页面回报 phase=disconnected
+     //     +23670ms  页面回报 phase=nil          ← the stale report finally expired
+        //     +63603ms  没有活页面 —— 打开页面        ← only now did anything open it
+        //
+        // The connect had believed a deleted tab was a live page, so it opened
+        // nothing, waited out its whole budget on a page that did not exist, and
+        // gave up — and THEN the page was opened, connected, and was usable while
+        // the notch showed nothing at all. 「刘海屏退出之后，Chrome 启动了，也自动
+        // 连接了…在当前项目的刘海面板里，没有看到任何链接信息」.
+        //
+        // Two fixes, and neither trusts the server to be up to date:
+        //
+        //   1. Re-check the PAGE (not just the phase) while waiting. A stale
+        //      report expires on the server after 35 s, so a re-check eventually
+        //      sees no page and opens one — which turns that run into a slow
+        //      success instead of a failure followed by an orphaned session.
+        //   2. Choose the budget by what this connect has already had to do: if
+        //      it launched Chrome or opened the page, the cold path is in play
+        //      (cold Chrome alone measured well past 30 s) and 60 s is not enough.
+        let deadline = Date().addingTimeInterval(
+            didStartSomethingDuringThisConnect
+                ? Self.coldStartConnectionWaitSeconds
+                : Self.connectionWaitSeconds
+        )
         var lastSeenPhase: String?
+        var lastPageCheckAt = Date()
+
         while Date() < deadline {
             try Task.checkCancellation()
             if let state = await fetchBridgeState() {
@@ -962,6 +1010,15 @@ final class VoiceWebSessionController: ObservableObject {
                     return
                 }
             }
+
+            // (1) Every few seconds with nothing ready, ask the page question
+            // again — "is a page actually there", not "is a report present".
+            if Date().timeIntervalSince(lastPageCheckAt) >= Self.pageRecheckIntervalSeconds {
+                lastPageCheckAt = Date()
+                VoiceWebConnectTiming.shared.mark("等不到 ready —— 重新检查页面是否存在")
+                try await ensureVoiceWebPageIsAvailable()
+            }
+
             try await Task.sleep(nanoseconds: 500_000_000)
         }
         throw VoiceWebSessionError.connectionTimedOut
