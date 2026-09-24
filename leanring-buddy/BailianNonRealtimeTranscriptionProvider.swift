@@ -39,6 +39,9 @@ nonisolated final class BailianNonRealtimeTranscriptionProvider: BuddyTranscript
 
     let displayName = "Bailian Non-Realtime ASR"
 
+    /// 角色独立配置的模型覆盖（nil = 跟随全局配置）。见工厂的说明。
+    nonisolated(unsafe) var modelIDOverride: String?
+
     /// 走 HTTP，不需要系统的语音识别权限（那是 Apple 本地识别才要的）。
     let requiresSpeechRecognitionPermission = false
 
@@ -58,6 +61,7 @@ nonisolated final class BailianNonRealtimeTranscriptionProvider: BuddyTranscript
     ) async throws -> any BuddyStreamingTranscriptionSession {
         try BailianNonRealtimeTranscriptionSession(
             keyterms: keyterms,
+            modelIDOverride: modelIDOverride,
             onTranscriptUpdate: onTranscriptUpdate,
             onFinalTranscriptReady: onFinalTranscriptReady,
             onError: onError
@@ -84,6 +88,8 @@ private final class BailianNonRealtimeTranscriptionSession: BuddyStreamingTransc
     private static let trailingSilenceSeconds: Double = 0.5
 
     private let keyterms: [String]
+    /// 角色独立配置的模型覆盖（nil = 全局配置）。见工厂的说明。
+    private let modelIDOverride: String?
     private let onTranscriptUpdate: (String) -> Void
     private let onFinalTranscriptReady: (String) -> Void
     private let onError: (Error) -> Void
@@ -101,11 +107,13 @@ private final class BailianNonRealtimeTranscriptionSession: BuddyStreamingTransc
 
     init(
         keyterms: [String],
+        modelIDOverride: String?,
         onTranscriptUpdate: @escaping (String) -> Void,
         onFinalTranscriptReady: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) throws {
         self.keyterms = keyterms
+        self.modelIDOverride = modelIDOverride
         self.onTranscriptUpdate = onTranscriptUpdate
         self.onFinalTranscriptReady = onFinalTranscriptReady
         self.onError = onError
@@ -245,7 +253,7 @@ private final class BailianNonRealtimeTranscriptionSession: BuddyStreamingTransc
         }
 
         let requestBody: [String: Any] = [
-            "model": resolvedRole.modelID,
+            "model": modelIDOverride ?? resolvedRole.modelID,
             "input": [
                 "messages": [
                     [

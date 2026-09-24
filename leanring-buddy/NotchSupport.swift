@@ -287,11 +287,23 @@ nonisolated enum NotchSupport {
     /// does not fit it — the stored value is a fraction of screen height.
     private static let sheetHeightFractionKey = "clickyNotchSheetHeightFraction"
 
-    /// The sheet's height on this screen: the user's persisted fraction of the
-    /// screen height when one was set, otherwise the default (~940pt on a
+    /// 拖拽那一瞬间的临时高度，松手即清（nil = 没有正在进行的拖拽）。
+    ///
+    /// 为什么需要它：`expandedSheetHeight` 本来只认 `UserDefaults`，而一次拖拽会
+    /// 产生上百个鼠标事件、每个都要改一次高度 —— 把「用户偏好的持久化」和「手指
+    /// 底下这一帧」绑在一起，就是每个事件一次磁盘写入。拆开之后，拖动期间只动
+    /// 这个内存值，落盘只发生在松手那一次。
+    private static var liveDragSheetHeight: CGFloat?
+
+    /// The sheet's height on this screen: the height under the user's finger
+    /// while the resize grip is being dragged, otherwise the user's persisted
+    /// fraction of the screen height, otherwise the default (~940pt on a
     /// 14″ MacBook's screen, like the reference screenshot).
     static func expandedSheetHeight(on screen: NSScreen) -> CGFloat {
         let maximum = maximumSheetHeight(on: screen)
+        if let liveDragSheetHeight {
+            return min(maximum, max(minimumSheetHeight, liveDragSheetHeight))
+        }
         let storedFraction = UserDefaults.standard.double(forKey: sheetHeightFractionKey)
         guard storedFraction > 0 else {
             return min(940, maximum)
@@ -303,11 +315,23 @@ nonisolated enum NotchSupport {
         screen.frame.height - 80
     }
 
-    /// Called by the sheet's resize grip. Stores the height as a fraction of
-    /// this screen's height so it scales sensibly across displays, and posts
+    /// Called by the sheet's resize grip on every drag event: moves the live
+    /// panel to the height under the finger without touching the stored
+    /// preference. See `liveDragSheetHeight` for why the two are separate.
+    static func setLiveDragSheetHeight(_ newHeight: CGFloat) {
+        liveDragSheetHeight = newHeight
+        NotificationCenter.default.post(name: NotchSupport.clickyNotchSheetSizeDidChange, object: nil)
+    }
+
+    /// Called once, when the user lets go of the resize grip: stores the
+    /// height as a fraction of this screen's height so it scales sensibly
+    /// across displays, drops the live drag value, and posts
     /// `.clickyNotchSheetSizeDidChange` so the live panel re-frames itself.
-    static func setExpandedSheetHeight(_ newHeight: CGFloat, on screen: NSScreen) {
+    static func commitExpandedSheetHeight(_ newHeight: CGFloat, on screen: NSScreen) {
         let clamped = min(maximumSheetHeight(on: screen), max(minimumSheetHeight, newHeight))
+        // Clear first: the stored fraction and the live value agree at this
+        // point, so the accessor keeps returning the same number either way.
+        liveDragSheetHeight = nil
         UserDefaults.standard.set(clamped / screen.frame.height, forKey: sheetHeightFractionKey)
         NotificationCenter.default.post(name: NotchSupport.clickyNotchSheetSizeDidChange, object: nil)
     }

@@ -301,6 +301,7 @@ struct AgentSessionView: View {
                 // before that pass lays out measures the previous agent's rows.
                 scheduleScrollToBottom(proxy)
             }
+            .thinWhiteScrollIndicator()
             .onAppear {
                 scrollToBottom(proxy)
             }

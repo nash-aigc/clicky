@@ -35,6 +35,10 @@ nonisolated final class BailianRealtimeSpeechTranscriptionProvider: BuddyTranscr
 
     let displayName = "Bailian 语音模型（当识别器）"
 
+    /// 角色独立配置的模型覆盖（nil = 跟随全局配置）。工厂按它分流，
+    /// 会话开口时用它 —— 见 `BuddyTranscriptionProviderFactory`。
+    nonisolated(unsafe) var modelIDOverride: String?
+
     let requiresSpeechRecognitionPermission = false
 
     var isConfigured: Bool {
@@ -52,6 +56,7 @@ nonisolated final class BailianRealtimeSpeechTranscriptionProvider: BuddyTranscr
         onError: @escaping (Error) -> Void
     ) async throws -> any BuddyStreamingTranscriptionSession {
         try BailianRealtimeSpeechTranscriptionSession(
+            modelIDOverride: modelIDOverride,
             onTranscriptUpdate: onTranscriptUpdate,
             onFinalTranscriptReady: onFinalTranscriptReady,
             onError: onError
@@ -69,6 +74,9 @@ private final class BailianRealtimeSpeechTranscriptionSession: BuddyStreamingTra
     /// 上行分块：100 ms @16 kHz 单声道 16 bit。
     private static let uplinkChunkByteCount = 3200
 
+    /// 角色独立配置的模型覆盖（nil = 全局配置）。URL 在 init 里就要拼，所以
+    /// 它必须是 init 参数。
+    private let modelIDOverride: String?
     private let onTranscriptUpdate: (String) -> Void
     private let onFinalTranscriptReady: (String) -> Void
     private let onError: (Error) -> Void
@@ -86,10 +94,12 @@ private final class BailianRealtimeSpeechTranscriptionSession: BuddyStreamingTra
     private var latestTranscriptText = ""
 
     init(
+        modelIDOverride: String?,
         onTranscriptUpdate: @escaping (String) -> Void,
         onFinalTranscriptReady: @escaping (String) -> Void,
         onError: @escaping (Error) -> Void
     ) throws {
+        self.modelIDOverride = modelIDOverride
         self.onTranscriptUpdate = onTranscriptUpdate
         self.onFinalTranscriptReady = onFinalTranscriptReady
         self.onError = onError
@@ -101,8 +111,9 @@ private final class BailianRealtimeSpeechTranscriptionSession: BuddyStreamingTra
         }
 
         let websocketBaseURL = resolvedRole.baseURL.replacingOccurrences(of: "https://", with: "wss://")
+        let effectiveModelID = modelIDOverride ?? resolvedRole.modelID
         guard let websocketURL = URL(
-            string: "\(websocketBaseURL)/api-ws/v1/realtime?model=\(resolvedRole.modelID)"
+            string: "\(websocketBaseURL)/api-ws/v1/realtime?model=\(effectiveModelID)"
         ) else {
             throw BailianNonRealtimeTranscriptionError(
                 message: "识别用的 websocket 地址拼不出来：\(websocketBaseURL)"

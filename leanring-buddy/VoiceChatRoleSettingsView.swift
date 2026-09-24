@@ -29,6 +29,9 @@ struct VoiceChatRoleSettingsView: View {
     /// 草稿里有没有没保存的修改（用户 2026-09-24 的要求：改了参数**先点亮保存**，
     /// 用户点了才写盘 —— 不再改一下就自动落盘）。
     @State private var hasUnsavedChanges = false
+    /// 刚被复制过的模型 id —— 复制按钮据此短暂打勾（用户要求「点击复制按钮就能自动复制」，
+    /// 打勾是唯一的反馈）。
+    @State private var copiedModelID: String?
     /// 设置页宿主把这个接进页头的保存按钮（那里也显示同一份脏标记）；
     /// 语音聊天页宿主不传（nil），视图自己在编辑栏底部画一颗保存。
     var hasUnsavedChangesBinding: Binding<Bool>? = nil
@@ -170,6 +173,9 @@ struct VoiceChatRoleSettingsView: View {
                     }
                     memoryModeSection(role)
                     promptSection(role)
+                    // 用户 2026-09-25：聊天类型/模式/预设是**角色的属性**，
+                    // 所以放在提示词下面（换角色 = 连聊天方式一起换）。
+                    chatSection(role)
                     footerActions(role)
 
                     if hasUnsavedChanges {
@@ -374,6 +380,246 @@ struct VoiceChatRoleSettingsView: View {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .strokeBorder(DS.Colors.borderSubtle, lineWidth: 1)
                 )
+        }
+    }
+
+    // MARK: 聊天（类型 / 模式 / 预设）—— 绑在角色上
+
+    /// **聊天方式是角色的属性**（用户 2026-09-25）：
+    ///
+    /// > 「语音聊天和视频聊天其实是绑定角色的，所以应该放在设置页面的角色里……
+    /// > 比如用户使用口语教练、手语教练，学的是手语，手语需要视频，那所有预设都好了，
+    /// > 视频聊天也就打开了。如果用户想训练英语，只需要语音聊天就可以。」
+    ///
+    /// 所以这一节放在**提示词下面**：选一个角色，就把它的聊天方式一起带过来。
+    /// 三条都写进角色的草稿（`chatChannel` / `chatEngine` / `presetID`），
+    /// 「保存修改」一次落盘 —— 与这一页其它字段同一条规矩。
+    @ViewBuilder
+    private func chatSection(_ role: VoiceChatRole) -> some View {
+        let channel = VoiceChatChannel(rawValue: role.chatChannel ?? "") ?? .voice
+        fieldSection(title: "聊天", hint: "跟着角色走 —— 换角色就把这一整套换过去") {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 6) {
+                    ForEach(VoiceChatChannel.allCases) { option in
+                        chatChoiceCard(
+                            title: option.displayName,
+                            detail: option == .video
+                                ? "能开屏幕和摄像头（模型要能吃画面）"
+                                : "只用声音，屏幕和摄像头置灰",
+                            isChosen: channel == option
+                        ) {
+                            chooseChannel(role, channel: option)
+                        }
+                    }
+                }
+
+                ForEach(VoiceChatEngine.pickerCases, id: \.self) { engine in
+                    chatModeBlock(role, engine: engine, channel: channel)
+                }
+            }
+        }
+    }
+
+    /// 一个模式（全双工 / 三段式）在设置页里的样子：选中卡片 + 预设下拉 + 可复制的模型清单。
+    @ViewBuilder
+    private func chatModeBlock(
+        _ role: VoiceChatRole,
+        engine: VoiceChatEngine,
+        channel: VoiceChatChannel
+    ) -> some View {
+        let presets = VoiceChatPresetStore.resolvedPresets(for: channel, engine: engine)
+        let activePresetID = role.presetID.flatMap { id in presets.first { $0.id == id }?.id }
+            ?? presets.first(where: \.isDefaultPreset)?.id
+        let isChosen = (VoiceChatEngine(rawValue: role.chatEngine) ?? .threeStage) == engine
+            || (engine == .duplexVoice && role.chatEngine == VoiceChatEngine.omni.rawValue)
+        let activePreset = presets.first { $0.id == activePresetID }
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                chatChoiceCard(
+                    title: engine.displayName,
+                    detail: engine == .duplexVoice
+                        ? "一个模型包办识别/理解/表达"
+                        : "识别、理解、表达各自可调",
+                    isChosen: isChosen
+                ) {
+                    chooseMode(role, engine: engine, channel: channel)
+                }
+
+                // 预设下拉：每条预设 = 一组已验证的模型组合。
+                if let activePreset {
+                    Menu {
+                        ForEach(presets) { preset in
+                            Button {
+                                chooseMode(role, engine: engine, channel: channel, preset: preset)
+                            } label: {
+                                Text(preset.isDefaultPreset
+                                     ? "\(preset.title)（默认）"
+                                     : preset.title)
+                            }
+                            .disabled(!preset.isReady)
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(activePreset.title)
+                                .font(.system(size: 12, weight: .medium))
+                                .lineLimit(1)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 8, weight: .semibold))
+                        }
+                        .foregroundStyle(DS.Colors.textPrimary)
+                        .padding(.horizontal, 10)
+                        .frame(height: 30)
+                        .background(DS.Colors.surface2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .strokeBorder(DS.Colors.borderSubtle, lineWidth: 1)
+                        )
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help(activePreset.note)
+                }
+            }
+
+            if let activePreset, !activePreset.note.isEmpty {
+                Text(activePreset.note)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 2)
+            }
+
+            modelInventoryDisclosure(engine: engine, channel: channel)
+        }
+        .padding(.leading, isChosen ? 0 : 2)
+    }
+
+    /// 可折叠的**模型清单**：展开后每个模型一行，右侧一个复制按钮
+    /// （用户：「可以通过折叠按钮展开，点击复制按钮就能自动复制」）。
+    @ViewBuilder
+    private func modelInventoryDisclosure(engine: VoiceChatEngine, channel: VoiceChatChannel) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(VoiceCatalog.modelInventory(for: engine, channel: channel), id: \.category) { group in
+                    Text(group.category)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                        .tracking(0.5)
+                        .padding(.top, 4)
+                    ForEach(group.choices) { choice in
+                        modelInventoryRow(choice)
+                    }
+                }
+            }
+            .padding(.top, 4)
+        } label: {
+            Text("可用的模型（点右侧复制完整 id）")
+                .font(.system(size: 10.5))
+                .foregroundStyle(DS.Colors.textSecondary)
+        }
+        .disclosureGroupStyle(.automatic)
+        .padding(.leading, 2)
+    }
+
+    private func modelInventoryRow(_ choice: VoiceCatalog.ModelChoice) -> some View {
+        HStack(spacing: 6) {
+            Text(choice.displayName)
+                .font(.system(size: 11))
+                .foregroundStyle(DS.Colors.textPrimary)
+                .frame(width: 150, alignment: .leading)
+            Text(choice.id)
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(DS.Colors.textTertiary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer(minLength: 6)
+            Text(choice.priceNote)
+                .font(.system(size: 9.5, design: .monospaced))
+                .foregroundStyle(DS.Colors.textTertiary)
+                .lineLimit(1)
+            Button {
+                copyModelID(choice.id)
+            } label: {
+                Image(systemName: copiedModelID == choice.id ? "checkmark" : "doc.on.doc")
+                    .font(.system(size: 10))
+                    .foregroundStyle(copiedModelID == choice.id ? DS.Colors.success : DS.Colors.textSecondary)
+                    .frame(width: 24, height: 20)
+                    .background(DS.Colors.surface2, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .help("复制 \(choice.id)")
+        }
+    }
+
+    /// 复制模型 id（给 AI 用 —— 它只认完整 id，不认短名）。
+    private func copyModelID(_ modelID: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(modelID, forType: .string)
+        copiedModelID = modelID
+    }
+
+    /// 这一页通用的小卡片（选中态描蓝）。与「记忆」那一节同一个样式。
+    private func chatChoiceCard(
+        title: String,
+        detail: String,
+        isChosen: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(isChosen ? DS.Colors.accent : DS.Colors.textPrimary)
+                Text(detail)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(9)
+            .background(DS.Colors.surface2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(isChosen ? DS.Colors.accent.opacity(0.7) : DS.Colors.borderSubtle,
+                                  lineWidth: 1)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { $0 ? NSCursor.pointingHand.push() : NSCursor.pop() }
+    }
+
+    /// 换聊天类型：类型变了，预设要重新落一条（预设是按 (类型, 模式) 分的）。
+    private func chooseChannel(_ role: VoiceChatRole, channel: VoiceChatChannel) {
+        update(role) { draft in
+            draft.chatChannel = channel.rawValue
+            let engine = VoiceChatEngine(rawValue: draft.chatEngine) ?? .threeStage
+            let resolvedEngine: VoiceChatEngine = (engine == .omni) ? .duplexVoice : engine
+            let presets = VoiceChatPresetStore.resolvedPresets(for: channel, engine: resolvedEngine)
+            guard let preset = presets.first(where: \.isDefaultPreset) ?? presets.first else { return }
+            draft = preset.applied(to: draft, channel: channel)
+            draft.presetID = preset.id
+        }
+    }
+
+    /// 选模式（可同时指定预设）：把预设的模型组合、音色、设备默认值写进**草稿**。
+    private func chooseMode(
+        _ role: VoiceChatRole,
+        engine: VoiceChatEngine,
+        channel: VoiceChatChannel,
+        preset explicitPreset: VoiceChatPreset? = nil
+    ) {
+        update(role) { draft in
+            let presets = VoiceChatPresetStore.resolvedPresets(for: channel, engine: engine)
+            let preset = explicitPreset
+                ?? presets.first(where: \.isDefaultPreset)
+                ?? presets.first
+            guard let preset else { return }
+            draft.chatEngine = engine.rawValue
+            draft.presetID = preset.id
+            draft = preset.applied(to: draft, channel: channel)
         }
     }
 

@@ -115,6 +115,9 @@ final class NotchWindowController {
     /// cycle never has to break.
     private let companionManager: CompanionManager
     private let panelModel = NotchPanelModel()
+
+    /// 展开驻留期的混合圆角表面层（顶 36 / 底 24）。`removeReveal` 摘掉。
+    private var revealSurfaceLayer: CAShapeLayer?
     private let audioHistoryProvider: () -> [CGFloat]
 
     private var screenPresences: [ScreenPresence] = []
@@ -388,6 +391,11 @@ final class NotchWindowController {
 
         // The sheet's resize grip changed the persisted height: re-frame the
         // expanded panel live (no animation — the drag is the animation).
+        //
+        // `display: false` on purpose: this fires on every mouse-move event,
+        // and `display: true` forces a synchronous redraw of the whole 810×940
+        // sheet each time. Letting AppKit coalesce it to the next display pass
+        // is what keeps a drag from hitching.
         defaultCenterObservers.append(NotificationCenter.default.addObserver(
             forName: NotchSupport.clickyNotchSheetSizeDidChange,
             object: nil,
@@ -397,7 +405,7 @@ final class NotchWindowController {
                   let presence = self.screenPresences.first(where: { $0.screen == self.expandedScreen }) else { return }
             presence.panel.setFrame(
                 NotchSupport.expandedSheetFrame(on: presence.screen),
-                display: true,
+                display: false,
                 animate: false
             )
         })
@@ -500,13 +508,27 @@ final class NotchWindowController {
             //
             // 展开态的刘海那一条是页头的上留白（`sheetHeaderTopInset`），三列
             // 在那一带都没有可点的东西，所以这里不会抢掉任何控件的点击。
+            // **展开态只认硬件刘海的精确矩形**（用户 2026-09-24：「只有当用户的
+            // 鼠标在刘海里面时，点击才应该折叠；否则不应该折叠」）。之前用的是
+            // 收起态的药丸命中区 —— 那个矩形比刘海宽 4pt、还带 4pt 余量（y 到
+            // 36），正好压住页头按钮（y 从 30 起）的上沿：点「模型」「摄像头」
+            // 的上半下，会被当成「再点刘海收起」把整块面板折叠掉。命中余量是
+            // 给**收起态**点刘海展开用的，展开态下面全是面板自己的内容，
+            // 不该借用。
             if let expandedScreen,
-               let restingFrame = NotchSupport.restingPillFrame(on: expandedScreen),
-               restingFrame
-                   .insetBy(dx: -NotchSupport.pillClickHitMargin, dy: -NotchSupport.pillClickHitMargin)
-                   .contains(clickLocation) {
-                collapse(expandBackToPill: true)
-                return
+               let notchRect = NotchSupport.notchRect(on: expandedScreen) {
+                // notchRect 是「屏幕左上原点」坐标；点击坐标是 AppKit 全局（左下
+                // 原点）—— 换算到同一个空间再判（与 restingPillFrame 的换算一致）。
+                let notchInGlobal = CGRect(
+                    x: expandedScreen.frame.minX + notchRect.minX,
+                    y: expandedScreen.frame.maxY - notchRect.height,
+                    width: notchRect.width,
+                    height: notchRect.height
+                )
+                if notchInGlobal.contains(clickLocation) {
+                    collapse(expandBackToPill: true)
+                    return
+                }
             }
 
             if let expandedScreen,
@@ -672,13 +694,60 @@ final class NotchWindowController {
         // content draws over it moments later. Top corners stay square
         // (the sheet's are 36 — a sliver the content corrects when it draws).
         hostingLayer.backgroundColor = NSColor(NotchExpandedSheetStyle.surfaceColor).cgColor
-        hostingLayer.cornerRadius = NotchExpandedSheetStyle.sheetBottomCornerRadius
-        // 「Bottom」 in the layer's own coordinate space depends on the view's
-        // flippedness — the same dynamic read the mask styles use for topEdgeY.
-        hostingLayer.maskedCorners = presence.contentHostingView.isFlipped
-            ? [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-            : [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        // **顶角也要圆**（用户 2026-09-24：「左上角、右上角有一个向上的震动或抖动」）。
+        // 之前这里只给底角 24、顶角方形，等 SwiftUI 内容画出来才变成 36 —— 那一瞬
+        // 的形状差就是用户看到的抖动。用一条混合圆角的形状层盖出最终形状：
+        // 顶 36 / 底 24，与 `HomeSpaceSheetShape` 完全一致，内容落地时零形状差。
+        let surfaceShapeLayer = CAShapeLayer()
+        surfaceShapeLayer.frame = hostingLayer.bounds
+        surfaceShapeLayer.fillColor = NSColor(NotchExpandedSheetStyle.surfaceColor).cgColor
+        surfaceShapeLayer.path = Self.revealSurfacePath(
+            in: hostingLayer.bounds,
+            topCornerRadius: NotchExpandedSheetStyle.sheetTopCornerRadius,
+            bottomCornerRadius: NotchExpandedSheetStyle.sheetBottomCornerRadius,
+            isFlipped: presence.contentHostingView.isFlipped
+        )
+        hostingLayer.addSublayer(surfaceShapeLayer)
+        revealSurfaceLayer = surfaceShapeLayer
         CATransaction.commit()
+    }
+
+    /// 混合圆角矩形路径：一对角 36（顶）、一对角 24（底）。
+    /// 手工画弧，因为 `CGPath(roundedRect:)` 只支持统一圆角。
+    private static func revealSurfacePath(
+        in bounds: CGRect,
+        topCornerRadius: CGFloat,
+        bottomCornerRadius: CGFloat,
+        isFlipped: Bool
+    ) -> CGPath {
+        let path = CGMutablePath()
+        let topRadius = min(topCornerRadius, bounds.width / 2, bounds.height / 2)
+        let bottomRadius = min(bottomCornerRadius, bounds.width / 2, bounds.height / 2)
+
+        let topLeftY = isFlipped ? bounds.minY + topRadius : bounds.maxY - topRadius
+        let topRightY = topLeftY
+        let bottomLeftY = isFlipped ? bounds.maxY - bottomRadius : bounds.minY + bottomRadius
+        let bottomRightY = bottomLeftY
+
+        path.move(to: CGPoint(x: bounds.minX + topRadius, y: topLeftY))
+        path.addLine(to: CGPoint(x: bounds.maxX - topRadius, y: topRightY))
+        path.addArc(tangent1End: CGPoint(x: bounds.maxX, y: topRightY),
+                    tangent2End: CGPoint(x: bounds.maxX, y: isFlipped ? bounds.maxY - topRadius : bounds.maxY - topRadius),
+                    radius: topRadius)
+        path.addLine(to: CGPoint(x: bounds.maxX, y: bottomRightY))
+        path.addArc(tangent1End: CGPoint(x: bounds.maxX, y: bottomRightY),
+                    tangent2End: CGPoint(x: bounds.maxX - bottomRadius, y: bottomRightY),
+                    radius: bottomRadius)
+        path.addLine(to: CGPoint(x: bounds.minX + bottomRadius, y: bottomLeftY))
+        path.addArc(tangent1End: CGPoint(x: bounds.minX, y: bottomLeftY),
+                    tangent2End: CGPoint(x: bounds.minX, y: isFlipped ? bounds.minY + topRadius : bounds.minY + topRadius),
+                    radius: bottomRadius)
+        path.addLine(to: CGPoint(x: bounds.minX, y: topLeftY))
+        path.addArc(tangent1End: CGPoint(x: bounds.minX, y: topLeftY),
+                    tangent2End: CGPoint(x: bounds.minX + topRadius, y: topLeftY),
+                    radius: topRadius)
+        path.closeSubpath()
+        return path
     }
 
     private func startReveal(
@@ -995,6 +1064,9 @@ final class NotchWindowController {
     /// `transform` back to identity while one is in flight would visibly do
     /// nothing.
     private func removeReveal(on presence: ScreenPresence) {
+        revealSurfaceLayer?.removeFromSuperlayer()
+        revealSurfaceLayer = nil
+
         guard let hostingLayer = presence.contentHostingView.layer else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)

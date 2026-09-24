@@ -338,6 +338,51 @@ nonisolated struct ResolvedModelRole: Sendable, Equatable {
         URL(string: baseURL + requestPath)
     }
 
+    /// 同一个角色、换一个**模型**。
+    ///
+    /// 三段式的「理解」按**预设**选模型（预设里写着 `understandingModelID`），而这里
+    /// 解析出来的是全局配置里那份 —— 与音色那条完全同构的问题：不给覆盖，预设里写的
+    /// 模型就只是个展示，引擎照样打全局那个。
+    func withModelIDOverride(_ modelID: String?) -> ResolvedModelRole {
+        guard let modelID, !modelID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return self
+        }
+        return ResolvedModelRole(
+            role: role,
+            providerID: providerID,
+            providerDisplayName: providerDisplayName,
+            baseURL: baseURL,
+            apiKey: apiKey,
+            modelID: modelID,
+            requestPath: requestPath,
+            speechVoiceID: speechVoiceID,
+            allowsVisionReasoning: allowsVisionReasoning
+        )
+    }
+
+    /// 同一个角色、换一个音色。
+    ///
+    /// 语音聊天是按**预设**选音色的（预设自己带 `preferredVoiceID`，否则用角色上存的），
+    /// 而这里解析出来的是**全局配置**里那份（设置 → 模型 → 说）—— 两者本来是两个地方。
+    /// 这个方法把预设的音色盖上去，其余字段一律不动，于是"选的那个音色"能真的进到
+    /// 合成请求体里（`BailianTTSClient` 把 `speechVoiceID` 写进 `input.voice`）。
+    func withSpeechVoiceOverride(_ voiceID: String?) -> ResolvedModelRole {
+        guard let voiceID, !voiceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return self
+        }
+        return ResolvedModelRole(
+            role: role,
+            providerID: providerID,
+            providerDisplayName: providerDisplayName,
+            baseURL: baseURL,
+            apiKey: apiKey,
+            modelID: modelID,
+            requestPath: requestPath,
+            speechVoiceID: voiceID,
+            allowsVisionReasoning: allowsVisionReasoning
+        )
+    }
+
     /// The realtime websocket URL for speech recognition: same host and path with
     /// the scheme switched to `wss`, and the model carried as a query parameter
     /// because that route dispatches by model name.

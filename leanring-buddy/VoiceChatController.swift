@@ -18,6 +18,11 @@ import SwiftUI
 /// - 由 `CompanionManager` 懒持有，通过闭包单向解耦
 /// - **绝不碰 `voiceState` / `currentResponseTask`**（那是按住说话的槽位）
 /// - 刘海相位走 `setNotchOverride` 覆盖，不写语音状态
+/// 三段式的三栏（听/想/说）里改的是哪一栏。顶层声明：设置页与聊天页都要用。
+enum PipelineModelSlot {
+    case recognition, understanding, expression
+}
+
 @MainActor
 final class VoiceChatController: ObservableObject {
 
@@ -68,6 +73,14 @@ final class VoiceChatController: ObservableObject {
     @Published private(set) var rolePresets: [VoiceChatRolePreset] = []
     @Published private(set) var rolesErrorMessage: String?
     @Published var selectedRoleID: String?
+    /// 当前聊天类型（视频聊天 / 语音聊天）。改动时跟着重算设备开关的可用性 ——
+    /// 语音聊天不开画面这条闸就是在这里落到界面上的。
+    @Published var selectedChannel: VoiceChatChannel = .voice {
+        didSet {
+            guard selectedChannel != oldValue else { return }
+            reloadDeviceSwitches()
+        }
+    }
     @Published var selectedMode: VoiceChatEngine = .threeStage {
         didSet {
             guard selectedMode != oldValue else { return }
@@ -142,7 +155,8 @@ final class VoiceChatController: ObservableObject {
     /// 共享的语音客户端与听写管理器 —— 由 `CompanionManager` 注入。
     /// 它们是**同一份实例**：按住说话、连续监听、语音聊天共用一条音频链路，
     /// 这正是用户观察到的「毫秒级打断」的来源，也是参考项目那条铁律的落地。
-    private let speechSynthesizer: BailianTTSClient
+    /// 试听要走它（播放引擎只有这一份）。视图的音色面板用。
+    let speechSynthesizer: BailianTTSClient
     private let dictationManager: BuddyDictationManager
 
     private lazy var cascadeEngine = CascadeVoiceEngine(
@@ -252,8 +266,67 @@ final class VoiceChatController: ObservableObject {
     func selectMode(_ mode: VoiceChatEngine) {
         var role = currentRole
         role.chatEngine = mode.rawValue
+        // 预设是**按 (聊天类型, 模式) 分的**：换了模式，原来那条预设不属于这一组了，
+        // 所以清掉选择，让 `currentPreset` 回落到新组的默认预设 —— 并立刻把它写进角色
+        // （模型、音色、设备默认值都跟着换）。
+        role.presetID = nil
         VoiceChatRoleStore.upsertRole(role)
         selectedMode = mode
+        applyCurrentPresetToRole()
+    }
+
+    /// 切换**聊天类型**（视频聊天 / 语音聊天）。
+    ///
+    /// 这是用户 2026-09-24 说的那条「分流」：它决定全双工那一行给哪些预设，
+    /// 也决定画面能不能开。**语速不受影响**（用户明确要求）。
+    func selectChannel(_ channel: VoiceChatChannel) {
+        var role = currentRole
+        role.chatChannel = channel.rawValue
+        // 预设按 (聊天类型, 模式) 分组，换了类型同样要重新落一条。
+        role.presetID = nil
+        VoiceChatRoleStore.upsertRole(role)
+        selectedChannel = channel
+        applyCurrentPresetToRole()
+    }
+
+    /// 选中一条预设：把它写进角色（模型组合 + 音色 + 设备默认值）。
+    func selectPreset(_ preset: VoiceChatPreset) {
+        var role = currentRole
+        role.presetID = preset.id
+        role.chatEngine = preset.engine.rawValue
+        VoiceChatRoleStore.upsertRole(role)
+        selectedMode = preset.engine
+        apply(preset, to: &role)
+        VoiceChatRoleStore.upsertRole(role)
+        reloadDeviceSwitches()
+    }
+
+    /// 把「当前该用哪条预设」写进角色。
+    ///
+    /// 换聊天类型 / 换模式 / 第一次用都会走到这里：角色上只有 `presetID`，
+    /// 而模型组合与音色是**从预设里推出来的** —— 这一步就是把推导结果落盘，
+    /// 让引擎那一侧（它读角色）和界面那一侧（它读预设）永远一致。
+    private func applyCurrentPresetToRole() {
+        var role = currentRole
+        if role.presetID == nil {
+            role.presetID = currentPreset.id
+        }
+        apply(currentPreset, to: &role)
+        VoiceChatRoleStore.upsertRole(role)
+        reloadDeviceSwitches()
+    }
+
+    /// 一条预设 → 角色字段。**画面那两个开关只在视频聊天下才写** ——
+    /// 语音聊天不允许开画面（`VoiceChatChannel.allowsVideoInputAtAll` 是硬闸），
+    /// 写了也会被 `reloadDeviceSwitches` 抹掉，但那会让"角色里存着 true"这种状态
+    /// 短暂存在，不如一开始就不写。
+    /// 一条预设 → 角色字段。
+    ///
+    /// 实现是 `VoiceChatPreset.applied(to:channel:)`（**纯函数**）—— 设置页的角色编辑器
+    /// 也要做同一件事，而且它改的是**草稿**、不能落盘，所以那件事必须是纯的。
+    /// 这里只负责「取当前聊天类型 + 应用到角色」，由调用方决定什么时候落盘。
+    private func apply(_ preset: VoiceChatPreset, to role: inout VoiceChatRole) {
+        role = preset.applied(to: role, channel: currentChannel)
     }
 
     /// 侧栏点一行 —— **只选中，不连接**（与 Chrome 版同一个交互模型：
@@ -261,6 +334,7 @@ final class VoiceChatController: ObservableObject {
     func selectRole(_ roleID: String) {
         selectedRoleID = roleID
         syncSelectedModeFromRole()
+        syncSelectedChannelFromRole()
         reloadDeviceSwitches()
     }
 
@@ -278,6 +352,15 @@ final class VoiceChatController: ObservableObject {
         let roleMode = currentRole.resolvedChatEngine
         if selectedMode != roleMode {
             selectedMode = roleMode
+        }
+    }
+
+    /// 把聊天类型也从角色里读回来。与 `syncSelectedModeFromRole` 同一条理由：
+    /// 分流是**数据**（跨启动、跨角色），界面显示的那个必须就是接下来会执行的那个。
+    private func syncSelectedChannelFromRole() {
+        let roleChannel = VoiceChatChannel(rawValue: currentRole.chatChannel ?? "") ?? .voice
+        if selectedChannel != roleChannel {
+            selectedChannel = roleChannel
         }
     }
 
@@ -328,12 +411,22 @@ final class VoiceChatController: ObservableObject {
     /// 全双工语音是**纯音频**的，送画面过去会被服务端忽略（VoiceWeb 实测
     /// `video_in_enabled=False`）。所以那两个开关要置灰，而不是让用户打开了
     /// 却什么都不发生。
+    ///
+    /// 2026-09-24 起判据从「模式」升级成**能力层**（`capability`）—— 因为它还要管
+    /// 两件模式管不了的事：**语音聊天永远不开画面**，以及**所选模型吃不吃图片**
+    /// （理解选了全双工语音模型时，三段式也不能开）。界面与引擎读的是同一个
+    /// `isVideoInputAllowed`，所以不会出现"按钮亮着但画面没发出去"。
     var selectedModeSupportsScreenSharing: Bool {
-        selectedMode.supportsVideoInput
+        capability.isVideoInputAllowed
     }
 
     var selectedModeSupportsCamera: Bool {
-        selectedMode.supportsVideoInput
+        capability.isVideoInputAllowed
+    }
+
+    /// 画面为什么不能开（给按钮的 `.help` 用）。能开时为 nil。
+    var videoInputDisabledReason: String? {
+        capability.videoDisabledReason
     }
 
     func setScreenSharingEnabled(_ isEnabled: Bool) {
@@ -437,11 +530,29 @@ final class VoiceChatController: ObservableObject {
 
         let role = currentRole
         selectedMode = role.resolvedChatEngine
+        // 聊天类型也要从角色里读回来（数据跨启动），再把**当前预设**写进角色的
+        // 模型/音色/设备字段 —— 连接用的就是这三样，所以它们必须先被摆正。
+        syncSelectedChannelFromRole()
+        applyCurrentPresetToRole()
 
         activeRoleID = roleID
         activeMode = nil
         connectionPhase = .connecting
         lastTurnErrorMessage = nil
+
+        // 接一次就把「这一场到底用什么」打全 —— 用户报的症状是「选了模型/音色但连接时
+        // 不是那个」，而这是唯一能直接对照的判据。
+        let connectingPreset = currentPreset
+        let connectingCapability = capability
+        print("""
+        💬 语音聊天开始连接：聊天类型=\(currentChannel.displayName) 模式=\(selectedMode.displayName) \
+        预设=\(connectingPreset.id)（\(connectingPreset.title)）
+           识别=\(connectingPreset.recognitionModelID ?? connectingPreset.duplexModelID ?? "-") \
+        理解=\(connectingPreset.understandingModelID ?? connectingPreset.duplexModelID ?? "-") \
+        表达=\(connectingPreset.expressionModelID ?? connectingPreset.duplexModelID ?? "-")
+           音色=\(connectingCapability.effectiveVoiceID)（族=\(connectingCapability.effectiveVoiceEngine.displayName)）\
+        画面=\(connectingCapability.isVideoInputAllowed ? "允许" : "不允许")
+        """)
 
         // 应用这个角色的「连接时自动开启什么」。
         isCameraEnabled = role.autoCameraEnabled && selectedModeSupportsCamera
@@ -529,6 +640,7 @@ final class VoiceChatController: ObservableObject {
 
         await dictationManager.startContinuousListening(
             utteranceEndSilenceSeconds: settings.continuousListeningSilenceSendSeconds,
+            transcriptionModelIDOverride: currentRole.recognitionModelID,
             // 语音聊天的门槛是 **1**，不是对话页面的 4。
             //
             // 「演过谁？」「还在吗？」「几点了？」在连续问答里都是正经问题，可它们
@@ -660,7 +772,8 @@ final class VoiceChatController: ObservableObject {
         do {
             try await duplexVoiceEngine.start(
                 role: role,
-                model: selectedDuplexModel(for: role),
+                model: role.duplexModelID ?? VoiceCatalog.defaultDuplexModel,
+                voiceID: capability.effectiveVoiceID,
                 systemPrompt: role.systemPrompt
             )
             isSessionLive = true
@@ -750,8 +863,8 @@ final class VoiceChatController: ObservableObject {
     func handleShortcutPress(modeIndex: Int) {
         // 按**下标**取模式，而不是按 rawValue 匹配：快捷键的序号（⌃⌥1/2/3）对应的
         // 就是 `allCases` 的第 0/1/2 项，两者的对应关系由 `allCases` 的顺序保证。
-        guard VoiceChatEngine.allCases.indices.contains(modeIndex) else { return }
-        let pressedMode = VoiceChatEngine.allCases[modeIndex]
+        guard VoiceChatEngine.pickerCases.indices.contains(modeIndex) else { return }
+        let pressedMode = VoiceChatEngine.pickerCases[modeIndex]
 
         if connectionPhase != .idle {
             // 已在会话中：同一个模式 = 挂断；不同模式 = 换过去。
@@ -832,6 +945,175 @@ final class VoiceChatController: ObservableObject {
         }
     }
 
+    // MARK: - 页头四栏（识别 / 理解 / 表达 / 音色）
+
+    /// 这三栏写的是**当前角色**的独立配置（用户 2026-09-24：「每一个角色都应该可以
+    /// 独立设置屏幕、摄像头、识别、理解、表达、音色，还有模式……用户在最终的面板上
+    /// 切换不同的角色，他的整个配置参数就自动切换」）。nil = 跟随默认。
+
+    var currentRecognitionModelID: String {
+        currentRole.recognitionModelID ?? VoiceCatalog.defaultDuplexModel
+    }
+    var currentUnderstandingModelID: String {
+        // 默认是 deepseek 而不是清单第一行：理解真正在用的是 HTTP 图文那条路，
+        // 全双工/多模态当理解还没接线 —— 这一栏显示的必须是引擎实际在用的模型。
+        currentRole.understandingModelID ?? VoiceCatalog.defaultUnderstandingModel
+    }
+    var currentExpressionModelID: String {
+        currentRole.expressionModelID ?? VoiceCatalog.defaultExpressionModel
+    }
+    /// 音色跟着模式走：三段式用合成音色，全模态用它自己的内置音色。
+    var currentExpressionVoiceID: String {
+        selectedMode == .omni ? currentRole.omniVoice : currentRole.ttsVoice
+    }
+    /// 全双工语音那一类的音色（实时模型的龙安系），单独记录在角色上。
+    var currentDuplexVoiceID: String {
+        currentRole.duplexVoice
+    }
+    /// 全双工语音那一类当前选的**模型**（决定音色表）。nil = 3.0 Flash。
+    var currentDuplexModelID: String {
+        currentRole.duplexModelID ?? VoiceCatalog.defaultDuplexModel
+    }
+
+    // MARK: - 聊天类型 / 预设 / 依赖真相
+
+    /// 当前聊天类型。角色里没写过就按**语音聊天**读 —— 它是更保守的一侧
+    /// （不允许开画面），不会一上来就把用户的摄像头打开。
+    var currentChannel: VoiceChatChannel {
+        VoiceChatChannel(rawValue: currentRole.chatChannel ?? "") ?? .voice
+    }
+
+    /// 当前生效的预设。
+    ///
+    /// 三步回落，每一步都要**属于当前的 (聊天类型, 模式)**：
+    ///   1. 角色里存的那个 id —— 存在且属于这一组才用；
+    ///   2. 否则用这一组的默认预设（`isDefaultPreset`，每组有且只有一个）；
+    ///   3. 再取不到（这一组一条预设都没有）就取这一组的第一条。
+    ///
+    /// 回落的必要性：聊天类型或模式一换，原来那条预设就不属于新组了，
+    /// 而角色里的 id 还在 —— 不回落就会显示一条别的组的预设。
+    var currentPreset: VoiceChatPreset {
+        let channel = currentChannel
+        let engine = selectedMode
+        let presets = VoiceChatPresetStore.resolvedPresets(for: channel, engine: engine)
+        if let storedID = currentRole.presetID,
+           let match = presets.first(where: { $0.id == storedID }) {
+            return match
+        }
+        return presets.first(where: \.isDefaultPreset) ?? presets.first
+            ?? VoiceChatPreset.builtIn[0]
+    }
+
+    /// 当前预设下的**依赖真相** —— 界面与引擎读的同一份。
+    var capability: VoiceCatalog.VoiceChatCapability {
+        VoiceCatalog.capability(for: currentPreset, channel: currentChannel, role: currentRole)
+    }
+
+    /// 某个模式的预设清单（界面按行取用）。
+    func presets(for engine: VoiceChatEngine) -> [VoiceChatPreset] {
+        VoiceChatPresetStore.resolvedPresets(for: currentChannel, engine: engine)
+    }
+
+    /// 某一行**当前会用的**预设：选中的那一行就是当前预设；未选中的行取该组的默认预设
+    /// （界面据此显示那一行的模型，但用户一眼能看出它没被选中 —— 模式按钮上没有对勾）。
+    func preset(for engine: VoiceChatEngine) -> VoiceChatPreset {
+        if engine == selectedMode { return currentPreset }
+        let presets = VoiceChatPresetStore.resolvedPresets(for: currentChannel, engine: engine)
+        return presets.first(where: \.isDefaultPreset) ?? presets.first ?? currentPreset
+    }
+
+    /// 某一行当前的**依赖真相**。
+    ///
+    /// 界面用 `capability(for:)` 取每一行的音色族与画面可用性；引擎用 `capability`
+    /// 取当前那一行 —— 同一个 `VoiceCatalog.capability(...)` 实现，两处不会分家。
+    func capability(for engine: VoiceChatEngine) -> VoiceCatalog.VoiceChatCapability {
+        VoiceCatalog.capability(for: preset(for: engine), channel: currentChannel, role: currentRole)
+    }
+
+    /// 某一行**真正会用的**音色（能力层算出来的，已校验）。
+    ///
+    /// 音色面板右上角那个绿色标题显示的就是它 —— 不是角色里存的那个值。这是
+    /// 「选了没生效」最直接的照妖镜：显示的和引擎用的是同一个数。
+    func effectiveVoiceID(for engine: VoiceChatEngine) -> String {
+        capability(for: engine).effectiveVoiceID
+    }
+
+    /// 某一行音色表所依据的**模型 id**（决定用哪张表）。
+    func voiceTableModelID(for engine: VoiceChatEngine) -> String {
+        let preset = preset(for: engine)
+        switch engine {
+        case .duplexVoice, .omni:
+            return preset.duplexModelID ?? VoiceCatalog.defaultDuplexModel
+        case .threeStage:
+            return preset.expressionModelID ?? VoiceCatalog.defaultExpressionModel
+        }
+    }
+
+    /// 用某个音色替换**某一行**的音色（写进该族的角色字段）。
+    func setVoice(_ voiceID: String, for engine: VoiceChatEngine) {
+        var role = currentRole
+        switch engine {
+        case .threeStage: role.ttsVoice = voiceID
+        case .omni: role.omniVoice = voiceID
+        case .duplexVoice: role.duplexVoice = voiceID
+        }
+        VoiceChatRoleStore.upsertRole(role)
+    }
+
+    func setDuplexModel(_ modelID: String) {
+        var role = currentRole
+        role.duplexModelID = modelID
+        VoiceChatRoleStore.upsertRole(role)
+    }
+    /// 全模态模式当前选的**模型**（一个模型包办识别/理解/表达）。nil = 3.8 Omni Flash。
+    var currentOmniModelID: String {
+        currentRole.omniModelID ?? VoiceCatalog.defaultOmniModel
+    }
+    func setOmniModel(_ modelID: String) {
+        var role = currentRole
+        role.omniModelID = modelID
+        VoiceChatRoleStore.upsertRole(role)
+    }
+
+    func setPipelineModel(_ slot: PipelineModelSlot, modelID: String) {
+        var role = currentRole
+        switch slot {
+        case .recognition: role.recognitionModelID = modelID
+        case .understanding: role.understandingModelID = modelID
+        case .expression: role.expressionModelID = modelID
+        }
+        VoiceChatRoleStore.upsertRole(role)
+        // 识别模型变了立刻反映到「下一次连接」：把全局配置里那份也同步过去 ——
+        // 对话页面读的是全局配置，两处不一致会让同一个模型名在两个页面表现不同。
+        if slot == .recognition {
+            var configuration = ModelConfigurationStore.snapshot()
+            if let providerIndex = configuration.providers.firstIndex(
+                where: { $0.id == configuration.transcriptionProviderID }
+            ) {
+                configuration.providers[providerIndex].transcriptionModelID = modelID
+                try? ModelConfigurationStore.save(configuration)
+            }
+        }
+    }
+
+    func setExpressionVoice(_ voiceID: String) {
+        var role = currentRole
+        if selectedMode == .omni {
+            role.omniVoice = voiceID
+        } else {
+            role.ttsVoice = voiceID
+        }
+        VoiceChatRoleStore.upsertRole(role)
+    }
+
+    /// 记录全双工语音那一类的音色。**只记录，不接合成** —— 三段式的实时合成
+    /// 接线在下一批；现在动它只会让 TTS 拿到一个它不认的音色（411）。
+    func setDuplexVoice(_ voiceID: String) {
+        var role = currentRole
+        role.duplexVoice = voiceID
+        VoiceChatRoleStore.upsertRole(role)
+    }
+
     /// 全双工那一轮的助手气泡：第一次 delta 建气泡，之后原地更新。
     private func updateDuplexAssistantEntry(_ cumulativeText: String) {
         if let entryID = duplexAssistantEntryID {
@@ -885,6 +1167,8 @@ final class VoiceChatController: ObservableObject {
         cascadeEngine.runTurn(
             utterance: utterance,
             role: currentRole,
+            preset: currentPreset,
+            channel: currentChannel,
             callbacks: CascadeTurnCallbacks(
                 onAnswerTextChanged: { [weak self] answerSoFar in
                     self?.updateAnswerEntry(answerEntryID, text: answerSoFar)
@@ -975,8 +1259,8 @@ final class TTSClientSpeechAdapter: VoiceChatSpeechSynthesizing {
         self.client = client
     }
 
-    func beginStreamingSpeech() throws -> VoiceChatStreamingSpeech {
-        StreamingSpeechAdapter(session: try client.beginStreamingSpeech())
+    func beginStreamingSpeech(voiceID: String?) throws -> VoiceChatStreamingSpeech {
+        StreamingSpeechAdapter(session: try client.beginStreamingSpeech(voiceOverride: voiceID))
     }
 
     func stopSpeaking() {

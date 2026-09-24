@@ -337,9 +337,21 @@ struct NotchPillRootView: View {
                     // four bottom corners is what keeps the SEAMS straight —
                     // the band's rounding lives only at its two outer ends,
                     // each wing's own outline (see NotchWingView).
-                    PillShape(bottomCornerRadius: isActive ? 0 : 6)
+                    // **和硬件刘海逐像素一致**（用户 2026-09-24：「如果是重写，
+                    // 为什么不把它跟 Mac 电脑的刘海写得完全一样？」）。之前画得比
+                    // 硬件刘海宽 4pt（两侧各多 2pt，本来是给命中区留的余量）、底角
+                    // 只有 6pt —— 用户看到的就是「刘海被重画了一遍：更宽、圆角更小、
+                    // 两侧像有阴影」。现在：宽度收回到刘海本身（多出来的部分本来
+                    // 就不该画出来），底角 10pt 接近系统圆角。命中区不受影响 ——
+                    // 那是 `pillClickHitMargin` 的事，跟画多大无关。
+                    PillShape(bottomCornerRadius: isActive ? 0 : 10)
                         .fill(Color.black)
-                        .frame(width: pillWidth, height: notchHeight)
+                        .frame(
+                            width: isActive
+                                ? pillWidth
+                                : pillWidth - NotchSupport.restingPillExtraWidthPerSide * 2,
+                            height: notchHeight
+                        )
 
                     NotchWingView(
                         phase: panelModel.activityPhase,
@@ -1112,9 +1124,34 @@ struct NotchExpandedSheetView: View {
 /// + persisted `attachedSheetSize`): dragging the bottom edge up/down changes
 /// the sheet's height, persists it as a fraction of screen height, and
 /// re-frames the live panel via `.clickyNotchSheetSizeDidChange`.
+///
+/// **The drag reads the cursor's absolute screen position, not
+/// `DragGesture.translation`** — and that is the whole point of this view.
+/// The grip lives on the panel's bottom edge, so the edge it is sizing moves
+/// *because of* the drag. A `.local` translation is measured against the
+/// grip's own frame, so it loses exactly as much as the panel gained: with a
+/// cursor movement Δ and the panel following by Δ′, `Δ′ = Δ − Δ′`, i.e. a
+/// steady-state gain of **1/2**. Measured 2026-09-24 on the live panel with a
+/// scripted 100 pt drag down through this very grip: 782.49 pt → 832.49 pt —
+/// 50, matching the model of `1/2` exactly. The user's report of it is
+/// 「鼠标已经移动到上面了，窗口还没有移动」「不跟手」「闪跳」: half speed, and
+/// any jitter in event delivery doubling.
+///
+/// `NSEvent.mouseLocation` is the cursor in AppKit's global space, which no
+/// window frame can move — so the gain is 1 and the edge stays under the
+/// cursor. The grab's own offset is captured once, so the edge does not jump
+/// when the drag begins.
 struct NotchSheetResizeGripView: View {
 
-    @State private var dragStartHeight: CGFloat?
+    /// Where the grab started: the panel's height and the cursor's y, both
+    /// taken on the drag's first event. AppKit's y runs *up*, and the sheet
+    /// hangs from the screen's top edge, so pulling the bottom edge down
+    /// *grows* the panel and `startMouseY - currentMouseY` is the growth.
+    @State private var grabStartHeight: CGFloat?
+    @State private var grabStartMouseY: CGFloat?
+    /// The height reached so far. Held so the release can persist exactly the
+    /// height the user was looking at.
+    @State private var draggedHeight: CGFloat?
     @State private var isHoveringGrip = false
 
     var body: some View {
@@ -1134,28 +1171,47 @@ struct NotchSheetResizeGripView: View {
         }
         .gesture(
             DragGesture(minimumDistance: 1)
-                .onChanged { value in
-                    // The cursor is on the sheet while dragging, so the screen
-                    // under NSEvent.mouseLocation is the screen to size against.
-                    guard let screen = NSScreen.screens.first(where: {
-                        $0.frame.contains(NSEvent.mouseLocation)
-                    }) else { return }
-
-                    if dragStartHeight == nil {
-                        dragStartHeight = NotchSupport.expandedSheetHeight(on: screen)
-                    }
-                    // The sheet hangs from the screen's top edge, so pulling
-                    // the bottom edge down *grows* it — translation.y maps
-                    // directly onto height.
-                    NotchSupport.setExpandedSheetHeight(
-                        dragStartHeight! + value.translation.height,
-                        on: screen
-                    )
+                .onChanged { _ in
+                    updateHeightFromCursor()
                 }
                 .onEnded { _ in
-                    dragStartHeight = nil
+                    finishDrag()
                 }
         )
         .pointerCursor()
+    }
+
+    /// The screen the cursor is on. The pointer is over this very panel while
+    /// dragging, so the screen under it is the one the sheet is sized for.
+    private var screenUnderCursor: NSScreen? {
+        NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) }
+    }
+
+    private func updateHeightFromCursor() {
+        guard let screen = screenUnderCursor else { return }
+        let cursorY = NSEvent.mouseLocation.y
+
+        guard let grabStartHeight, let grabStartMouseY else {
+            // First event of this drag: remember where the grab landed so the
+            // edge stays exactly under the cursor instead of jumping.
+            self.grabStartHeight = NotchSupport.expandedSheetHeight(on: screen)
+            self.grabStartMouseY = cursorY
+            return
+        }
+
+        let newHeight = grabStartHeight + (grabStartMouseY - cursorY)
+        draggedHeight = newHeight
+        NotchSupport.setLiveDragSheetHeight(newHeight)
+    }
+
+    private func finishDrag() {
+        // Nothing was ever dragged (the gesture can begin and end on one
+        // event): leave the height alone rather than re-persisting it.
+        if let draggedHeight, let screen = screenUnderCursor {
+            NotchSupport.commitExpandedSheetHeight(draggedHeight, on: screen)
+        }
+        grabStartHeight = nil
+        grabStartMouseY = nil
+        draggedHeight = nil
     }
 }

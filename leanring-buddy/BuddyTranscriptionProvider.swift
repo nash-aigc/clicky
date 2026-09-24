@@ -49,8 +49,12 @@ enum BuddyTranscriptionProviderFactory {
     /// Used when `VoiceTranscriptionProvider` is missing from the bundle config.
     private static let defaultProvider: PreferredProvider = .bailian
 
-    static func makeDefaultProvider() -> any BuddyTranscriptionProvider {
-        let provider = resolveProvider()
+    /// `transcriptionModelIDOverride`：语音聊天的**角色独立配置**。对话页不传，
+    /// 走「听」页的全局选择；传了就以它为准（工厂按模型名分流，见下面那三行）。
+    static func makeDefaultProvider(
+        transcriptionModelIDOverride: String? = nil
+    ) -> any BuddyTranscriptionProvider {
+        let provider = resolveProvider(override: transcriptionModelIDOverride)
         print("🎙️ Transcription: using \(provider.displayName)")
         return provider
     }
@@ -66,22 +70,30 @@ enum BuddyTranscriptionProviderFactory {
     /// 分流放在这里而不是让用户在设置里选「协议」，因为模型名本身就说明了协议 ——
     /// 多一个开关就多一个能和模型名矛盾的状态。设置页那一栏选的是**模型**，路由
     /// 从这里推出来。
-    private static func bailianProviderForConfiguredModel() -> any BuddyTranscriptionProvider {
-        let modelID = ModelConfigurationStore.snapshot()
+    private static func bailianProviderForConfiguredModel(override: String?) -> any BuddyTranscriptionProvider {
+        let configuredModelID = ModelConfigurationStore.snapshot()
             .status(of: .transcription).resolvedRole?.modelID ?? ""
+        // 角色覆盖优先；没有覆盖才看全局配置。
+        let modelID = override ?? configuredModelID
 
         // 语音模型当识别器：名字形如 `qwen-audio-3.0-realtime-flash`。
         // 判据是 `qwen-audio-` + `-realtime`，因为这一族里还有 `qwen-audio-3.1-realtime-plus`。
         if modelID.hasPrefix("qwen-audio-") && modelID.contains("realtime") {
-            return BailianRealtimeSpeechTranscriptionProvider()
+            let speechProvider = BailianRealtimeSpeechTranscriptionProvider()
+            speechProvider.modelIDOverride = override
+            return speechProvider
         }
         if modelID.contains("realtime") {
-            return BailianRealtimeTranscriptionProvider()
+            let realtimeProvider = BailianRealtimeTranscriptionProvider()
+            realtimeProvider.modelIDOverride = override
+            return realtimeProvider
         }
-        return BailianNonRealtimeTranscriptionProvider()
+        let nonRealtimeProvider = BailianNonRealtimeTranscriptionProvider()
+        nonRealtimeProvider.modelIDOverride = override
+        return nonRealtimeProvider
     }
 
-    private static func resolveProvider() -> any BuddyTranscriptionProvider {
+    private static func resolveProvider(override: String?) -> any BuddyTranscriptionProvider {
         let preferredProviderRawValue = AppBundleConfiguration
             .stringValue(forKey: "VoiceTranscriptionProvider")?
             .lowercased()
@@ -92,7 +104,7 @@ enum BuddyTranscriptionProviderFactory {
         // kept out of this list so it is only ever reached after every cloud
         // provider has been ruled out.
         let cloudProviderCandidates: [(provider: PreferredProvider, instance: any BuddyTranscriptionProvider)] = [
-            (.bailian, bailianProviderForConfiguredModel()),
+            (.bailian, bailianProviderForConfiguredModel(override: override)),
             (.assemblyAI, AssemblyAIStreamingTranscriptionProvider()),
             (.openAI, OpenAIAudioTranscriptionProvider())
         ]

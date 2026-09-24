@@ -23,6 +23,9 @@ struct BailianRealtimeTranscriptionProviderError: LocalizedError {
 
 final class BailianRealtimeTranscriptionProvider: BuddyTranscriptionProvider {
     let displayName = "Bailian Realtime ASR"
+
+    /// 角色独立配置的模型覆盖（nil = 跟随全局配置）。见工厂的说明。
+    nonisolated(unsafe) var modelIDOverride: String?
     let requiresSpeechRecognitionPermission = false
 
     var isConfigured: Bool {
@@ -92,7 +95,19 @@ final class BailianRealtimeTranscriptionProvider: BuddyTranscriptionProvider {
             resolvedRole = configuredRole
         }
 
-        guard let websocketURL = resolvedRole.websocketURL else {
+        // 角色独立配置的模型覆盖：模型名就在 URL 的 query 里，所以要在**这里**
+        // 换掉，而不是等会话开口 —— 会话拿到的是一个拼好的 URL。
+        let effectiveWebsocketURL: URL?
+        if let modelIDOverride, !modelIDOverride.isEmpty,
+           let baseWebsocketURL = resolvedRole.websocketURL,
+           var components = URLComponents(url: baseWebsocketURL, resolvingAgainstBaseURL: false) {
+            components.queryItems = [URLQueryItem(name: "model", value: modelIDOverride)]
+            effectiveWebsocketURL = components.url
+        } else {
+            effectiveWebsocketURL = resolvedRole.websocketURL
+        }
+
+        guard let websocketURL = effectiveWebsocketURL else {
             throw BailianRealtimeTranscriptionProviderError(
                 message: "语音转文字的 URL 拼不出来：\(resolvedRole.baseURL)\(resolvedRole.requestPath)（请检查 URL 里有没有空格或多余字符）"
             )

@@ -175,7 +175,7 @@ struct VoiceCatalogSettingsView: View {
             // （用户 2026-09-24：「把三段式/全双工语音/全双工全模态的按钮变大一点，
             // 并删掉上面和下面的说明文字。按钮要大一点，靠左对齐」）。
             HStack(spacing: 8) {
-                ForEach(VoiceChatEngine.allCases) { engine in
+                ForEach(VoiceChatEngine.pickerCases) { engine in
                     modeButton(engine)
                 }
                 Spacer(minLength: 0)

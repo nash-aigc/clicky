@@ -31,9 +31,11 @@ nonisolated enum SidebarSection: String, CaseIterable, Sendable {
 
     var displayName: String {
         switch self {
-        case .conversations: return "对话"
+        // 用户 2026-09-25：「把最左侧的对话按钮写成 ask」→ 随后更正为 **Ask**
+        // （大写首字母）。
+        case .conversations: return "Ask"
         case .agents: return "Agent"
-        case .voiceChat: return "语音聊天"
+        case .voiceChat: return "Chatting"
         }
     }
 }

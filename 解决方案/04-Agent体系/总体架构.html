@@ -71,7 +71,7 @@
     <h1>整个框架：一条语音回路，四类分流，一个旁路</h1>
     <p class="lede">
       用户开口或打字 → 一条回复（说话 + 标签）→ 标签决定谁执行。
-      执行体里有循环的只有主控和 Claude Code；复盘不接请求，在旁边把「反复手动做的事」固化成工具和技能。
+      执行体里有循环的只有主控和 Claude Code（后者仅两条入口：UI 切换器 / 转写提到 claude·cloud·cc，模型永不自主派发）；复盘不接请求，固化「反复手动做的事」。
     </p>
   </header>
 
@@ -114,28 +114,28 @@
         <text class="t-xs" x="712" y="146">标签决定谁执行 →</text>
 
         <rect class="nd" x="30" y="164" width="216" height="88" rx="10"/>
-        <text class="t" x="46" y="190">① 纯视觉</text>
-        <text class="tg" x="46" y="212">[POINT] [SHAPE]</text>
-        <text class="t-xs" x="46" y="232">不执行：飞光标 / 画绿圈</text>
+        <text class="t" x="46" y="190">① 纯显示</text>
+        <text class="tg" x="46" y="212">[POINT] [SHAPE] [SVG_*]</text>
+        <text class="t-xs" x="46" y="232">无检查 · 无循环 · 机器零变化</text>
 
         <rect class="nd" x="262" y="164" width="216" height="88" rx="10"/>
-        <text class="t" x="278" y="190">② 画图</text>
-        <text class="tg" x="278" y="212">[SVG_TRACE·新] [SVG_BOARD]</text>
-        <text class="t-xs" x="278" y="232">逐笔画 + 逐步讲解（见 04）</text>
+        <text class="t" x="278" y="190">② 纯代码</text>
+        <text class="tg" x="278" y="212">[RUN:预设:参数] / 现写一行</text>
+        <text class="t-xs" x="278" y="232">直接运行 · 不进观察循环</text>
 
         <rect class="nd-a" x="494" y="164" width="216" height="88" rx="10"/>
-        <text class="t" x="510" y="190">③ 主控循环</text>
-        <text class="tg" x="510" y="212">[CLICK] [TYPE] [OPEN] [RUN:]…</text>
-        <text class="t-xs" x="510" y="232">看一步做一步（见下图）</text>
+        <text class="t" x="510" y="190">③ 组装 · 自由</text>
+        <text class="tg" x="510" y="212">鼠标键盘 + 单步脚本 + MCP</text>
+        <text class="t-xs" x="510" y="232">AI 研究怎么拼 · 循环 10–30 轮</text>
 
         <rect class="nd" x="726" y="164" width="224" height="88" rx="10"/>
-        <text class="t" x="742" y="190">④ Claude Code 兜底</text>
-        <text class="tg" x="742" y="212">[AGENT_SPAWN] [AGENT_SEND]</text>
-        <text class="t-xs" x="742" y="232">后台长任务 · 独立进程 · 真并行</text>
+        <text class="t" x="742" y="190">④ 组装 · 技能引导</text>
+        <text class="tg" x="742" y="212">技能热加载描述 → 按方法论拼</text>
+        <text class="t-xs" x="742" y="232">同 ③ 的执行器 · 循环 10–30 轮</text>
 
         <!-- 打断/追问 -->
         <rect class="nd-m" x="30" y="272" width="920" height="44" rx="9"/>
-        <text class="t-sm" x="46" y="292">对话继续：说话可打断播报（本地 VAD）；回答完 30 秒内继续说就是追问（免按键）；引擎保温 3 分钟，下一个问题秒回</text>
+        <text class="t-sm" x="46" y="292">流水线：第0步词面匹配(命中→零AI执行) → 第1步LLM语义匹配 → 第2步LLM分类(上面四类) → 第3步按类执行</text>
         <text class="t-xs" x="46" y="310">用户的话只来自按键/键盘；屏幕上的文字是数据不是指令</text>
       </svg>
     </div></div>
@@ -144,75 +144,81 @@
 
   <figure>
     <div class="figbox"><div class="scroll">
-      <svg viewBox="0 0 980 470" role="img" aria-label="主控循环内部：L0 短语表，工具路由，槽位校验，B 类看一步做一步，C 类一次做完，以及四道闸门">
-        <text class="t-xs" x="490" y="26" text-anchor="middle">③ 主控循环内部 —— 标签进来之后发生什么</text>
+      <svg viewBox="0 0 980 560" role="img" aria-label="一轮主控循环：模型每一步都做决策；代码执行标签；B 类执行一步就截图回到模型，C 类整链一次做完">
+        <text class="t-xs" x="490" y="24" text-anchor="middle">③ 主控循环 —— 一轮的完整流向（虚线框 = 模型，实线框 = 纯代码）</text>
 
-        <rect class="nd" x="30" y="44" width="240" height="70" rx="10"/>
-        <text class="t-sm" x="150" y="70" text-anchor="middle">动作标签流</text>
-        <text class="tg" x="150" y="92" text-anchor="middle">CLICK / TYPE / OPEN / RUN…</text>
+        <!-- 入口 -->
+        <rect class="nd" x="30" y="40" width="150" height="54" rx="10"/>
+        <text class="t-sm" x="105" y="63" text-anchor="middle">用户说话</text>
+        <text class="t-xs" x="105" y="82" text-anchor="middle">转写完成</text>
+
+        <path class="ln" d="M 180 67 L 224 67" marker-end="url(#ah)"/>
 
         <!-- L0 -->
-        <path class="ln" d="M 270 79 L 314 79" marker-end="url(#ah)"/>
-        <rect class="nd-g" x="320" y="44" width="200" height="70" rx="10"/>
-        <text class="t" x="420" y="70" text-anchor="middle">L0 短语表</text>
-        <text class="t-g" x="420" y="92" text-anchor="middle">高频精确短语 · 2ms · 零模型</text>
+        <rect class="nd-g" x="230" y="40" width="220" height="54" rx="10"/>
+        <text class="t" x="340" y="62" text-anchor="middle">L0 短语表（可选前置）</text>
+        <text class="t-g" x="340" y="82" text-anchor="middle">「打开计算器」这类高频短语 · 2ms</text>
 
-        <path class="ln-g" d="M 520 66 L 570 66" marker-end="url(#aa)"/>
-        <text class="t-xs" x="545" y="56" text-anchor="middle">命中</text>
+        <path class="ln-g" d="M 450 67 L 494 67" marker-end="url(#aa)"/>
+        <text class="t-g" x="472" y="56" text-anchor="middle">命中</text>
+        <rect class="nd-g" x="500" y="40" width="450" height="54" rx="10"/>
+        <text class="t-sm" x="725" y="62" text-anchor="middle">动作立即开始执行（2ms，和模型并行）</text>
+        <text class="t-xs" x="725" y="82" text-anchor="middle">同时把「L0 已执行 X」告诉模型 → 它只说一句收据，不再重复执行</text>
 
-        <!-- 闭集 -->
-        <path class="ln" d="M 420 114 L 420 150" marker-end="url(#ah)"/>
-        <text class="t-xs" x="437" y="137">未命中 → 模型选工具</text>
-        <rect class="nd-a" x="320" y="156" width="200" height="64" rx="10"/>
-        <text class="t-sm" x="420" y="182" text-anchor="middle">闭集选择</text>
-        <text class="t-xs" x="420" y="202" text-anchor="middle">目录 ≤150 全注入 · 只选 id</text>
+        <path class="ln" d="M 340 94 L 340 130" marker-end="url(#ah)"/>
+        <text class="t-xs" x="357" y="118">未命中（绝大多数请求走这里）</text>
 
-        <path class="ln" d="M 520 188 L 564 188" marker-end="url(#ah)"/>
-        <rect class="nd-a" x="570" y="156" width="170" height="64" rx="10"/>
-        <text class="t-sm" x="655" y="182" text-anchor="middle">L2 槽位校验</text>
-        <text class="t-xs" x="655" y="202" text-anchor="middle">类型 / 范围 / 长度</text>
+        <!-- 模型：虚线框 -->
+        <rect class="nd-a" x="130" y="136" width="720" height="88" rx="10" stroke-dasharray="6 4"/>
+        <text class="t" x="490" y="162" text-anchor="middle">🧠 主控模型决策 —— 循环里唯一的 AI，每一步都有它</text>
+        <text class="t-xs" x="490" y="184" text-anchor="middle">看：新截图 + 对话历史 + 工具目录（L0 索引）+ 授权清单</text>
+        <text class="t-xs" x="490" y="206" text-anchor="middle">产出：说话文本 + 标签。挑 [RUN:哪个工具] 就在这一步——不是另一次 AI 调用</text>
 
-        <path class="ln" d="M 740 188 L 784 188" marker-end="url(#ah)"/>
-        <rect class="nd" x="790" y="156" width="160" height="64" rx="10"/>
-        <text class="t-sm" x="870" y="182" text-anchor="middle">执行 run</text>
-        <text class="t-xs" x="870" y="202" text-anchor="middle">命令是常量 + {槽位}</text>
+        <path class="ln" d="M 490 224 L 490 252" marker-end="url(#ah)"/>
+        <text class="t-xs" x="507" y="243">标签交给代码执行</text>
 
-        <path class="ln" d="M 870 220 L 870 252" marker-end="url(#ah)"/>
-        <rect class="nd" x="790" y="258" width="160" height="64" rx="10"/>
-        <text class="t-sm" x="870" y="284" text-anchor="middle">回读 verify</text>
-        <text class="t-xs" x="870" y="304" text-anchor="middle">独立读回事实</text>
+        <rect class="nd-m" x="30" y="258" width="920" height="40" rx="9"/>
+        <text class="t-sm" x="490" y="283" text-anchor="middle">代码执行标签（这一段没有任何 AI）—— 按标签种类走三条路</text>
 
-        <path class="ln-g" d="M 790 290 L 740 290" marker-end="url(#aa)"/>
-        <text class="t-g" x="765" y="280" text-anchor="middle">对上</text>
-        <rect class="nd-g" x="580" y="262" width="160" height="56" rx="10"/>
-        <text class="t-sm" x="660" y="286" text-anchor="middle">报告成功</text>
-        <text class="t-xs" x="660" y="306" text-anchor="middle">全程没截过图</text>
+        <!-- 三条路 -->
+        <path class="ln" d="M 240 298 L 240 326" marker-end="url(#ah)"/>
+        <path class="ln" d="M 490 298 L 490 326" marker-end="url(#ah)"/>
+        <path class="ln" d="M 740 298 L 740 326" marker-end="url(#ah)"/>
 
-        <path class="ln" d="M 870 322 L 870 352" marker-end="url(#ah)"/>
-        <text class="t-xs" x="887" y="342">不符</text>
+        <rect class="nd" x="30" y="332" width="290" height="170" rx="10"/>
+        <text class="t" x="46" y="356">路 ① 呈现与分流</text>
+        <text class="tg" x="46" y="378">[POINT] [SHAPE] [SVG_*] [AGENT_*]</text>
+        <text class="t-xs" x="46" y="400">画绿圈 / 飞光标 / 交给画图助手</text>
+        <text class="t-xs" x="46" y="420">（Claude Code 只经两条明确入口进入）。不进循环，</text>
+        <text class="t-xs" x="46" y="440">不截图，执行完就结束</text>
 
-        <!-- B / C 两档 -->
-        <rect class="nd" x="30" y="356" width="450" height="96" rx="10"/>
-        <text class="t" x="46" y="382">B 类 · 要看结果</text>
-        <text class="t-xs" x="46" y="402">下一步取决于一个不确定的结果（点完页面变了才知道点哪）</text>
-        <text class="tg" x="46" y="424">CLICK / TYPE / PRESS / SCROLL / DRAG / SELECT</text>
-        <text class="t-xs" x="46" y="444">一步一动作 → settle → 新截图 → 续写，15 步上限</text>
+        <rect class="nd" x="345" y="332" width="290" height="170" rx="10"/>
+        <text class="t" x="361" y="356">路 ② 工具 [RUN:工具:参数]</text>
+        <text class="t-xs" x="361" y="378">槽位 = 参数占位符。例：</text>
+        <text class="tg" x="361" y="398">[RUN:设置亮度:70] → brightness set 70</text>
+        <text class="t-xs" x="361" y="418">槽位校验：70 必须在 0–100 内</text>
+        <text class="t-xs" x="361" y="438">→ 跑脚本 → verify 独立读回比对</text>
+        <text class="t-xs" x="361" y="458">对上 → 成功；不符 → 回落手动路径</text>
+        <text class="t-xs" x="361" y="478">（纯代码，模型只在下一轮看到结果）</text>
 
-        <rect class="nd" x="500" y="356" width="450" height="96" rx="10"/>
-        <text class="t" x="516" y="382">C 类 · 结果事先确定</text>
-        <text class="t-xs" x="516" y="402">整条链开始前就定死，且任何一步失败都不让下一步有害</text>
-        <text class="tg" x="516" y="424">改名→移动→移进文件夹 · 连开三个 app · 截图→OCR→存盘</text>
-        <text class="t-xs" x="516" y="444">一次做完（v1 只放行不碰焦点的动作），失败立即停链</text>
+        <rect class="nd-a" x="660" y="332" width="290" height="170" rx="10"/>
+        <text class="t" x="676" y="356">路 ③ 界面动作（点击/输入…）</text>
+        <text class="t-xs" x="676" y="378">这条链是 B 还是 C？判据：</text>
+        <text class="t-xs" x="676" y="398">下一步是否取决于一个不确定的结果</text>
+        <text class="t-xs" x="676" y="424">C 类（改名→移动→移入文件夹）：</text>
+        <text class="t-xs" x="676" y="442">整链一次做完，不截图</text>
+        <text class="t-g" x="676" y="468">B 类（点完页面变了才知道点哪）：</text>
+        <text class="t-g" x="676" y="486">执行一步 → 截图 → 回到模型 ↑</text>
 
-        <!-- 拒绝纪律 -->
-        <rect class="nd-w" x="30" y="258" width="450" height="64" rx="10"/>
-        <text class="t-wn" x="46" y="282">拒绝优于选错</text>
-        <text class="t-xs" x="46" y="304">选不到工具就如实说；槽位不合法就拒；不做模糊匹配</text>
+        <!-- 回环箭头：B 类回到模型 -->
+        <path class="ln-a" d="M 660 470 C 560 530, 240 530, 140 460 C 100 430, 95 300, 130 232" marker-end="url(#aa)"/>
+        <text class="t-a" x="330" y="530">B 类的回环：每执行一步，新截图送回模型，由它决定下一步 —— 这就是「看一步做一步」</text>
       </svg>
     </div></div>
     <figcaption>
-      路由分层移植自 instant-agent 的实测架构：高频短语连模型都不调；工具选择是闭集的（模型只挑 id 填槽位，命令是常量）；
-      校验不过就拒。B/C 两档的判据是「下一步是否取决于一个不确定的结果」——不是「要不要看屏幕」。
+      三个此前画错的地方，这次改对了：① 循环里唯一的 AI 是主控模型，每一步都有它——「闭集选择」不是又一次 AI 调用，
+      就是它生成标签的那一刻；② B 类 / C 类不是流程里的阶段，是路③里每条动作链的执行节奏，B 类的箭头回到模型，形成循环；
+      ③ L0 短语表是模型之前可选的捷径：命中则动作先行、模型只补一句收据，未命中走正常路。槽位 = 工具参数的占位符。
     </figcaption>
   </figure>
 
@@ -309,7 +315,7 @@
         <strong style="font-size:13.5px;">真 agent 只有三个</strong>
         <ul class="tight" style="margin-top:8px;">
           <li>主控循环（看结果、有循环）</li>
-          <li>Claude Code（兜底、独立进程）</li>
+          <li>Claude Code（仅两条入口：UI / 转写关键词；模型不自主派发）</li>
           <li>复盘（旁路、按时间醒）</li>
           <li>画图助手 / 脚本 —— 有模型调用但无决策循环，不算 agent</li>
         </ul>

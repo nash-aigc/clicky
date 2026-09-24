@@ -613,6 +613,10 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private var finalizeFallbackWorkItem: DispatchWorkItem?
     private var pendingStartRequestIdentifier = UUID()
     private var contextualKeyterms: [String] = []
+
+    /// 本次监听窗口用的识别模型覆盖（语音聊天的**角色独立配置**传进来；
+    /// 对话页不传 = 跟随「听」页的全局选择）。见 `startContinuousListening`。
+    private var continuousListeningModelIDOverride: String?
     private var lastRecordedAudioPowerSampleDate = Date.distantPast
 
     /// When `currentAudioPowerLevel` was last published, and how often it may be.
@@ -806,6 +810,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// Bailian connection carries exactly one final transcript).
     func startContinuousListening(
         utteranceEndSilenceSeconds: TimeInterval,
+        transcriptionModelIDOverride: String? = nil,
         minimumContentCharacters: Int = BuddyDictationManager.continuousListeningMinimumTranscriptCharacters,
         onSpeechDetected: @escaping () -> Void,
         onTranscriptUpdate: @escaping (String) -> Void,
@@ -830,6 +835,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // Snapshot the 「静音多久自动发送」 setting for THIS window — a change
         // mid-window must not move the VAD loop's threshold under it.
         continuousListeningUtteranceEndSilenceSeconds = utteranceEndSilenceSeconds
+        continuousListeningModelIDOverride = transcriptionModelIDOverride
         // 门槛随会话设定（见 `continuousListeningMinimumTranscriptCharacters`）。
         continuousListeningMinimumTranscriptCharactersForThisWindow = minimumContentCharacters
 
@@ -930,7 +936,9 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         activeTranscriptionSession = nil
 
         if !transcriptionProvider.isConfigured {
-            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
+            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider(
+                transcriptionModelIDOverride: continuousListeningModelIDOverride
+            )
             if reResolvedProvider.isConfigured {
                 print("🎙️ BuddyDictationManager: switching transcription provider \(transcriptionProvider.displayName) → \(reResolvedProvider.displayName)")
                 transcriptionProvider = reResolvedProvider
@@ -1736,7 +1744,9 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // configured in the settings window take effect on the next push-to-talk
         // instead of on the next launch.
         if !transcriptionProvider.isConfigured {
-            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
+            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider(
+                transcriptionModelIDOverride: continuousListeningModelIDOverride
+            )
             if reResolvedProvider.isConfigured {
                 print("🎙️ BuddyDictationManager: switching transcription provider \(transcriptionProvider.displayName) → \(reResolvedProvider.displayName)")
                 transcriptionProvider = reResolvedProvider
@@ -1744,7 +1754,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             }
         }
 
-        print("🎙️ BuddyDictationManager: opening transcription provider \(transcriptionProvider.displayName)")
+        print("🎙️ BuddyDictationManager: opening transcription provider \(transcriptionProvider.displayName)\(continuousListeningModelIDOverride.map { "（角色指定：\($0)）" } ?? "")")
 
         let activeTranscriptionSession = try await transcriptionProvider.startStreamingSession(
             keyterms: buildTranscriptionKeyterms(),

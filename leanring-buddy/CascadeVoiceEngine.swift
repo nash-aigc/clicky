@@ -53,16 +53,31 @@ final class CascadeVoiceEngine {
     ///
     /// - Parameters:
     ///   - utterance: 用户这一轮说的话（`onUtteranceFinalized` 给的最终转写）。
-    ///   - role: 当前角色 —— 提示词、音色、要不要送画面都从它读。
+    ///   - role: 当前角色 —— 提示词、要不要送画面都从它读。
+    ///   - preset: 当前选中的**预设** —— 三个位置用哪个模型、哪个音色，都由它决定。
+    ///   - channel: 视频聊天 / 语音聊天 —— 画面那条硬闸在能力层里。
     ///   - callbacks: 把「回答开始 / 回答更新 / 回答结束」报给控制器。
+    ///
+    /// **能力层在这里现算，而不是由调用方传一个音色字符串进来**：界面为了置灰也要
+    /// 算同一份东西，两处共用 `VoiceCatalog.capability(...)` 这一个实现，
+    /// 于是"看得见的"和"真的用的"结构上不可能分家。
     func runTurn(utterance: String,
                  role: VoiceChatRole,
+                 preset: VoiceChatPreset,
+                 channel: VoiceChatChannel,
                  callbacks: CascadeTurnCallbacks) {
         cancelCurrentTurn()
 
+        let capability = VoiceCatalog.capability(for: preset, channel: channel, role: role)
         currentTurnTask = Task { [weak self] in
             guard let self else { return }
-            await self.performTurn(utterance: utterance, role: role, callbacks: callbacks)
+            await self.performTurn(
+                utterance: utterance,
+                role: role,
+                preset: preset,
+                capability: capability,
+                callbacks: callbacks
+            )
         }
     }
 
@@ -98,6 +113,8 @@ final class CascadeVoiceEngine {
 
     private func performTurn(utterance: String,
                              role: VoiceChatRole,
+                             preset: VoiceChatPreset,
+                             capability: VoiceCatalog.VoiceChatCapability,
                              callbacks: CascadeTurnCallbacks) async {
         do {
             // ① 看：按角色设置取画面。
@@ -109,45 +126,87 @@ final class CascadeVoiceEngine {
             // 和屏幕是对的，因为本质上都是图像，但「一定要让 AI 知道哪一个是屏幕的内容、
             // 哪一个是摄像头的内容」）。标签会随图一起进请求，所以这里写的是给模型看的
             // 那句话，而不是给日志看的短名。
+            //
+            // 外面还套一道 `capability.isVideoInputAllowed`：界面按它置灰，引擎按它
+            // 决定发不发图 —— 同一份判据，所以不会出现"按钮是灰的但画面照样发出去了"。
             var images: [(data: Data, label: String)] = []
-            if role.autoScreenEnabled {
-                images.append(contentsOf: await captureScreenFramesForTurn())
-            }
-            if role.autoCameraEnabled, let cameraFrame = cameraFrameProvider() {
-                images.append((
-                    data: cameraFrame,
-                    label: "用户摄像头拍到的画面（这是摄像头，不是屏幕）："
-                ))
+            if capability.isVideoInputAllowed {
+                if role.autoScreenEnabled {
+                    images.append(contentsOf: await captureScreenFramesForTurn())
+                }
+                if role.autoCameraEnabled, let cameraFrame = cameraFrameProvider() {
+                    images.append((
+                        data: cameraFrame,
+                        label: "用户摄像头拍到的画面（这是摄像头，不是屏幕）："
+                    ))
+                }
             }
             if Task.isCancelled { return }
 
             // ② 说：逐句快答会话。**先建会话再发请求** —— 第一段回答一到就能合成，
             // 不必等整段回复。
-            let speechSession = try speechSynthesizer.beginStreamingSpeech()
+            //
+            // 音色来自能力层：它是**校验过**的那个（跨族音色在这里已经被换成兜底值），
+            // 所以引擎不可能把服务端不认的音色填进去。
+            let speechSession = try speechSynthesizer.beginStreamingSpeech(
+                voiceID: capability.effectiveVoiceID
+            )
 
             var streamedReplyText = ""
             var spokenTextAccumulator = ""
 
-            // ③ 想：SSE 流式请求。每来一段就同时喂给「读」和「显示」。
-            let (finalReplyText, _) = try await BailianVisionChatAPI().analyzeImageStreaming(
-                images: images,
-                systemPrompt: systemPrompt(for: role),
-                userPrompt: utterance,
-                onTextChunk: { @MainActor accumulatedText in
-                    streamedReplyText = accumulatedText
+            // ③ 想：**走哪条管线由预设决定**（用户 2026-09-24：「每一个预设背后都是
+            // 不同的管线」）。
+            //
+            //   · 理解＝实时模型 → WebSocket 会话：喂文字、收文字
+            //     （`RealtimeTextUnderstandingClient`，协议逐条照官方文档，实测首字 0.48 秒）
+            //   · 其余 → HTTP 图文（截图/摄像头帧一起进请求）
+            //
+            // 两条路的**下游完全一样**：文字边收边喂给朗读会话、边更新气泡，
+            // 所以"表达"那一侧（3.1 TTS + 任意音色）一个字都不用改。
+            var finalReplyText = ""
+            let understandingModelID = preset.understandingModelID
+                ?? VoiceCatalog.defaultUnderstandingModel
 
-                    // 念的是**剥掉标签**的那份：回复里可能带 `[POINT:]` 这类标记，
-                    // 原样念出来会变成「方括号 P O I N T」。与按住说话那条路用的是
-                    // 同一个 helper，两处的朗读文本因此不会分叉。
-                    let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
-                    if speakableText != spokenTextAccumulator {
-                        spokenTextAccumulator = speakableText
-                        speechSession.feed(cumulativeSpeakableText: speakableText)
+            if VoiceCatalog.isRealtimeModel(understandingModelID) {
+                finalReplyText = try await RealtimeTextUnderstandingClient().generateText(
+                    modelID: understandingModelID,
+                    systemPrompt: systemPrompt(for: role),
+                    userPrompt: utterance,
+                    onTextChunk: { @MainActor accumulatedText in
+                        streamedReplyText = accumulatedText
+                        // 与 HTTP 那条路同一个 helper：念的是剥掉标签的那份。
+                        let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
+                        if speakableText != spokenTextAccumulator {
+                            spokenTextAccumulator = speakableText
+                            speechSession.feed(cumulativeSpeakableText: speakableText)
+                        }
+                        callbacks.onAnswerTextChanged(speakableText)
                     }
+                )
+            } else {
+                let (httpReplyText, _) = try await BailianVisionChatAPI().analyzeImageStreaming(
+                    images: images,
+                    systemPrompt: systemPrompt(for: role),
+                    userPrompt: utterance,
+                    modelIDOverride: understandingModelID,
+                    onTextChunk: { @MainActor accumulatedText in
+                        streamedReplyText = accumulatedText
 
-                    callbacks.onAnswerTextChanged(speakableText)
-                }
-            )
+                        // 念的是**剥掉标签**的那份：回复里可能带 `[POINT:]` 这类标记，
+                        // 原样念出来会变成「方括号 P O I N T」。与按住说话那条路用的是
+                        // 同一个 helper，两处的朗读文本因此不会分叉。
+                        let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
+                        if speakableText != spokenTextAccumulator {
+                            spokenTextAccumulator = speakableText
+                            speechSession.feed(cumulativeSpeakableText: speakableText)
+                        }
+
+                        callbacks.onAnswerTextChanged(speakableText)
+                    }
+                )
+                finalReplyText = httpReplyText
+            }
 
             if Task.isCancelled { return }
 
@@ -241,7 +300,12 @@ struct CascadeTurnCallbacks {
 @MainActor
 protocol VoiceChatSpeechSynthesizing {
     /// 开始一次逐句快答的朗读会话。
-    func beginStreamingSpeech() throws -> VoiceChatStreamingSpeech
+    ///
+    /// `voiceID` 是**当前预设选中的音色**（由 `VoiceCatalog.capability` 校验过）。
+    /// 它必须从这里传下去：`BailianTTSClient` 原来只认全局配置里的音色，于是语音聊天
+    /// 里换了音色却听不出变化 —— 用户报的正是这个（「我选择了使用这个音色，但实际连接
+    /// 时播放的音色调用的并不是我点击使用的那个音色」）。传 nil = 跟随全局配置。
+    func beginStreamingSpeech(voiceID: String?) throws -> VoiceChatStreamingSpeech
     /// 立刻停掉正在念的，**并结束这一轮**（挂断用）。
     func stopSpeaking()
     /// 打断：丢掉正在念的，但**这一轮继续**（用户开口用）。

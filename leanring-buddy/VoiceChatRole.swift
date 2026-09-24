@@ -26,6 +26,31 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
     var chatEngine: String
     /// 三段式的合成音色（系统音色名或克隆 voice_id）。
     var ttsVoice: String
+
+    /// **本角色独立**的识别模型（三段式的「听」）。nil = 跟随默认
+    /// （`qwen-audio-3.0-realtime-flash`，流式）。每个角色一份，切角色即切配置。
+    var recognitionModelID: String?
+
+    /// **本角色独立**的理解模型（三段式的「想」）。nil = deepseek-flash。
+    /// 语音模型当理解实测不成立（吐不出纯文字），所以可选项只有 deepseek 系。
+    var understandingModelID: String?
+
+    /// **本角色独立**的表达模型（三段式的「说」，即合成模型）。nil = 3.1-tts-flash。
+    var expressionModelID: String?
+
+    /// **本角色独立**的全双工语音模型（「全双工语音」类里二选一）。
+    /// 它决定那一类的音色表（3.0 Flash 5 个 / 3.1 Plus 13 个）。nil = 3.0 Flash。
+    var duplexModelID: String?
+    /// **本角色独立**的全模态模型（「全双工全模态」模式用哪个）。nil = 3.8 Omni Flash。
+    /// 全模态一个模型包办识别/理解/表达，所以角色上只需要这一个字段。
+    var omniModelID: String?
+    /// 聊天类型：`"video"` 视频聊天 / `"voice"` 语音聊天（nil 按语音聊天读）。
+    ///
+    /// 它是一条**分流**：决定全双工那一行给哪些预设、以及画面能不能开。语速不受它影响。
+    var chatChannel: String?
+    /// 当前选中的**预设** id（`VoiceChatPreset.id`）。nil = 该 (chatChannel, chatEngine)
+    /// 下的默认预设。预设是唯一的真相：模型组合、音色、要不要开画面都从它来。
+    var presetID: String?
     /// 全模态的内置音色（Ethan 系）。
     var omniVoice: String
     /// 全双工语音的内置音色（龙安系）。**与全模态是两套表，不能混填** ——
@@ -141,6 +166,17 @@ extension VoiceChatRole {
             ?? fallback.avatarSymbolName
         avatarImagePath = try container.decodeIfPresent(String.self, forKey: .avatarImagePath)
         isDefault = try container.decodeIfPresent(Bool.self, forKey: .isDefault) ?? false
+
+        // 五个模型字段都要**显式解码**。这一段曾经漏过：encode 是合成的（会把它们
+        // 写进文件），decode 是这份手写的（当时没有这几行）—— 结果是选过的模型
+        // 落了盘却在下次启动时全部回到默认，而且没有任何报错。
+        recognitionModelID = try container.decodeIfPresent(String.self, forKey: .recognitionModelID)
+        understandingModelID = try container.decodeIfPresent(String.self, forKey: .understandingModelID)
+        expressionModelID = try container.decodeIfPresent(String.self, forKey: .expressionModelID)
+        duplexModelID = try container.decodeIfPresent(String.self, forKey: .duplexModelID)
+        omniModelID = try container.decodeIfPresent(String.self, forKey: .omniModelID)
+        chatChannel = try container.decodeIfPresent(String.self, forKey: .chatChannel)
+        presetID = try container.decodeIfPresent(String.self, forKey: .presetID)
     }
 
     /// 名字为空时补一个能看的名字，与 VoiceWeb 的清洗一致（空名 → 「未命名角色」）。
@@ -152,8 +188,24 @@ extension VoiceChatRole {
 
     /// 这个角色要用的引擎。取值非法时回落到三段式 —— 三段式是三个里唯一不依赖
     /// 实时模型的，回落到它最不容易「连不上」。
+    /// 模式收敛后的读取口（2026-09-24：只剩 全模态 / 三段式 两个模式）。
+    /// 旧文件里的 `duplex` 一律按三段式读 —— 它的「听想说一体」由识别/理解/表达
+    /// 三栏全选语音模型来达成，不再是一个独立模式。
     var resolvedChatEngine: VoiceChatEngine {
-        VoiceChatEngine(rawValue: chatEngine) ?? .threeStage
+        // **「全双工」和旧的「全模态」都读成全双工。**
+        //
+        // 全模态不再是模式，而是全双工下面的一族模型（`qwen3.x-omni-*-realtime`）——
+        // 由**预设**决定用哪一族，所以两者落到同一个模式上。
+        //
+        // 这里曾经写着「`duplex` 不再是独立模式，按三段式读」—— 那是上一轮
+        // （全双工还藏在模式选择之外）的规则。本轮把全双工放回模式选择之后没跟着改，
+        // 后果是：点「全双工」→ 写入 `chatEngine = "duplex"` → 角色变更通知把模式
+        // 同步回来时读成三段式 → **勾立刻弹回去，看起来就是"这个按钮点不了"**。
+        // （2026-09-24 用户报的正是这个。）
+        switch VoiceChatEngine(rawValue: chatEngine) {
+        case .duplexVoice, .omni: return .duplexVoice
+        default: return .threeStage
+        }
     }
 
     /// 记忆方式。非法值与缺失一样，按「接着上次聊」走：这是 VoiceWeb 的默认值，
@@ -167,7 +219,7 @@ extension VoiceChatRole {
 
 /// 三个对话方案。放在这里而不是控制器里，因为角色要引用它、设置页也要引用它，
 /// 放控制器里会让「角色 → 控制器」产生一条没必要的依赖。
-nonisolated enum VoiceChatEngine: String, CaseIterable, Identifiable {
+nonisolated enum VoiceChatEngine: String, CaseIterable, Identifiable, Codable {
     case threeStage = "pipeline"
     case duplexVoice = "duplex"
     case omni = "omni"
@@ -177,8 +229,10 @@ nonisolated enum VoiceChatEngine: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .threeStage: return "三段式"
-        case .duplexVoice: return "全双工语音"
-        case .omni: return "全双工全模态"
+        // 用户 2026-09-24：「按钮名称始终叫全双工，无论用户选择哪个预设，
+        // 显示出来的都叫全双工」—— 具体用哪个模型由预设那一行右侧显示。
+        case .duplexVoice: return "全双工"
+        case .omni: return "全模态"
         }
     }
 
@@ -192,6 +246,14 @@ nonisolated enum VoiceChatEngine: String, CaseIterable, Identifiable {
         case .threeStage, .omni: return true
         case .duplexVoice: return false
         }
+    }
+
+    /// **模式选择器只出两个**（用户 2026-09-24：「真正的模式其实就两个」）。
+    /// `duplexVoice` 保留在枚举里只为旧数据解码，不再出现在任何模式下拉。
+    static var pickerCases: [VoiceChatEngine] {
+        // 用户 2026-09-24 定的两个模式：**全双工 / 三段式**（不是「全模态」）。
+        // 这一份同时喂给设置页的音色查看和三个模式快捷键，所以顺序即索引。
+        [.duplexVoice, .threeStage]
     }
 }
 

@@ -306,6 +306,7 @@ struct NotchHomeView: View {
                 // land on the final layout instead of the previous session's.
                 scheduleScrollToBottom(proxy)
             }
+            .thinWhiteScrollIndicator()
             .onChange(of: companionManager.streamingAnswerText) { _ in
                 scrollToBottom(proxy)
             }

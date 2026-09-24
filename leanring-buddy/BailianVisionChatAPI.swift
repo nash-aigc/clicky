@@ -105,7 +105,7 @@ class BailianVisionChatAPI {
     /// The reason is carried through verbatim from the configuration status rather
     /// than collapsed into "not configured", so the user is told whether to fill in
     /// a model name, an API key or a URL.
-    private func resolveVisionRole() throws -> ResolvedModelRole {
+    private func resolveVisionRole(modelIDOverride: String? = nil) throws -> ResolvedModelRole {
         let visionRoleStatus = ModelConfigurationStore.snapshot().status(of: .vision)
         guard let resolvedVisionRole = visionRoleStatus.resolvedRole else {
             let unavailableExplanation = visionRoleStatus.unavailableExplanation ?? "未配置"
@@ -116,7 +116,7 @@ class BailianVisionChatAPI {
                     "视觉模型不可用：\(unavailableExplanation)。请在菜单栏图标的齿轮里打开模型设置。"]
             )
         }
-        return resolvedVisionRole
+        return resolvedVisionRole.withModelIDOverride(modelIDOverride)
     }
 
     private func makeAPIRequest(for resolvedVisionRole: ResolvedModelRole) throws -> URLRequest {
@@ -299,11 +299,12 @@ class BailianVisionChatAPI {
         conversationHistory: [ConversationHistoryEntry] = [],
         conversationSummary: String = "",
         userPrompt: String,
+        modelIDOverride: String? = nil,
         onTextChunk: @MainActor @Sendable (String) -> Void
     ) async throws -> (text: String, duration: TimeInterval) {
         let startTime = Date()
 
-        let resolvedVisionRole = try resolveVisionRole()
+        let resolvedVisionRole = try resolveVisionRole(modelIDOverride: modelIDOverride)
         var request = try makeAPIRequest(for: resolvedVisionRole)
 
         var body: [String: Any] = [

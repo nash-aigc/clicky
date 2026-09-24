@@ -87,7 +87,11 @@ final class BailianTTSClient {
 
     /// The speech role as configured right now, or a thrown error naming exactly
     /// what is missing.
-    private func resolveSpeechRole() throws -> ResolvedModelRole {
+    ///
+    /// `voiceOverride` 是**语音聊天按预设选的音色** —— 那个值以前根本没有进到这条
+    /// 链路（这里只认全局配置），所以「我点了使用，但连接时播的不是那个音色」。
+    /// 按住说话那条路不传它，仍旧走全局配置里那份。
+    private func resolveSpeechRole(voiceOverride: String? = nil) throws -> ResolvedModelRole {
         let speechRoleStatus = ModelConfigurationStore.snapshot().status(of: .speech)
         guard let resolvedSpeechRole = speechRoleStatus.resolvedRole else {
             let unavailableExplanation = speechRoleStatus.unavailableExplanation ?? "未配置"
@@ -95,7 +99,7 @@ final class BailianTTSClient {
                 message: "朗读模型不可用：\(unavailableExplanation)。请在菜单栏图标的齿轮里打开模型设置。"
             )
         }
-        return resolvedSpeechRole
+        return resolvedSpeechRole.withSpeechVoiceOverride(voiceOverride)
     }
 
     /// Synthesizes `text` and begins playing it.
@@ -104,14 +108,14 @@ final class BailianTTSClient {
     /// uses that moment to switch the companion into its "responding" state, so
     /// waiting for a long reply to finish synthesizing would keep the spinner up
     /// for the whole answer. Any remaining chunks play in the background.
-    func speakText(_ text: String) async throws {
+    func speakText(_ text: String, voiceOverride: String? = nil) async throws {
         stopPlayback()
 
         // Resolved once here and passed to every chunk below. Resolving per chunk
         // would let a save in the settings window land between chunk 1 and chunk 2,
         // so a single reply would be spoken half in one provider's voice and half
         // in another's — and `isPlaying` would be tracking two providers at once.
-        let resolvedSpeechRole = try resolveSpeechRole()
+        let resolvedSpeechRole = try resolveSpeechRole(voiceOverride: voiceOverride)
 
         // The playback settings are snapshotted alongside the role for the same
         // reason: every chunk of one reply should play at one speed and volume.
@@ -248,9 +252,9 @@ final class BailianTTSClient {
         voicePlaybackEngine.releaseNow()
     }
 
-    func beginStreamingSpeech() throws -> StreamingSpeechSession {
+    func beginStreamingSpeech(voiceOverride: String? = nil) throws -> StreamingSpeechSession {
         stopPlayback()
-        let resolvedSpeechRole = try resolveSpeechRole()
+        let resolvedSpeechRole = try resolveSpeechRole(voiceOverride: voiceOverride)
         let appSettings = AppSettingsStore.snapshot()
         let playbackConfiguration = SpeechPlaybackConfiguration(
             rate: Float(appSettings.speechPlaybackRate),
@@ -389,6 +393,11 @@ final class BailianTTSClient {
            !speechVoiceID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             speechInput["voice"] = speechVoiceID
         }
+
+        // 每次合成都把「用了哪个模型、哪个音色」打出来。用户报的症状是「我点了使用，
+        // 但连接时播放的不是那个音色」—— 这一行是那条症状唯一能直接对照的判据：
+        // 日志里的 voice 必须等于他刚点的那个 id。
+        print("🔊 TTS 合成：model=\(resolvedSpeechRole.modelID) voice=\(resolvedSpeechRole.speechVoiceID ?? "(未指定，用服务端默认)") 文本 \(textChunk.count) 字")
 
         let body: [String: Any] = [
             "model": resolvedSpeechRole.modelID,

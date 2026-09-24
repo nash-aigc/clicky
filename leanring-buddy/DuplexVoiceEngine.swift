@@ -97,7 +97,15 @@ final class DuplexVoiceEngine {
 
     // MARK: - 开 / 关
 
-    func start(role: VoiceChatRole, model: String, systemPrompt: String) async throws {
+    /// 起一条会话。
+    ///
+    /// - Parameters:
+    ///   - role: 角色 —— 系统提示词从它读。
+    ///   - model: 这一场用哪个实时模型（来自**预设**）。
+    ///   - voiceID: 这一场用哪个音色。**必须是能力层校验过的那个**
+    ///     （`VoiceCatalog.capability(...).effectiveVoiceID`）：跨族音色会让整条
+    ///     `session.update` 被拒，而那句错误完全不提音色（见下面的错误分支）。
+    func start(role: VoiceChatRole, model: String, voiceID: String, systemPrompt: String) async throws {
         guard let resolvedSpeechRole = ModelConfigurationStore.snapshot().status(of: .speech).resolvedRole else {
             throw BailianTTSClientError(message: "还没有配置「说」这个角色（设置 → 模型），无法开始全双工语音。")
         }
@@ -124,11 +132,13 @@ final class DuplexVoiceEngine {
         try await sendJSON([
             "type": "session.update",
             "session": sessionConfiguration(
-                voice: role.duplexVoice,
+                voice: voiceID,
                 model: model,
                 systemPrompt: systemPrompt
             )
         ])
+        // 这一行是「音色到底有没有生效」的判据：它必须等于用户在音色面板里点的那个。
+        print("💬 全双工会话：model=\(model) voice=\(voiceID)")
 
         // 麦克风上行。装在**共享播放引擎**上：voice processing 的回声消除只对它自己
         // 渲染的音频有效，所以话筒必须和「正在播的回答」在同一个引擎上，否则模型会
