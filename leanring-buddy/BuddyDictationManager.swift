@@ -572,6 +572,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private var pendingStartRequestIdentifier = UUID()
     private var contextualKeyterms: [String] = []
     private var lastRecordedAudioPowerSampleDate = Date.distantPast
+
+    /// When `currentAudioPowerLevel` was last published, and how often it may be.
+    ///
+    /// See the throttle in `updateAudioPowerLevel`: the raw rate is one publish
+    /// per audio buffer (~47 Hz), and each publish re-evaluates a full-screen
+    /// overlay's body on every display. 20 Hz is above the overlay's own 0.08 s
+    /// animation, so the waveform still reads as continuous.
+    private var lastAudioPowerLevelPublishDate = Date.distantPast
+    private static let audioPowerLevelPublishIntervalSeconds: TimeInterval = 0.05
     private var activePermissionRequestTask: Task<Bool, Never>?
     /// Timestamp of the last completed permission request, used to debounce
     /// rapid follow-up requests that arrive before macOS updates its cache.
@@ -1795,9 +1804,36 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                 CGFloat(boostedLevel),
                 self.currentAudioPowerLevel * 0.72
             )
-            self.currentAudioPowerLevel = smoothedAudioPowerLevel
 
             let now = Date()
+            // PUBLISH AT A RATE THE UI CAN DRAW, not one per audio buffer.
+            //
+            // This runs ~47×/s (1024 frames at 48 kHz), and `currentAudioPowerLevel`
+            // is `@Published` → `CompanionManager.bindAudioPowerLevel` mirrors it
+            // into ITS `@Published` → `BlueCursorView` is an `@ObservedObject` on a
+            // FULL-SCREEN `NSPanel` per display, so every one of those writes
+            // re-evaluates a screen-sized view body, and each one re-arms that
+            // view's `.animation(.linear(duration: 0.08), value: audioPowerLevel)`.
+            // The overlay sits at `.screenSaver` level — above the notch — and the
+            // wings slide on the same main thread (audit, 2026-09-24).
+            //
+            // The tap goes live MID-SLIDE, which is why the wings hitch in the
+            // middle and are smooth afterwards: before that instant the overlay had
+            // only its TimelineView, and after it these implicit animations pile up
+            // on top of it. Reported as 「在中间卡顿一下，之后就很正常」.
+            //
+            // Skipping publishes costs the waveform nothing: the smoothing above is
+            // `max(new, old × 0.72)` and is still applied on EVERY buffer, so the
+            // value published after a skip is already the peak of the buffers that
+            // were skipped, and the 0.08 s animation interpolates between them.
+            let shouldPublishLevel =
+                now.timeIntervalSince(self.lastAudioPowerLevelPublishDate)
+                >= Self.audioPowerLevelPublishIntervalSeconds
+            if shouldPublishLevel {
+                self.lastAudioPowerLevelPublishDate = now
+                self.currentAudioPowerLevel = smoothedAudioPowerLevel
+            }
+
             if now.timeIntervalSince(self.lastRecordedAudioPowerSampleDate)
                 >= Self.recordedAudioPowerHistorySampleIntervalSeconds {
                 self.lastRecordedAudioPowerSampleDate = now

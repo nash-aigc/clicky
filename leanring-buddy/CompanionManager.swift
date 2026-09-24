@@ -1161,7 +1161,20 @@ final class CompanionManager: ObservableObject {
                     // recording is dropped by the same call.
                     self.circleToAskController.beginCaptureIfEnabled()
                 } else if isPreparing {
-                    self.voiceState = .processing
+                    // Deliberately NO phase change while merely PREPARING to
+                    // record. This branch used to publish `.processing`, which the
+                    // notch draws as "Thinking" — and because the recording flag
+                    // only lands after an `await` on the permission check, the
+                    // wings began their 380 ms slide AS Thinking and swapped to
+                    // Listening part-way through it. That mid-slide swap tears
+                    // down one `TimelineView` and builds another, changes a
+                    // gradient whose stops are not interpolable, and relayouts the
+                    // label — at the moment of maximum motion. Reported as
+                    // 「在中间卡顿一下，之后就很正常」 (2026-09-24).
+                    //
+                    // Staying idle for the ~100 ms that check takes costs nothing
+                    // a user can see, and the wings get ONE clean animation into
+                    // Listening instead of two overlapping ones.
                 } else {
                     self.voiceState = .idle
                     self.circleToAskController.endCapture()
