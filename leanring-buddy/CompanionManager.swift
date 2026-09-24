@@ -1494,6 +1494,17 @@ final class CompanionManager: ObservableObject {
             }
     
 
+            // A new recording takes the microphone from the continuous-listening
+            // window, so the window has to go first. Since 2026-09-24 both run on
+            // ONE engine (the shared one), and installing the recording's tap
+            // replaces the window's — leaving the window's ASR session alive but
+            // fed by the recording would double every utterance into two
+            // questions. Ending it is also what the user means: pressing the talk
+            // key is "I have something new to say".
+            if buddyDictationManager.isContinuousListening {
+                endContinuousListeningWindow(reason: "talk shortcut pressed to start a new recording")
+            }
+
             pendingKeyboardShortcutStartTask?.cancel()
             pendingKeyboardShortcutStartTask = Task {
                 // Read once per recording, for the same reason the response

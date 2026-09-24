@@ -560,7 +560,38 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// window, until the app was restarted. `startRecognitionSession` re-resolves
     /// it when the current one is unusable.
     private var transcriptionProvider: any BuddyTranscriptionProvider
+    /// The push-to-talk engine — the FALLBACK path only.
+    ///
+    /// Recording normally runs through the shared playback engine, the same one
+    /// the answer is spoken from and the listening window taps (see
+    /// `startRecognitionSession`). That is the reference's own rule — capture and
+    /// playback on ONE audio path — and it is what keeps a second engine from
+    /// tearing the shared one down: measured 2026-09-24, stopping an engine that
+    /// shares the input device with a voice-processing engine kills the voice
+    /// one. This engine is kept only for the case where the shared engine is
+    /// missing, which is also why its start still lives here.
     private let audioEngine = AVAudioEngine()
+
+    /// Whether this recording's tap is on the SHARED engine rather than
+    /// `audioEngine`. Every teardown goes through `stopPushToTalkCapture()`, so
+    /// the two cannot disagree about which engine to stop.
+    private var isPushToTalkCaptureOnSharedEngine = false
+
+    /// Stops whichever engine is carrying this recording's tap.
+    ///
+    /// One helper because there are five teardown paths — session end, cancel,
+    /// pre-start cancellation, finalisation, and error — and a path that stopped
+    /// the wrong engine would leave the other running with a live microphone tap
+    /// and no session to feed.
+    private func stopPushToTalkCapture() {
+        if isPushToTalkCaptureOnSharedEngine {
+            isPushToTalkCaptureOnSharedEngine = false
+            sharedVoicePlaybackEngineProvider?()?.removeInputTap()
+        } else {
+            audioEngine.stop()
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+    }
     private var activeTranscriptionSession: (any BuddyStreamingTranscriptionSession)?
     private var activeStartSource: BuddyDictationStartSource?
     private var draftCallbacks: BuddyDictationDraftCallbacks?
@@ -1401,8 +1432,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             draftCallbacks?.updateDraftText(currentDraftText)
         }
 
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        stopPushToTalkCapture()
         activeTranscriptionSession?.cancel()
 
         resetSessionState()
@@ -1517,8 +1547,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             try await startRecognitionSession()
             guard !Task.isCancelled else {
                 print("🎙️ BuddyDictationManager: start cancelled (shortcut released during session start)")
-                audioEngine.stop()
-                audioEngine.inputNode.removeTap(onBus: 0)
+                stopPushToTalkCapture()
                 activeTranscriptionSession?.cancel()
                 resetSessionState()
                 return
@@ -1557,8 +1586,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         let finalTranscriptFallbackDelaySeconds = activeTranscriptionSession?.finalTranscriptFallbackDelaySeconds
             ?? Self.defaultFinalTranscriptFallbackDelaySeconds
 
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        stopPushToTalkCapture()
         activeTranscriptionSession?.requestFinalTranscript()
 
         finalizeFallbackWorkItem?.cancel()
@@ -1627,34 +1655,47 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         print("🎙️ BuddyDictationManager: provider ready, starting audio engine")
         PressPathProbe.shared.mark("ASR session ready — tap + engine next")
 
-        // THE WHOLE TAIL RUNS OFF THE MAIN ACTOR, and this is the fix for the
-        // notch's mid-slide hitch.
+        // THE SHARED ENGINE CARRIES THE RECORDING, not one of its own.
         //
-        // Measured 2026-09-24 in the build that already had four other fixes:
-        // the phase is published at press+54…+68 ms, so the wings' 380 ms slide
-        // occupies press+60…+440; the main actor is then busy for 102 ms on one
-        // press and 166 ms on another, at press+202…+304 and press+218…+384 —
-        // i.e. right through the MIDDLE of the slide. `easeInOut` has its
-        // maximum velocity at exactly t = 0.5, so a stall there does not read as
-        // a slow animation; the wings stop at half and jump the rest. That is
-        // the 「卡一半」 the user reports.
+        // Two reasons, and the second is the one the user can hear.
         //
-        // An earlier round ruled this out by timing only `prepare()` + `start()`
-        // (64–80 ms) and calling it too small to see. **That instrument was too
-        // narrow**: the same main-actor span also instantiates `inputNode`, makes
-        // a synchronous HAL query for `outputFormat(forBus: 0)`, and removes and
-        // installs the tap — and those are outside every mark. The two spans
-        // above are 102 and 166 ms against engine starts of 77 and 69 ms, so
-        // roughly a third to a half of the stall was invisible to it.
+        // 1. It is the reference's rule and this file's own history: capture and
+        //    playback on ONE audio path. Measured 2026-09-24, stopping an engine
+        //    that shares the input device with a voice-processing engine kills
+        //    the voice one — which is why this app once went mute per reply and
+        //    took four rounds to diagnose.
+        // 2. It is what makes the FIRST question of a session fast. The shared
+        //    engine's bring-up (~2 s, enabling voice processing reconfigures the
+        //    whole IO) used to start when the first TTS chunk was ready; here it
+        //    starts the moment the recording does, so it runs while the user is
+        //    still speaking and is finished long before the reply exists. The
+        //    second question was already fast (measured 2026-09-24: ~1.1 s from
+        //    the card to the first sound inside a held session, against ~3 s
+        //    cold); this is the same trick applied to the first.
         //
-        // Same shape as `VoicePlaybackEngine.performBringUp` (commit 350b228):
-        // the AVAudioEngine control calls move to a detached task, and the main
-        // actor awaits — which suspends it rather than blocking it, so the run
-        // loop keeps turning and the wings keep sliding.
+        // `installInputTap` does the start itself — off the main actor, and
+        // verified — so nothing here needs to touch an `AVAudioEngine` directly.
         let tapHandler: AVAudioNodeTapBlock = { [weak self] buffer, _ in
             self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
             self?.updateAudioPowerLevel(from: buffer)
         }
+        if let sharedEngine = sharedVoicePlaybackEngineProvider?() {
+            do {
+                try await sharedEngine.installInputTap(bufferSize: 1024, handler: tapHandler)
+                isPushToTalkCaptureOnSharedEngine = true
+                PressPathProbe.shared.mark("recording live on the SHARED engine")
+                return
+            } catch {
+                print("⚠️ BuddyDictationManager: the shared engine would not carry the recording (\(error.localizedDescription)) — falling back to the own engine")
+                sharedEngine.removeInputTap()
+                isPushToTalkCaptureOnSharedEngine = false
+            }
+        }
+
+        // Fallback: the own engine, for the case where there is no shared one.
+        // Same shape as before — the AVAudioEngine calls run on a detached task
+        // so the notch's expansion animation is never blocked by them (see the
+        // 380 ms slide measurement this replaced).
         let engineToStart = audioEngine
         let engineStartFailure: Error? = await Task.detached(priority: .userInitiated) {
             let inputNode = engineToStart.inputNode
@@ -1709,8 +1750,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             currentDraftCallbacks?.updateDraftText(finalDraftText)
         }
 
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
+        stopPushToTalkCapture()
         activeTranscriptionSession?.cancel()
 
         resetSessionState()
