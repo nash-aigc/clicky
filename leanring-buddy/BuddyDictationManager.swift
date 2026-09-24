@@ -1219,11 +1219,16 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                 if audioLevel < Self.continuousListeningSpeechLevelThreshold {
                     if let silenceStartedAt = continuousListeningSilenceStartedAt,
                        now.timeIntervalSince(silenceStartedAt) >= continuousListeningUtteranceEndSilenceSeconds {
+                        print("⏱️ [listen] silence lasted \(continuousListeningUtteranceEndSilenceSeconds)s — requesting the final transcript")
                         requestContinuousListeningFinalTranscript()
                     } else if continuousListeningSilenceStartedAt == nil {
+                        print("⏱️ [listen] silence began — the \(continuousListeningUtteranceEndSilenceSeconds)s auto-send countdown starts now")
                         continuousListeningSilenceStartedAt = now
                     }
                 } else {
+                    if continuousListeningSilenceStartedAt != nil {
+                        print("⏱️ [listen] speech resumed — the silence countdown is reset")
+                    }
                     continuousListeningSilenceStartedAt = nil
                 }
             } else {

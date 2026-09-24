@@ -2959,6 +2959,17 @@ final class CompanionManager: ObservableObject {
             guard self.voiceState == .responding else { return }
 
             self.voiceState = .idle
+            // …and retract the panel on this run-loop turn, not 2.5 s later.
+            //
+            // `refreshActivityPhase` holds the last phase for
+            // `activityPhaseHoldSeconds` whenever the derived phase goes idle,
+            // because most idle instants are the GAP between `thinking` and
+            // `speaking` and retracting there makes the wings flicker. A turn
+            // that has finished being spoken is the other kind of idle — an
+            // ENDING — and the hold has to be skipped for it, exactly as it is
+            // for the user's own stop (`interruptActiveResponse`). Reported as
+            // 「回复播放完成后，刘海没有瞬间消失，而是等了两秒才消失」.
+            self.notchWindowController?.forceActivityPhaseIdle()
             self.scheduleTransientHideIfNeeded()
         }
     }
