@@ -919,6 +919,9 @@ final class BailianTTSClient {
         private func enqueueSegment(_ segment: String) {
             queuedSegmentCount += 1
             print("🗣️ Streaming speech: queued segment \(queuedSegmentCount) (\(segment.count) chars)")
+            if queuedSegmentCount == 1 {
+                TurnTimingProbe.shared.mark("first segment ready to synthesize")
+            }
             pendingSegments.append(segment)
             // From here on the later-segment rules (①②③ in emitReadySegments)
             // take over from the first-segment rule.

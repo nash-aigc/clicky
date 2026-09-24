@@ -778,6 +778,11 @@ final class VoicePlaybackEngine {
         // does not, and the log has never answered that. See
         // `installPlaybackRenderProbe`.
         print("🔊 [probe] play(): isEngineStarted=\(isEngineStarted) engineRunning=\(engine.isRunning) playerPlaying=\(playerNode.isPlaying) frames=\(chunkBuffer.frameLength) bufferFormat=\(chunkBuffer.format.sampleRate)Hz/\(chunkBuffer.format.channelCount)ch")
+        // TEMPORARY (2026-09-24): the first scheduled chunk IS the first sound,
+        // so this mark is the far end of the gap the user measures by ear.
+        // `markOnce` because it sits on a per-chunk path and only the first one
+        // is the measurement.
+        TurnTimingProbe.shared.markOnce("first audio scheduled (sound starts here)")
     }
 
     /// Stops the current chunk immediately (interruption path). The engine
@@ -802,6 +807,15 @@ final class VoicePlaybackEngine {
             // already here (or there is no listening window open at all).
             return
         }
+
+        // TEMPORARY (2026-09-24) — the measurement this whole redesign turns on.
+        // Everything below is synchronous and runs on the main actor, so if this
+        // pair is 2-3 s apart then starting the engine at the beginning of
+        // recording would freeze the UI while the user is still speaking, and
+        // the engine's start has to move off the main thread before its timing
+        // can move at all. If it is a few hundred ms, that step is unnecessary.
+        TurnTimingProbe.shared.mark("engine start requested (main thread: \(Thread.isMainThread))")
+        let engineStartBeganAt = Date()
 
         // `isEngineStarted` is NOT allowed to be the only word on this. It is
         // this class's own bookkeeping, and the engine can stop without telling
@@ -880,6 +894,13 @@ final class VoicePlaybackEngine {
         }
 
         print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min, AGC off)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(inputNode.outputFormat(forBus: 0).channelCount) ch)")
+        // TEMPORARY (2026-09-24): the duration of the whole bring-up, and the
+        // number the decision above depends on.
+        TurnTimingProbe.shared.mark(String(
+            format: "engine start finished (isRunning=%@, took %.0fms on the main actor)",
+            engine.isRunning ? "true" : "false",
+            Date().timeIntervalSince(engineStartBeganAt) * 1000
+        ))
     }
 
     /// Hand-off #2, from the other side: playback is starting, so the
