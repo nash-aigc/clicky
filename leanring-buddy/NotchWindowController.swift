@@ -1440,7 +1440,25 @@ final class NotchWindowController {
     /// with it in place.
     func setExternalSessionOverride(_ phase: NotchActivityPhase?) {
         panelModel.externalSessionOverride = phase
-        refreshActivityPhase()
+
+        // A session hang-up is an explicit ENDING and retracts at once — the
+        // same treatment as the user's stop (`forceActivityPhaseIdle`).
+        //
+        // Without this, clearing the override fell into `refreshActivityPhase`'s
+        // hold: the derived phase (from the voice state, which the external
+        // session never touches) is idle, so the 2.5 s thinking→speaking-gap
+        // hold applied and the notch kept saying 「Chatting」 for 2.5 s after the
+        // call had already ended — reported as 「点击挂断按钮之后，通话确实立即
+        // 挂断了，但刘海的动画还会继续显示（通话中）持续三五秒钟」.
+        guard phase == nil,
+              panelModel.activityPhase == .externalChatting
+                  || panelModel.activityPhase == .externalConnecting else {
+            refreshActivityPhase()
+            return
+        }
+        activityPhaseHoldTask?.cancel()
+        activityPhaseHoldTask = nil
+        panelModel.activityPhase = .idle
     }
 }
 
