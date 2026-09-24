@@ -222,6 +222,28 @@ final class BailianTTSClient {
     /// Called by `CompanionManager`'s idle-release timer and by the release
     /// shortcut. Deliberately not called when a reply ends: holding the engine
     /// is what keeps the next question's first sound fast.
+    /// 打断：丢掉正在念的音频，但**这一轮继续有效**（后续文本还会被合成播放）。
+    ///
+    /// 语音聊天的 VAD 打断走这条，**不走 `stopPlayback()`** —— 那个是终止式的
+    /// （它会把朗读会话标记成停止，之后 `feed()` 永远空转），用在一句自己播放声
+    /// 引起的误触上，代价是整条回答哑掉。对话页面仍然走 `stopPlayback()`，行为不变。
+    func bargeInWithoutEndingSession() {
+        guard let activeStreamingSession else {
+            // 没有逐句快答会话在跑（整段合成那条路），退回原来的终止式停止。
+            stopPlayback()
+            return
+        }
+        activeStreamingSession.dropQueuedAudio()
+        voicePlaybackEngine.stopChunk()
+        isSpeakingChunkSequence = false
+        print("🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续")
+    }
+
+    /// 预热共享音频引擎（语音聊天进分区时调）。
+    func warmUpVoiceEngine() async {
+        await voicePlaybackEngine.warmUpForVoiceChat()
+    }
+
     func releaseAudioEngineNow() {
         voicePlaybackEngine.releaseNow()
     }
@@ -399,6 +421,11 @@ final class BailianTTSClient {
             // `speakText` knows the chunk count up front; a streaming session
             // does not (the reply is still being written), so it passes 0.
             let chunkDescription = chunkCount > 0 ? "chunk \(chunkIndex)/\(chunkCount)" : "segment \(chunkIndex)"
+            // TEMPORARY PROBE (2026-09-24): the instant audio actually starts
+            // rendering, which is what the level curve has to be read against —
+            // `isPlaying` covers the whole streaming reply, synthesis gaps
+            // included, so it cannot say whether sound was coming out.
+            print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=chunkStart \(chunkDescription)")
             print("🔊 Bailian TTS: playing \(chunkDescription) (\(audioData.count / 1024)KB)")
         } catch {
             print("⚠️ Bailian TTS: could not play audio chunk \(chunkIndex)/\(chunkCount): \(error.localizedDescription)")
@@ -720,6 +747,27 @@ final class BailianTTSClient {
             ensurePlaybackLoop()
         }
 
+        /// 丢掉**正在念的和已经排队的**音频，但**不结束这个会话** —— 打断专用。
+        ///
+        /// 与 `stop()` 的唯一区别就是它**不置 `isStopped`**，而这一点是全部意义所在：
+        /// `stop()` 之后 `feed()` 会永远空转（`guard !isStopped`），所以一次误触
+        /// 就让整条回答再也不会出声 —— 用户听到的就是「它自己把自己打断了」。
+        /// 而这里丢掉旧的音频之后，后面新流进来的句子照样会合成、照样会播。
+        ///
+        /// **保留 `consumedSpeakableText` 与 `unemittedBuffer`**：
+        /// 前者是对账基线，清掉会让下一次 `feed()` 的前缀校验失败、整段更新被忽略；
+        /// 后者是还没成句的文本，清掉就是把字丢了。
+        func dropQueuedAudio() {
+            guard !isStopped else { return }
+            playbackLoopTask?.cancel()
+            playbackLoopTask = nil
+            for (_, task) in inFlightSyntheses {
+                task.cancel()
+            }
+            inFlightSyntheses = []
+            pendingSegments = []
+        }
+
         /// Stops everything and forgets all queued work. Called from the
         /// client's `stopPlayback`, so every existing interrupt path reaches it.
         func stop() {
@@ -962,6 +1010,9 @@ final class BailianTTSClient {
         /// it was.
         private func reportPlaybackLoopExit(reason: String) {
             let unplayedSegmentCount = pendingSegments.count + inFlightSyntheses.count
+            // TEMPORARY PROBE (2026-09-24): the end of the rendering window the
+            // level curve is bracketed against.
+            print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=chunkEnd (\(reason))")
             print("🔊 Streaming speech: playback loop exited (\(reason)); \(unplayedSegmentCount) unplayed segment(s) dropped, first audio \(firstAudioStarted ? "had started" : "never started")")
         }
 

@@ -26,7 +26,7 @@ struct HomeSpaceSidebarView: View {
     @ObservedObject var agentSessionManager: AgentSessionManager
     /// The VoiceWeb subsystem — the 语音聊天 section's role-preset list reads
     /// its published presets and connection phase, and its rows select.
-    @ObservedObject var voiceWebSessionController: VoiceWebSessionController
+    @ObservedObject var voiceChatController: VoiceChatController
     @Binding var showsSettings: Bool
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
@@ -228,7 +228,7 @@ struct HomeSpaceSidebarView: View {
         case .agents:
             createAgentWithFolderPicker()
         case .voiceChat:
-            voiceWebSessionController.refreshRolePresets()
+            voiceChatController.refreshRolePresets()
         }
     }
 
@@ -236,7 +236,7 @@ struct HomeSpaceSidebarView: View {
         switch agentSessionManager.selectedSidebarSection {
         case .conversations: return "新建会话"
         case .agents: return "选一个项目文件夹，新建一个 Agent"
-        case .voiceChat: return "角色预设来自 VoiceWeb 的配置，这里只能重新读取"
+        case .voiceChat: return "角色由本地保存，可以新建和改提示词"
         }
     }
 
@@ -508,7 +508,7 @@ struct HomeSpaceSidebarView: View {
     private var voiceChatRoleList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if voiceWebSessionController.rolePresets.isEmpty {
+                if voiceChatController.rolePresets.isEmpty {
                     voiceChatEmptyHint
                 } else if filteredRolePresets.isEmpty {
                     voiceChatNoMatchHint
@@ -527,29 +527,29 @@ struct HomeSpaceSidebarView: View {
             .padding(.top, 2)
         }
         .onAppear {
-            voiceWebSessionController.refreshRolePresets()
+            voiceChatController.refreshRolePresets()
             // 进入这个分区就开始预热（服务器 + Chrome + 页面），把用户选角色、
             // 把鼠标移到「连接」的那两三秒用掉 —— 等真正点连接时就没有可等的了。
-            voiceWebSessionController.prepareForConnect()
+            voiceChatController.prepareForConnect()
         }
     }
 
     /// The role rows, filtered by the shared search field.
-    private var filteredRolePresets: [VoiceWebSessionController.VoiceWebRolePreset] {
+    private var filteredRolePresets: [VoiceChatController.VoiceChatRolePreset] {
         let trimmedQuery = roleSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else { return voiceWebSessionController.rolePresets }
-        return voiceWebSessionController.rolePresets.filter {
+        guard !trimmedQuery.isEmpty else { return voiceChatController.rolePresets }
+        return voiceChatController.rolePresets.filter {
             $0.name.localizedCaseInsensitiveContains(trimmedQuery)
         }
     }
 
-    private func voiceChatRoleRow(_ role: VoiceWebSessionController.VoiceWebRolePreset) -> some View {
-        let isSelected = role.id == voiceWebSessionController.selectedRoleID
-        let connectionPhase = voiceWebSessionController.connectionPhase
+    private func voiceChatRoleRow(_ role: VoiceChatController.VoiceChatRolePreset) -> some View {
+        let isSelected = role.id == voiceChatController.selectedRoleID
+        let connectionPhase = voiceChatController.connectionPhase
         // 状态只属于真正在连/连上的那一个角色：`activeRoleID` 是 VoiceWeb
         // 真的在用的角色，`selectedRoleID` 只是用户点选的那一行。两者分开，
         // 连接状态就不可能跟着点击在卡片之间搬家。
-        let isConnectedToThisRole = voiceWebSessionController.activeRoleID == role.id
+        let isConnectedToThisRole = voiceChatController.activeRoleID == role.id
             && (connectionPhase == .connected || connectionPhase == .connecting)
 
         // 行分成两个**并列**的按钮，不是一个按钮套一个：左边整块只负责选中，
@@ -557,7 +557,7 @@ struct HomeSpaceSidebarView: View {
         // 而这两件事必须互不干扰。
         return HStack(spacing: 6) {
             Button(action: {
-                voiceWebSessionController.selectRole(role.id)
+                voiceChatController.selectRole(role.id)
                 showsSettings = false
             }) {
                 HStack(alignment: .center, spacing: 10) {
@@ -570,11 +570,8 @@ struct HomeSpaceSidebarView: View {
                         .frame(width: 5, height: 5)
                         .opacity(isConnectedToThisRole || (!isConnectedToThisRole && isSelected) ? 1 : 0)
 
-                    Image(systemName: "waveform")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.6))
-                        .frame(width: 38, height: 38)
-                        .background(Circle().fill(Color.white.opacity(0.08)))
+                    // 角色的头像（上传的图片优先，否则是它选的图标）。
+                    RoleAvatarView(role: VoiceChatRoleStore.role(withID: role.id), size: 38)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(role.name)
@@ -607,6 +604,35 @@ struct HomeSpaceSidebarView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(isSelected ? Color.white.opacity(0.05) : Color.clear)
         )
+        // 右键菜单 —— 用户 2026-09-24：「每一个左侧的卡片上都增加一个右键按钮，
+        // 用来预设角色。右键卡片后有一个"编辑"按钮，点击编辑，右侧的对话页面就
+        // 变成一个设置页面」。
+        .contextMenu {
+            Button("编辑") {
+                voiceChatController.selectedRoleID = role.id
+                voiceChatController.roleEditorInitialRoleID = role.id
+                voiceChatController.isShowingRoleEditor = true
+                showsSettings = false
+            }
+
+            let storedRole = VoiceChatRoleStore.role(withID: role.id)
+            if storedRole.isDefault {
+                Text("已是默认角色（快捷键用它）")
+            } else {
+                Button("设为默认角色") {
+                    VoiceChatRoleStore.setDefaultRole(id: role.id)
+                    voiceChatController.refreshRolePresets()
+                }
+            }
+
+            Divider()
+
+            Button("删除角色", role: .destructive) {
+                VoiceChatRoleStore.deleteRole(withID: role.id)
+                voiceChatController.refreshRolePresets()
+            }
+            .disabled(role.id == VoiceChatRole.defaultRoleID)
+        }
     }
 
     /// The per-row 连接 / 挂断 button the user asked for on 2026-09-23:
@@ -619,7 +645,7 @@ struct HomeSpaceSidebarView: View {
     /// Green before a session, red during one — the same two colours the notch
     /// wing's hang-up uses, so 「挂断」 looks the same wherever it is offered.
     private func voiceChatRoleConnectButton(
-        _ role: VoiceWebSessionController.VoiceWebRolePreset,
+        _ role: VoiceChatController.VoiceChatRolePreset,
         isConnectedToThisRole: Bool,
         isConnecting: Bool
     ) -> some View {
@@ -633,9 +659,9 @@ struct HomeSpaceSidebarView: View {
 
         return Button {
             if isConnectedToThisRole {
-                voiceWebSessionController.disconnectCurrentSession()
+                voiceChatController.disconnectCurrentSession()
             } else {
-                voiceWebSessionController.connectToRole(role.id)
+                voiceChatController.connectToRole(role.id)
             }
         } label: {
             Text(title)
@@ -688,7 +714,7 @@ struct HomeSpaceSidebarView: View {
         guard isConnectedToThisRole else {
             return isSelected ? "已选中" : "点击选择"
         }
-        return voiceWebSessionController.connectionPhase == .connected ? "聊天中" : "连接中…"
+        return voiceChatController.connectionPhase == .connected ? "聊天中" : "连接中…"
     }
 
     /// Shown when the search field matches no role.
@@ -707,7 +733,7 @@ struct HomeSpaceSidebarView: View {
             Image(systemName: "waveform.circle")
                 .font(.system(size: 30))
                 .foregroundColor(.white.opacity(0.25))
-            Text(voiceWebSessionController.rolesErrorMessage ?? "正在读取 VoiceWeb 角色预设…")
+            Text(voiceChatController.rolesErrorMessage ?? "正在读取角色…")
                 .font(.system(size: 12))
                 .foregroundColor(.white.opacity(0.45))
                 .multilineTextAlignment(.center)

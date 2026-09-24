@@ -1,0 +1,89 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+2026-09-24 13:55:29.699 Clicky[11198:8030149] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 246ms
+⏱️ [hitch] main thread busy for 70ms
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 54ms
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min, AGC off), mixer 48000 Hz / input 48000 Hz 9 ch)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation ON (voice processing, ducking .min, AGC off), mixer 48000 Hz / input 48000 Hz 9 ch)
+🔥 语音聊天：音频引擎已预热
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+⏱️ [hitch] main thread busy for 452ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+📷 [camera] startRunning 917ms（总 1363ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 116ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 101ms
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms

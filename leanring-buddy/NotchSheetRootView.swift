@@ -25,7 +25,7 @@ struct NotchSheetRootView: View {
     /// The VoiceWeb subsystem, held by `CompanionManager` (one instance for
     /// the app) — observed because both the 语音聊天 sidebar list and the
     /// content column read its published presets / phase / transcript.
-    @ObservedObject private var voiceWebSessionController: VoiceWebSessionController
+    @ObservedObject private var voiceChatController: VoiceChatController
     var collapseAction: () -> Void
     /// 收起 / 重新展开的两半，专给 Agent 页的「打开」用：选文件夹时面板必须
     /// 让开，选完再放回来（用户 2026-09-23 的第 7 条）。与 `collapseAction`
@@ -58,7 +58,7 @@ struct NotchSheetRootView: View {
         // the same store, and only the manager the app holds owns the
         // subprocesses.
         self.agentSessionManager = companionManager.agentSessionManager
-        self.voiceWebSessionController = companionManager.voiceWebSessionController
+        self.voiceChatController = companionManager.voiceChatController
         self.collapseAction = collapseAction
         self.hideSheetAction = hideSheetAction
         self.revealSheetAction = revealSheetAction
@@ -90,7 +90,7 @@ struct NotchSheetRootView: View {
                     HomeSpaceSidebarView(
                         sessionsModel: sessionsModel,
                         agentSessionManager: agentSessionManager,
-                        voiceWebSessionController: voiceWebSessionController,
+                        voiceChatController: voiceChatController,
                         showsSettings: $showsSettings,
                         showsArchive: $showsArchive
                     )
@@ -122,7 +122,7 @@ struct NotchSheetRootView: View {
                                 revealSheet: revealSheetAction
                             )
                         case .voiceChat:
-                            VoiceChatSessionView(controller: voiceWebSessionController)
+                            VoiceChatSessionView(controller: voiceChatController)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -164,7 +164,7 @@ struct NotchSheetRootView: View {
     /// 它刚把整窗让给设置页的时候不该被这一句抢回列表页。
     private func openVoiceChatSectionIfASessionIsLive() {
         guard !showsSettings, !showsArchive else { return }
-        guard voiceWebSessionController.connectionPhase != .idle else { return }
+        guard voiceChatController.connectionPhase != .idle else { return }
         agentSessionManager.selectedSidebarSection = .voiceChat
     }
 
@@ -251,6 +251,9 @@ struct NotchSettingsArea: View {
         (label: nil, pages: [.general, .interactionStyle, .model, .agent]),
         (label: "对话", pages: [.memory, .listen, .speak, .shortcuts]),
         (label: "看与操作", pages: [.vision, .action]),
+        // 「语音聊天」分组（用户 2026-09-24 要求）。角色页与语音聊天页右键
+        // 「编辑」共用同一份视图，所以两处入口改的是同一份数据。
+        (label: "语音聊天", pages: [.voiceChatRoles]),
         (label: "导入导出", pages: [.exportSettings, .importSettings]),
     ]
 
@@ -266,6 +269,9 @@ struct NotchSettingsArea: View {
                 contentHeader
 
                 switch selectedPage {
+                case .voiceChatRoles:
+                    VoiceChatRoleSettingsView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .model:
                     ModelSettingsView(modelSettingsViewModel: modelSettingsViewModel)
                 case .exportSettings:

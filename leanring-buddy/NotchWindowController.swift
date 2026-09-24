@@ -526,7 +526,7 @@ final class NotchWindowController {
                guard let wingFrame = NotchSupport.restingTrailingWingFrame(on: presence.screen) else { return false }
                return wingFrame.contains(clickLocation)
            }) {
-            companionManager.voiceWebSessionController.disconnectCurrentSession()
+            companionManager.voiceChatController.disconnectCurrentSession()
             return
         }
 

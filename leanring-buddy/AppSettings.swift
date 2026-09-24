@@ -862,7 +862,6 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// `cwd` that launch runs under. A stored default rather than a computed
     /// constant so a user who moved the project can fix it in settings without
     /// a rebuild.
-    var voiceWebProjectFolderPath: String = "/Users/mjm/Documents/SuperAgent/APP/Test/voice-web"
 
     /// 三段式: send screen content along with the conversation (VoiceWeb's
     /// role-level screen recognition). Off = voice only. Written into the
@@ -1030,7 +1029,6 @@ nonisolated extension AppSettings {
         case voiceWebThreeStageShortcut
         case voiceWebDuplexShortcut
         case voiceWebOmniShortcut
-        case voiceWebProjectFolderPath
         case voiceWebThreeStageSendsScreen
         case voiceWebOmniVoiceEnabled
         case voiceWebOmniCameraEnabled
@@ -1130,7 +1128,6 @@ nonisolated extension AppSettings {
         voiceWebThreeStageShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .voiceWebThreeStageShortcut) ?? defaults.voiceWebThreeStageShortcut
         voiceWebDuplexShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .voiceWebDuplexShortcut) ?? defaults.voiceWebDuplexShortcut
         voiceWebOmniShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .voiceWebOmniShortcut) ?? defaults.voiceWebOmniShortcut
-        voiceWebProjectFolderPath = try container.decodeIfPresent(String.self, forKey: .voiceWebProjectFolderPath) ?? defaults.voiceWebProjectFolderPath
         voiceWebThreeStageSendsScreen = try container.decodeIfPresent(Bool.self, forKey: .voiceWebThreeStageSendsScreen) ?? defaults.voiceWebThreeStageSendsScreen
         voiceWebOmniVoiceEnabled = try container.decodeIfPresent(Bool.self, forKey: .voiceWebOmniVoiceEnabled) ?? defaults.voiceWebOmniVoiceEnabled
         voiceWebOmniCameraEnabled = try container.decodeIfPresent(Bool.self, forKey: .voiceWebOmniCameraEnabled) ?? defaults.voiceWebOmniCameraEnabled

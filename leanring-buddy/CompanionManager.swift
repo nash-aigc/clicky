@@ -226,21 +226,25 @@ final class CompanionManager: ObservableObject {
         return controller
     }()
 
-    /// The VoiceWeb external-session subsystem — the orchestrator behind the
-    /// three VoiceWeb mode shortcuts (三段式 / 全双工语音 / 全双工全模态).
-    /// Same one-way decoupling as `agentSessionManager`: it never touches
-    /// `voiceState` or `currentResponseTask` — the notch pill is driven
-    /// through an override phase, and replies reach the bubble through the
-    /// same `streamingAnswerText` gate the native answers use.
-    lazy var voiceWebSessionController: VoiceWebSessionController = {
-        let controller = VoiceWebSessionController(
+    /// 语音聊天的原生子系统 —— 三个模式（三段式 / 全双工语音 / 全双工全模态）的
+    /// 会话编排，**完全不依赖 Chrome**。
+    ///
+    /// 与 `agentSessionManager` 同一条单向解耦红线：它绝不碰 `voiceState` 或
+    /// `currentResponseTask` —— 刘海相位走 `setNotchOverride` 覆盖，回答进气泡走
+    /// 下面这个 `presentAnswer` 闭包，与原生回答共用同一个出口。
+    ///
+    /// **它和按住说话共用同一套音频设施**（下面注入的 `buddyDictationManager` 与
+    /// `bailianTTSClient`），这不是偷懒而是本方案的地基：采集与播放在同一条
+    /// `AVAudioEngine` 上，系统 AEC 才有参考信号，用户听到的「瞬间打断」正是这么来的。
+    /// 代价是会话期间麦克风被会话占着，所以按住说话的快捷键在会话中要让位。
+    lazy var voiceChatController: VoiceChatController = {
+        let controller = VoiceChatController(
             presentAnswer: { [weak self] answerText in
                 guard let self else { return }
-                // Same gates the native answer bubble reads: 「回答时显示文字」
-                // off means no bubble at all, and the linger is the same
-                // 「回答文字多留一会儿」. VoiceWeb speaks through its own
-                // Chrome audio, so `scheduleAnswerBubbleClear`'s TTS poll is
-                // immediately false here and the clear fires after the linger.
+                // 与原生回答气泡同一组闸门：「回答时显示文字」关掉就完全没有气泡，
+                // 停留时长用的是同一个「回答文字多留一会儿」。原生这条路是**本进程
+                // 自己念的**，所以 `scheduleAnswerBubbleClear` 的 TTS 轮询这次真的
+                // 有意义 —— 气泡会等最后一块音频播完再开始计时，而不是一放就走。
                 let settings = AppSettingsStore.snapshot()
                 guard settings.showsResponseText else { return }
                 self.clearAnswerBubble()
@@ -252,7 +256,26 @@ final class CompanionManager: ObservableObject {
             },
             setNotchOverride: { [weak self] overridePhase in
                 self?.notchWindowController?.setExternalSessionOverride(overridePhase)
-            }
+            },
+            // 语音聊天在用的就是共享引擎 —— 告诉 CompanionManager 重置它的空闲释放
+            // 倒计时，否则那个倒计时可能在会话进行中把引擎抽走。
+            noteVoiceSessionActivity: { [weak self] in
+                self?.noteVoiceActivity()
+            },
+            // 进语音聊天分区就预热引擎：第一次连接的 ~2 秒 VPIO 重配在这里付掉，
+            // 用户按下连接时引擎已经是热的。
+            warmUpVoiceEngine: { [weak self] in
+                guard let self else { return }
+                self.noteVoiceActivity()
+                Task { await self.bailianTTSClient.warmUpVoiceEngine() }
+            },
+            // 挂断音必须在「录制静音」解开之后再响，否则它响在一个被静音的设备上。
+            // 这里调的是同一个 `restoreAllMutesNow`，退出 App 时用的也是它。
+            restoreSpeakerMuteNow: { [weak self] in
+                self?.systemSpeakerMuteCoordinator?.restoreAllMutesNow()
+            },
+            speechSynthesizer: bailianTTSClient,
+            dictationManager: buddyDictationManager
         )
         return controller
     }()
@@ -559,13 +582,10 @@ final class CompanionManager: ObservableObject {
         // TEMPORARY (2026-09-24): starts reporting main-thread stalls. See
         // `MainThreadHitchProbe`.
         MainThreadHitchProbe.shared.start()
-        // Keeps Google Chrome alive in the background for as long as the app runs
-        // — the user's rule (2026-09-24): 「只要当前项目在运行，Chrome 就必须在
-        // 运行；如果没有运行就自动调起，并让它在后台运行」. A warm Chrome is what
-        // makes the first voice connect fast, and a cold one is the fragile path
-        // the connect budget has to cover. Launched with no URL; the page itself
-        // is opened at connect time.
-        voiceWebSessionController.startChromeKeepAlive()
+        // 启动时**什么都不用为语音聊天预热**了。这里原来是
+        // `voiceChatController.startChromeKeepAlive()` —— 那条 Chrome 保活链是
+        // 「必须先有一个浏览器进程活着」这个前提的产物，而原生这条路没有外部进程：
+        // 麦克风、播报、理解全在本进程里，会话开始时按需起，会话结束就收回。
         refreshAllPermissions()
         print("🔑 Clicky start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
         startPermissionPolling()
@@ -798,7 +818,7 @@ final class CompanionManager: ObservableObject {
             MainActor.assumeIsolated {
                 // 恢复被录制静音挡住的扬声器 —— 退出时轮询循环不能保证再跑一次。
                 self?.systemSpeakerMuteCoordinator?.restoreAllMutesNow()
-                self?.voiceWebSessionController.disconnectOnTermination()
+                self?.voiceChatController.disconnectOnTermination()
             }
         }
 
@@ -1241,7 +1261,7 @@ final class CompanionManager: ObservableObject {
                     // able to misfire the confirmation-tap send.
                     shortcutPressBeganAt = nil
                 }
-                voiceWebSessionController.handleShortcutPress(modeIndex: transition.index)
+                voiceChatController.handleShortcutPress(modeIndex: transition.index)
             }
         // 「释放引擎」: a press stops the shared audio engine and switches voice
         // processing off, which lifts the ducking of every other application.
@@ -1293,6 +1313,25 @@ final class CompanionManager: ObservableObject {
             guard !buddyDictationManager.isDictationInProgress else { return }
             // Don't register push-to-talk while the onboarding video is playing
             guard !showOnboardingVideo else { return }
+
+            // 语音聊天会话进行中：说话快捷键 = **挂断这个会话**，到此为止。
+            //
+            // 必须挡在最前面，而且必须在下面那些 `endContinuousListeningWindow`
+            // 之前：会话期的麦克风是**会话自己开着的连续监听**，它的回调归
+            // `VoiceChatController` 所有。放行下去的话，下面「忙」的分支会看到
+            // `isContinuousListening == true`，把这次按下当成「我说完了发送」或
+            // 「打断并退出监听」——前者会把用户这一句送进**按住说话**那条管线
+            // （于是同时出现两条回答），后者会直接 `endContinuousListening()`，
+            // 把正在进行的会话的耳朵摘掉、整个会话静默死亡。
+            //
+            // 用户在设计这次改造时就定了这条：会话期间按住说话键就是挂断
+            // （与「同一个快捷键再按一次是挂断」一致）。第二条路径是刘海右翼的
+            // 红色挂断图标。
+            if voiceChatController.connectionPhase != .idle {
+                voiceChatController.disconnectCurrentSession()
+                shortcutPressBeganAt = nil
+                return
+            }
 
             // 正在思考或回答时的第一次按下 = 纯打断，到此为止：停任务、停播报、
             // 回到待命，**不开麦**——再按一次才开始收听。之前的做法是打断和开麦
@@ -1825,6 +1864,16 @@ final class CompanionManager: ObservableObject {
     /// the window is already open (a follow-up's own answer just started
     /// speaking) it only re-arms the deadline.
     private func armContinuousListeningWindow() {
+        // 语音聊天会话进行中：这块麦克风不是我们的，别去碰。
+        //
+        // 会话期的连续监听是 `VoiceChatController` 开的，它的回调也归会话所有。
+        // 下面那句 `if buddyDictationManager.isContinuousListening` 分不出来
+        // 「我自己开的窗口」和「别人的会话」——放行下去会给会话排一个到期任务，
+        // 到点 `endContinuousListening()`，把正在进行的对话的耳朵摘掉。今天
+        // 只有语音回答那条路会调到这里（会话不走那条路），所以这是**预防**，
+        // 不是已发生的故障——但一旦将来有人在这里加一个入口，它就会变成故障。
+        guard voiceChatController.connectionPhase == .idle else { return }
+
         let appSettings = AppSettingsStore.snapshot()
         guard appSettings.continuousListeningEnabled else { return }
 
@@ -1846,6 +1895,8 @@ final class CompanionManager: ObservableObject {
             guard let self else { return }
             await self.buddyDictationManager.startContinuousListening(
                 utteranceEndSilenceSeconds: appSettings.continuousListeningSilenceSendSeconds,
+                // 对话页面维持 4 字门槛（语气词不该变成新问题）。
+                minimumContentCharacters: 4,
                 onSpeechDetected: { [weak self] in
                     self?.handleContinuousListeningSpeechDetected()
                 },
@@ -1854,6 +1905,11 @@ final class CompanionManager: ObservableObject {
                 },
                 onUtteranceFinalized: { [weak self] finalTranscriptText in
                     self?.submitFollowUpQuestion(finalTranscriptText)
+                },
+                onUtteranceDropped: { droppedText in
+                    // 对话页面这边：太短就是不回答（那是刻意设计，语气词不该变成新问题），
+                    // 但至少留一行日志，别像语音聊天那样静默丢弃。
+                    print("🎙️ 对话页面：这个问题太短，没有发送（\(droppedText)）")
                 }
             )
             guard self.buddyDictationManager.isContinuousListening else { return }

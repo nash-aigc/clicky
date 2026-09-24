@@ -15,12 +15,11 @@
 //      connection state appeared to jump between role cards, and putting the
 //      button on the row is the user's own 2026-09-23 request — the pointer
 //      travel from "which role" to "connect" is a few pixels;
-//    · the transcript mirrors the VoiceWeb session's own history, so what
-//      the user SAYS lands here as outgoing bubbles too, not just typed text;
-//    · the composer sends the typed line into the running session over the
-//      external bridge (the page's official RTVI `sendText` path) — it only
-//      sends while connected, and a draft typed before then is kept, not
-//      swallowed.
+//    · the transcript carries everything the user SAYS as outgoing bubbles,
+//      not just typed text;
+//    · the composer sends the typed line into the running session as a normal
+//      turn — it only sends while connected, and a draft typed before then is
+//      kept, not swallowed.
 //
 //  The sheet's own top bar is not drawn on this page any more (the user asked
 //  for one title instead of two, and for the ✕ to go) — this header takes its
@@ -32,7 +31,7 @@ import SwiftUI
 
 struct VoiceChatSessionView: View {
 
-    @ObservedObject var controller: VoiceWebSessionController
+    @ObservedObject var controller: VoiceChatController
 
     @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
@@ -49,12 +48,70 @@ struct VoiceChatSessionView: View {
     /// `onTapGesture`（点正文、点输入框）就带这一句。
     @State private var isModeMenuOpen = false
     /// 下拉里鼠标悬停在哪一行 —— 自绘的行要自己画悬停态。
-    @State private var hoveredMode: VoiceWebSessionController.VoiceWebMode?
+    @State private var hoveredMode: VoiceChatEngine?
 
     var body: some View {
+        // 右键角色卡片 → 编辑：**右侧这一列就地换成角色设置页**（用户的原话：
+        // 「右侧的对话页面就变成一个设置页面」）。顶上给一条返回，否则进去就出不来。
+        if controller.isShowingRoleEditor {
+            roleEditorColumn
+        } else {
+            conversationColumn
+        }
+    }
+
+    /// 角色编辑形态：一条返回 + 编辑页本身。
+    private var roleEditorColumn: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Button {
+                    controller.isShowingRoleEditor = false
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("返回对话")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(DS.Colors.success)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(DS.Colors.surface2, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .onHover { $0 ? NSCursor.pointingHand.push() : NSCursor.pop() }
+
+                Text("角色")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textPrimary)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+            .padding(.top, NotchSupport.sheetHeaderTopInset)
+            .padding(.bottom, 8)
+
+            VoiceChatRoleSettingsView()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var conversationColumn: some View {
         VStack(spacing: 0) {
             header
-            transcriptFlow
+            // 摄像头 / 屏幕两个预览框就在页头下面、对话流上面 —— 用户定的位置：
+            // 「顶部固定一条，对话从它下面开始」。
+            //
+            // 它自己决定占多高：常规形态是一条（每个框 108pt）；某个框全屏时它吃满
+            // 剩余高度，下面的 `transcriptFlow` 就自动让位 —— 这正是用户要的
+            // 「全屏时占据右侧部分的全部，只保留最下面的输入框」。
+            VoiceChatPreviewStrip(controller: controller)
+            // 全屏预览时对话流**整个让位**（用户：「只保留最下面的输入框」）。
+            // 只是压扁的话，滚动区会缩到几行高，反而比藏起来更难用。
+            if !controller.isAnyPreviewFullScreen {
+                transcriptFlow
+            }
             composerRow
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,7 +176,7 @@ struct VoiceChatSessionView: View {
                         .background(Capsule().fill(statusColor.opacity(0.15)))
                 }
 
-                Text("VoiceWeb 语音聊天")
+                Text("原生语音聊天")
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.4))
             }
@@ -236,7 +293,7 @@ struct VoiceChatSessionView: View {
     /// 深，这里照同一套来，再配一圈白描边与阴影，浮在对话流上时边界才清楚。
     private var modeMenuDropdown: some View {
         VStack(spacing: 2) {
-            ForEach(VoiceWebSessionController.VoiceWebMode.allCases, id: \.self) { mode in
+            ForEach(VoiceChatEngine.allCases, id: \.self) { mode in
                 modeMenuRow(mode)
             }
         }
@@ -260,7 +317,7 @@ struct VoiceChatSessionView: View {
 
     /// 下拉里的一行。选中的那行带一颗 accent 勾并且文字加亮，悬停的那行有一层浅底
     /// —— 自绘的行没有系统给的任何状态，这三样都得自己画。
-    private func modeMenuRow(_ mode: VoiceWebSessionController.VoiceWebMode) -> some View {
+    private func modeMenuRow(_ mode: VoiceChatEngine) -> some View {
         let isSelected = controller.selectedMode == mode
         let isHovered = hoveredMode == mode
 
@@ -370,7 +427,7 @@ struct VoiceChatSessionView: View {
 
     /// 模式下拉里**文字那一格**的固定宽度，取最长的模式名。
     ///
-    /// 量出来而不是写死一个数字：模式名由 VoiceWeb 的配置决定，Clicky 这一侧不知道
+    /// 量出来而不是写死一个数字：模式名可能在设置里被改成别的长度，写死会截断
     /// 以后会不会多一个更长的名字，写死等于把「挤掉旁边的按钮」这个 bug 留到下一次
     /// 改配置的时候。用 `NSFont` 而不是数字符个数：三个名字现在都是汉字（汉字在
     /// 12pt 下字宽正好是 12），但只要有一个英文字母或数字混进来，字数就不再等于宽度，
@@ -378,7 +435,7 @@ struct VoiceChatSessionView: View {
     /// 量出来的就是实际排版宽度。
     private static let modeMenuLabelWidth: CGFloat = {
         let modeNameFont = NSFont.systemFont(ofSize: headerControlFontSize, weight: .medium)
-        return VoiceWebSessionController.VoiceWebMode.allCases
+        return VoiceChatEngine.allCases
             .map { ($0.displayName as NSString).size(withAttributes: [.font: modeNameFont]).width }
             .max() ?? 0
     }()
@@ -442,7 +499,11 @@ struct VoiceChatSessionView: View {
                         emptyHint
                     }
 
-                    ForEach(controller.transcriptEntries) { entry in
+                    // 空的助手条目**不画**：那一轮的回答气泡在回合一开始就占好了位置
+                    // （这是为了让气泡顺序永远等于问答顺序），但第一个字可能还要几秒
+                    // 才到 —— 那段时间画一个空卡片会显得像坏了。它在数组里的位置是对的，
+                    // 所以文字一到就出现在正确的地方。
+                    ForEach(controller.transcriptEntries.filter { $0.isUser || !$0.text.isEmpty }) { entry in
                         if entry.isUser {
                             outgoingBubble(entry.text)
                                 .id(entry.id)

@@ -69,7 +69,10 @@ final class BuddyPCM16AudioConverter {
             return convertCollapsingToMono(audioBuffer)
         }
 
-        guard let inputAudioConverter else { return nil }
+        guard let inputAudioConverter else {
+            // 转换器**建不出来** —— 这条路上一个字节都不会送进识别器。
+            return reportIfProducedNoAudio(nil)
+        }
         let convertedData = runConversion(inputAudioConverter, from: audioBuffer)
 
         if let convertedData,
@@ -84,11 +87,23 @@ final class BuddyPCM16AudioConverter {
         guard audioBuffer.format.channelCount > 1,
               audioBuffer.format.commonFormat == .pcmFormatFloat32,
               let collapsedData = convertCollapsingToMono(audioBuffer) else {
-            return convertedData
+            return reportIfProducedNoAudio(convertedData)
         }
 
         inputFormatNeedsMonoCollapse = true
         return collapsedData
+    }
+
+    /// 只在这个转换器**产不出音频**时出声 —— 语音聊天「说什么都不识别」的一条
+    /// 候选根因就是它：VPIO 下输入是 9 声道，`AVAudioConverter` 可能建不出来，
+    /// 而那条路径会在零值检查**之前**就返回，于是整句话一个字节都没送进识别器。
+    /// 正常路径保持安静，所以这行一出现就是证据。
+    private func reportIfProducedNoAudio(_ producedData: Data?) -> Data? {
+        if producedData?.isEmpty ?? true {
+            let inputFormatDescription = cachedInputFormatDescription ?? "<unknown>"
+            print("🎙️ ⚠️ 音频转换产出 0 字节（输入格式 \(inputFormatDescription)）—— 识别器这一轮什么都收不到")
+        }
+        return producedData
     }
 
     /// Rebuilds the input converter when the tap format changes, and drops the

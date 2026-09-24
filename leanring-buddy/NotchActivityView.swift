@@ -379,7 +379,7 @@ struct NotchWingView: View {
     /// 0.5 再弹回 1，作为「连上了」的一次性确认动画。
     ///
     /// 为什么挂在相位变化上：`.externalConnecting → .externalChatting` 只在
-    /// `waitForConnection()` 真正通过之后发生（`VoiceWebSessionController`
+    /// 会话真正连上之后发生（`VoiceChatController`
     /// 的成功分支），所以这个 onChange 天生就是"真连上才响一次"。而这一格
     /// 原本没有任何动画 —— 唯一的 `.animation` 驱动的是两翼**宽度**，连接成功
     /// 时宽度本来就已经到位，所以那一下是纯粹的、没有反馈的瞬间切换。

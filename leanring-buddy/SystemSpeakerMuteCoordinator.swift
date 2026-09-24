@@ -245,6 +245,11 @@ final class SystemSpeakerMuteCoordinator {
                 return
             }
             print("🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)")
+            // TEMPORARY PROBE (2026-09-24): the mute toggle is a CoreAudio write
+            // on the device the microphone shares its codec with, so it is a
+            // candidate source for a click the VAD could read as speech. Timed
+            // so the level curve can be checked either side of it.
+            print("🔇 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=speakersMuted")
         } else {
             print("🔇 SystemSpeakerMuteCoordinator: system speakers were already muted before recording — recording proceeds, nothing to change")
         }
@@ -291,6 +296,8 @@ final class SystemSpeakerMuteCoordinator {
         }
 
         print("🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording")
+        // TEMPORARY PROBE (2026-09-24) — see the MUTED counterpart.
+        print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=speakersRestored")
         mutedDevicesPriorState.removeAll()
         UserDefaults.standard.set(false, forKey: Self.leakedMuteFlagKey)
     }

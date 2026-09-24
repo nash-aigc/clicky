@@ -257,6 +257,9 @@ struct BuddyContinuousListeningCallbacks {
     /// its final transcript. Empty/echo-short transcripts are filtered before
     /// this fires.
     let onUtteranceFinalized: (String) -> Void
+    /// 最终转写**因为太短被丢掉**了 —— 调用方据此把那行气泡撤掉，而不是让它
+    /// 永远留在屏幕上看起来像「问了没反应」。
+    let onUtteranceDropped: (String) -> Void
 }
 
 private struct BuddyDictationDraftCallbacks {
@@ -401,7 +404,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // the "循环一个全新的东西" loop's fuel. A real follow-up question is a
     // sentence. Counted through `continuousListeningContentCharacterCount`, so
     // punctuation can never add up to a sentence (「。。。。」 is 0, not 4).
-    private static let continuousListeningMinimumTranscriptCharacters = 4
+    /// 发送门槛：**低于这个内容字数的最终转写不会成为一个问题**。
+    ///
+    /// 默认 4 是给**对话页面**定的：那里「嗯。」这种语气词不该变成新问题。
+    /// 但语音聊天是**连续的问答**，「演过谁？」「还在吗？」「几点了？」都是
+    /// 3 个字的正经问题 —— 用同一把尺子会把它们**静默丢掉**（2026-09-24 实测：
+    /// 用户问「演过谁？」「还在吗？」各 3 个内容字，识别完全正确，然后被这一行丢掉，
+    /// 既不回答也不报错，看起来就像应用死了）。所以门槛改为按会话传入，
+    /// 语音聊天传 1。
+    static let continuousListeningMinimumTranscriptCharacters = 4
     // There is NO content bar on the interrupt path, and there must not be one:
     // the interrupt has a single source, the level VAD (2026-09-24).
     //
@@ -619,6 +630,9 @@ final class BuddyDictationManager: NSObject, ObservableObject {
 
     // Continuous-listening state (see the constants block above for the design).
     private var continuousListeningCallbacks: BuddyContinuousListeningCallbacks?
+    /// 这一次监听窗口的发送门槛（见 `startContinuousListening` 的参数）。
+    private var continuousListeningMinimumTranscriptCharactersForThisWindow =
+        BuddyDictationManager.continuousListeningMinimumTranscriptCharacters
     private var continuousListeningVADTask: Task<Void, Never>?
     /// Provides the shared TTS playback engine (injected by CompanionManager,
     /// which owns the lazy TTS client). The listening tap installs on IT —
@@ -676,6 +690,11 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// it takes to refill. It is cleared when the listening WINDOW opens and
     /// closes.
     private var continuousListeningRecentAudioLevels: [CGFloat] = []
+
+    /// TEMPORARY PROBE (2026-09-24) — see the print site in
+    /// `runContinuousListeningVADLoop`. At most ten leak-curve lines a second.
+    private var lastBotSpeakingLevelProbePrintAt: TimeInterval = 0
+    private static let botSpeakingLevelProbeIntervalSeconds: TimeInterval = 0.1
     /// The loudest the microphone has been inside that window.
     private var continuousListeningRecentPeakAudioLevel: CGFloat {
         continuousListeningRecentAudioLevels.max() ?? 0
@@ -762,18 +781,32 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// Bailian connection carries exactly one final transcript).
     func startContinuousListening(
         utteranceEndSilenceSeconds: TimeInterval,
+        minimumContentCharacters: Int = BuddyDictationManager.continuousListeningMinimumTranscriptCharacters,
         onSpeechDetected: @escaping () -> Void,
         onTranscriptUpdate: @escaping (String) -> Void,
-        onUtteranceFinalized: @escaping (String) -> Void
+        onUtteranceFinalized: @escaping (String) -> Void,
+        onUtteranceDropped: @escaping (String) -> Void
     ) async {
-        guard !isContinuousListening else { return }
-        guard !isDictationInProgress else { return }
+        // ⚠️ 这两个 guard 是**静默返回**，而调用方很容易把「窗口开着」当成
+        // 「我开成功了」。语音聊天就踩过这个：它连到对话页面已经开着的窗口上，
+        // 回调是别人的，于是用户说话页面上什么都不显示（2026-09-24 查实的可达路径）。
+        // 所以这里必须留下**谁被挡住了**的证据 —— 正常路径下这两行不会出现。
+        guard !isContinuousListening else {
+            print("🎙️ ⚠️ 连续监听请求被忽略：**已经有一个窗口开着**（门槛 \(continuousListeningMinimumTranscriptCharactersForThisWindow)）。调用方若以为这是自己开的窗口，它的说话就不会被自己收到。")
+            return
+        }
+        guard !isDictationInProgress else {
+            print("🎙️ ⚠️ 连续监听请求被忽略：**正在按住说话**。")
+            return
+        }
 
         print("🎙️ BuddyDictationManager: continuous listening requested")
 
         // Snapshot the 「静音多久自动发送」 setting for THIS window — a change
         // mid-window must not move the VAD loop's threshold under it.
         continuousListeningUtteranceEndSilenceSeconds = utteranceEndSilenceSeconds
+        // 门槛随会话设定（见 `continuousListeningMinimumTranscriptCharacters`）。
+        continuousListeningMinimumTranscriptCharactersForThisWindow = minimumContentCharacters
 
         if needsInitialPermissionPrompt {
             NSApplication.shared.activate(ignoringOtherApps: true)
@@ -795,7 +828,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         continuousListeningCallbacks = BuddyContinuousListeningCallbacks(
             onSpeechDetected: onSpeechDetected,
             onTranscriptUpdate: onTranscriptUpdate,
-            onUtteranceFinalized: onUtteranceFinalized
+            onUtteranceFinalized: onUtteranceFinalized,
+            onUtteranceDropped: onUtteranceDropped
         )
         resetContinuousListeningUtteranceState()
         continuousListeningRecentAudioLevels.removeAll()
@@ -1053,8 +1087,11 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         resetContinuousListeningUtteranceState()
 
         let contentCharacterCount = Self.continuousListeningContentCharacterCount(in: trimmedTranscriptText)
-        if contentCharacterCount < Self.continuousListeningMinimumTranscriptCharacters {
+        if contentCharacterCount < continuousListeningMinimumTranscriptCharactersForThisWindow {
+            // **丢掉了就要说**。原来这里只有一行 print，用户那一侧完全看不到 ——
+            // 问题留在屏幕上、没有任何回答，看起来就是「它死了」。
             print("🎙️ BuddyDictationManager: listening transcript too short to send (\(contentCharacterCount) content chars: \"\(trimmedTranscriptText)\")")
+            continuousListeningCallbacks?.onUtteranceDropped(trimmedTranscriptText)
         } else {
             continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
         }
@@ -1179,6 +1216,10 @@ final class BuddyDictationManager: NSObject, ObservableObject {
               !continuousListeningDidRequestBargeIn else { return }
 
         continuousListeningDidRequestBargeIn = true
+        // TEMPORARY PROBE (2026-09-24): timestamped so this instant can be
+        // placed against the level curve and against the events either side of
+        // it (chunk start/end, the speaker mute toggle).
+        print("🎙️ [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=bargeIn trigger=\(trigger)")
         print("🎙️ BuddyDictationManager: continuous listening detected speech (\(trigger), recent mic peak \(String(format: "%.3f", continuousListeningRecentPeakAudioLevel)), transcript: \"\(continuousListeningLatestInterimTranscript)\")")
         continuousListeningCallbacks?.onSpeechDetected()
     }
@@ -1206,6 +1247,27 @@ final class BuddyDictationManager: NSObject, ObservableObject {
             if continuousListeningRecentAudioLevels.count > recentLevelSampleCount {
                 continuousListeningRecentAudioLevels.removeFirst(
                     continuousListeningRecentAudioLevels.count - recentLevelSampleCount)
+            }
+
+            // TEMPORARY PROBE (2026-09-24): the leak curve, which no log has
+            // ever carried. The user's report is that the answer interrupts
+            // itself only in the first three or four turns of a session and
+            // never after ~30 s — a shape that needs a NUMBER to be read
+            // against, and the only number that can show it is the microphone
+            // level sampled while our own answer plays, next to a wall clock
+            // that the engine's own bring-up mark (`[aecprobe] … event=bringUp`)
+            // can be subtracted from.
+            //
+            // Printed only while the assistant is speaking, because that is the
+            // only window in which a level rise can be our own voice, and at
+            // most 10×/s so the curve stays readable.
+            let isAssistantSpeakingNow = isBotSpeakingProvider?() ?? false
+            if isAssistantSpeakingNow {
+                let probeNow = Date().timeIntervalSince1970
+                if probeNow - lastBotSpeakingLevelProbePrintAt >= Self.botSpeakingLevelProbeIntervalSeconds {
+                    lastBotSpeakingLevelProbePrintAt = probeNow
+                    print("🎙️ [aecprobe] t=\(String(format: "%.3f", probeNow)) event=level botSpeaking=true level=\(String(format: "%.3f", Double(audioLevel))) peak0.5s=\(String(format: "%.3f", Double(continuousListeningRecentPeakAudioLevel))) utteranceActive=\(continuousListeningUtteranceActive ? "yes" : "no")")
+                }
             }
 
             if continuousListeningUtteranceActive {

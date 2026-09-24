@@ -1,0 +1,489 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 262ms
+⏱️ [hitch] main thread busy for 82ms
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 12ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 693ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔥 语音聊天：音频引擎已预热
+📷 [camera] startRunning 806ms（总 1357ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1412ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (7 chars)
+🗣️ Streaming speech: queued segment 2 (36 chars)
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 3 (31 chars)
+⏱️ [hitch] main thread busy for 42ms
+🗣️ Streaming speech: queued segment 4 (20 chars)
+🔊 Bailian TTS: playing segment 1 (71KB)
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.783, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+🗣️ Streaming speech: queued segment 1 (24 chars)
+🗣️ Streaming speech: queued segment 2 (38 chars)
+🗣️ Streaming speech: queued segment 3 (34 chars)
+🗣️ Streaming speech: queued segment 4 (14 chars)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🔊 Bailian TTS: playing segment 1 (236KB)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+🗣️ Streaming speech: queued segment 1 (4 chars)
+🗣️ Streaming speech: queued segment 2 (35 chars)
+🗣️ Streaming speech: queued segment 3 (12 chars)
+🔊 Bailian TTS: playing segment 1 (86KB)
+🔊 Bailian TTS: playing segment 2 (262KB)
+🔊 Bailian TTS: playing segment 3 (90KB)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (8 chars)
+🗣️ Streaming speech: queued segment 2 (43 chars)
+🔊 Bailian TTS: playing segment 1 (86KB)
+🔊 Bailian TTS: playing segment 2 (378KB)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.830, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.2MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (18 chars)
+🗣️ Streaming speech: queued segment 2 (25 chars)
+🔊 Bailian TTS: playing segment 1 (112KB)
+🔊 Bailian TTS: playing segment 2 (247KB)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.2MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🗣️ Streaming speech: queued segment 2 (29 chars)
+🔊 Bailian TTS: playing segment 1 (101KB)
+🔊 Bailian TTS: playing segment 2 (198KB)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.856, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 2.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🌐 Bailian streaming request: 0.2MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (17 chars)
+🗣️ Streaming speech: queued segment 2 (37 chars)
+🗣️ Streaming speech: queued segment 3 (12 chars)
+🔊 Bailian TTS: playing segment 1 (183KB)
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+🔊 Bailian TTS: playing segment 2 (356KB)
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 254ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 44ms
+🔊 Bailian TTS: playing segment 3 (157KB)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 389ms
+⏱️ [hitch] main thread busy for 197ms
+⏱️ [hitch] main thread busy for 285ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🎙️ BuddyDictationManager: recognition session started
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: 去。
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+⏱️ [hitch] main thread busy for 149ms
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (11 chars)
+🗣️ Streaming speech: queued segment 2 (30 chars)
+🗣️ Streaming speech: queued segment 3 (30 chars)
+🗣️ Streaming speech: queued segment 4 (34 chars)
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 Bailian TTS: playing segment 1 (116KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 Bailian TTS: playing segment 2 (266KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "嗯。")
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+⏱️ [listen] silence began — the 2.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+🎙️ BuddyDictationManager: talk shortcut pressed mid-utterance — sending it now
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Companion: follow-up question from continuous listening: 不是你让我你给我打开我电脑的Safari浏览器。
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+⚠️ Companion response error: Error Domain=BailianVisionChatAPI Code=402 "API Error (402): {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}" UserInfo={NSLocalizedDescription=API Error (402): {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}}
+⚠️ Companion fallback — speaking apology. Reason: API Error (402): {"error":{"message":"Insufficient Balance","type":"unknown_error","param":null,"code":"invalid_request_error"}}
+⏱️ [hitch] main thread busy for 381ms
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio never started
+⏱️ [hitch] main thread busy for 41ms
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 166ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🗣️ Companion sending transcript: 帮我打开Safari浏览器。
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (1 chars)
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"b742e696-415a-92e7-a02f-4da140c8e9f4","code":"InvalidParameter","message":"Please ensure input text is valid."}
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+⚠️ Companion fallback — speaking apology. Reason: Text-to-speech API error (400): {"request_id":"b742e696-415a-92e7-a02f-4da140c8e9f4","code":"InvalidParameter","message":"Please ensure input text is valid."}
+🎯 Element pointing: no element
+info: starting AppOpenerOperation for: Safari
+info: interpreting 'Safari' as an application name or bundleID, searching...
+info: found application url via name search 'Safari': /System/Cryptexes/App/System/Applications/Safari.app
+info: derived bundleID: com.apple.Safari, name: Safari from found URL
+info: [0.002s] finished 'application discovery (url: /System/Cryptexes/App/System/Applications/Safari.app, bundleID: com.apple.Safari)'
+info: checking running applications for bundle id: com.apple.Safari
+info: found running instance with pid 60491 for bundle id com.apple.Safari.
+info: [0.001s] finished 'pre-finding existing process (pid: 60491)'
+info: attempting to open/activate application: Safari
+⏱️ [hitch] main thread busy for 164ms
+info: [Task @MainActor] executing workspace.openApplication...
+info: [Task @MainActor] got pid 60491 from NSRunningApplication.
+info: [0.072s] finished 'opening/activating application async call completed'
+info: using pre-found pid 60491.
+info: [0.000s] finished 'determining final pid (using 60491)'
+success: application 'Safari' active (pid: 60491).
+info: total processing time: 0.075 seconds
+🌐 Bailian streaming request: 0.1MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 2 (16 chars)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🗣️ Companion sending transcript: 帮我打开Safari浏览器，备忘录，微信。
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🗣️ Streaming speech: queued segment 1 (1 chars)
+🎯 Element pointing: no element
+info: starting AppOpenerOperation for: Safari
+info: interpreting 'Safari' as an application name or bundleID, searching...
+info: found application url via name search 'Safari': /System/Cryptexes/App/System/Applications/Safari.app
+info: derived bundleID: com.apple.Safari, name: Safari from found URL
+info: [0.000s] finished 'application discovery (url: /System/Cryptexes/App/System/Applications/Safari.app, bundleID: com.apple.Safari)'
+info: checking running applications for bundle id: com.apple.Safari
+info: found running instance with pid 60491 for bundle id com.apple.Safari.
+info: [0.000s] finished 'pre-finding existing process (pid: 60491)'
+info: attempting to open/activate application: Safari
+info: [Task @MainActor] executing workspace.openApplication...
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"0e470b25-67ac-94ff-b2fb-91254175c54c","code":"InvalidParameter","message":"Please ensure input text is valid."}
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+info: [Task @MainActor] got pid 60491 from NSRunningApplication.
+info: [0.065s] finished 'opening/activating application async call completed'
+info: using pre-found pid 60491.
+info: [0.000s] finished 'determining final pid (using 60491)'
+success: application 'Safari' active (pid: 60491).
+info: total processing time: 0.065 seconds
+⚠️ Companion fallback — speaking apology. Reason: Text-to-speech API error (400): {"request_id":"0e470b25-67ac-94ff-b2fb-91254175c54c","code":"InvalidParameter","message":"Please ensure input text is valid."}
+🌐 Bailian streaming request: 0.1MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+🎯 Element pointing: no element
+info: starting AppOpenerOperation for: 备忘录
+info: interpreting '备忘录' as an application name or bundleID, searching...
+info: [0.000s] finished 'application discovery (failed)'
+🌐 Bailian streaming request: 0.1MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+⚠️ Streaming speech: streamed text lost its prefix; ignoring this update
+🎯 Element pointing: no element
+info: starting AppOpenerOperation for: 微信
+info: interpreting '微信' as an application name or bundleID, searching...
+info: [0.000s] finished 'application discovery (failed)'

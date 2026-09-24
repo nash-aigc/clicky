@@ -16,5 +16,7 @@
 	<string>Clicky needs screen recording access to see your screen and help you.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Clicky uses speech recognition to transcribe your voice when you talk to it</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Clicky uses the camera only while a voice chat is running, so the AI can see you when you turn the camera on. The video never leaves your Mac except to the model you configured, and it is not recorded.</string>
 </dict>
 </plist>

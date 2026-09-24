@@ -27,6 +27,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case vision
     case action
     case shortcuts
+    case voiceChatRoles
     case exportSettings
     case importSettings
 
@@ -52,6 +53,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .vision: return "看与截图"
         case .action: return "操作"
         case .shortcuts: return "快捷键"
+        case .voiceChatRoles: return "角色"
         case .exportSettings: return "导出设置"
         case .importSettings: return "导入设置"
         }
@@ -71,6 +73,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .vision: return "eye.fill"
         case .action: return "cursorarrow"
         case .shortcuts: return "keyboard"
+        case .voiceChatRoles: return "person.2.fill"
         case .exportSettings: return "square.and.arrow.up"
         case .importSettings: return "square.and.arrow.down"
         }
@@ -115,6 +118,10 @@ struct GeneralSettingsView: View {
                 case .vision: visionPage
                 case .action: actionPage
                 case .shortcuts: shortcutsPage
+                case .voiceChatRoles:
+                    // 角色页由 `VoiceChatRoleSettingsView` 自己画（它有两栏、
+                    // 还要读角色存储），这里只是一个占位，与 模型 / 导出导入 同款。
+                    EmptyView()
                 case .model: EmptyView() // 模型 is rendered by ModelSettingsView.
                 // 导出 / 导入 is rendered by SettingsTransferPage — it is an
                 // action on the whole settings file, not a page of AppSettings.
@@ -1083,11 +1090,11 @@ struct GeneralSettingsView: View {
                 )
             }
 
-            SettingsGroupLabel("VoiceWeb 语音模式")
+            SettingsGroupLabel("语音聊天的三种模式")
             SettingsCard {
                 SettingsRow(
                     label: "三段式",
-                    description: "按下连接 VoiceWeb 的三段式语音（识别 → 思考 → 播报，克隆音色），再按一下断开。连接中刘海显示「连接中…」，成功后短暂显示「已连接」，回复显示在鼠标旁的气泡里。"
+                    description: "按下连接语音聊天的三段式语音（识别 → 思考 → 播报，克隆音色），再按一下断开。连接中刘海显示「连接中…」，成功后短暂显示「已连接」，回复显示在鼠标旁的气泡里。"
                 ) {
                     ShortcutRecorderButton(
                         fallbackBinding: AppSettings.voiceWebDefaultShortcutBindings[0],
@@ -1097,14 +1104,14 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "三段式 · 发送屏幕内容",
-                    description: "开启后 VoiceWeb 会持续读屏，你开口时它把最近的屏幕画面一起送给模型回答（适合「屏幕上这是什么」）。关闭只发语音。"
+                    description: "开启后 语音聊天会持续读屏，你开口时它把最近的屏幕画面一起送给模型回答（适合「屏幕上这是什么」）。关闭只发语音。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebThreeStageSendsScreen))
                 }
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "全双工语音",
-                    description: "按下连接 VoiceWeb 的全双工实时语音，你可以随时打断它说话，再按一下断开。"
+                    description: "按下连接语音聊天的全双工实时语音，你可以随时打断它说话，再按一下断开。"
                 ) {
                     ShortcutRecorderButton(
                         fallbackBinding: AppSettings.voiceWebDefaultShortcutBindings[1],
@@ -1114,7 +1121,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "全双工全模态",
-                    description: "按下连接 VoiceWeb 的全模态实时会话（语音 + 摄像头 + 屏幕），再按一下断开。下面三项决定连接时打开哪些设备。"
+                    description: "按下连接语音聊天的全模态实时会话（语音 + 摄像头 + 屏幕），再按一下断开。下面三项决定连接时打开哪些设备。"
                 ) {
                     ShortcutRecorderButton(
                         fallbackBinding: AppSettings.voiceWebDefaultShortcutBindings[2],
@@ -1124,7 +1131,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "全模态 · 语音",
-                    description: "连接后自动打开麦克风。关掉则连接后不开麦（可以在 VoiceWeb 窗口里手动打开）。"
+                    description: "连接后自动打开麦克风。关掉则连接后不开麦（可以在 语音聊天里手动打开）。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniVoiceEnabled))
                 }
@@ -1138,7 +1145,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "全模态 · 屏幕",
-                    description: "连接后提示共享屏幕。macOS 的系统选择窗口必须由人点一次 —— 勾选后 VoiceWeb 窗口里的「屏幕」胶囊会闪烁提醒你点它。"
+                    description: "连接后把屏幕画面一起送给模型。原生采集只需要「屏幕录制」权限（Clicky 启动时就要过），不再需要点任何系统选择窗口。关掉只发语音。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniScreenEnabled))
                 }

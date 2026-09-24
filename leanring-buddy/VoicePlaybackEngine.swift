@@ -779,6 +779,21 @@ final class VoicePlaybackEngine {
 
     // MARK: - Engine lifecycle
 
+    /// 只把引擎热起来，不装麦克风 tap、不播任何东西。
+    ///
+    /// 给语音聊天的**预热**用（用户点进语音聊天分区时就该热好，而不是等他按连接
+    /// 才付这 ~2 秒的 VPIO 首次重配）。与播放路径共用同一个 `ensureEngineStarted`，
+    /// 所以热起来的就是后面真正要用的那个引擎，不存在「预热了另一个」这种事。
+    func warmUpForVoiceChat() async {
+        do {
+            try await ensureEngineStarted()
+            print("🔥 语音聊天：音频引擎已预热")
+        } catch {
+            // 预热失败不是错误 —— 真正连接时会再试一次，并给出用户能看到的提示。
+            print("🔥 语音聊天：预热失败（连接时会重试）— \(error.localizedDescription)")
+        }
+    }
+
     private func ensureEngineStarted() async throws {
         if isEngineStarted, engine.isRunning {
             // Already running: an answer is in progress, so the microphone is
@@ -911,7 +926,15 @@ final class VoicePlaybackEngine {
             takeCaptureBackForPlayback(handler: tapHandlerToMove)
         }
 
-        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "ON (voice processing, ducking .min, AGC off)" : "off"), mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(engine.inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(engine.inputNode.outputFormat(forBus: 0).channelCount) ch)")
+        // 回读真实状态，而不是断言。原来这里写死的 "(voice processing, ducking .min, AGC off)"
+        // 只是**代码的意图**，不是设备的事实 —— 回声消除有没有真的生效，日志里看不出来。
+        // 现在把它变成可读的数字：这两个属性直接来自运行中的 input node。
+        let voiceProcessingActuallyOn = engine.inputNode.isVoiceProcessingEnabled
+        let agcActuallyOn = engine.inputNode.isVoiceProcessingAGCEnabled
+        print("🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation \(isEchoCancellationActive ? "requested" : "off"), **实测 voiceProcessing=\(voiceProcessingActuallyOn) AGC=\(agcActuallyOn)**, mixer \(Int(engine.mainMixerNode.outputFormat(forBus: 0).sampleRate)) Hz / input \(Int(engine.inputNode.outputFormat(forBus: 0).sampleRate)) Hz \(engine.inputNode.outputFormat(forBus: 0).channelCount) ch)")
+        // TEMPORARY PROBE (2026-09-24). The bring-up mark the level curve is
+        // read against: everything the VAD sees is measured from here.
+        print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=bringUp isRunning=\(engine.isRunning) \(Self.voiceProcessingProbeDescription(for: engine.inputNode))")
         // TEMPORARY (2026-09-24): the duration of the whole bring-up, and the
         // number the decision above depends on. This should now be off the main
         // thread — the mark reports which thread it lands on.
@@ -1162,6 +1185,14 @@ final class VoicePlaybackEngine {
     ) -> Bool {
         guard wanted else { return false }
 
+        // TEMPORARY PROBE (2026-09-24): before/after the toggle, because the
+        // property and the IO can disagree. `isVoiceProcessingEnabled` is what
+        // this function used to trust; the input node's own format is what the
+        // microphone tap actually reads. If the format does not change shape
+        // across these two lines, voice processing did not reconfigure the IO
+        // and there is no canceller, whatever the property says.
+        print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=vpToggleBefore \(Self.voiceProcessingProbeDescription(for: inputNode))")
+
         do {
             try inputNode.setVoiceProcessingEnabled(true)
         } catch {
@@ -1171,7 +1202,28 @@ final class VoicePlaybackEngine {
 
         applyMildestOtherAudioDuckingConfiguration(on: inputNode)
         disableAutomaticGainControlOnProcessedUplink(on: inputNode)
+
+        print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=vpToggleAfter \(Self.voiceProcessingProbeDescription(for: inputNode))")
+
         return inputNode.isVoiceProcessingEnabled
+    }
+
+    /// TEMPORARY PROBE (2026-09-24). The facts no log line has ever carried
+    /// together: WHICH input device the engine is on, the input node's own
+    /// format (which is exactly what the listening tap reads), and whether the
+    /// IO is really in voice processing's shape.
+    ///
+    /// The channel count is the discriminator, and it only means something next
+    /// to the device: measured on this machine with `system_profiler
+    /// SPAudioDataType`, the built-in 「MacBook Pro麦克风」 reports **3 input
+    /// channels** raw, and the runs whose engine line read `9 ch` are the ones
+    /// voice processing reconfigured. So `3 ch` means the IO is still the raw
+    /// device — no canceller — and the file's two older comments disagree about
+    /// which count that is, which is why this probe prints the device with it.
+    nonisolated private static func voiceProcessingProbeDescription(for inputNode: AVAudioInputNode) -> String {
+        let nodeFormat = inputNode.outputFormat(forBus: 0)
+        let inputDeviceName = AVCaptureDevice.default(for: .audio)?.localizedName ?? "(none)"
+        return "device=\"\(inputDeviceName)\" node=\(Int(nodeFormat.sampleRate))Hz/\(nodeFormat.channelCount)ch vpEnabled=\(inputNode.isVoiceProcessingEnabled) agc=\(inputNode.isVoiceProcessingAGCEnabled)"
     }
 
     /// Turns OFF the automatic gain control the voice processing unit applies to
