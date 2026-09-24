@@ -85,25 +85,6 @@ struct NotchHomeView: View {
                 .buttonStyle(.plain)
                 .pointerCursor()
                 .help("点击隐藏")
-            } else {
-                // Same reasoning as the status strip above: the error line sits
-                // between the scroll view and the composer, and appearing or
-                // disappearing moves the whole conversation. Two lines of the
-                // same font size, invisible, keep the column's height constant.
-                // The real error can span two lines (lineLimit(2)), so the
-                // placeholder reserves two.
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(.clear)
-                    Text(" \n ")
-                        .font(.system(size: 11.5))
-                        .lineLimit(2)
-                        .foregroundColor(.clear)
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 6)
             }
 
             // 「松开发送」 — the original's caption while the talk key is held.
