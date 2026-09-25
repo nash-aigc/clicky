@@ -265,9 +265,15 @@ struct NotchHomeView: View {
                         // 通话进行中，**最后一条还没写完回答的条目**不渲染空卡 ——
                         // 它的回答此刻在下面的流式气泡里（`askVoiceCallController.liveAssistantText`），
                         // 回合结束写盘后这里自然恢复渲染。
+                        //
+                        // 第二个条件是同一件事的**后半程**：回合已经写盘了，但吐字还在追
+                        // 最后那几个字（`isRevealingLastEntry`）—— 这时候**别把刚写下的那条
+                        // 画出来**，否则剩下的字会由这张"已定稿"的卡片整段画出来，动画在
+                        // 最后一句话上戛然而止（用户 2026-09-25 报的「还剩 15 个字时突然
+                        // 显示出来，没有过渡」）。等吐完最后一个字，控制器复位，这里恢复。
                         if askVoiceCallController.isActive,
                            entryIndex == entries.count - 1,
-                           entry.assistantResponse.isEmpty {
+                           entry.assistantResponse.isEmpty || askVoiceCallController.isRevealingLastEntry {
                             EmptyView()
                         } else {
                             turnView(entryIndex, entry)

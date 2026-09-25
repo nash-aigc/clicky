@@ -73,6 +73,10 @@ final class AskVoiceCallController: ObservableObject {
     /// 「前面两行一定是正常速度」的实现方式。见 `advanceDisplayedText`。
     private var hasStartedRevealing = false
 
+    /// 回合已经落盘，但吐字还在追最后那几个字 —— 此时**先别把刚写下的那条画出来**，
+    /// 让流式气泡吐完再换。Ask 页据此把最后一条临时藏起来。
+    private(set) var isRevealingLastEntry = false
+
     /// 不足一帧的推进量攒在这里，凑够一个字再吐。没有它，`max(1, …)` 会让实际
     /// 最低速度被抬到 30 字/秒（一帧一个字），"低速"就名不副实了。
     private var displayAdvanceAccumulator = 0.0
@@ -515,6 +519,12 @@ final class AskVoiceCallController: ObservableObject {
         if liveAssistantText != shownText {
             liveAssistantText = shownText
         }
+
+        // 吐完最后一个字了 → 现在才把"流式气泡"换成"已定稿的条目"。
+        // 见 `commitAssistantTurn` 末尾的 `revealingEntryID`。
+        if isRevealingLastEntry, displayedCharacterCount >= targetCount {
+            resetAssistantTextBuffers()
+        }
     }
 
     /// 把两份文本、吐字进度与挂起的任务一起归零。
@@ -530,6 +540,7 @@ final class AskVoiceCallController: ObservableObject {
         displayedCharacterCount = 0
         displayAdvanceAccumulator = 0
         hasStartedRevealing = false
+        isRevealingLastEntry = false
         assistantTextBeganAt = nil
     }
 
@@ -549,8 +560,13 @@ final class AskVoiceCallController: ObservableObject {
         let turnDurationSeconds = replyReceivedAt.map {
             max(1, Int(turnFinishedAt.timeIntervalSince($0).rounded()))
         }
-        resetAssistantTextBuffers()
-        guard !spoken.isEmpty, let sessionID = targetSessionID else { return }
+        // **注意：这里不再立刻复位吐字状态** —— 收尾交给每个出口的
+        // `finishTurnAfterCommit()`，它会在"还没吐完"时把流式气泡留着。
+        // 见那个方法的注释。
+        guard !spoken.isEmpty, let sessionID = targetSessionID else {
+            resetAssistantTextBuffers()
+            return
+        }
 
         // ① 用户的话攥在手里 → 一条写全。
         if let userText = pendingUserTranscript {
@@ -567,6 +583,7 @@ final class AskVoiceCallController: ObservableObject {
                 targetSessionID: sessionID
             )
             print("📝 [写盘] 一条全写：问「\(userText.prefix(20))」 答「\(spoken.prefix(20))」")
+            finishTurnAfterCommit()
             return
         }
 
@@ -587,6 +604,7 @@ final class AskVoiceCallController: ObservableObject {
             )
             pendingPairIndex = insertIndex
             print("📝 [写盘] #\(insertIndex) 等转写补配：答「\(spoken.prefix(20))」")
+            finishTurnAfterCommit()
             return
         }
 
@@ -612,6 +630,24 @@ final class AskVoiceCallController: ObservableObject {
             targetSessionID: sessionID
         )
         print("📝 [写盘] 开场白（不参与配对）：答「\(spoken.prefix(20))」")
+        finishTurnAfterCommit()
+    }
+
+    /// 落盘之后收尾：**吐字还没追平就把流式气泡留着**，让最后那几个字继续吐完。
+    ///
+    /// 服务端的 `response.done` 早于音频播完，也早于吐字追完。原先在这里直接复位，
+    /// 于是剩下的字由"已定稿"的条目整段画出来 —— 用户 2026-09-25 报的
+    /// 「最后一句话还剩 15 个字的时候，它就不渲染了……会突然显示出来」。
+    ///
+    /// 但**落盘本身不能推迟**：一推迟，用户那句话的配对也会跟着晚（它按 `pendingPairIndex`
+    /// 认领），那就成了用户同一次报的另一条「用户的提示词在 AI 回复完成后才出现」。
+    /// 所以分开处理：**条目照写，画不画是另一回事。**
+    private func finishTurnAfterCommit() {
+        if displayedCharacterCount < latestAssistantText.count {
+            isRevealingLastEntry = true
+        } else {
+            resetAssistantTextBuffers()
+        }
     }
 }
 
