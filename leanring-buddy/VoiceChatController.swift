@@ -595,6 +595,7 @@ final class VoiceChatController: ObservableObject {
                     self?.markVoiceChatFullyConnected()
                 },
                 onBargeIn: { [weak self] in
+                    self?.finalizeDuplexAssistantEntryText()
                     self?.duplexAssistantEntryID = nil
                     self?.streamingAnswerEntryID = nil
                 },
@@ -619,6 +620,10 @@ final class VoiceChatController: ObservableObject {
                     //
                     // 全双工的气泡边界是**用户开口**（新回合），见
                     // `insertDuplexUserEntry`。三段式那条路仍然在这里解绑。
+                    //
+                    // 解绑之前先把文字定稿写回数组 —— 数组里存的是第一个分片，
+                    // 见 `finalizeDuplexAssistantEntryText`。
+                    self?.finalizeDuplexAssistantEntryText()
                     self?.streamingAnswerEntryID = nil
                 },
                 onSessionConfigured: {
@@ -644,6 +649,50 @@ final class VoiceChatController: ObservableObject {
     /// **正在流式输出**的那条回答的条目 id（nil = 没有正在流式的回答）。
     /// Chatting 页据此给这条渲染卡片式渲染动画（blur 渐显），历史条目渲染为定稿。
     @Published private(set) var streamingAnswerEntryID: UUID?
+    /// 正在流式输出的那条回答的**文字**，单独挂在一个小对象上，不写进
+    /// `transcriptEntries`。
+    ///
+    /// **为什么必须拆出来**：`transcriptEntries` 是控制器上的 `@Published`，而这个
+    /// 控制器被**四个**视图观察 —— Chatting 内容列（真正需要文字的）、左侧角色栏
+    /// （`HomeSpaceSidebarView:29`）、预览条（`VoiceChatPreviewStrip:19`）、整个面板
+    /// 根（`NotchSheetRootView:28`）。逐字去改那个数组，等于**每来一个字就把整个
+    /// 展开面板重新求值一次**，其中三个视图根本不需要文字。
+    ///
+    /// `sample` 实测（2026-09-25，全双工会话、面板展开）：主线程约 **36%** 的工作量
+    /// 落在 `NSHostingView.layout()` 里，而那条栈的形状是
+    /// `update → updateInheritedView → update → …` **逐层走完整棵树**
+    /// （926 → 924 → 918 → 916 → 898 → 796 → 577 → 339 个样本），
+    /// 不是某个叶子函数热 —— 特征就是"整棵面板在重算"，不是"某个视图很贵"。
+    /// 逐字字符串本身早被本仓库实测排除过（0.12ms/delta，量级不够）。
+    ///
+    /// 拆开之后，逐字变化的只有这一个对象，而观察它的只有真正要显示文字的那一列。
+    /// 这和尾巴那两处是同一个思路：**别让一个粗粒度的东西成为"变化"的单位。**
+    @MainActor
+    final class VoiceChatStreamingTextStore: ObservableObject {
+        @Published private(set) var textByEntryID: [UUID: String] = [:]
+        /// 最近一次写入的文字长度 —— 滚动触发用。让视图不必为了"字数变了没有"去
+        /// 对整段文字做一次 `String.count`（那是 O(正文长度)，而 body 每次都会跑）。
+        @Published private(set) var latestTextCharacterCount = 0
+
+        func setText(_ text: String, forEntryID entryID: UUID) {
+            textByEntryID[entryID] = text
+            latestTextCharacterCount = text.count
+        }
+
+        func text(forEntryID entryID: UUID) -> String? {
+            textByEntryID[entryID]
+        }
+
+        /// 这一轮定稿了：文字已经写进 `transcriptEntries`，这里的那份可以扔掉。
+        func clearText(forEntryID entryID: UUID) {
+            textByEntryID[entryID] = nil
+        }
+    }
+
+    /// 逐字变化的文字住在这里，**不住在 `transcriptEntries` 里** —— 见
+    /// `VoiceChatStreamingTextStore` 的说明。视图拿它优先于条目自己那份文字。
+    let streamingAnswerTextStore = VoiceChatStreamingTextStore()
+
     /// 全双工那一轮回答的气泡 id。服务端的回答是流式推来的、没有「回合开始」这个
     /// 明确信号（`response.created` 才是），所以气泡在第一个 delta 到达时建、
     /// 在 `response.done` 时解绑 —— 和打字那条路同一个「一个回合一个气泡」的形状。
@@ -1300,6 +1349,25 @@ final class VoiceChatController: ObservableObject {
         }
     }
 
+    /// 全双工这一轮的**文字定稿**：把 store 里最新那份写回数组元素，再扔掉 store 那份。
+    ///
+    /// **全双工必须显式做这一步，不能像三段式那样交给 `finishTurn`**：全双工没有
+    /// `onTurnFinished` 这个出口（它的气泡边界是"用户开口"，见 `onAssistantTurnFinished`），
+    /// 而它建气泡那一帧写进数组的是**第一个 delta**，不是最新那份 —— 所以只扔不写回
+    /// 的话，卡片会当场跳回第一个分片。
+    ///
+    /// 反过来不扔只是留下一条多余的文字，不会显示错任何东西（视图是"store 优先、
+    /// 数组兜底"）。所以这里宁可漏调，不可写反顺序。
+    private func finalizeDuplexAssistantEntryText() {
+        guard let entryID = duplexAssistantEntryID ?? streamingAnswerEntryID,
+              let latestText = streamingAnswerTextStore.text(forEntryID: entryID)
+        else { return }
+        if let index = transcriptEntries.firstIndex(where: { $0.id == entryID }) {
+            transcriptEntries[index].text = latestText
+        }
+        streamingAnswerTextStore.clearText(forEntryID: entryID)
+    }
+
     /// 三段式下「第一段音频」= 合成器真的开始播了。它是计算属性、不是 @Published，
     /// 所以这里轮询（100ms，最长 15 秒），而不是订阅。
     private func watchForFirstAudioToConfirmConnection() {
@@ -1398,9 +1466,14 @@ final class VoiceChatController: ObservableObject {
     }
 
     /// 把这一轮的回答写进**它自己的**气泡。
+    ///
+    /// **写的是 `streamingAnswerTextStore`，不是 `transcriptEntries` 里的那个元素** ——
+    /// 后者是控制器上的 `@Published`，而四个视图在观察这个控制器，逐字去改它等于
+    /// 每来一个字就把整个展开面板重算一次。详见 `VoiceChatStreamingTextStore`。
+    ///
+    /// 定稿由 `finishTurn` 负责：那时才把最终文字写进数组元素，并清掉这里那份。
     private func updateAnswerEntry(_ answerEntryID: UUID, text: String) {
-        guard let index = transcriptEntries.firstIndex(where: { $0.id == answerEntryID }) else { return }
-        transcriptEntries[index].text = text
+        streamingAnswerTextStore.setText(text, forEntryID: answerEntryID)
     }
 
     /// 这一轮的文字到此为止了 —— 正常收完，或中途失败。
@@ -1429,7 +1502,15 @@ final class VoiceChatController: ObservableObject {
             ? ActionTagParser.speakableTextFromStreamedReply(finalReplyText)
             : spokenText
 
-        updateAnswerEntry(answerEntryID, text: displayText)
+        // **定稿写进数组元素，并把流式那份扔掉。**
+        //
+        // 整轮只有这一次写 `transcriptEntries`（每字一次的那个在
+        // `updateAnswerEntry` 里，写的是 `streamingAnswerTextStore`）。扔的顺序不能
+        // 反：视图取文字是"store 优先、数组兜底"，先扔再写数组会有一帧读到空的。
+        if let index = transcriptEntries.firstIndex(where: { $0.id == answerEntryID }) {
+            transcriptEntries[index].text = displayText
+        }
+        streamingAnswerTextStore.clearText(forEntryID: answerEntryID)
 
         // 与按住说话那条路共用一个出口：`CompanionManager` 注入的 `presentAnswer`
         // 会检查「回答时显示文字」并安排淡化，所以气泡行为两边一致。

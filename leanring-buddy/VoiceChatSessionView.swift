@@ -33,6 +33,20 @@ struct VoiceChatSessionView: View {
 
     @ObservedObject var controller: VoiceChatController
 
+    /// **逐字变化的那份文字自己是一个可观察对象，所以这里要单独订阅它。**
+    ///
+    /// 订阅 `controller` 只会让这个视图响应控制器自己的 `@Published` —— 而文字已经
+    /// 不住在那里了（见 `displayText(for:)` 与 `VoiceChatStreamingTextStore`）。
+    /// 不显式订阅的话，卡片会在第一个 delta 之后就不再更新。
+    ///
+    /// 这一条订阅**只落在这个视图上**，所以逐字重算的范围是内容列，而不是整个面板。
+    @ObservedObject private var streamingAnswerTextStore: VoiceChatController.VoiceChatStreamingTextStore
+
+    init(controller: VoiceChatController) {
+        self.controller = controller
+        self.streamingAnswerTextStore = controller.streamingAnswerTextStore
+    }
+
     @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
     /// 卡片主题（设置 → 交互）。快照进 @State，保存设置时靠
@@ -1717,13 +1731,24 @@ struct VoiceChatSessionView: View {
                     // （这是为了让气泡顺序永远等于问答顺序），但第一个字可能还要几秒
                     // 才到 —— 那段时间画一个空卡片会显得像坏了。它在数组里的位置是对的，
                     // 所以文字一到就出现在正确的地方。
-                    ForEach(controller.transcriptEntries.filter { $0.isUser || !$0.text.isEmpty }) { entry in
+                    //
+                    // 文字从这里取：**流式那份在 `streamingAnswerTextStore` 上，
+                    // 定稿那份在条目里**。逐字的文字之所以不写进 `transcriptEntries`，
+                    // 见 `VoiceChatStreamingTextStore` —— 那个数组一变，观察控制器的
+                    // 四个视图（含左侧栏与整个面板根）全部重算。
+                    ForEach(controller.transcriptEntries.filter { $0.isUser || !displayText(for: $0).isEmpty }) { entry in
                         if entry.isUser {
                             outgoingBubble(entry.text)
                                 .id(entry.id)
                         } else {
+                            // 先取出来再传：把 `displayText(for:)` 和那个 `||` 一起塞进
+                            // 实参里，类型检查器会放弃（实测 "unable to type-check this
+                            // expression in reasonable time"）。
+                            let assistantText = displayText(for: entry)
+                            let isStillGrowing = controller.streamingAnswerEntryID == entry.id
+                                || controller.duplexAssistantEntryID == entry.id
                             assistantBubble(
-                                entry.text,
+                                assistantText,
                                 // **「这张卡还在长吗」不能只看 `streamingAnswerEntryID`。**
                                 //
                                 // 那个槽是三段式与全双工**共用**的：全双工回复播放期间
@@ -1733,8 +1758,7 @@ struct VoiceChatSessionView: View {
                                 // 后面的字丢掉（实测探针：干净路径 55/55 字，被这一下
                                 // 污染后剩 41/55）。`duplexAssistantEntryID` 只属于全双工，
                                 // 抢不走，所以两个一起判。
-                                isStreaming: controller.streamingAnswerEntryID == entry.id
-                                    || controller.duplexAssistantEntryID == entry.id
+                                isStreaming: isStillGrowing
                             )
                             .id(entry.id)
                         }
@@ -1785,7 +1809,11 @@ struct VoiceChatSessionView: View {
             // Agent 用 `streamingText`（瞬时）。流式期间一律**瞬时**滚动 —— 带动画的
             // 0.2s 长于 delta 间隔，动画会永远处在「被改目标」的状态，每帧都在重新
             // 定位一个正在变大的内容。
-            .onChange(of: controller.transcriptEntries.last?.text.count) { _, _ in
+            //
+            // 判据从「最后一条的文字长度」换成 store 自己记的那个数：逐字的文字已经
+            // 不住在 `transcriptEntries` 里了（见 `displayText(for:)`），而且对整段
+            // 正文做 `String.count` 是 O(正文长度)、body 每次都会跑。
+            .onChange(of: controller.streamingAnswerTextStore.latestTextCharacterCount) { _, _ in
                 scrollToBottomInstantly(proxy)
             }
             .onChange(of: controller.selectedRoleID) { _, _ in
@@ -1989,6 +2017,23 @@ struct VoiceChatSessionView: View {
 
             MessageCopyButton(text: text, helpText: "复制我说的话")
         }
+    }
+
+    /// 一条记录**当前该显示的文字**。
+    ///
+    /// 两级来源，顺序不能反：**流式中那一轮的文字住在
+    /// `controller.streamingAnswerTextStore` 上，定稿的文字住在条目自己身上。**
+    ///
+    /// 为什么不干脆都放条目里：`transcriptEntries` 是控制器上的 `@Published`，而
+    /// **四个**视图在观察这个控制器（Chatting 列、左侧角色栏、预览条、整个面板根）。
+    /// 逐字去改那个数组，等于每来一个字就把整个展开面板重新求值一次。`sample` 实测
+    /// （2026-09-25，全双工会话、面板展开）：主线程约 36% 的工作量花在
+    /// `NSHostingView.layout()` 里，而那条栈是 `update → updateInheritedView → update
+    /// → …` **逐层走完整棵树**（926 → 924 → 918 → 916 → 898 → 796 → 577 → 339 个样本）
+    /// —— 特征就是"整棵面板在重算"。拆开之后，逐字变化的只有 store，
+    /// 观察它的只有这一列。
+    private func displayText(for entry: VoiceChatController.VoiceChatTranscriptEntry) -> String {
+        streamingAnswerTextStore.text(forEntryID: entry.id) ?? entry.text
     }
 
     /// 助手回答用 Ask 页同一张卡（`AnswerCardView`， blur-focus 逐字动画），
