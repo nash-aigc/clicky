@@ -185,6 +185,40 @@ nonisolated final class LongFormAudioCapture {
     }
 }
 
+/// 最近几秒的音频，供重连时「接缝重喂」。
+///
+/// 为什么需要：轮换连接会在音频流上留一个接缝。原来的保证是「只在静音处轮换」——
+/// 静音处没有词可丢。但强制轮换（连接跑太久、不能无限跑下去）会打破这个前提：
+/// 断在句子中间时，那半句就永远没了。
+///
+/// 重喂几秒**重叠**音频，再用服务端给的毫秒时间戳把重复那段丢掉，接缝就补回来了。
+/// 宁可重、不可丢 —— 重复的段有确定的方法识别，丢掉的词没有任何办法找回。
+nonisolated final class RecentAudioRing {
+    private let lock = NSLock()
+    private var chunks: [Data] = []
+    private var totalByteCount = 0
+    private let maximumByteCount: Int
+
+    init(maximumSeconds: Double, bytesPerSecond: Int) {
+        maximumByteCount = Int(maximumSeconds * Double(bytesPerSecond))
+    }
+
+    func append(_ data: Data) {
+        lock.lock(); defer { lock.unlock() }
+        chunks.append(data)
+        totalByteCount += data.count
+        while totalByteCount > maximumByteCount, let oldest = chunks.first {
+            totalByteCount -= oldest.count
+            chunks.removeFirst()
+        }
+    }
+
+    func snapshot() -> [Data] {
+        lock.lock(); defer { lock.unlock() }
+        return chunks
+    }
+}
+
 nonisolated enum LongFormRecorderError: Error, CustomStringConvertible {
     case microphoneUnavailable
     case cannotBuildConverter
@@ -352,6 +386,15 @@ final class LongFormRecorderController: ObservableObject {
 
     /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
     private var polishScreenshotJPEG: Data?
+
+    /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
+    private let recentAudio = RecentAudioRing(
+        maximumSeconds: 8,
+        bytesPerSecond: LongFormAudioCapture.targetSampleRate * 2)   // 16k 单声道 16bit
+
+    /// 新连接开头这段（毫秒）里回来的文字是**重喂的重叠**，一律丢掉。
+    /// 服务端的时间轴在新连接上从零重计，所以这个数是「重喂了多久」。
+    private var seamSuppressionMilliseconds = 0
 
     /// 抓当前主屏，缩到 1600px 长边、JPEG 0.7 —— 和「看与截图」页那两个设置同一个
     /// 量级，够模型看清内容又不会把请求撑大。
@@ -550,6 +593,8 @@ final class LongFormRecorderController: ObservableObject {
             // 实时音频线程上访问 MainActor 属性是编译不过的，而且真跑起来就是丢音。
             self?.audioWriterBox?.tryAppend(pcm)
             self?.audioClient?.enqueue(audio: pcm)
+            // 留着给重连重喂用。环形缓冲自己带锁，音频线程上调是安全的。
+            self?.recentAudio.append(pcm)
         }
         capture.onLevel = { [weak self] level, isSpeaking in
             Task { @MainActor in
@@ -1006,6 +1051,11 @@ final class LongFormRecorderController: ObservableObject {
     private func wireClientCallbacks(_ client: VolcengineRealtimeASRClient) {
         client.onSegment = { [weak self] segment in
             guard let self, let transcript = self.transcriptWriter else { return }
+            // **重喂回来的重叠段，丢掉。** 判据用服务端自己的毫秒时间戳：
+            // 新连接的时间轴从零重计，所以 `endMilliseconds <= 重喂时长` 的那些
+            // 都是我们已经落过盘的话。靠文本判重做不到这件事（重喂的段被重新识别，
+            // 用词会有细微差别），靠时间戳可以。
+            if segment.endMilliseconds <= self.seamSuppressionMilliseconds { return }
             if segment.isDefinite {
                 // **只有真的落盘了才往下走。** `commit` 会判重（服务端在句末会把
                 // 同一段再发一次），返回 false 表示这一段已经被写过了 —— 原来不判
@@ -1083,8 +1133,21 @@ final class LongFormRecorderController: ObservableObject {
         audioClient = client
         connectionRotationCount += 1
         lastConnectionStartedAt = Date()
-        publishDiagnostic("重连第 \(connectionRotationCount) 次")
+
+        // **连接先建、重叠音频后灌。** 顺序不能反：客户端的 `enqueue` 在 `task`
+        // 还是 nil 时会把这块音频直接丢掉，而 `task` 要 `connect()` 里才建。
         client.connect()
+
+        // 重喂最近这几秒。新连接会重新识别它们，回来的文字由
+        // `seamSuppressionMilliseconds` 按服务端自己的毫秒时间戳丢掉 —— 所以接缝
+        // 落在句子中间也不丢词，只是多花几秒的上行。
+        let overlap = recentAudio.snapshot()
+        let overlapByteCount = overlap.reduce(0) { $0 + $1.count }
+        let overlapMilliseconds = overlapByteCount / 2 * 1000 / LongFormAudioCapture.targetSampleRate
+        seamSuppressionMilliseconds = overlapMilliseconds
+        for chunk in overlap { client.enqueue(audio: chunk) }
+        publishDiagnostic("重连第 \(connectionRotationCount) 次"
+            + (overlapMilliseconds > 0 ? "，重喂 \(overlapMilliseconds) 毫秒重叠音频" : ""))
     }
 
     // MARK: - 定时器
@@ -1116,10 +1179,21 @@ final class LongFormRecorderController: ObservableObject {
         let minutes = AppSettingsStore.snapshot().recordingRotationMinutes
         guard minutes > 0, let lastConnectionStartedAt else { return }
         guard Date().timeIntervalSince(lastConnectionStartedAt) >= Double(minutes) * 60 else { return }
-        // 静音至少 1.5 秒才换。`lastSpeechAt` 由电平回调更新。
-        guard let lastSpeechAt, Date().timeIntervalSince(lastSpeechAt) >= 1.5 else { return }
+        let elapsed = Date().timeIntervalSince(lastConnectionStartedAt)
+        let isQuiet = lastSpeechAt.map { Date().timeIntervalSince($0) >= 1.5 } ?? true
 
-        publishDiagnostic("到达轮换间隔（\(minutes) 分钟）且在静音处，换一条连接")
+        // **硬上限：到了间隔的两倍，不管有没有静音都要换。**
+        //
+        // 原来只有「静音才换」这一条，于是**连续说 20 分钟以上、中间从不停顿 1.5 秒
+        // 的用户，轮换永远不会发生** —— 连接会无限跑下去，而单条连接能活多久官方
+        // 没有给上限。有了硬上限，「3 小时不断」才不依赖「用户会偶尔停顿」这个假设。
+        // 代价是接缝可能落在句子中间，而那条由上面的「重喂 + 时间戳抑制」接住。
+        let isOverHardLimit = elapsed >= Double(minutes) * 60 * 2
+        guard isQuiet || isOverHardLimit else { return }
+
+        publishDiagnostic(isQuiet
+            ? "到达轮换间隔（\(minutes) 分钟）且在静音处，换一条连接"
+            : "连接已跑满 \(Int(elapsed / 60)) 分钟（上限 \(minutes * 2) 分钟），强制换连接")
         transcriptWriter?.commitLiveLineAsUnfinished()
         reconnect()
     }
