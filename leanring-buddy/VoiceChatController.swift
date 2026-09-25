@@ -595,13 +595,36 @@ final class VoiceChatController: ObservableObject {
                     self?.markVoiceChatFullyConnected()
                 },
                 onBargeIn: { [weak self] in
+                    // **这里不解绑气泡。** 两件完全不同的事被混在一起了：
+                    //
+                    //  · 「停声」—— 本地判定（轮询上行电平）就能做，判错了代价只是
+                    //    声音停一下，下一个 delta 就接回去了；
+                    //  · 「换一条气泡」—— **不可逆**。解绑之后下一个 delta 会用
+                    //    **已累积的全文**新建一条气泡，屏幕上于是出现**两张逐字相同的卡**。
+                    //
+                    // 实测（2026-09-25，`clicky-尾巴可读性-154136.log`）：一次开场
+                    // 问候，全场只有一条回答（`resp_Z5HnM`，47 字）、**没有任何
+                    // `speech_started`**，却在第 70 行出现
+                    // `🎙️ 全双工会话：本地判定用户开口 —— 就地停声` —— 那条本地判定
+                    // 是**误判**（AI 自己的声音进了麦克风），而它把气泡切成了两张。
+                    //
+                    // 气泡边界交给下面那个**服务端确认**的信号。
                     self?.finalizeDuplexAssistantEntryText()
-                    self?.duplexAssistantEntryID = nil
                     self?.streamingAnswerEntryID = nil
                 },
-                onUserSpeechStarted: {
-                    // 见 Callbacks.onUserSpeechStarted 的说明。Chatting 的气泡顺序
-                    // 由第一个 delta 建气泡保证，这里不需要额外动作。
+                onUserSpeechStarted: { [weak self] in
+                    // **气泡边界在这里，不在本地打断那一条。**
+                    //
+                    // 判据只有一条：**跟文字累加器对齐**。`DuplexVoiceEngine` 在
+                    // `speech_started` 这一支里清 `currentAssistantText`（服务端确认
+                    // 用户开口），所以"下一条回答从零开始"这件事**发生在这里**。
+                    // 气泡边界跟着它走，卡片装的文字就永远和它自己那一条回答对应。
+                    //
+                    // 原先边界在 `onBargeIn`（本地电平判定），两者不是一个时刻：
+                    // 本地判定会误触发（AI 自己的声音进麦克风），于是它切出一条
+                    // **装着全文的重复卡**；而服务端那一条即使也误触发，至少和
+                    // 清累加器是同一个动作、同一个时刻，卡片不会和文字分家。
+                    self?.duplexAssistantEntryID = nil
                 },
                 onAssistantTurnStarted: {
                     // Chatting 那边靠 `updateDuplexAssistantEntry` 在第一个 delta 时建气泡，

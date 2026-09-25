@@ -645,6 +645,36 @@ struct AnswerCardView: View {
     /// the settled stream) shows every unit fully sharp.
     let isStreaming: Bool
     let style: AnswerCardStyle
+    /// 是否给"刚到的字"做进场动画（模糊 + 半透明 → 清晰）。
+    ///
+    /// **全双工传 false —— 用户 2026-09-25 的原话：「（全双工语音模式）最后 5 个字，
+    /// 不要动画，直接显示吧」。**
+    ///
+    /// 这不是让全双工"少一个特效"，而是修掉一个真实的可用性问题，逐帧截图确认过：
+    /// 那条路的文字速率由**说话速度**决定（实测 6.1 字/秒），`freshTailUnitCount = 5`
+    /// 于是等于**大约一整秒的说话内容** —— 而这一秒正是用户要读的那一秒。把它做成
+    /// 模糊 + 半透明，等于**把字幕盖住一秒再突然掀开**（用户的原话是「最后那几个字
+    /// 渲染不出来」和「它是突然间跳出来的」）。
+    ///
+    /// 三段式**保持不变**：它的 5 个字只存在约 0.17 秒（实测约 30 字/秒），那才是参考
+    /// 规范设想的"写作边缘"，一闪而过正合适。所以这个开关是按**模式**给的，
+    /// 不是按卡片状态 —— 两条路的文字速率差 5 倍，用同一套观感本身就是错的。
+    let animatesIncomingCharacters: Bool
+
+    /// 显式 init 而不是靠成员逐一初始化：只有它能让 `animatesIncomingCharacters`
+    /// 有一个默认值，于是另外五个调用点（设置页预览、光标旁气泡、归档页、Agent、
+    /// Screen）一行都不用改 —— 它们要的都是参考规范那套动画。
+    init(
+        text: String,
+        isStreaming: Bool,
+        style: AnswerCardStyle,
+        animatesIncomingCharacters: Bool = true
+    ) {
+        self.text = text
+        self.isStreaming = isStreaming
+        self.style = style
+        self.animatesIncomingCharacters = animatesIncomingCharacters
+    }
 
     /// The reply's units, widths, lines and settled paragraphs so far, extended
     /// across the streamed updates — see `CardRenderPlanCache` for why one
@@ -710,8 +740,24 @@ struct AnswerCardView: View {
     /// Every line that leaves the region has therefore already settled, and
     /// leaving it is invisible.
     private static let liveLineRegionLineCount = 2
-    private static let freshBlurRadius: CGFloat = 2.6
-    private static let freshOpacity: Double = 0.2
+
+    /// 刚到的那几个字模糊多少。参考规范给的是 **2.6**。
+    ///
+    /// **2026-09-25 降到 0.8，因为规范那个数字在这里读不出来。** 规范假设的是"写得
+    /// 很快的写作边缘"—— 在那种速率下尾巴一闪而过，糊一点没关系。而全双工那条路的
+    /// 文字速率由**说话速度**决定（实测 6.1 字/秒），`freshTailUnitCount = 5` 于是
+    /// 等于**大约一整秒的说话内容** —— 这一秒里那几个字是 blur 2.6 + opacity 0.2，
+    /// 逐帧截图确认过：**整条糊成一片，一个字都认不出来**。
+    ///
+    /// 用户 2026-09-25 的原话是「最后那几个字渲染不出来」和「它是突然间跳出来的」——
+    /// 前者是这一条，后者是同一批字同时跨越时间窗口、同时变亮。所以真正要改的是
+    /// **可读性**（这两个常量），而不是我此前一直在改的时间窗口：时间窗口只决定它
+    /// 模糊**多久**，不决定它模糊**多看不清**。
+    private static let freshBlurRadius: CGFloat = 0.8
+    /// 刚到的那几个字多透明。参考规范给的是 **0.2** —— 深色卡片上白字 20% 已经几乎
+    /// 看不见，再叠上模糊就彻底读不出来。**2026-09-25 提到 0.55：明显比正文淡，
+    /// 但仍然读得出来。** 理由同 `freshBlurRadius`。
+    private static let freshOpacity: Double = 0.55
     private static let settleAnimationDuration: TimeInterval = 0.3
 
     /// Reference spec §3.1–3.4: corner 10, border 1.5, padding 10px 12px,
@@ -1093,7 +1139,7 @@ struct AnswerCardView: View {
                 // 就换了个视图重画，`.animation` 根本没机会跑 —— 是「跳」不是「淡」。
                 // 现在两个判据分开，时间先到的那一批**在同一个视图里**翻成清晰，
                 // 动画于是真的播出来。
-                let isFresh = isStreaming && !reduceMotion
+                let isFresh = animatesIncomingCharacters && isStreaming && !reduceMotion
                     && unitIndex >= firstFreshUnitIndexByElapsedTime
                 Text(units[unitIndex].text)
                     .blur(radius: isFresh ? Self.freshBlurRadius : 0)

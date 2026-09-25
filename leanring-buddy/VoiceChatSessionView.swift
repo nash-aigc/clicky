@@ -2047,7 +2047,14 @@ struct VoiceChatSessionView: View {
                 AnswerCardView(
                     text: text,
                     isStreaming: isStreaming,
-                    style: answerCardStyle
+                    style: answerCardStyle,
+                    // **全双工不做进场动画** —— 用户 2026-09-25：「（全双工语音模式）
+                    // 最后 5 个字，不要动画，直接显示吧」。
+                    //
+                    // 判据走**会话模式**而不是这张卡的状态：两条路的文字速率差 5 倍
+                    // （三段式约 30 字/秒、全双工约 6.1 字/秒），所以同一套"5 个字的
+                    // 模糊尾巴"在三段式是一闪而过、在全双工是**盖住一整秒的字幕**。
+                    animatesIncomingCharacters: controller.activeMode != .duplexVoice
                 )
                 Spacer(minLength: 56)
             }
