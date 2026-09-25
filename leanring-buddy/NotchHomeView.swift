@@ -363,6 +363,19 @@ struct NotchHomeView: View {
                 // 同上：流式期间瞬时滚动（每 delta 一次 0.2s 动画 = 动画永不停止）。
                 scrollToBottomInstantly(proxy)
             }
+            // **用户刚发出的那条也要滚进来。**
+            //
+            // 用户 2026-09-25：「用户发送提示词之后，它没有自动显示在输入框上面，
+            // 而是被输入框遮挡了。无论是 AI 的消息还是用户的消息，都自动显示在
+            // 输入框上面」。
+            //
+            // `pendingQuestionText` 是发出后**立刻**画出来的那条用户气泡（历史条目要
+            // 等回合结束才写），而它原先**不在任何滚动触发里** —— 气泡出现了，流却
+            // 停在原地，那条就留在可视区底边被裁掉。这是唯一一个"用户主动发出东西"
+            // 的触发点，缺了它，发出去的第一眼永远看不全。
+            .onChange(of: companionManager.pendingQuestionText) { _ in
+                scrollToBottomInstantly(proxy)
+            }
             .onChange(of: companionManager.liveJobProgressSteps.count) { _ in
                 scrollToBottom(proxy)
             }
@@ -464,15 +477,17 @@ struct NotchHomeView: View {
     @ViewBuilder
     private var liveTurnFooter: some View {
         if let replyReceivedAt = companionManager.currentReplyReceivedAt {
+            // 与 `turnFooter(_:)` **同一个顺序**（复制 · 时间 · 耗时），只是流式期间
+            // 还没有耗时 —— 它加在同一行尾，行高不变，所以不会把卡片顶上去。
             HStack(spacing: 8) {
-                Text(Self.cachedTimeFormatter.string(from: replyReceivedAt))
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.35))
-
                 MessageCopyButton(
                     text: companionManager.streamingAnswerText,
                     helpText: "复制这条回答"
                 )
+
+                Text(Self.cachedTimeFormatter.string(from: replyReceivedAt))
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.35))
 
                 Spacer(minLength: 0)
             }
@@ -583,8 +598,13 @@ struct NotchHomeView: View {
         }
     }
 
-    /// HeyClicky's turn footer: how long the job took and when it finished,
-    /// with a copy button — or the interrupted chip when the user stopped it.
+    /// HeyClicky's turn footer, in the order the user asked for (2026-09-25):
+    /// 「把复制按钮放在最左侧，也就是回复卡片的下面；右边是时间，最右边是耗时，
+    /// 按照这个顺序排列」—— **复制 · 时间 · 耗时**，从左到右。
+    ///
+    /// 原先顺序是反的（时间在前、复制在后），且时间与耗时挤在一段字符串里
+    /// （`"3s · 12:24"`），所以这里把它们拆成两个 `Text` —— 顺序是用户定的，
+    /// 拼成一个字符串就没法再排。
     @ViewBuilder
     private func turnFooter(_ entry: ConversationHistoryEntry) -> some View {
         HStack(spacing: 8) {
@@ -597,16 +617,6 @@ struct NotchHomeView: View {
                     .background(
                         Capsule().fill(Color(red: 1.0, green: 0.72, blue: 0.42).opacity(0.14))
                     )
-            } else if let durationSeconds = entry.turnDurationSeconds {
-                // 时钟取**收到回复的那一秒**，与流式期间 `liveTurnFooter` 画的
-                // 同一个值 —— 否则回合落成条目的一瞬间，这一行的时间会从「10:30」
-                // 跳成「10:31」，等于把刚消除的抖动换了个地方出现。
-                Text(Self.footerDurationText(
-                    durationSeconds: durationSeconds,
-                    finishedAt: entry.replyReceivedAt ?? entry.turnFinishedAt
-                ))
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.35))
             }
 
             // 所见即所得：复制的是卡片里显示的那份文字，不是存储原文。
@@ -616,6 +626,21 @@ struct NotchHomeView: View {
                 text: stripActionTagsForDisplay(entry.assistantResponse),
                 helpText: "复制这条回答"
             )
+
+            // 时间：取**收到回复的那一秒**，与流式期间 `liveTurnFooter` 画的同一个值
+            // —— 否则回合落成条目的一瞬间这一行会跳一下。
+            if let receivedAt = entry.replyReceivedAt ?? entry.turnFinishedAt {
+                Text(Self.cachedTimeFormatter.string(from: receivedAt))
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.35))
+            }
+
+            // 耗时：只有回合结束才知道，所以它在最右、也最后出现。
+            if let durationSeconds = entry.turnDurationSeconds {
+                Text(Self.footerDurationText(durationSeconds: durationSeconds))
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.35))
+            }
 
             Spacer(minLength: 0)
         }
@@ -631,16 +656,15 @@ struct NotchHomeView: View {
         return formatter
     }()
 
-    private static func footerDurationText(durationSeconds: Int, finishedAt: Date?) -> String {
-        let durationPart: String
+    /// "23s" / "2m5s" — **只有耗时**，时钟由调用方单独画。
+    ///
+    /// 它原先返回 `"23s · 21:59"`，把两个量拼成一个字符串；用户 2026-09-25 定的
+    /// 顺序是「复制 · 时间 · 耗时」，拼在一起就没法再排，所以拆开了。
+    private static func footerDurationText(durationSeconds: Int) -> String {
         if durationSeconds < 60 {
-            durationPart = "\(durationSeconds)s"
-        } else {
-            durationPart = "\(durationSeconds / 60)m\(durationSeconds % 60)s"
+            return "\(durationSeconds)s"
         }
-
-        guard let finishedAt else { return durationPart }
-        return "\(durationPart) · \(Self.cachedTimeFormatter.string(from: finishedAt))"
+        return "\(durationSeconds / 60)m\(durationSeconds % 60)s"
     }
 
     // MARK: - Composer (keyboard; talking is still push-to-talk)
