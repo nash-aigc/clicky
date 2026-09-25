@@ -428,7 +428,14 @@ struct NotchHomeView: View {
     /// duration footer.
     @ViewBuilder
     private func turnView(_ entryIndex: Int, _ entry: ConversationHistoryEntry) -> some View {
-        outgoingBubble(entry.userTranscript)
+        // **没有用户那句话的回合不画用户气泡。**
+        //
+        // 开场白就是这种回合（`AskVoiceCallController` ③ 写一条助手条目、不参与配对），
+        // 它的 `userTranscript` 是空串 —— 无条件画就会在流里留一个空的蓝色气泡，
+        // 比看不到开场白更难看。
+        if !entry.userTranscript.isEmpty {
+            outgoingBubble(entry.userTranscript)
+        }
 
         if let progressSteps = entry.progressSteps, !progressSteps.isEmpty {
             progressDisclosure(

@@ -368,8 +368,25 @@ final class AskVoiceCallController: ObservableObject {
             return
         }
 
-        // ③ 开场白 / 非用户触发的回合：不写盘。文本只在 Ask 页的实时气泡里出现过。
-        print("📝 [写盘] 跳过（非用户触发的回合，如开场白）：「\(spoken.prefix(20))」")
+        // ③ 开场白 / 非用户触发的回合：**写盘，但不参与配对**。
+        //
+        // 用户 2026-09-25：「因为我强制要求 AI 先说话，所以 AI 说的话我其实看不到，
+        // 它没有显示在对话里」。原先这条什么都不写，开场白只活在 `liveAssistantText`
+        // 里，而它上面两行就被清空了 —— 于是开场白一闪而过，用户从来看不到它说了什么。
+        //
+        // 当初不写盘的顾虑是「它会变成一条『问空答有』的记录，把用户第一问吸过去」
+        // （日志里出现过 问北京、答你好）。但那个风险来自**配对**，不来自写盘：
+        // 补配的锚点是 `pendingPairIndex`，而它**只有 ② 那条路才设**。所以这里照写
+        // 一条助手条目、不碰锚点，用户第一问就不可能认领到开场白。
+        ConversationSessionsStore.appendEntry(
+            ConversationHistoryEntry(
+                userTranscript: "",
+                assistantResponse: spoken,
+                recordedWithActionTags: true
+            ),
+            targetSessionID: sessionID
+        )
+        print("📝 [写盘] 开场白（不参与配对）：答「\(spoken.prefix(20))」")
     }
 }
 
