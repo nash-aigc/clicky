@@ -472,6 +472,92 @@ nonisolated enum NotchSupport {
     static let leadingWingWidth: CGFloat = 86
     static let trailingWingWidth: CGFloat = 88
 
+    // MARK: - 摄像头小窗的摆放
+
+    /// 摄像头小窗那块面板的窗口层级：**和录音那条带同层**。
+    ///
+    /// **不能沿用 `OverlayWindow` 的 `.screenSaver`（1000）。** 那个层级是给光标
+    /// 伴随物准备的 —— 它要求自己盖在右键菜单之上；小窗没有这个需求，而「左中 /
+    /// 右中」两个位置正好落在菜单弹出的区域里，一个 315pt 宽的黑块压住用户的右键
+    /// 菜单是看得见的缺陷。26 层在小窗和菜单之间留出了正确的顺序。
+    static let cameraStripWindowLevel = NSWindow.Level(
+        rawValue: Int(CGWindowLevelForKey(.statusWindow)) + 1)
+
+    /// 小窗离屏幕可用区边缘留多少。
+    static let cameraStripScreenMargin: CGFloat = 24
+
+    /// 摄像头小窗在某块屏上的摆放参数。**纯几何，没有状态。**
+    ///
+    /// 四个位置共用一份，是因为「小窗有多宽」「刘海中心在哪」这些量对四个位置都是
+    /// 同一个值 —— 各个位置自己算一遍，迟早会有一处用了不同的宽度。
+    struct CameraStripPlacementGeometry: Equatable {
+        /// 小窗的宽度。**横向摆放和命中矩形必须读同一个数。**
+        let stripWidth: CGFloat
+        /// `.belowNotch`：从屏幕顶边到小窗顶边（刘海高 + 字幕条高）。
+        let topInset: CGFloat
+        /// `.belowNotch`：刘海中心相对屏幕中心的横向偏移。
+        let horizontalOffset: CGFloat
+        /// `.belowNotch`：让小窗**对准刘海中心**时，从屏幕左边算起的距离。
+        let notchCenteredLeadingInset: CGFloat
+        let leadingInset: CGFloat
+        let trailingInset: CGFloat
+        let bottomInset: CGFloat
+    }
+
+    /// 算小窗在某块屏上的摆放参数。没有刘海的屏返回 nil（小窗只会出现在有刘海的屏上，
+    /// 和录音那条带同一个门槛）。
+    ///
+    /// 三个横向/纵向边距都从 `visibleFrame` 推，所以**没隐藏的 Dock 会让开**；
+    /// Dock 自动隐藏或隐藏时 `visibleFrame` 退化成 `frame`，结果同样正确。
+    /// **但垂直居中不用 `visibleFrame`** —— 用户说的「中间」是屏幕中间，不是
+    /// 「可用区的中间」，用可用区会让小窗在 Dock 存在时偏上。
+    nonisolated static func cameraStripGeometry(on screen: NSScreen,
+                                                stripWidth: CGFloat,
+                                                topInset: CGFloat) -> CameraStripPlacementGeometry? {
+        guard let notch = notchRect(on: screen) else { return nil }
+        let screenFrame = screen.frame
+        let visibleFrame = screen.visibleFrame
+        // 刘海在每一台在售 Mac 上都居中，所以这通常是 0 —— 但**必须留着**：
+        // 小窗的新家是一块**全屏**面板，它的中心等于屏幕中心。哪天有人图省事按面板
+        // 居中摆，`notchCenterX` 就被悄悄换成了 `screenCenterX`。
+        let horizontalOffset = screenFrame.minX + notch.minX + notch.width / 2 - screenFrame.midX
+        return CameraStripPlacementGeometry(
+            stripWidth: stripWidth,
+            topInset: topInset,
+            horizontalOffset: horizontalOffset,
+            notchCenteredLeadingInset: (screenFrame.width - stripWidth) / 2 + horizontalOffset,
+            leadingInset: (visibleFrame.minX - screenFrame.minX) + cameraStripScreenMargin,
+            trailingInset: (screenFrame.maxX - visibleFrame.maxX) + cameraStripScreenMargin,
+            bottomInset: (visibleFrame.minY - screenFrame.minY) + cameraStripScreenMargin)
+    }
+
+    /// SwiftUI 的矩形（面板内、y 向下）→ AppKit 全局（屏幕坐标、y 向上）。
+    ///
+    /// **这一行的符号是整个小窗改动里风险最高的一处。** 写反了不会报错、不会崩、
+    /// 屏幕上也不会有任何异常 —— 表现只是「按钮全都没反应」，然后你会去错的文件里找。
+    /// 所以它和别的纯几何一样住在这里，能被探针直接测（见 `开发经验/03-…` 的离屏探针）。
+    ///
+    /// 面板是**全屏**的，所以 `panelFrame` 就是那块屏的 frame。
+    nonisolated static func appKitGlobalRect(fromPanelLocal rect: CGRect,
+                                             panelFrame: CGRect) -> CGRect {
+        CGRect(x: panelFrame.minX + rect.minX,
+               y: panelFrame.maxY - rect.maxY,
+               width: rect.width,
+               height: rect.height)
+    }
+
+    /// 摄像头小窗的宽度：**字幕条的宽，减掉它自己两个圆角的半径。**
+    ///
+    /// 用户 2026-09-26：「音频转写这一行是由圆角的。圆角的半径。就应该删掉左边的半径、
+    /// 右边的圆角的半径删掉，然后中间那部分才是真正的摄像头的宽度」。
+    /// 参照物是**字幕条**，不是刘海 —— 拿刘海算（185−20=165）用户当场说「太小了」。
+    nonisolated static func cameraStripWidth(on screen: NSScreen,
+                                             ribbonCornerRadius: CGFloat) -> CGFloat? {
+        guard let notch = notchRect(on: screen) else { return nil }
+        let bandWidth = leadingWingWidth + notch.width + trailingWingWidth
+        return max(bandWidth - ribbonCornerRadius * 2, 120)
+    }
+
     /// 收起状态下**右翼**的矩形（屏幕坐标）。
     ///
     /// 语音聊天进行中这块会被画成一颗挂断按钮，并且可以直接点（用户

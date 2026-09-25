@@ -4,6 +4,46 @@ import AVFoundation
 // Combine 里，不显式 import 就会被判成「成员不可见」而不是「少了个 import」。
 import Combine
 
+/// 摄像头小窗摆在屏幕的哪儿。
+///
+/// 用户 2026-09-26：「当用户的纸上文字很小、需要把纸拿得很近时，由于小窗位于上方
+/// 附近，会导致用户看不到小窗里的内容。通过移动小窗位置，既能让用户看到小窗内容，
+/// 也能让摄像头更清晰地拍摄文字。」
+///
+/// 对齐语义是用户定的：「左侧对齐、底部对齐、右侧居中」—— 也就是左中（垂直居中）、
+/// 底中（水平居中）、右中（垂直居中），外加回到刘海下面的原位。
+nonisolated enum CameraStripPlacement: String, CaseIterable, Equatable {
+    case belowNotch
+    case left
+    case bottom
+    case right
+
+    var displayName: String {
+        switch self {
+        case .belowNotch: return "刘海下"
+        case .left: return "左中"
+        case .bottom: return "底中"
+        case .right: return "右中"
+        }
+    }
+}
+
+/// 小窗标题栏上的一个可点控件。
+///
+/// **它同时是「命中矩形」的键和「动作」的键。** 小窗所在的那块窗口永远点击穿透
+/// （见 `NotchRecordingOverlayController` 里 `cameraStripPanels` 的注释），所以这些
+/// 控件收不到真实点击 —— 全部由全局鼠标监听按矩形派发。视图那侧也挂同名动作，
+/// 是为了万一窗口哪天变成可交互的，两条路不会分家。
+nonisolated enum CameraStripControl: String, CaseIterable, Hashable {
+    case mirror
+    case toggleCollapse
+    case restore
+    case moveLeft
+    case moveDown
+    case moveRight
+    case close
+}
+
 /// 录音的采集管线：麦克风 → 16kHz 单声道 PCM16 → 同时落盘和上行。
 ///
 /// **刻意 `nonisolated`。** `AVAudioEngine` 的 tap 闭包跑在实时音频线程上，
@@ -407,6 +447,13 @@ final class LongFormRecorderController: ObservableObject {
     /// 早期版本把「缩起来」做成整条消失，用户点一下就再也叫不回来。
     @Published var isCameraPreviewCollapsed = false
 
+    /// 小窗现在摆在哪。
+    ///
+    /// **每场会话开始抓帧时复位成「刘海下面」**（见 `considerStartingCameraCapture`）——
+    /// 用户挪窗是因为当时正举着纸，换一场会话那个情境就没了；复位也让 ⌘Enter 的
+    /// 切换行为永远可预测（「在刘海下面就往下，不在就还原」）。
+    @Published var cameraStripPlacement: CameraStripPlacement = .belowNotch
+
     /// 小窗展开成大图了没有。
     ///
     // 清晰度不再是这里的一个属性：它是用户在「录音」设置页选的
@@ -462,6 +509,9 @@ final class LongFormRecorderController: ObservableObject {
         let maximumRetainedFrameCount = settings.recordingCameraMaximumFrameCount
 
         isCameraCapturing = true
+        // 每一轮抓帧都从「刘海下面」开始 —— 用户挪窗是因为当时举着纸，
+        // 那个情境不会跨会话。也让 ⌘Enter 的切换行为永远可预测。
+        cameraStripPlacement = .belowNotch
         publishDiagnostic("转写里出现触发词（\(triggerKeywords.joined(separator: " / "))）"
                           + "→ 开始抓帧：画面 \(settings.recordingCameraPreviewFramesPerSecond) 帧/秒，"
                           + "送模型 \(settings.recordingCameraModelFramesPerSecond) 帧/秒，"
@@ -496,6 +546,53 @@ final class LongFormRecorderController: ObservableObject {
         isCameraCapturing = false
         cameraSession.stop()
         publishDiagnostic("用户退出了抓帧，本轮不再抓（下一轮录音仍会按关键词激活）")
+    }
+
+    /// 小窗标题栏上任何一个控件的**唯一入口**。全局监听和视图都调它。
+    ///
+    /// 七个动作放在一处而不是散在命中判定里，是因为命中判定只该回答「点到了哪个
+    /// 控件」，「点到之后干什么」是另一件事 —— 上一版三个按钮的动作就写在那个
+    /// 全局监听的分支里，再加四个会让那个闭包变成一团。
+    func handleCameraStripControl(_ control: CameraStripControl) {
+        switch control {
+        case .mirror:
+            cameraPreviewModel.isMirrored.toggle()
+        case .toggleCollapse:
+            // 动画归视图所有（`NotchCameraPreviewStrip` 上挂了 `.animation(_:value:)`）——
+            // 这个控制器是纯数据层，为了一个 `withAnimation` 去 import SwiftUI 不值得。
+            isCameraPreviewCollapsed.toggle()
+        case .restore:
+            setCameraStripPlacement(.belowNotch)
+        case .moveLeft:
+            setCameraStripPlacement(.left)
+        case .moveDown:
+            setCameraStripPlacement(.bottom)
+        case .moveRight:
+            setCameraStripPlacement(.right)
+        case .close:
+            stopCameraCaptureForThisSession()
+        }
+    }
+
+    /// ⌘Enter 做的事：**切换**，不是「向下」。
+    ///
+    /// 用户 2026-09-26：「如果摄像头还在刘海下面，那么点击 Enter，它自动放到屏幕底部；
+    /// 如果摄像头放在底部、左边或右边，无论哪个位置，只要它不在刘海下面，那么用户
+    /// 点击 Enter，自动把摄像头恢复到原位置。」
+    ///
+    /// 和 `.moveDown` 是**两个不同的动词** —— 那个恒去底部，这个来回切。合并的话
+    /// 「在底部时按 ⌘Enter」就永远回不去。
+    func toggleCameraStripPlacement() {
+        setCameraStripPlacement(cameraStripPlacement == .belowNotch ? .bottom : .belowNotch)
+    }
+
+    /// 位置变化都要从这里走，这样诊断日志一定记得打 ——
+    /// 那一行是验证时唯一能核对「按钮到底有没有生效」的数字依据。
+    private func setCameraStripPlacement(_ placement: CameraStripPlacement) {
+        guard cameraStripPlacement != placement else { return }
+        let previous = cameraStripPlacement
+        cameraStripPlacement = placement
+        publishDiagnostic("摄像头小窗位置 \(previous.displayName) → \(placement.displayName)")
     }
 
     /// 正在抓帧。刘海下面的小窗读它决定要不要显示。

@@ -56,30 +56,29 @@ struct NotchRecordingBandView: View {
                         .onTapGesture { recorder.toggleTranscriptEditor() }
                         .help("点一下展开，看之前的转写内容")
 
-                    // **摄像头小窗挂在字幕条下面。** 用户：「刘海下面现在是一个实时的
-                    // 转写字幕条，在这个条的下面显示一个摄像头的小窗」。
+                    // **摄像头小窗不在这里了 —— 它有了自己的面板。**
                     //
-                    // 只在**收起态**显示：展开时那块面板正好占满窗口高度，没地方放了
-                    // （而展开态本来就在看文字，不需要这个窗）。
-                    if recorder.isCameraCapturing {
-                        // **宽度 = 字幕条的宽 − 它自己两个圆角的半径。**
-                        //
-                        // 用户 2026-09-26：「音频转写这一行是由圆角的。圆角的半径。
-                        // 就应该删掉左边的半径、右边的圆角的半径删掉，然后中间那部分
-                        // 才是真正的摄像头的宽度」。
-                        //
-                        // 参照物是**字幕条**，不是刘海 —— 我上一版拿刘海算（185−20=165），
-                        // 用户当场说「太小了」。字幕条是整条带宽（359），它的圆角是 18。
-                        NotchCameraPreviewStrip(
-                            recorder: recorder,
-                            previewModel: recorder.cameraPreviewModel,
-                            width: max(bandWidth - Self.ribbonCornerRadius * 2, 120))
-                    }
+                    // 它原先就挂在这个位置（字幕条下面）。用户 2026-09-26 要求把小窗
+                    // 挪到屏幕左侧中间／底部中央／右侧中间，而这三个位置**都在这块面板
+                    // 之外** —— 这块面板锚在屏幕顶部中央、只有 `刘海高 + 560` 那么高。
+                    //
+                    // 而这块面板的帧又不能改（见 `panelFrame` 上面那段「背景穿透」的
+                    // 注释）。所以小窗搬去了 `CameraStripPanelView` 那块**全屏、永远
+                    // 点击穿透、永不移动**的面板，位置变成纯 SwiftUI 的事。
                 }
             }
         }
         // 外层不锁宽度：展开时下面那块比黑带宽一倍，锁定的话会被裁掉。
         .frame(maxWidth: .infinity)
+        // **纵向必须显式顶对齐。** 宿主视图是 `CGRect(origin: .zero, size: frame.size)`
+        // 铺满整块面板的，而这块内容只有 64pt 高（刘海 32 + 字幕条 32），面板却有
+        // `刘海高 + 560` —— 不写这一行，带子就由 SwiftUI 的默认对齐说了算。
+        //
+        // 而 `collapsedWingHitRects` 和摄像头小窗的几何**都硬假定「带子贴着窗口顶边」**。
+        // 小窗搬走之后这里少了 ~177pt 的内容，正是会让那个假定失效的改动 ——
+        // 所以把不变量写下来，别让它继续靠巧合成立。
+        // 展开态内容高度本来就等于窗口高度，这一行在那里是 no-op。
+        .frame(maxHeight: .infinity, alignment: .top)
         .onChange(of: recorder.audioLevel) { _, newLevel in
             if recorder.isSpeechDetected { heldLevel = newLevel }
         }
@@ -480,6 +479,66 @@ private struct SilentButtonStyle: ButtonStyle {
 /// 画面刻意**压低分辨率和刷新率**：用户要的是「让用户能够看到就可以了，不需要渲染
 /// 太高的像素或清晰度」。所以这里直接显示抓帧时那张 JPEG（768 长边），一秒换一张 ——
 /// 既不额外开一路预览流，也让「你看到的这一张，就是正在被看的那一张」这句话成立。
+/// 小窗面板里那个命名坐标空间。几何都在它里面量，控制器再换算成 AppKit 全局坐标。
+private let cameraStripCoordinateSpaceName = "clickyCameraStripPanel"
+
+/// 小窗在它自己那块面板里的命中几何。
+///
+/// **由视图发布，不在 AppKit 里另算一份。** 这个仓库在「画的和点的是两处算的」上
+/// 真被打过一次 —— `NotchSupport.trailingWingOriginX` 那次，画出来的红电话和它的
+/// 点击目标差了 71pt，屏幕上完全看不出来。所以每个控件都用 `GeometryReader` 把自己
+/// 的真实矩形发上来，AppKit 侧只做坐标换算，一个可以漂的常量都没有。
+struct CameraStripLayoutSnapshot: Equatable {
+    var titleBarFrame: CGRect?
+    var controlFrames: [CameraStripControl: CGRect] = [:]
+}
+
+struct CameraStripLayoutKey: PreferenceKey {
+    static var defaultValue = CameraStripLayoutSnapshot()
+    static func reduce(value: inout CameraStripLayoutSnapshot,
+                       nextValue: () -> CameraStripLayoutSnapshot) {
+        let reported = nextValue()
+        if let titleBarFrame = reported.titleBarFrame { value.titleBarFrame = titleBarFrame }
+        value.controlFrames.merge(reported.controlFrames) { _, newest in newest }
+    }
+}
+
+/// 标题栏上的一颗圆按钮。**画多大、点多大，都是这一个 `diameter`。**
+///
+/// 控件本身收不到点击（窗口永远点击穿透），所以它的 `action` 平时不会执行 ——
+/// 真正干活的是全局监听按这里发上去的矩形派发。两边都指向
+/// `LongFormRecorderController.handleCameraStripControl`，所以哪天窗口变成可交互的，
+/// 两条路也不会分家。
+private struct CameraStripControlButton: View {
+    let control: CameraStripControl
+    let systemImage: String
+    let tint: Color
+    let help: String
+    let action: () -> Void
+
+    static let diameter: CGFloat = 18
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(tint)
+                .frame(width: Self.diameter, height: Self.diameter)
+                .background(Circle().fill(Color.white.opacity(0.12)))
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .background(
+            GeometryReader { geometry in
+                Color.clear.preference(
+                    key: CameraStripLayoutKey.self,
+                    value: CameraStripLayoutSnapshot(
+                        controlFrames: [control: geometry.frame(in: .named(cameraStripCoordinateSpaceName))]))
+            }
+        )
+    }
+}
+
 private struct NotchCameraPreviewStrip: View {
     @ObservedObject var recorder: LongFormRecorderController
     /// **单独观察预览模型** —— 12 帧/秒只重算这一块，不牵动刘海那条带。
@@ -505,6 +564,13 @@ private struct NotchCameraPreviewStrip: View {
     private static let maximumPreviewHeight: CGFloat = 320
     static let titleBarHeight: CGFloat = 26
 
+    /// 标题栏里的排布常量。**画的是这几个数，量的也是这几个数** ——
+    /// 命中矩形由每个控件自己发布，所以这里不存在第二份需要同步的算术。
+    private static let controlSpacing: CGFloat = 8
+    private static let titleBarHorizontalPadding: CGFloat = 10
+    private static let pulseDotSlot: CGFloat = 13
+    private static let frameCountSlot: CGFloat = 26
+
     var body: some View {
         VStack(spacing: 0) {
             titleBar
@@ -515,23 +581,20 @@ private struct NotchCameraPreviewStrip: View {
         .frame(width: width)
         .background(Color.black)
         .clipShape(RecordingRibbonShape(cornerRadius: 18))
+        // 收/开小窗的动画由视图自己拥有 —— 动作的入口在控制器上（全局监听那条路），
+        // 让那边去 `import SwiftUI` 只为一个 `withAnimation` 不值得。
+        .animation(.easeInOut(duration: 0.18), value: recorder.isCameraPreviewCollapsed)
     }
 
     private var titleBar: some View {
-        HStack(spacing: 8) {
-            // 左上角：**镜像开关**。默认开着（自拍视角），用户可以自己关掉。
-            Button {
-                previewModel.isMirrored.toggle()
-            } label: {
-                Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(previewModel.isMirrored
-                                     ? DS.Colors.success : .white.opacity(0.6))
-                    .frame(width: 18, height: 18)
-                    .background(Circle().fill(Color.white.opacity(0.12)))
-            }
-            .buttonStyle(.plain)
-            .help(previewModel.isMirrored ? "取消镜像" : "左右镜像")
+        HStack(spacing: Self.controlSpacing) {
+            // 左端：**镜像开关**。默认开着（自拍视角），用户可以自己关掉。
+            CameraStripControlButton(
+                control: .mirror,
+                systemImage: "arrow.left.and.right.righttriangle.left.righttriangle.right",
+                tint: previewModel.isMirrored ? DS.Colors.success : .white.opacity(0.6),
+                help: previewModel.isMirrored ? "取消镜像" : "左右镜像"
+            ) { recorder.handleCameraStripControl(.mirror) }
 
             // 抓一帧、这颗点亮一下并变大。
             //
@@ -540,7 +603,7 @@ private struct NotchCameraPreviewStrip: View {
             // 每抓一帧就把数字往右推 4pt。所以缩放发生在**固定尺寸的容器内部**，
             // 容器本身不动。
             ZStack {
-                Color.clear.frame(width: 13, height: 13)
+                Color.clear.frame(width: Self.pulseDotSlot, height: Self.pulseDotSlot)
                 CameraCapturePulseDot(pulse: previewModel.capturedFrameCount)
             }
 
@@ -549,38 +612,81 @@ private struct NotchCameraPreviewStrip: View {
             Text("\(previewModel.capturedFrameCount)")
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
                 .foregroundColor(DS.Colors.success.opacity(0.9))
-                .frame(width: 26, alignment: .center)
+                .frame(width: Self.frameCountSlot, alignment: .center)
+
+            // **中间这四个：把小窗挪到屏幕的别处。**
+            //
+            // 用户 2026-09-26：「当用户的纸上文字很小、需要把纸拿得很近时，由于小窗
+            // 位于上方附近，会导致用户看不到小窗里的内容。通过移动小窗位置，既能让
+            // 用户看到小窗内容，也能让摄像头更清晰地拍摄文字。」
+            //
+            // **「还原」单独一颗，不是「向上」。** 用户的原话是「增加一个还原按钮。
+            // 用户点击还原，摄像头真的放回原来的位置上」—— 三个方向键去得了回不来
+            // 是不够用的，而「向上」在他心里是四个方向里的一个，不是「还原」。
+            CameraStripControlButton(control: .restore,
+                                     systemImage: "arrow.uturn.backward",
+                                     tint: accent(for: .restore),
+                                     help: "还原（回到刘海下面）") {
+                recorder.handleCameraStripControl(.restore)
+            }
+            CameraStripControlButton(control: .moveLeft,
+                                     systemImage: "arrow.left",
+                                     tint: accent(for: .moveLeft),
+                                     help: "移到屏幕左侧中间") {
+                recorder.handleCameraStripControl(.moveLeft)
+            }
+            CameraStripControlButton(control: .moveDown,
+                                     systemImage: "arrow.down",
+                                     tint: accent(for: .moveDown),
+                                     help: "移到屏幕底部中央") {
+                recorder.handleCameraStripControl(.moveDown)
+            }
+            CameraStripControlButton(control: .moveRight,
+                                     systemImage: "arrow.right",
+                                     tint: accent(for: .moveRight),
+                                     help: "移到屏幕右侧中间") {
+                recorder.handleCameraStripControl(.moveRight)
+            }
 
             Spacer(minLength: 0)
 
-            // 右上角：**关闭**。
-            //
-            // 原来是「展开」，但小窗现在已经是最大化（画面填满宽度），没有更大的空间
-            // 可占 —— 用户 2026-09-26：「小窗现在是最大化的，把右上角之前说的展开按钮
-            // 改成关闭按钮」。于是它变成和左上角一样的出口。
-            Button {
-                recorder.stopCameraCaptureForThisSession()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white.opacity(0.75))
-                    .frame(width: 18, height: 18)
-                    .background(Circle().fill(Color.white.opacity(0.12)))
+            // 右端：**关闭**（停止抓帧，本轮不再抓）。
+            CameraStripControlButton(control: .close,
+                                     systemImage: "xmark",
+                                     tint: .white.opacity(0.75),
+                                     help: "停止抓帧（本轮不再抓）") {
+                recorder.handleCameraStripControl(.close)
             }
-            .buttonStyle(.plain)
-            .help("停止抓帧（本轮不再抓）")
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, Self.titleBarHorizontalPadding)
         .frame(height: Self.titleBarHeight)
         // **点这一条折叠小窗** —— 连 `contentShape` 一起，整条都可点，
-        // 而不是只有文字那几像素。
+        // 而不是只有文字那几像素。空白处（没有被控件矩形盖住的部分）走的就是这条路。
         .contentShape(Rectangle())
-        .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                recorder.isCameraPreviewCollapsed.toggle()
-            }
-        }
+        .onTapGesture { recorder.handleCameraStripControl(.toggleCollapse) }
         .help(recorder.isCameraPreviewCollapsed ? "点一下展开小窗" : "点一下收起小窗")
+        .background(
+            GeometryReader { geometry in
+                Color.clear.preference(
+                    key: CameraStripLayoutKey.self,
+                    value: CameraStripLayoutSnapshot(
+                        titleBarFrame: geometry.frame(in: .named(cameraStripCoordinateSpaceName))))
+            }
+        )
+    }
+
+    /// 当前所在位置对应的那颗按钮标绿，和镜像按钮同一个约定 ——
+    /// 在一排长得一样的圆钮里，「现在在哪」必须一眼看得出来。
+    private func accent(for control: CameraStripControl) -> Color {
+        let isActive: Bool
+        switch control {
+        case .restore: isActive = recorder.cameraStripPlacement == .belowNotch
+        case .moveLeft: isActive = recorder.cameraStripPlacement == .left
+        case .moveDown: isActive = recorder.cameraStripPlacement == .bottom
+        case .moveRight: isActive = recorder.cameraStripPlacement == .right
+        default: isActive = false
+        }
+        return isActive ? DS.Colors.success : .white.opacity(0.75)
     }
 
     @ViewBuilder
@@ -1007,6 +1113,67 @@ private struct RecordingRibbonShape: Shape {
 /// 能点。代价是录音期间刘海周围那一小块区域的点击不会穿到下面 —— 这时候用户要
 /// 么在说话、要么在点停止，这个代价可以接受。
 @MainActor
+/// 摄像头小窗那一块**全屏面板**的 SwiftUI 根。
+///
+/// **它的全部职责就是「把小窗摆到屏幕上的某个位置」。** 窗口本身永远是整块屏幕、
+/// 永远点击穿透、**永远不动也不改尺寸** —— 位置只是对齐和边距，窗口几何一次都不碰。
+///
+/// 这不是洁癖，是这个仓库最贵的一条教训：录音那条带的面板当初每次展开/收起都改窗口
+/// 尺寸，而窗口是透明的、黑色全靠 SwiftUI 画，几何却在 CA 提交**之前**就改了 ——
+/// 新露出来的那一瞬是空的，桌面直接透出来（见 `panelFrame` 上面的注释）。
+/// 窗口一动不动之后，那个「窗口期」在结构上就不存在了。
+///
+/// 对齐方式就是用户说的那三种：「左侧对齐 / 底部对齐 / 右侧居中」——
+/// 左中（垂直居中）、底中（水平居中）、右中（垂直居中）。
+///
+/// **用对齐而不是绝对坐标**：小窗的高度是 `宽度 × 画面宽高比`（见 `previewHeight`），
+/// 会随摄像头出来的画面变 —— 对齐让「垂直居中」自动跟着走，AppKit 侧根本算不出来。
+struct CameraStripPanelView: View {
+    @ObservedObject var recorder: LongFormRecorderController
+    let geometry: NotchSupport.CameraStripPlacementGeometry
+    let onLayoutChange: (CameraStripLayoutSnapshot) -> Void
+
+    var body: some View {
+        NotchCameraPreviewStrip(recorder: recorder,
+                                previewModel: recorder.cameraPreviewModel,
+                                width: geometry.stripWidth)
+            // **`.padding` 必须在无限 frame 之内**（先 padding、后 frame）。
+            // 反过来的话撑大的是 frame 本身，内容一点都不内缩。
+            .padding(edgeInsets)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+            .coordinateSpace(name: cameraStripCoordinateSpaceName)
+            .onPreferenceChange(CameraStripLayoutKey.self) { snapshot in
+                // `onPreferenceChange` 自带 Equatable 去重 —— 预览是 30 帧/秒的，
+                // 没有这层去重就会每秒写三十次几何。这个视图刚花掉几个提交去掉
+                // 每帧重建，不能在窗口这条路上加回来。
+                onLayoutChange(snapshot)
+            }
+    }
+
+    private var alignment: Alignment {
+        switch recorder.cameraStripPlacement {
+        case .belowNotch: return .topLeading   // 水平位置由 notchCenteredLeadingInset 定
+        case .left: return .leading            // 左 + 垂直居中 = 「左侧对齐」
+        case .bottom: return .bottom           // 底 + 水平居中 = 「底部对齐」
+        case .right: return .trailing          // 右 + 垂直居中 = 「右侧居中」
+        }
+    }
+
+    private var edgeInsets: EdgeInsets {
+        switch recorder.cameraStripPlacement {
+        case .belowNotch:
+            return EdgeInsets(top: geometry.topInset, leading: geometry.notchCenteredLeadingInset,
+                              bottom: 0, trailing: 0)
+        case .left:
+            return EdgeInsets(top: 0, leading: geometry.leadingInset, bottom: 0, trailing: 0)
+        case .bottom:
+            return EdgeInsets(top: 0, leading: 0, bottom: geometry.bottomInset, trailing: 0)
+        case .right:
+            return EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: geometry.trailingInset)
+        }
+    }
+}
+
 final class NotchRecordingOverlayController {
 
     static let shared = NotchRecordingOverlayController()
@@ -1017,15 +1184,32 @@ final class NotchRecordingOverlayController {
     /// 收起状态下两翼的屏幕矩形。窗口不动，所以它是常量，建面板时算一次。
     private var collapsedWingHitRects: [CGRect] = []
 
-    /// 收起状态下**摄像头小窗标题栏**的屏幕矩形。
+    /// 摄像头小窗的面板。**单独一个数组，绝不能和 `panels` 混。**
     ///
-    /// **为什么它也要走全局监听**：收起态的窗口是 `ignoresMouseEvents = true`
-    /// （点击穿透），所以小窗上那三个按钮**一个都收不到点击** —— 用户实测
-    /// 「左上角跟右上角这按钮完全没有功能」就是这个。
+    /// 两个理由，任何一个单独都足够：
+    /// - `reframePanels()` 会翻转 `panels` 里每个窗口的 `ignoresMouseEvents`，
+    ///   而这个面板必须**永远**点击穿透 —— 它是全屏的，一旦收点击，整块屏幕都点不动。
+    /// - `installDismissMonitors()` 的「点外面」判定是
+    ///   `panels.contains { $0.frame.contains(location) }` —— 一个全屏成员会让
+    ///   **每一次**点击都算「点在面板里面」，转写编辑框就再也收不起来了。
+    private var cameraStripPanels: [NSWindow] = []
+
+    /// 每个小窗面板收到的命中几何，键是面板身份。面板重建时旧键一起清掉。
     ///
-    /// 改成「让窗口收点击」不行：窗口是 718×592，那样会在屏幕顶部留下一大块死区。
-    /// 走全局监听和两翼是同一条路 —— 刘海面板的静止 pill 用的也是这套。
-    private var cameraStripTitleBarRect: CGRect?
+    /// **由视图发布，不在 AppKit 里另算一份。** 收起态的窗口是
+    /// `ignoresMouseEvents = true`（点击穿透），所以小窗上的按钮**一个都收不到真实
+    /// 点击** —— 用户实测「左上角跟右上角这按钮完全没有功能」就是这个。全部走全局
+    /// 监听和两翼是同一条路（刘海面板的静止 pill 用的也是这套）。
+    ///
+    /// 它不能用「标题栏里的相对横向位置」那种比例判定：上一版三个按钮时是
+    /// 左 1/4 / 中 / 右 1/4，加到七个控件之后比例会碎成一团。
+    private var cameraStripLayouts: [ObjectIdentifier: CameraStripLayoutSnapshot] = [:]
+
+    /// 建面板时用的屏幕集合。拔了显示器/改了分辨率就整批重建。
+    private var cameraStripScreenFrames: [CGRect] = []
+
+    /// ⌘Enter 的监听。**按 `isCameraCapturing` 装卸** —— 见 `updateCameraStripShortcutMonitor`。
+    private var cameraStripShortcutMonitor: Any?
     /// 收起时接管两翼点击的全局监听（0 = 左翼，1 = 右翼）。
     private var collapsedWingMonitor: Any?
     private var outsideClickMonitor: Any?
@@ -1044,8 +1228,9 @@ final class NotchRecordingOverlayController {
         // 三个输入都要看：相位（在录/停了）、展开态（窗口高度）、是否还有未结束的
         // 会话（挂断之后面板要留着，绿色音波点一下继续录）。少看任何一个都会出现
         // 「点了没反应」或者「面板该在的时候不在」。
-        phaseCancellable = Publishers.CombineLatest3(
-            recorder.$phase, recorder.$isTranscriptExpanded, recorder.$isSessionActive)
+        phaseCancellable = Publishers.CombineLatest4(
+            recorder.$phase, recorder.$isTranscriptExpanded, recorder.$isSessionActive,
+            recorder.$isCameraCapturing)
             .receive(on: DispatchQueue.main)
             // **参数只用来看「有东西变了」，具体值一律现读 live 值。**
             //
@@ -1056,7 +1241,7 @@ final class NotchRecordingOverlayController {
             //
             // 原来 `installDismissMonitors()` 和 `makeKey()` 读的是那个过期参数，
             // 所以会出现「面板已经收起、却给它 makeKey() 并装上全局 ESC 监听」。
-            .sink { [weak self] _, _, _ in
+            .sink { [weak self] _, _, _, _ in
                 guard let self else { return }
                 let isExpanded = recorder.isTranscriptExpanded
                 if recorder.phase == .idle && !recorder.isSessionActive {
@@ -1070,6 +1255,9 @@ final class NotchRecordingOverlayController {
                 if isExpanded { self.installDismissMonitors() } else { self.removeDismissMonitors() }
                 // ESC 取消这条路和展开态**无关**：收起状态下录音时也要能按 ESC 叫停。
                 self.updateCancellationMonitor()
+                // 摄像头小窗自己那块全屏面板，和它的 ⌘Enter 监听。
+                self.syncCameraStripPanels()
+                self.updateCameraStripShortcutMonitor()
                 // 展开时立刻把面板变成 key，编辑框马上就能打字/粘贴。
                 //
                 // 用户的要求：「里面的内容可以用户输入，不一定非要转写之后才能输入，
@@ -1181,20 +1369,6 @@ final class NotchRecordingOverlayController {
         return [leading, trailing]
     }
 
-    /// 小窗标题栏在屏幕上的位置。
-    ///
-    /// 它挂在**字幕条下面**，而字幕条挂在刘海带下面 —— 所以纵向是
-    /// 「窗口顶 − 刘海高 − 字幕条高 − 标题栏高」。横向以刘海居中，宽度是刘海
-    /// 圆角之间那段直的。
-    private func computeCameraStripTitleBarRect(for panel: NSPanel, notch: CGRect) -> CGRect? {
-        let bandWidth = NotchSupport.leadingWingWidth + notch.width + NotchSupport.trailingWingWidth
-        let stripWidth = max(bandWidth - NotchRecordingBandView.ribbonCornerRadius * 2, 120)
-        let stripLeft = panel.frame.midX - bandWidth / 2 + (bandWidth - stripWidth) / 2
-        let titleBarTop = panel.frame.maxY - notch.height - NotchRecordingBandView.ribbonHeight
-        return CGRect(x: stripLeft, y: titleBarTop - NotchRecordingBandView.titleBarHeight,
-                      width: stripWidth, height: NotchRecordingBandView.titleBarHeight)
-    }
-
     /// 收起时接管两翼点击的全局监听。0 = 左翼（展开编辑），1 = 右翼（停止/继续）。
     private func updateCollapsedWingMonitor() {
         let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
@@ -1207,24 +1381,17 @@ final class NotchRecordingOverlayController {
             guard let self else { return }
             let point = NSEvent.mouseLocation
 
-            // 摄像头小窗的标题栏：左端镜像、右端关闭、中间折叠。
-            // 判据是**点到标题栏里的相对横向位置** —— 三个按钮都画在那一条上，
-            // 而它们的实际矩形在 SwiftUI 里，这里镜像一份只会漂。
-            if let bar = self.cameraStripTitleBarRect, bar.contains(point) {
-                let fraction = (point.x - bar.minX) / max(bar.width, 1)
+            // 摄像头小窗：按**视图发布的真实矩形**派发。
+            //
+            // 标题栏里没被任何控件矩形盖住的部分（那颗 Spacer）落到 `.toggleCollapse`
+            // —— 「点这一条折叠小窗」那条既有行为就这么保住的，不需要为它专门留一个矩形。
+            if let hit = self.cameraStripHitGeometry(at: point) {
+                let control = CameraStripControl.allCases.first {
+                    hit.controls[$0]?.contains(point) == true
+                }
                 Task { @MainActor in
-                    let recorder = LongFormRecorderController.shared
-                    if fraction < 0.25 {
-                        // 左端 = 镜像开关
-                        recorder.cameraPreviewModel.isMirrored.toggle()
-                    } else if fraction > 0.75 {
-                        // 右端 = 关闭（停止抓帧）
-                        recorder.stopCameraCaptureForThisSession()
-                    } else {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            recorder.isCameraPreviewCollapsed.toggle()
-                        }
-                    }
+                    LongFormRecorderController.shared
+                        .handleCameraStripControl(control ?? .toggleCollapse)
                 }
                 return
             }
@@ -1255,6 +1422,155 @@ final class NotchRecordingOverlayController {
         }
     }
 
+
+    // MARK: - 摄像头小窗：一块全屏、永不移动的点击穿透面板
+
+    /// 把小窗的面板同步成「该显示就显示、该收就收」。
+    ///
+    /// 显示条件 = **抓帧中** 且 **转写编辑框没展开** —— 和它当初挂在字幕条下面时的
+    /// 条件完全一致（展开态那块面板占满窗口高度，小窗本来就没地方放，而且那时用户
+    /// 在看文字，不需要这个窗）。
+    private func syncCameraStripPanels() {
+        let recorder = LongFormRecorderController.shared
+        let shouldShow = isPresented && recorder.isCameraCapturing && !recorder.isTranscriptExpanded
+        guard shouldShow else {
+            teardownCameraStripPanels()
+            return
+        }
+        // 屏幕集合没变就什么都不用做 —— 位置变化靠 SwiftUI 自己重画
+        //（`CameraStripPanelView` 观察着 `recorder`，`cameraStripPlacement` 是 @Published）。
+        let screenFrames = NSScreen.screens.map(\.frame)
+        if !cameraStripPanels.isEmpty, screenFrames == cameraStripScreenFrames { return }
+        // 屏幕变了（拔了显示器、改了分辨率）就整批重建。这些面板没有任何状态，
+        // 重建比逐个迁移便宜也安全。
+        teardownCameraStripPanels()
+        buildCameraStripPanels()
+        cameraStripScreenFrames = screenFrames
+    }
+
+    private func buildCameraStripPanels() {
+        let recorder = LongFormRecorderController.shared
+        for screen in NSScreen.screens {
+            guard let stripWidth = NotchSupport.cameraStripWidth(
+                      on: screen, ribbonCornerRadius: NotchRecordingBandView.ribbonCornerRadius),
+                  let notch = NotchSupport.notchRect(on: screen),
+                  let geometry = NotchSupport.cameraStripGeometry(
+                      on: screen,
+                      stripWidth: stripWidth,
+                      topInset: notch.height + NotchRecordingBandView.ribbonHeight)
+            else { continue }
+
+            let window = OverlayWindow(screen: screen)
+            // **必须改回这一层。** `OverlayWindow` 生来是 `.screenSaver`（1000），那是给
+            // 光标伴随物准备的 —— 它要求自己盖在右键菜单之上；小窗没这个需求，而
+            // 「左中 / 右中」两个位置正好落在菜单弹出的区域里，一个 315pt 宽的黑块压住
+            // 用户的右键菜单是看得见的缺陷。忘了这一行是**静默的**，小窗只是浮在所有东西上面。
+            window.level = NotchSupport.cameraStripWindowLevel
+
+            let hostingView = NSHostingView(rootView: CameraStripPanelView(
+                recorder: recorder,
+                geometry: geometry,
+                // `window` 弱捕获：宿主视图由窗口持有，闭包再由宿主视图持有 ——
+                // 强捕获就是 window → hostingView → rootView → 闭包 → window 的环，
+                // 而且它活得比 `teardownCameraStripPanels` 还久。
+                onLayoutChange: { [weak window] snapshot in
+                    guard let window else { return }
+                    let key = ObjectIdentifier(window)
+                    let previous = self.cameraStripLayouts[key]?.titleBarFrame
+                    self.cameraStripLayouts[key] = snapshot
+                    // 位置一变，标题栏矩形就变 —— 这一行是验证时唯一能核对
+                    // 「按钮到底有没有生效」的数字依据，所以只在真变了的时候打。
+                    if let bar = snapshot.titleBarFrame, bar != previous {
+                        SoundEffectPlayer.appendToDiagnosticLog(String(
+                            format: "摄像头小窗标题栏（面板内）x=%.0f y=%.0f w=%.0f h=%.0f",
+                            bar.minX, bar.minY, bar.width, bar.height))
+                    }
+                }))
+            // 和录音带那块面板同一条规矩：宿主视图不许自己动窗口几何。
+            hostingView.sizingOptions = []
+            hostingView.frame = CGRect(origin: .zero, size: screen.frame.size)
+            window.contentView = hostingView
+            window.orderFrontRegardless()
+            cameraStripPanels.append(window)
+        }
+        if !cameraStripPanels.isEmpty {
+            SoundEffectPlayer.appendToDiagnosticLog("摄像头小窗面板已建：\(cameraStripPanels.count) 块")
+        }
+    }
+
+    private func teardownCameraStripPanels() {
+        guard !cameraStripPanels.isEmpty else { return }
+        for panel in cameraStripPanels {
+            cameraStripLayouts.removeValue(forKey: ObjectIdentifier(panel))
+            panel.orderOut(nil)
+        }
+        cameraStripPanels.removeAll()
+        cameraStripScreenFrames.removeAll()
+    }
+
+    /// 点在哪块小窗面板的标题栏里，以及那一下落在哪个控件上。
+    ///
+    /// 返回的矩形**已经换算成 AppKit 全局坐标**（`NSEvent.mouseLocation` 那一套）。
+    private func cameraStripHitGeometry(
+        at point: CGPoint
+    ) -> (titleBar: CGRect, controls: [CameraStripControl: CGRect])? {
+        for panel in cameraStripPanels {
+            guard let snapshot = cameraStripLayouts[ObjectIdentifier(panel)],
+                  let titleBarFrame = snapshot.titleBarFrame else { continue }
+            let titleBar = Self.appKitGlobalRect(titleBarFrame, in: panel)
+            guard titleBar.contains(point) else { continue }
+            var controls: [CameraStripControl: CGRect] = [:]
+            for (control, rect) in snapshot.controlFrames {
+                controls[control] = Self.appKitGlobalRect(rect, in: panel)
+            }
+            return (titleBar, controls)
+        }
+        return nil
+    }
+
+    /// 换算本身住在 `NotchSupport`（纯几何），这里只是把面板的 frame 递过去。
+    private static func appKitGlobalRect(_ rect: CGRect, in panel: NSWindow) -> CGRect {
+        NotchSupport.appKitGlobalRect(fromPanelLocal: rect, panelFrame: panel.frame)
+    }
+
+    /// ⌘Enter：把小窗在「刘海下面」和「屏幕底部」之间来回切。
+    ///
+    /// **按 `isCameraCapturing` 装卸监听，而不是在回调里 `if`** —— 这才是用户要求的
+    /// 「若摄像头未打开，该快捷键不会被软件识别」的**结构性**保证：摄像头没开时这条
+    /// 监听根本不在系统里。`updateCancellationMonitor` 用的是同一个形状。
+    ///
+    /// **它和 ESC 一样只读不吞**：这个仓库里没有任何能拦截全局按键的机制
+    /// （ESC 的两个监听、按住说话那个 CGEvent tap，全是 listen-only）。所以 ⌘Enter
+    /// 也会传给你当前前台那个 App —— 在 Slack / 微信里就是「发送」。这是全局监听固有
+    /// 的性质。不要去接一个会吞按键的 tap：那会让摄像头开着的那几分钟里 ⌘Enter
+    /// 在全系统失效，比这个副作用糟得多。
+    private func updateCameraStripShortcutMonitor() {
+        let isCapturing = LongFormRecorderController.shared.isCameraCapturing
+        guard isCapturing else {
+            if let monitor = cameraStripShortcutMonitor {
+                NSEvent.removeMonitor(monitor)
+                cameraStripShortcutMonitor = nil
+            }
+            return
+        }
+        guard cameraStripShortcutMonitor == nil else { return }
+        cameraStripShortcutMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            // **`isARepeat` 必须挡住。** 按住不放会连发，而这个动作是「切换」——
+            // 不去重的话它会以按键重复的速率疯狂翻转。ESC 那两个监听没管这个是
+            // 因为它们幂等，这个不是。
+            guard !event.isARepeat else { return }
+            // 主键盘回车 36 + 小键盘回车 76，两个都收。
+            guard event.keyCode == 36 || event.keyCode == 76 else { return }
+            // **精确等于 ⌘**（不是 `contains(.command)`），并排除 CapsLock 和小键盘标志
+            // —— 否则 ⇧⌘Enter、⌥⌘Enter 也会触发。
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                .subtracting([.capsLock, .numericPad])
+            guard flags == .command else { return }
+            Task { @MainActor in
+                LongFormRecorderController.shared.toggleCameraStripPlacement()
+            }
+        }
+    }
 
     private func show() {
         guard !isPresented else { return }
@@ -1293,6 +1609,10 @@ final class NotchRecordingOverlayController {
         panels.removeAll()
         collapsedWingHitRects.removeAll()
         if let m = collapsedWingMonitor { NSEvent.removeMonitor(m); collapsedWingMonitor = nil }
+        // 小窗的面板和它的快捷键监听一起收掉 —— 留一块全屏面板在屏幕上，
+        // 或者留一条快捷键监听在系统里，都是「录音停了但还在吃按键」。
+        teardownCameraStripPanels()
+        if let m = cameraStripShortcutMonitor { NSEvent.removeMonitor(m); cameraStripShortcutMonitor = nil }
     }
 
     /// 面板要多高：静止时是「刘海 + 跑马灯」，展开时再加上那一整块面板。
@@ -1371,7 +1691,6 @@ final class NotchRecordingOverlayController {
         panel.contentView = hostingView
         // 窗口不动，两翼矩形一次性算好；并且一建好就进入「收起」的命中状态。
         collapsedWingHitRects.append(contentsOf: computeCollapsedWingRects(for: panel, notch: notch))
-        cameraStripTitleBarRect = computeCameraStripTitleBarRect(for: panel, notch: notch)
         panel.ignoresMouseEvents = !LongFormRecorderController.shared.isTranscriptExpanded
         return panel
     }
