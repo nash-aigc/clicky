@@ -735,6 +735,19 @@ final class VoiceChatController: ObservableObject {
     /// 麦克风 tap（2026-09-24 实测：「三段式里我说话它不回应」）。
     private var isDuplexSessionLive = false
 
+    /// 给 Chatting 页用：**当前这条会话是不是全双工起的** —— 它决定卡片要不要做
+    /// 「刚到的字模糊半透明 → 清晰」那段进场动画。
+    ///
+    /// **不能用 `activeMode` 判**：那个属性只在用快捷键（⌃⌥2）起会话时才被赋值
+    /// （见 `handleShortcutPress` 末尾），用户点「连接」起会话时它一直是 nil ——
+    /// 于是 `activeMode != .duplexVoice` 恒为真、动画一直开着。实测（2026-09-25）：
+    /// 改完之后用户点连接进全双工，尾巴**照旧是糊的**，报「没修复」。
+    ///
+    /// 也不能用 `selectedMode`：那是界面上"选中的那一行"，用户可以在会话进行中
+    /// 把高亮切到另一行而不重连。`isDuplexSessionLive` 是**这条会话本身**的事实，
+    /// 与谁点的、怎么起的都无关。
+    var isDuplexSessionRunning: Bool { isDuplexSessionLive }
+
     /// 「等第一段音频」的兜底计时器，见 `scheduleConnectionFallbackIfNoAudio`。
     private var connectionFallbackTask: Task<Void, Never>?
 

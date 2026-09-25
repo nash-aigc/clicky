@@ -2051,10 +2051,11 @@ struct VoiceChatSessionView: View {
                     // **全双工不做进场动画** —— 用户 2026-09-25：「（全双工语音模式）
                     // 最后 5 个字，不要动画，直接显示吧」。
                     //
-                    // 判据走**会话模式**而不是这张卡的状态：两条路的文字速率差 5 倍
-                    // （三段式约 30 字/秒、全双工约 6.1 字/秒），所以同一套"5 个字的
-                    // 模糊尾巴"在三段式是一闪而过、在全双工是**盖住一整秒的字幕**。
-                    animatesIncomingCharacters: controller.activeMode != .duplexVoice
+                    // 判据走**这条会话本身**（`isDuplexSessionRunning`）而不是
+                    // `activeMode`、也不是界面上高亮的那一行：前者只在用快捷键起会话时
+                    // 才被赋值（点「连接」时恒为 nil，于是动画一直开着 —— 用户报的
+                    // 「没修复」），后者可以在会话进行中被切走。详见那个属性的说明。
+                    animatesIncomingCharacters: !controller.isDuplexSessionRunning
                 )
                 Spacer(minLength: 56)
             }
