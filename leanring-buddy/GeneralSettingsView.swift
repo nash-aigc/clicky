@@ -1311,6 +1311,57 @@ struct GeneralSettingsView: View {
                 }
             }
 
+            // ── 打开窗口 ───────────────────────────────────────────────
+            //
+            // 用户 2026-09-25：「在设置页面增加一个快捷键，用于打开窗口。在刘海屏上
+            // 打开这个窗口，点一下快捷键就自动打开。这个快捷键还能自动打开 Screen、
+            // Agent、Call 这三个窗口，一共三类，因此可以分别为每一个设置快捷键」。
+            //
+            // 四格都**默认不绑定** —— 与说话快捷键不同，这里没有预设：预设按键会在别人
+            // 的应用里抢键，而这个功能是"想用才录"。没录的那一格显示「点这里录制」。
+            SettingsGroupLabel("打开窗口")
+            SettingsCard {
+                SettingsRow(
+                    label: "打开面板",
+                    description: "按一下就展开刘海面板，落在上次那一栏。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: nil,
+                        recordedShortcut: generalSettingsViewModel.binding(\.openSheetShortcut)
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "打开到 Screen",
+                    description: "按一下直接展开到 Screen 那一栏（每个回合都会把屏幕截图一起送给模型）。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: nil,
+                        recordedShortcut: generalSettingsViewModel.binding(\.openSheetScreenShortcut)
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "打开到 Agent",
+                    description: "按一下直接展开到 Agent 那一栏（后台跑任务的那些）。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: nil,
+                        recordedShortcut: generalSettingsViewModel.binding(\.openSheetAgentShortcut)
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
+                    label: "打开到 Call",
+                    description: "按一下直接展开到 Call 那一栏（和 AI 通话：语音聊天 / 视频聊天）。"
+                ) {
+                    ShortcutRecorderButton(
+                        fallbackBinding: nil,
+                        recordedShortcut: generalSettingsViewModel.binding(\.openSheetCallShortcut)
+                    )
+                }
+            }
+
             SettingsGroupLabel("音频引擎")
             SettingsCard {
                 SettingsRow(

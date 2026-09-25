@@ -101,7 +101,11 @@ extension RecordedKeyboardShortcut {
 struct ShortcutRecorderButton: View {
     /// The preset-derived shortcut shown and used when the user has not
     /// recorded one of their own.
-    let fallbackBinding: RecordedKeyboardShortcut
+    ///
+    /// **可以是 nil** —— 「打开窗口」那四格就没有预设：没录就是没快捷键（预设按键会在
+    /// 别人的应用里抢键）。nil 时按钮显示「点这里录制」而不是一串键帽。
+    /// 传非可选值的老调用点不受影响（非可选赋给可选是合法的）。
+    let fallbackBinding: RecordedKeyboardShortcut?
 
     @Binding var recordedShortcut: RecordedKeyboardShortcut?
 
@@ -117,7 +121,7 @@ struct ShortcutRecorderButton: View {
     @State private var localEventMonitor: Any?
     @State private var globalEventMonitor: Any?
 
-    private var effectiveShortcut: RecordedKeyboardShortcut {
+    private var effectiveShortcut: RecordedKeyboardShortcut? {
         recordedShortcut ?? fallbackBinding
     }
 
@@ -131,7 +135,7 @@ struct ShortcutRecorderButton: View {
                     Text("请按下新的快捷键")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(DS.Colors.accentText)
-                } else {
+                } else if let effectiveShortcut {
                     ForEach(Array(effectiveShortcut.capsuleLabels.enumerated()), id: \.offset) { index, label in
                         if index > 0 {
                             Text("+")
@@ -152,6 +156,10 @@ struct ShortcutRecorderButton: View {
                                     .stroke(DS.Colors.borderSubtle, lineWidth: 0.8)
                             )
                     }
+                } else {
+                    Text("点这里录制")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(DS.Colors.textTertiary)
                 }
             }
             .padding(.horizontal, 10)

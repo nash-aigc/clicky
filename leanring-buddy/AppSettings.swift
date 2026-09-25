@@ -644,6 +644,27 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// demand — engine stopped, voice processing off, ducking lifted — for the
     /// times the user is doing something else while 「引擎保持时间」 is 永久.
     /// `nil` = not recorded, so nothing is bound until the user sets one.
+    // MARK: - 打开窗口的快捷键
+
+    /// 「打开窗口」那一组，四格：
+    ///   0 = 打开面板（落在上次那一栏）
+    ///   1/2/3 = 直接打开到 Screen / Agent / Call
+    ///
+    /// **全部默认 nil（不绑定）**，而不是像说话快捷键那样给个预设 —— 预设按键会
+    /// 在别人的应用里抢键，而这个功能是"想用才录"的。
+    /// 用户 2026-09-25：「在设置页面增加一个快捷键，用于打开窗口……还能自动打开
+    /// Screen、Agent、Call 这三个窗口，一共三类，因此可以分别为每一个设置快捷键」。
+    var openSheetShortcut: RecordedKeyboardShortcut?
+    var openSheetScreenShortcut: RecordedKeyboardShortcut?
+    var openSheetAgentShortcut: RecordedKeyboardShortcut?
+    var openSheetCallShortcut: RecordedKeyboardShortcut?
+
+    /// 这一组按**下标**取，与监视器那边的匹配表一一对应。
+    /// nil 的格子不进匹配（没录就是没快捷键）。
+    var openSheetShortcutBindings: [RecordedKeyboardShortcut?] {
+        [openSheetShortcut, openSheetScreenShortcut, openSheetAgentShortcut, openSheetCallShortcut]
+    }
+
     var releaseAudioEngineShortcut: RecordedKeyboardShortcut?
 
     /// 「回声消除」: whether Apple's voice processing (the system AEC) runs on
@@ -1036,6 +1057,10 @@ nonisolated extension AppSettings {
         case continuousListeningSilenceSendSeconds
         case audioEngineIdleReleaseMinutes
         case releaseAudioEngineShortcut
+        case openSheetShortcut
+        case openSheetScreenShortcut
+        case openSheetAgentShortcut
+        case openSheetCallShortcut
         case notchExpansionSpeedMultiplier
         case echoCancellationEnabled
         case mutesSystemSpeakersDuringRecording
@@ -1134,6 +1159,10 @@ nonisolated extension AppSettings {
         continuousListeningSilenceSendSeconds = try container.decodeIfPresent(Double.self, forKey: .continuousListeningSilenceSendSeconds) ?? defaults.continuousListeningSilenceSendSeconds
         audioEngineIdleReleaseMinutes = try container.decodeIfPresent(Int.self, forKey: .audioEngineIdleReleaseMinutes) ?? defaults.audioEngineIdleReleaseMinutes
         releaseAudioEngineShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .releaseAudioEngineShortcut)
+        openSheetShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetShortcut)
+        openSheetScreenShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetScreenShortcut)
+        openSheetAgentShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetAgentShortcut)
+        openSheetCallShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetCallShortcut)
         notchExpansionSpeedMultiplier = try container.decodeIfPresent(Double.self, forKey: .notchExpansionSpeedMultiplier) ?? defaults.notchExpansionSpeedMultiplier
         echoCancellationEnabled = try container.decodeIfPresent(Bool.self, forKey: .echoCancellationEnabled) ?? defaults.echoCancellationEnabled
         mutesSystemSpeakersDuringRecording = try container.decodeIfPresent(Bool.self, forKey: .mutesSystemSpeakersDuringRecording) ?? defaults.mutesSystemSpeakersDuringRecording

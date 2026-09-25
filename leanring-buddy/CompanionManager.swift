@@ -333,6 +333,8 @@ final class CompanionManager: ObservableObject {
 
     private var shortcutTransitionCancellable: AnyCancellable?
     private var externalShortcutTransitionsCancellable: AnyCancellable?
+    /// 「打开窗口」四格快捷键的订阅（与上一条同样的生命周期：start 建、teardown 取消）。
+    private var openSheetShortcutTransitionsCancellable: AnyCancellable?
     /// 「释放引擎」的快捷键订阅 —— 与上面那三个 VoiceWeb 快捷键共用同一条事件流。
     private var releaseEngineShortcutCancellable: AnyCancellable?
     private var voiceStateCancellable: AnyCancellable?
@@ -1081,6 +1083,7 @@ final class CompanionManager: ObservableObject {
         currentResponseTask = nil
         shortcutTransitionCancellable?.cancel()
         externalShortcutTransitionsCancellable?.cancel()
+        openSheetShortcutTransitionsCancellable?.cancel()
         voiceStateCancellable?.cancel()
         audioPowerCancellable?.cancel()
         if let shortcutRecorderStateObserver {
@@ -1335,6 +1338,17 @@ final class CompanionManager: ObservableObject {
             }
 
         refreshExternalShortcutBindings()
+
+        // **「打开窗口」那四格。** 只认按下沿 —— 它是一次动作，不是开关。
+        // 与说话快捷键共用同一套修饰键时由监视器先消费（见 `matchOpenSheetShortcuts`
+        // 在 tap 回调里的位置），所以按下去不会同时触发一次录音。
+        openSheetShortcutTransitionsCancellable = globalPushToTalkShortcutMonitor
+            .openSheetShortcutTransitionsPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] transition in
+                guard transition.pressed else { return }
+                self?.handleOpenSheetShortcut(index: transition.index)
+            }
     }
 
     /// Copies the current VoiceWeb shortcut bindings into the monitor's match
@@ -1346,6 +1360,41 @@ final class CompanionManager: ObservableObject {
         }
         globalPushToTalkShortcutMonitor.releaseEngineShortcutBinding =
             AppSettingsStore.snapshot().releaseAudioEngineShortcutBinding
+        globalPushToTalkShortcutMonitor.openSheetShortcutBindings =
+            AppSettingsStore.snapshot().openSheetShortcutBindings
+    }
+
+    /// 「打开窗口」那四格快捷键的接收端。
+    ///
+    /// **只认按下沿**（`pressed == true`）：它是一次动作，不是开关，松开那一沿什么都不做。
+    ///
+    /// 下标 → 落点：0 打开面板（落在上次那一栏），1/2/3 直接落到 Screen / Agent / Call。
+    /// 用户 2026-09-25：「在刘海屏上打开这个窗口，点一下快捷键就自动打开。这个快捷键
+    /// 还能自动打开 Screen、Agent、Call 这三个窗口……可以分别为每一个设置快捷键」。
+    private func handleOpenSheetShortcut(index: Int) {
+        let section: SidebarSection?
+        switch index {
+        case 1: section = .conversations
+        case 2: section = .agents
+        case 3: section = .voiceChat
+        default: section = nil
+        }
+        openSheet(section: section)
+    }
+
+    /// 打开刘海面板，可选直接落到某一栏。
+    ///
+    /// 展开本身走 `expandForLaunch()` —— 它和「启动时自动打开面板」是同一条路：
+    /// 复用上次那块屏、不带页面请求。没有刘海屏（或「刘海屏入口」关着）时它回 false，
+    /// 那就退回带标题的设置窗口：那是这个 App 在无刘海机器上唯一的可见界面。
+    private func openSheet(section: SidebarSection?) {
+        if let section {
+            // 先选栏再展开：展开那一帧就把内容列建好了，晚一步会看到它先画旧栏再跳。
+            agentSessionManager.selectedSidebarSection = section
+        }
+        if notchWindowController?.expandForLaunch() != true {
+            openSettings()
+        }
     }
 
     private func handleShortcutTransition(_ transition: BuddyPushToTalkShortcut.ShortcutTransition) {

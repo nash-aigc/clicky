@@ -29,6 +29,15 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
     /// mode shortcuts above. Pressing it stops the shared audio engine and
     /// switches voice processing off, which is what lifts the ducking of every
     /// other application; it is the way back out of 「引擎保持时间 = 永久」.
+    /// **「打开窗口」的四格**：0 = 打开面板，1/2/3 = 直接打开到 Screen / Agent / Call。
+    ///
+    /// 与上面两组分开成一个数组，是因为它是一个**定长、可空**的表：没录的格子是 nil，
+    /// 匹配时跳过。用可选数组而不是四个独立字段，是为了复用同一个逐格匹配循环 ——
+    /// 四份几乎一样的代码必然会漂。
+    var openSheetShortcutBindings: [RecordedKeyboardShortcut?] = []
+    let openSheetShortcutTransitionsPublisher = PassthroughSubject<(index: Int, pressed: Bool), Never>()
+    private var openSheetShortcutPressedStates: [Int: Bool] = [:]
+
     var releaseEngineShortcutBinding: RecordedKeyboardShortcut?
     let releaseEngineShortcutTransitionsPublisher = PassthroughSubject<Bool, Never>()
     private var releaseEngineShortcutPressedState = false
@@ -139,6 +148,14 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
             return Unmanaged.passUnretained(event)
         }
 
+        if matchOpenSheetShortcuts(
+            eventType: eventType,
+            keyCode: eventKeyCode,
+            modifierFlagsRawValue: event.flags.rawValue
+        ) {
+            return Unmanaged.passUnretained(event)
+        }
+
         if matchReleaseEngineShortcut(
             eventType: eventType,
             keyCode: eventKeyCode,
@@ -241,6 +258,37 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
 
     /// The 「释放引擎」 shortcut. A press — not a release — is the action, because
     /// releasing the engine is a one-shot command rather than a held state.
+    /// 「打开窗口」那四格的匹配。形状与 `matchExternalShortcuts` 一致，只多一件事：
+    /// **nil 的格子跳过** —— 没录快捷键就不参与匹配。
+    private func matchOpenSheetShortcuts(
+        eventType: CGEventType,
+        keyCode: UInt16,
+        modifierFlagsRawValue: UInt64
+    ) -> Bool {
+        guard openSheetShortcutBindings.contains(where: { $0 != nil }) else { return false }
+        guard eventType == .flagsChanged || eventType == .keyDown || eventType == .keyUp else {
+            return false
+        }
+        let modifierFlags = NSEvent.ModifierFlags(rawValue: UInt(modifierFlagsRawValue))
+            .intersection(.deviceIndependentFlagsMask)
+
+        var anyTransitioned = false
+        for (index, optionalBinding) in openSheetShortcutBindings.enumerated() {
+            guard let binding = optionalBinding else { continue }
+            guard let pressedNow = Self.shortcutPressednessChange(
+                for: binding,
+                eventType: eventType,
+                keyCode: keyCode,
+                modifierFlags: modifierFlags,
+                wasPressed: openSheetShortcutPressedStates[index] ?? false
+            ) else { continue }
+            openSheetShortcutPressedStates[index] = pressedNow
+            openSheetShortcutTransitionsPublisher.send((index: index, pressed: pressedNow))
+            anyTransitioned = true
+        }
+        return anyTransitioned
+    }
+
     private func matchReleaseEngineShortcut(
         eventType: CGEventType,
         keyCode: UInt16,
