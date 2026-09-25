@@ -26,10 +26,9 @@ struct NotchSheetRootView: View {
     /// the app) — observed because both the 语音聊天 sidebar list and the
     /// content column read its published presets / phase / transcript.
     @ObservedObject private var voiceChatController: VoiceChatController
-    /// Ask 页自己的全双工语音管线（与 Chatting 那条完全独立）。
-    @ObservedObject private var askVoiceCallController: AskVoiceCallController
-    /// Ask 页音色面板的展开态（面板是浮层，挂在按钮上）。
-    @State private var isAskVoicePanelOpen = false
+    /// 「复制全文」按下后的对勾态，1.4 秒后自己回去。
+    @State private var copyFullConversationDidSucceed = false
+    @State private var copyFullConversationResetTask: Task<Void, Never>?
     var collapseAction: () -> Void
     /// 收起 / 重新展开的两半，专给 Agent 页的「打开」用：选文件夹时面板必须
     /// 让开，选完再放回来（用户 2026-09-23 的第 7 条）。与 `collapseAction`
@@ -62,7 +61,6 @@ struct NotchSheetRootView: View {
         // subprocesses.
         self.agentSessionManager = companionManager.agentSessionManager
         self.voiceChatController = companionManager.voiceChatController
-        self.askVoiceCallController = companionManager.askVoiceCallController
         self.collapseAction = collapseAction
         self.hideSheetAction = hideSheetAction
         self.revealSheetAction = revealSheetAction
@@ -112,8 +110,7 @@ struct NotchSheetRootView: View {
                         case .conversations:
                             NotchHomeView(
                                 companionManager: companionManager,
-                                sessionsModel: sessionsModel,
-                                askVoiceCallController: askVoiceCallController
+                                sessionsModel: sessionsModel
                             )
                         case .agents:
                             AgentSessionView(
@@ -142,27 +139,6 @@ struct NotchSheetRootView: View {
                             .offset(y: NotchSupport.contentColumnHeaderRuleY)
                     }
                 }
-            }
-        }
-        // **音色面板挂在整窗最上层**（用户 2026-09-25：「好像是窗口层级不对，右侧也没有
-        // 完整显示」）。原先它挂在那个按钮自己的 overlay 上，而按钮在被裁的内容列里 ——
-        // 面板于是跟着被裁，右侧永远缺一块。挂在这里：对齐到右上角、位置用页头带高量出来，
-        // 与 Chatting 页那几块浮层同一条思路（浮层必须挂在不裁剪它的那一层上）。
-        .overlay(alignment: .topTrailing) {
-            if isAskVoicePanelOpen {
-                VoicePickerPanel(
-                    engine: .duplexVoice,
-                    modelID: VoiceCatalog.defaultDuplexModel,
-                    selectedVoiceID: askVoiceCallController.voiceID
-                        ?? VoiceCatalog.fallbackVoice(for: .duplexVoice, model: VoiceCatalog.defaultDuplexModel),
-                    onSelectVoice: { voiceID in
-                        askVoiceCallController.voiceID = voiceID
-                        isAskVoicePanelOpen = false
-                    },
-                    onClose: { isAskVoicePanelOpen = false }
-                )
-                .padding(.trailing, NotchSupport.contentColumnHorizontalMargin)
-                .padding(.top, NotchSupport.sheetHeaderTopInset + NotchSupport.contentColumnHeaderBandHeight + 4)
             }
         }
         .onAppear {
@@ -225,18 +201,13 @@ struct NotchSheetRootView: View {
 
             // 通话中：状态字（连接中琥珀 / 通话中绿）+ 挂断；活动动画让位 ——
             // 两个状态源会互相打架。
-            if askVoiceCallController.isActive {
-                askVoiceCallStatusChip
-            } else {
-                NotchActivityView(
-                    phase: panelModel.activityPhase,
-                    audioHistoryProvider: audioHistoryProvider
-                )
-                .frame(height: 14)
+            NotchActivityView(
+                phase: panelModel.activityPhase,
+                audioHistoryProvider: audioHistoryProvider
+            )
+            .frame(height: 14)
 
-                askVoiceCallVoiceButton
-                askVoiceCallButton
-            }
+            copyFullConversationButton
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         // 页头整体占满 `contentColumnHeaderBandHeight`：这条栏的下边缘必须正好落在
@@ -248,73 +219,26 @@ struct NotchSheetRootView: View {
         .padding(.top, NotchSupport.sheetHeaderTopInset)
     }
 
-    // MARK: - Ask 页的全双工语音电话
+    // MARK: - 复制全文
 
-    /// 通话中的状态字 + 挂断。刘海那条带子**同时**显示同状态（externalConnecting /
-    /// externalChatting）—— 这里是页内的一份，收起面板后只剩刘海也够用。
-    @ViewBuilder
-    private var askVoiceCallStatusChip: some View {
-        let isConnecting = askVoiceCallController.phase == .connecting
-        HStack(spacing: 8) {
-            if isConnecting {
-                NotchThinkingDotsView(timelineDate: Date(), tint: Color(red: 1.0, green: 0.75, blue: 0.35))
-                    .frame(width: 26, height: 12)
-                Text("连接中…")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(red: 1.0, green: 0.75, blue: 0.35))
-            } else {
-                Circle()
-                    .fill(DS.Colors.success)
-                    .frame(width: 6, height: 6)
-                Text("通话中")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(DS.Colors.success)
-            }
-
-            Button {
-                askVoiceCallController.hangUp()
-            } label: {
-                Image(systemName: "phone.down.fill")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.red.opacity(0.85))
-                    .frame(width: 30, height: 26)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(Color.white.opacity(0.08))
-                    )
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .help("挂断这通语音")
-        }
-    }
-
-    /// 「全双工语音」按钮：把这页当前会话的聊天内容拼成带标签的提示词，
-    /// 起一通**属于这个会话**的全双工语音电话（不截屏、只用上下文）。
-    /// 尺寸与 Chatting 页的页头按钮一致（`headerControlHeight` / 12pt / 同样的圆角）。
+    /// 「复制全文」—— 把当前会话的**整段上下文**复制到剪贴板。
     ///
-    /// **空会话也能按**（用户 2026-09-25）：「如果当前用户在左侧边栏新建了一个对话，
-    /// 在没有内容的情况下，没有办法点击全双工语音……没有内容、没有上下文的情况下，
-    /// 也要让他能够使用全双工语音，开始全新的对话」。
+    /// 它取代的是原来那两个按钮（Ask 页的「全双工语音」与它的音色）。用户 2026-09-25：
+    /// 「把 ASK 页面右上角的『全双工语音』和『全双工语音音色』删掉，这个模式也删掉，
+    /// 完全放弃这个接线和这个模式……把全双工语音这个位置的按钮改成复制全文按钮，
+    /// 用户可以复制所有的上下文」。
     ///
-    /// 原先这里有一条 `.disabled(!hasContext)` —— 那条闸门是多余的：动作本身对空
-    /// 会话完全安全（`AskVoiceCallContext.prompt(entries: [])` 只是一段空的上下文，
-    /// 会话照样起得来），而它把「开一通全新对话」这条最正常的用法堵死了。
-    private var askVoiceCallButton: some View {
+    /// 复制的是**整段对话**：每一轮的问与答，按时间顺序拼接。执行器的标签会被剥掉
+    /// （存储的原稿带着 `[POINT:…]` / `[CLICK:…]` 这类标签，粘到别处只是噪声），
+    /// 与页面里那个「复制」按钮同一条口径 —— 所见即所得。
+    private var copyFullConversationButton: some View {
         Button {
-            guard let session = sessionsModel.activeSession else { return }
-            companionManager.interruptActiveResponse()
-            askVoiceCallController.start(
-                sessionID: session.id,
-                contextPrompt: AskVoiceCallContext.prompt(entries: session.entries),
-                voiceID: askVoiceCallController.voiceID
-            )
+            copyFullConversationToPasteboard()
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: "phone.arrow.up.right.fill")
+                Image(systemName: copyFullConversationDidSucceed ? "checkmark" : "doc.on.doc")
                     .font(.system(size: 11, weight: .medium))
-                Text("全双工语音")
+                Text("复制全文")
                     .font(.system(size: 12, weight: .medium))
                     .lineLimit(1)
             }
@@ -325,62 +249,40 @@ struct NotchSheetRootView: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color.white.opacity(0.08))
             )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(DS.Colors.success.opacity(0.45), lineWidth: 1)
-            )
             .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .buttonStyle(.plain)
         .pointerCursor()
-        .help("用这个会话的聊天内容作参考，改用全双工语音继续深聊（不截屏，只看上下文）")
+        .help("把当前会话的整段上下文（每一轮的问与答）复制到剪贴板")
     }
 
-    /// 音色下拉：**仿 Chatting 页的音色面板**（用户 2026-09-25：「应该仿照 Chatting
-    /// 页面的音色按钮，它的下拉菜单包括试听、使用、收藏、卡片的样式」）。
-    /// 用的是同一份 `VoicePickerPanel` 组件 —— 两个页面共用一套，样式不可能漂。
-    private var askVoiceCallVoiceButton: some View {
-        let voices = VoiceCatalog.systemVoices(
-            for: .duplexVoice,
-            model: VoiceCatalog.defaultDuplexModel
-        )
-        let currentVoiceID = askVoiceCallController.voiceID
-            ?? VoiceCatalog.fallbackVoice(for: .duplexVoice, model: VoiceCatalog.defaultDuplexModel)
-
-        return Button {
-            isAskVoicePanelOpen.toggle()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "waveform")
-                    .font(.system(size: 11, weight: .medium))
-                Text(askVoiceDisplayName(currentVoiceID, voices: voices))
-                    .font(.system(size: 12, weight: .medium))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
-                    .rotationEffect(.degrees(isAskVoicePanelOpen ? 180 : 0))
-            }
-            .foregroundColor(.white.opacity(0.85))
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(isAskVoicePanelOpen ? 0.16 : 0.08))
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    private func copyFullConversationToPasteboard() {
+        let entries = sessionsModel.activeSession?.entries ?? []
+        let conversationText = entries.compactMap { entry -> String? in
+            var lines: [String] = []
+            let question = entry.userTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !question.isEmpty { lines.append("我：" + question) }
+            // 剥标签，与页面上那个「复制」按钮同一条口径。
+            let answer = ActionTagParser.speakableTextFromStreamedReply(entry.assistantResponse)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !answer.isEmpty { lines.append("Clicky：" + answer) }
+            return lines.isEmpty ? nil : lines.joined(separator: "\n")
         }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .help("这通语音电话的音色（3.0 Flash 的系统音色）")
+        .joined(separator: "\n\n")
+
+        guard !conversationText.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(conversationText, forType: .string)
+
+        copyFullConversationDidSucceed = true
+        copyFullConversationResetTask?.cancel()
+        copyFullConversationResetTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.4))
+            guard !Task.isCancelled else { return }
+            copyFullConversationDidSucceed = false
+        }
     }
 
-    private func askVoiceDisplayName(_ voiceID: String, voices: [VoiceOption]) -> String {
-        if let nickname = VoiceLibraryStore.nickname(forCustomVoiceID: voiceID), !nickname.isEmpty {
-            return nickname
-        }
-        return voices.first { $0.id == voiceID }?.displayName ?? voiceID
-    }
 }
 
 // MARK: - Settings area

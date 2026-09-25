@@ -273,37 +273,8 @@ final class CompanionManager: ObservableObject {
     /// 而 Ask 页的语音电话**不在**那个控制器里（它是自己的管线），于是对 Ask 那通电话
     /// 点挂断什么都不发生 —— 用户 2026-09-25 报的正是这个。
     func hangUpAnyActiveVoiceSession() {
-        if askVoiceCallController.isActive {
-            askVoiceCallController.hangUp()
-            return
-        }
         voiceChatController.disconnectCurrentSession()
     }
-
-    /// Ask 页自己的全双工语音管线。**与 `voiceChatController` 完全独立** ——
-    /// 正因如此，句子「会话在跑就切到 Chatting 页」那条规则不会把它误当成
-    /// Chatting 会话（2026-09-25 实测：塞进 Chatting 控制器时，收起面板再展开会
-    /// 被强行切到 Chatting 页）。
-    lazy var askVoiceCallController: AskVoiceCallController = {
-        let controller = AskVoiceCallController()
-        controller.setNotchPhase = { [weak self] phase in
-            self?.notchWindowController?.setExternalSessionOverride(phase)
-        }
-        // 与 Chatting 同一条上报路径：Ask 页底部那行错误（`lastErrorMessage`）。
-        controller.reportFailure = { [weak self] message in
-            self?.lastErrorMessage = message
-        }
-        controller.playbackEngineProvider = { [weak self] in
-            self?.bailianTTSClient.voicePlaybackEngine
-        }
-        controller.warmUpEngine = { [weak self] in
-            await self?.bailianTTSClient.warmUpVoiceEngine()
-        }
-        // 试听也要走那台引擎（同一条 voice-processing 链路，试听听到的才是
-        // 选中之后它会发出的声音）。
-        SharedVoicePreviewPlayer.shared.playbackEngine = bailianTTSClient.voicePlaybackEngine
-        return controller
-    }()
 
     lazy var voiceChatController: VoiceChatController = {
         let controller = VoiceChatController(
@@ -1420,7 +1391,7 @@ final class CompanionManager: ObservableObject {
             // 2026-09-25：只有 Chatting 那半边时，Ask 通话中按这个键会掉进下面的
             // 「按住说话」——而两者**共用同一台音频引擎的麦克风 tap**，于是会话的
             // 上行被顶掉、半死不活（用户报的那条服务端报错很可能就是这条路径的产物）。
-            if voiceChatController.connectionPhase != .idle || askVoiceCallController.isActive {
+            if voiceChatController.connectionPhase != .idle {
                 hangUpAnyActiveVoiceSession()
                 shortcutPressBeganAt = nil
                 return
@@ -3111,7 +3082,7 @@ final class CompanionManager: ObservableObject {
             //     → 错误被吞，一声不响（全双工**没有**任何重建路径）
             // 表现就是"跑到第 3 分钟突然全哑，挂断重连又能好 3 分钟"。
             // 会话还在，就不释放；会话结束时的 `noteVoiceSessionActivity()` 会重新起表。
-            if self.voiceChatController.connectionPhase != .idle || self.askVoiceCallController.isActive {
+            if self.voiceChatController.connectionPhase != .idle {
                 print("🔊 CompanionManager: 空闲到点，但语音会话正在进行 —— 不释放引擎")
                 self.noteVoiceActivity()
                 return

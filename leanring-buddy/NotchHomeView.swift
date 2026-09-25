@@ -28,7 +28,6 @@ struct NotchHomeView: View {
     @ObservedObject var companionManager: CompanionManager
     @ObservedObject var sessionsModel: ConversationSessionsModel
     /// Ask 页自己的全双工语音管线（页内的实时转录与状态芯片都读它）。
-    @ObservedObject var askVoiceCallController: AskVoiceCallController
 
     /// Which finished turns have their progress disclosure expanded. Keyed by
     /// entry offset; live progress while a job runs is always expanded.
@@ -262,18 +261,10 @@ struct NotchHomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(Array(entries.enumerated()), id: \.offset) { entryIndex, entry in
-                        // 通话进行中，**最后一条还没写完回答的条目**不渲染空卡 ——
-                        // 它的回答此刻在下面的流式气泡里（`askVoiceCallController.liveAssistantText`），
-                        // 回合结束写盘后这里自然恢复渲染。
-                        //
-                        // 第二个条件是同一件事的**后半程**：回合已经写盘了，但吐字还在追
-                        // 最后那几个字（`isRevealingLastEntry`）—— 这时候**别把刚写下的那条
-                        // 画出来**，否则剩下的字会由这张"已定稿"的卡片整段画出来，动画在
-                        // 最后一句话上戛然而止（用户 2026-09-25 报的「还剩 15 个字时突然
-                        // 显示出来，没有过渡」）。等吐完最后一个字，控制器复位，这里恢复。
-                        if askVoiceCallController.isActive,
-                           entryIndex == entries.count - 1,
-                           entry.assistantResponse.isEmpty || askVoiceCallController.isRevealingLastEntry {
+                        // 回答还没写下来的那一条不渲染空卡：它的内容此刻在下面的流式
+                        // 气泡里（`streamingAnswerText`），回合结束写盘后这里自然恢复渲染。
+                        if entryIndex == entries.count - 1,
+                           entry.assistantResponse.isEmpty {
                             EmptyView()
                         } else {
                             turnView(entryIndex, entry)
@@ -312,42 +303,6 @@ struct NotchHomeView: View {
                         liveTurnFooter
                     }
 
-                    // **语音电话正在进行**：用户正在说的那句 + AI 正在说的回复，
-                    // 就地画在这条流里（用户 2026-09-25：「用户说话的内容或 AI 回复的
-                    // 结果要在 ask 页面里显示，而不是像现在这样自动切换到 chatting 页面」）。
-                    // 说完了 AI 那条会落成正式条目（`AskVoiceCallController` 写盘），
-                    // 此刻它先以流式的样子出现。
-                    if askVoiceCallController.isActive {
-                        if !askVoiceCallController.liveUserTranscript.isEmpty {
-                            outgoingBubble(askVoiceCallController.liveUserTranscript)
-                                .id("ask-call-user")
-                        }
-                        if !askVoiceCallController.liveAssistantText.isEmpty {
-                            assistantBubble(askVoiceCallController.liveAssistantText, isStreaming: true)
-                                .id("ask-call-assistant")
-                            // **语音通话那张卡片也要有底部那一行**（用户 2026-09-25：
-                            // 「缺少时间参数和速度参数……应该显示在界面上。我记得使用
-                            // DeepSeek Flash 的时候，它是有这个参数的」）。
-                            //
-                            // 打字那条路有 `liveTurnFooter`，而语音通话这条**一行都没有**
-                            // —— 通话时用户看到的卡片底下是空的，和 DeepSeek 的卡片
-                            // 明显不一样。顺序与打字那条路一致：复制 · 时间（· 耗时，
-                            // 通话中还不知道，回合结束时才写进条目）。
-                            HStack(spacing: 8) {
-                                MessageCopyButton(
-                                    text: askVoiceCallController.liveAssistantText,
-                                    helpText: "复制这条回复"
-                                )
-                                if let beganAt = askVoiceCallController.assistantTextBeganAt {
-                                    Text(Self.cachedTimeFormatter.string(from: beganAt))
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.white.opacity(0.35))
-                                }
-                                Spacer(minLength: 0)
-                            }
-                        }
-                    }
-
                     // The scroll target, and the flow's bottom breathing room
                     // in one view. It is a *resident* view on purpose: the
                     // streaming ids above only exist while a reply is arriving,
@@ -370,12 +325,6 @@ struct NotchHomeView: View {
             // 决定删除。拖选不受影响（拖拽不是点击）。
             .onChange(of: entries.count) { _ in
                 scrollToBottom(proxy)
-            }
-            .onChange(of: askVoiceCallController.liveAssistantText) { _ in
-                // **流式期间用瞬时滚动**（2026-09-25 性能收敛）：带动画的滚动 0.2s
-                // 长于 delta 间隔 —— 动画在整个流式期间永远处于「被改目标」状态，
-                // 每一帧都要带着正在变大的内容重新定位。瞬时滚动无此成本。
-                scrollToBottomInstantly(proxy)
             }
             .onChange(of: sessionsModel.activeSessionID) { _ in
                 // Switching conversations has to land at the newest message,
@@ -456,9 +405,8 @@ struct NotchHomeView: View {
     private func turnView(_ entryIndex: Int, _ entry: ConversationHistoryEntry) -> some View {
         // **没有用户那句话的回合不画用户气泡。**
         //
-        // 开场白就是这种回合（`AskVoiceCallController` ③ 写一条助手条目、不参与配对），
-        // 它的 `userTranscript` 是空串 —— 无条件画就会在流里留一个空的蓝色气泡，
-        // 比看不到开场白更难看。
+        // 有些回合只有回答、没有用户那句话（`userTranscript` 是空串）——无条件画就会
+        // 在流里留一个空的蓝色气泡。
         if !entry.userTranscript.isEmpty {
             outgoingBubble(entry.userTranscript)
         }
