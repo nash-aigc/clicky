@@ -593,10 +593,13 @@ final class NotchWindowController {
         let expandedFrame = NotchSupport.expandedSheetFrame(on: presence.screen)
         // Read the style ONCE here and carry it through the whole expansion:
         // saving in the settings window mid-animation must not turn one reveal
-        // into two — the deadline below and the animation have to agree about
-        // how long this expansion lasts.
+        // into two.
+        //
+        // **目前不再拿它开动画**（用户 2026-09-25 要求点击即出现、不要展开动画），
+        // 但样式仍然读出来记在日志里 —— 三个展开样式的代码都还在，这条路只是不调用
+        // 它们；想知道当下生效的是哪个设置，看这一行比翻设置页快。
         let expansionStyle = AppSettingsStore.snapshot().windowExpansionStyle
-        let revealDuration = AppSettingsStore.snapshot().expansionRevealDurationInForce(AppSettingsStore.snapshot().notchExpansionSpeedMultiplier)(expansionStyle)
+        print("⏱️ [expand] 直接显示（不做展开动画）；设置里选的样式=\(expansionStyle.rawValue)（当前不生效）")
 
         expansionGeneration += 1
         let expansionGenerationAtStart = expansionGeneration
@@ -609,38 +612,38 @@ final class NotchWindowController {
         NotchSupport.expansionStartedAt = expansionStartedAt
         print(String(format: "⏱️ [expand] 展开开始 t=%.3f", expansionStartedAt))
 
-        // Order matters. The cover (plus the temporary surface) goes on FIRST,
-        // hiding the content entirely: `setFrame(display: true)` below forces a
-        // synchronous draw, so installing it afterwards would paint the
-        // finished sheet for one frame before the reveal hid it — a visible
-        // flash.
+        // **不做展开动画 —— 点击即整块出现。**
+        //
+        // 用户 2026-09-25：「有没有一种方法，不使用弹出的效果？我觉得这个弹出动画体验
+        // 不是很好，它总是抖动，尤其是在左上角和右上角的位置……我能不能点击按钮之后
+        // 直接展开这个面板？点击一下就直接展开，什么动画都没有」。
+        //
+        // 顺序（每一步都有理由）：
+        //  ① **先盖上遮罩**，而且是零高度的那种 —— 整个宿主层什么都画不出来，所以下面
+        //     这些步骤进行时屏幕上**没有白板**，只是"还没反应"。
+        //  ② 把窗口尺寸一次设到最终值，但 **`display: false` 不触发同步绘制**。原先是
+        //     `display: true`，那会强制一次整面板的同步绘制 —— 冷的时候要 300~600ms，
+        //     而那正是用户看到的那块白板的时长（实测见 `clicky-卡片冷启动-164349.log`：
+        //     冷 +146ms 白板 / 291ms 主线程，热 +44ms / 53ms）。
+        //  ③ 一个 tick 之后翻 `isExpanded` —— 面板那棵树开始构建，全部在遮罩后面，
+        //     用户看不见。
+        //  ④ **再一个 tick 之后掀开遮罩**。这一块排在构建与绘制**后面**：主线程是串行
+        //     的，构建那 300ms（冷）或 50ms（热）会先把主线程占住，定时器到点也插不进去，
+        //     于是"掀开"必然发生在内容真的画完之后 —— 面板带着完整内容**整块出现**。
+        //
+        // 三个展开样式（中心缩放 / 边缘缩放 / 幕布垂落）的代码都还在，只是这条路不再
+        // 调用它们 —— 设置里那一行现在不产生任何效果。
         installRevealCover(on: presence)
 
-        presence.panel.setFrame(expandedFrame, display: true)
-
-        startReveal(on: presence, style: expansionStyle, expandedFrame: expandedFrame)
-
-        // Back to the deadline the reveal was measured against; the sheet must
-        // be fully revealed by then whether or not the animation ran.
-        DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.05) { [weak self] in
-            guard let self,
-                  self.expansionGeneration == expansionGenerationAtStart,
-                  self.panelModel.isExpanded else { return }
-            self.removeReveal(on: presence)
-        }
+        presence.panel.setFrame(expandedFrame, display: false)
 
         presence.panel.ignoresMouseEvents = false
 
         // The content flip is DEFERRED one run-loop tick. Measured 2026-09-23
         // (「点击刘海之后没有马上开始展开，而是等了一段时间」): with the flip
         // inline, the sheet's SwiftUI build + draw ran inside the synchronous
-        // draw above — 317 ms with a populated conversation (44 ms empty) — so
-        // the reveal animation did not begin until click+350 ms. Deferring the
-        // flip lets this tick's transaction commit with the reveal animations
-        // already attached, and the render server (which plays them on its own
-        // clock) starts the expansion the instant the click lands; the sheet
-        // builds and draws mid-animation, over the temporary surface. The
-        // generation guard stands a second expansion's stale flip down.
+        // draw above — 317 ms with a populated conversation (44 ms empty).
+        // The generation guard stands a second expansion's stale flip down.
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             // Cleared unconditionally: a stale deferred block (a generation
@@ -651,18 +654,26 @@ final class NotchWindowController {
             guard self.expansionGeneration == expansionGenerationAtStart,
                   !self.panelModel.isExpanded else { return }
             self.panelModel.isExpanded = true
-            self.finishExpansionCommit(on: presence)
+            // 掀开：排在构建与绘制之后（见上面第 ④ 条）。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+                guard let self,
+                      self.expansionGeneration == expansionGenerationAtStart,
+                      self.panelModel.isExpanded else { return }
+                self.removeReveal(on: presence)
+                self.finishExpansionCommit(on: presence)
+            }
         }
 
-        // Expansion watchdog: a dropped layer animation cannot strand the
-        // sheet half-revealed — past the reveal's deadline, force the expanded
-        // state (frame, mask and layer transform) unless a newer
-        // expand/collapse owns the panel.
-        DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.25) { [weak self] in
+        // Watchdog: the removal above is the only thing that can make the panel
+        // visible now that there is no reveal animation, so a dropped block
+        // would leave an invisible, unclickable sheet. Forced regardless of
+        // what the deadline above did.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
-            self.convergeOnExpandedState(presence, targetFrame: expandedFrame)
+            self.removeReveal(on: presence)
+            self.finishExpansionCommit(on: presence)
         }
     }
 
