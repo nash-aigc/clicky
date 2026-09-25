@@ -1453,6 +1453,21 @@ enum MacosUseController {
         opensPreview: Bool
     ) async -> (description: String, answerText: String, svgFilePath: String?) {
         return await Task.detached(priority: .userInitiated) { () -> (description: String, answerText: String, svgFilePath: String?) in
+            // **这是全 App 第一个走权限闸门的真实文件写入**（方案第 3 步）。
+            //
+            // 画图助手是「图形 agent 写自己的产出目录」，而那份授权是**角色自带的**
+            //（见 `fileAccessDecision`）—— 所以这里今天恒为通过，空白名单也照画。
+            // 闸门仍然要装：它是这条路以后**唯一**的收口，等 `[RUN:工具名]` 那类
+            // 工具库里别的写操作接上来时，判定不会各写一遍。
+            let decision = fileAccessDecision(
+                for: .graphics,
+                path: SubAgentRole.graphicsRootPath,
+                operation: .write,
+                policy: FileAccessPolicy(entries: AppSettingsStore.snapshot().fileAccessEntries))
+            guard decision.isAllowed else {
+                return ("画图被权限拦住了：\(decision.reason)", "", nil)
+            }
+
             let scriptPath = Self.figureAgentScriptPath
             guard FileManager.default.isExecutableFile(atPath: Self.pythonExecutablePath) else {
                 return ("找不到 python3，画图助手没有启动。", "", nil)

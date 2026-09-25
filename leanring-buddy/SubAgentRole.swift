@@ -133,15 +133,25 @@ nonisolated func fileAccessDecision(for role: SubAgentRole,
     default:
         break
     }
+    // 图形 agent 的写：**它自己的产出目录是角色自带的授权，不走用户白名单。**
+    //
+    // 方案 §一 给它的权限面写的就是「仅图形相关」—— 那是角色属性，不是用户配置。
+    // 如果把它接进白名单，而白名单默认是空的，那么**画图这个功能会在任何人配过
+    // 白名单之前直接坏掉**，用户看到的只是「画图不工作了」，而他没动过任何跟画图
+    // 有关的开关。功能藏在一个跟它无关的开关后面，是最难查的一类故障。
     if operation == .write, role == .graphics {
         let graphicsRoot = URL(fileURLWithPath: SubAgentRole.graphicsRootPath).standardizedFileURL.path
         let target = URL(fileURLWithPath: path).standardizedFileURL.path
         guard target == graphicsRoot || target.hasPrefix(graphicsRoot + "/") else {
+            // 出了这个目录就**直接拒**，不再落到白名单 —— 方案 §六 P5 要的是
+            // 「图形 agent 写非图形文件被拒」，而不是「除非用户放行」。
             return FileAccessDecision(
                 isAllowed: false,
                 reason: "图形 agent 只能写 \(graphicsRoot) 里面的文件，而这条路径在外面：\(target)",
                 matchedEntry: nil)
         }
+        return FileAccessDecision(isAllowed: true, reason: "图形 agent 自己的产出目录",
+                                  matchedEntry: FileAccessEntry(path: graphicsRoot, allowsWrite: true))
     }
     return policy.decide(path: path, operation: operation)
 }
