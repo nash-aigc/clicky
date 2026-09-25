@@ -36,6 +36,13 @@ struct NotchRecordingBandView: View {
     /// 这么多把圆角盖掉，中间那段相应变窄，**整条带的总宽不变**。
     private static let notchCornerOverlap: CGFloat = 14
 
+    /// 小窗标题栏的高度。控制器算它的命中矩形时要用 —— 画的和点的必须是同一个数。
+    static let titleBarHeight: CGFloat = 26
+
+    /// 刘海自己底角的圆角半径。小窗的宽度要把它两侧各减掉一个 —— 见挂载处的注释。
+    /// 10 是 `NotchPillRootView` 里那个值（「底角 10pt 接近系统圆角」）。
+    static let notchCornerRadius: CGFloat = 10
+
     var body: some View {
         VStack(spacing: 0) {
             band
@@ -55,7 +62,15 @@ struct NotchRecordingBandView: View {
                     // 只在**收起态**显示：展开时那块面板正好占满窗口高度，没地方放了
                     // （而展开态本来就在看文字，不需要这个窗）。
                     if recorder.isCameraCapturing {
-                        NotchCameraPreviewStrip(recorder: recorder, width: bandWidth)
+                        // **宽度取刘海圆角之间那段「直的」**，不是整条带。
+                        //
+                        // 用户 2026-09-26：「你要知道这个刘海，他左右两侧是有圆角的……
+                        // 圆角的下面是不应该有东西的，它应该放在圆角这个里面……
+                        // 左边圆角的半径、右边圆角的半径删掉，然后中间那部分才是真正的
+                        // 摄像头的宽度」。小窗挂在刘海正下方，如果和整条带一样宽，
+                        // 就会压在刘海两个圆角下面 —— 那里按物理形状是没有东西的。
+                        NotchCameraPreviewStrip(recorder: recorder,
+                                                width: max(notchWidth - Self.notchCornerRadius * 2, 120))
                     }
                 }
             }
@@ -468,7 +483,7 @@ private struct NotchCameraPreviewStrip: View {
 
     private static let collapsedPreviewHeight: CGFloat = 86
     private static let expandedPreviewHeight: CGFloat = 200
-    private static let titleBarHeight: CGFloat = 26
+    static let titleBarHeight: CGFloat = 26
 
     var body: some View {
         VStack(spacing: 0) {
@@ -539,12 +554,17 @@ private struct NotchCameraPreviewStrip: View {
     @ViewBuilder
     private var preview: some View {
         if let data = recorder.latestCameraFrameData, let image = NSImage(data: data) {
+            // **等比缩放整张，不裁切。**
+            //
+            // 上一版用的是 `.fill` + `.clipped()` —— 那是「填满这个框、多出来的切掉」，
+            // 于是画面被裁掉一部分。用户：「你只有正确的比例，我才能看到摄像头里面的
+            // 内容」。`.fit` 才是「整张都看得见」。
             Image(nsImage: image)
                 .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(height: recorder.isCameraPreviewExpanded
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: .infinity,
+                       maxHeight: recorder.isCameraPreviewExpanded
                        ? Self.expandedPreviewHeight : Self.collapsedPreviewHeight)
-                .clipped()
                 // 换帧不带动画：一秒一张，加淡入反而糊。
                 .id(data.count)
         } else {
@@ -962,6 +982,16 @@ final class NotchRecordingOverlayController {
     private var isPresented = false
     /// 收起状态下两翼的屏幕矩形。窗口不动，所以它是常量，建面板时算一次。
     private var collapsedWingHitRects: [CGRect] = []
+
+    /// 收起状态下**摄像头小窗标题栏**的屏幕矩形。
+    ///
+    /// **为什么它也要走全局监听**：收起态的窗口是 `ignoresMouseEvents = true`
+    /// （点击穿透），所以小窗上那三个按钮**一个都收不到点击** —— 用户实测
+    /// 「左上角跟右上角这按钮完全没有功能」就是这个。
+    ///
+    /// 改成「让窗口收点击」不行：窗口是 718×592，那样会在屏幕顶部留下一大块死区。
+    /// 走全局监听和两翼是同一条路 —— 刘海面板的静止 pill 用的也是这套。
+    private var cameraStripTitleBarRect: CGRect?
     /// 收起时接管两翼点击的全局监听（0 = 左翼，1 = 右翼）。
     private var collapsedWingMonitor: Any?
     private var outsideClickMonitor: Any?
@@ -1117,6 +1147,20 @@ final class NotchRecordingOverlayController {
         return [leading, trailing]
     }
 
+    /// 小窗标题栏在屏幕上的位置。
+    ///
+    /// 它挂在**字幕条下面**，而字幕条挂在刘海带下面 —— 所以纵向是
+    /// 「窗口顶 − 刘海高 − 字幕条高 − 标题栏高」。横向以刘海居中，宽度是刘海
+    /// 圆角之间那段直的。
+    private func computeCameraStripTitleBarRect(for panel: NSPanel, notch: CGRect) -> CGRect? {
+        let stripWidth = max(notch.width - NotchRecordingBandView.notchCornerRadius * 2, 120)
+        let bandWidth = NotchSupport.leadingWingWidth + notch.width + NotchSupport.trailingWingWidth
+        let stripLeft = panel.frame.midX - bandWidth / 2 + (bandWidth - stripWidth) / 2
+        let titleBarTop = panel.frame.maxY - notch.height - NotchRecordingBandView.ribbonHeight
+        return CGRect(x: stripLeft, y: titleBarTop - NotchRecordingBandView.titleBarHeight,
+                      width: stripWidth, height: NotchRecordingBandView.titleBarHeight)
+    }
+
     /// 收起时接管两翼点击的全局监听。0 = 左翼（展开编辑），1 = 右翼（停止/继续）。
     private func updateCollapsedWingMonitor() {
         let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
@@ -1128,6 +1172,29 @@ final class NotchRecordingOverlayController {
         collapsedWingMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
             guard let self else { return }
             let point = NSEvent.mouseLocation
+
+            // 摄像头小窗的标题栏：左端退出、右端展开、中间折叠。
+            // 判据是**点到标题栏里的相对横向位置** —— 三个按钮都画在那一条上，
+            // 而它们的实际矩形在 SwiftUI 里，这里镜像一份只会漂。
+            if let bar = self.cameraStripTitleBarRect, bar.contains(point) {
+                let fraction = (point.x - bar.minX) / max(bar.width, 1)
+                Task { @MainActor in
+                    let recorder = LongFormRecorderController.shared
+                    if fraction < 0.25 {
+                        recorder.stopCameraCaptureForThisSession()
+                    } else if fraction > 0.75 {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            recorder.isCameraPreviewExpanded.toggle()
+                        }
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            recorder.isCameraPreviewCollapsed.toggle()
+                        }
+                    }
+                }
+                return
+            }
+
             guard let index = self.collapsedWingHitRects.firstIndex(where: { $0.contains(point) }) else { return }
             Task { @MainActor in
                 if index == 0 {
@@ -1270,6 +1337,7 @@ final class NotchRecordingOverlayController {
         panel.contentView = hostingView
         // 窗口不动，两翼矩形一次性算好；并且一建好就进入「收起」的命中状态。
         collapsedWingHitRects.append(contentsOf: computeCollapsedWingRects(for: panel, notch: notch))
+        cameraStripTitleBarRect = computeCameraStripTitleBarRect(for: panel, notch: notch)
         panel.ignoresMouseEvents = !LongFormRecorderController.shared.isTranscriptExpanded
         return panel
     }
