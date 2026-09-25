@@ -930,6 +930,21 @@ final class VoiceChatController: ObservableObject {
         connectionPhase = .connecting
         setNotchOverride(.externalConnecting)
 
+        // **全模态的图像上行。** 在这之前这条路只发音频 —— 界面把摄像头/屏幕画成可用，
+        // 实际一帧都没发给模型，用户看到的是「视频模式下全双工，摄像头、屏幕无法识别」。
+        //
+        // 两个采集服务已经各自把帧压好了（640 / 512 长边、1fps 节流），这里只是按当前
+        // 开着的那几路把取帧闭包交给引擎；关掉的那一路**根本不进列表**，所以引擎不会
+        // 白白去取、更不会发一帧用户已经关掉的画面。
+        var imageFrameProviders: [() -> Data?] = []
+        if isCameraEnabled {
+            imageFrameProviders.append { [weak self] in self?.cameraPreview.latestFrameJPEG }
+        }
+        if isScreenSharingEnabled {
+            imageFrameProviders.append { [weak self] in self?.screenPreview.latestFrameJPEG }
+        }
+        duplexVoiceEngine.imageFrameProviders = imageFrameProviders
+
         do {
             try await duplexVoiceEngine.start(
                 role: role,

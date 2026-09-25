@@ -35,6 +35,7 @@
 //
 
 import Foundation
+import AppKit
 import AVFoundation
 
 @MainActor
@@ -230,6 +231,28 @@ final class DuplexVoiceEngine {
     }
     private var isStopped = false
 
+    // MARK: - 图像上行（全模态才用得上）
+
+    /// 取画面用的闭包（摄像头一个、屏幕一个）。由控制器注入 —— 引擎不该知道画面从哪来。
+    ///
+    /// **为什么必须有这一条。** 在这之前全双工这条路**只发音频**（`input_audio_buffer.append`），
+    /// 一帧图都没发过 —— 于是「视频聊天 + 全双工」下摄像头和屏幕只是**本地预览**，模型根本
+    /// 收不到，用户看到的是"摄像头、屏幕无法识别"。界面把两个开关画成可用，实际什么都没发生，
+    /// 这正是本仓库说的「一个能保存、却什么都不做的设置，比没有这个设置更糟」。
+    ///
+    /// 协议取自官方文档（Qwen-Omni-Realtime，原文）：
+    ///   · `{"type": "input_image_buffer.append", "image": <base64>}` —— 是**独立的图像缓冲**，
+    ///     不是 `conversation.item.create`；
+    ///   · 一张图不超过 **190KB**；
+    ///   · 建议 **1 张/秒**；
+    ///   · **发图之前必须至少发过一次音频** —— 所以下面用 `uplinkSequenceNumber > 0` 把闸卡住。
+    var imageFrameProviders: [() -> Data?] = []
+    private var imageFrameTask: Task<Void, Never>?
+    /// 轮转发哪一路：摄像头、屏幕、摄像头、屏幕…… 两边各 0.5 张/秒，合起来正好是文档建议的 1 张/秒。
+    private var nextImageProviderIndex = 0
+
+
+
     init(playbackEngine: VoicePlaybackEngine, callbacks: Callbacks) {
         self.playbackEngine = playbackEngine
         self.callbacks = callbacks
@@ -278,6 +301,7 @@ final class DuplexVoiceEngine {
         //
         // 写成"start 重置"而不是"再多加几个 stop 调用点"：**会话的状态属于会话**，
         // 清它的地方就该是开始的地方 —— 补 stop 的调用点是在追着症状跑。
+        startImageFrameLoopIfNeeded()
         isResponseActive = false
         hasScheduledFirstAudio = false
         // **会话的状态属于会话**：这个引擎实例在 Chatting 页是 lazy 复用、跨会话
@@ -400,6 +424,8 @@ final class DuplexVoiceEngine {
     private(set) var isRunning = false
 
     func stop() {
+        imageFrameTask?.cancel()
+        imageFrameTask = nil
         // 没起过就什么都不做：连 tap 都不该碰。`duplexVoiceEngine` 是 lazy 的，
         // 所以这条 guard 同时挡住了「三段式里凭空构造一个全双工引擎」。
         let wasRunning = isRunning
@@ -525,6 +551,57 @@ final class DuplexVoiceEngine {
                 }
             }
         }
+    }
+
+    // MARK: - 图像上行
+
+    private func startImageFrameLoopIfNeeded() {
+        guard !imageFrameProviders.isEmpty, imageFrameTask == nil else { return }
+        imageFrameTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard let self, !self.isStopped else { return }
+                await self.sendOneImageFrame()
+            }
+        }
+    }
+
+    /// 发一帧。**没有音频上行过就一帧都不发** —— 官方明确要求"发图之前必须至少发过一次
+    /// 音频"，抢跑只会换回一个参数错误。
+    private func sendOneImageFrame() async {
+        guard !isStopped, uplinkSequenceNumber > 0, !imageFrameProviders.isEmpty else { return }
+        let provider = imageFrameProviders[nextImageProviderIndex % imageFrameProviders.count]
+        nextImageProviderIndex += 1
+        guard let rawFrame = provider() else { return }
+        guard let frame = Self.imageDataUnderUplinkLimit(rawFrame) else { return }
+        try? await sendJSON([
+            "type": "input_image_buffer.append",
+            "image": frame.base64EncodedString(),
+        ])
+        if imageFrameSequenceNumber <= 2 || imageFrameSequenceNumber % 20 == 0 {
+            print("🖼️ 全双工会话：已发送第 \(imageFrameSequenceNumber) 帧画面（\(frame.count / 1024)KB）")
+        }
+        imageFrameSequenceNumber += 1
+    }
+
+    private var imageFrameSequenceNumber = 1
+
+    /// 压到官方那个 190KB 上限以内。采集服务已经压过一轮（640/512 长边），所以这里通常
+    /// 原样放行；超了才逐档降质量，再不行就缩一半重编 —— **宁可糊一点，也不能因为超限被服务端
+    /// 整条丢掉**。
+    private nonisolated static func imageDataUnderUplinkLimit(_ data: Data, limit: Int = 190_000) -> Data? {
+        if data.count <= limit { return data }
+        guard let image = NSImage(data: data) else { return nil }
+        for quality in [0.6, 0.45, 0.3, 0.2] {
+            if let rep = image.representations.first as? NSBitmapImageRep,
+               let compressed = rep.representation(using: .jpeg, properties: [.compressionFactor: quality]),
+               compressed.count <= limit {
+                return compressed
+            }
+        }
+        // 降到最低质量还超限就**这一帧不发** —— 下一秒还有一帧，不值得为它去重采样。
+        // （采集服务已经压到 512 / 640 长边，正常根本走不到这里。）
+        return nil
     }
 
     // MARK: - 收发
