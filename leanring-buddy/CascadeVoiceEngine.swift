@@ -119,6 +119,12 @@ final class CascadeVoiceEngine {
                              preset: VoiceChatPreset,
                              capability: VoiceCatalog.VoiceChatCapability,
                              callbacks: CascadeTurnCallbacks) async {
+        // TEMPORARY PROBE (2026-09-25)：用户报「语音聊天两种模式都变慢，要等 1~2 秒，
+        // 是不是中间插入了什么等待逻辑」。这一行起一把尺子，把三段式这条链**逐段**量出来：
+        //   回合开始 → 首字 → 首段入队 → 出声（出声那一行在 BailianTTSClient 里）
+        // 没有这把尺子，"慢在哪一段"只能靠猜 —— 而这一天已经证明猜是不可靠的。
+        let turnStartedAt = Date()
+        print(String(format: "⏱️ [cascade] 回合开始 t=%.3f", turnStartedAt.timeIntervalSince1970))
         do {
             // ① 看：按角色设置取画面。
             //
@@ -194,11 +200,17 @@ final class CascadeVoiceEngine {
                     userPrompt: utterance,
                     modelIDOverride: understandingModelID,
                     onTextChunk: { @MainActor accumulatedText in
-                        // TEMPORARY PROBE (2026-09-25)：每长 200 字打一行 —— 用户报
-                        // 「挂断之后内容还在继续生成，比如一千字，它还在后面继续生成」。
-                        // 这一行回答的是：取消之后**文字流有没有真的停**。
+                        // TEMPORARY PROBE (2026-09-25)：每长 200 字打一行 —— 见
+                        // `performTurn` 开头那把尺子。首字那一行是**关键**：从这里到
+                        // "首段入队"之间的差，就是"理解"这一步花掉的时间。
                         if accumulatedText.count / 200 != streamedReplyText.count / 200 {
-                            print("🔬 [cascade] 文字仍在增长：\(accumulatedText.count) 字（本任务已取消=\(Task.isCancelled)）")
+                            print(String(format: "🔬 [cascade] 文字仍在增长：%d 字（本任务已取消=%@，距回合开始 +%.0fms）",
+                                         accumulatedText.count,
+                                         Task.isCancelled ? "true" : "false",
+                                         Date().timeIntervalSince(turnStartedAt) * 1000))
+                        }
+                        if streamedReplyText.isEmpty, !accumulatedText.isEmpty {
+                            print(String(format: "⏱️ [cascade] 首字 +%.0fms", Date().timeIntervalSince(turnStartedAt) * 1000))
                         }
                         streamedReplyText = accumulatedText
 
@@ -207,6 +219,11 @@ final class CascadeVoiceEngine {
                         // 同一个 helper，两处的朗读文本因此不会分叉。
                         let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
                         if speakableText != spokenTextAccumulator {
+                            // TEMPORARY PROBE (2026-09-25)：首段入队 —— 从这里到真的出声
+                            // 之间的差，就是"合成 + 排队 + 引擎起播"花掉的时间。
+                            if spokenTextAccumulator.isEmpty, !speakableText.isEmpty {
+                                print(String(format: "⏱️ [cascade] 首段入队 +%.0fms", Date().timeIntervalSince(turnStartedAt) * 1000))
+                            }
                             spokenTextAccumulator = speakableText
                             speechSession.feed(cumulativeSpeakableText: speakableText)
                         }

@@ -1018,7 +1018,11 @@ final class BailianTTSClient {
 
         private func enqueueSegment(_ segment: String) {
             queuedSegmentCount += 1
-            print("🗣️ Streaming speech: queued segment \(queuedSegmentCount) (\(segment.count) chars)")
+            // TEMPORARY PROBE (2026-09-25)：带上绝对时间戳，才能与 `CascadeVoiceEngine`
+            // 那条尺子（回合开始 / 首字 / 首段入队）以及 `aecprobe` 的 `chunkStart`
+            // 对齐，把"用户说完 → 首字 → 入队 → 出声"逐段算出来。
+            print(String(format: "🗣️ Streaming speech: queued segment %d (%d chars) t=%.3f",
+                         queuedSegmentCount, segment.count, Date().timeIntervalSince1970))
             if queuedSegmentCount == 1 {
             }
             pendingSegments.append(segment)
