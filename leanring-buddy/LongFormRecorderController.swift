@@ -943,6 +943,26 @@ final class LongFormRecorderController: ObservableObject {
         connectionRotationCount = 0
         isEditorOpenAtStopTime = false
 
+        // **判重窗口每一轮都必须清零 —— 这一行修的是「按下录音后前 8 秒屏幕上一个字
+        // 都没有」那个 bug。**
+        //
+        // 这个字段的用途是：重连时重喂了 N 毫秒的旧音频，那段被重新识别、回来的文字
+        // 是重复的，按服务端自己的毫秒时间戳丢掉。**它只在重连那一处被写过**
+        //（`beginConnection`），从来没有人清回来 —— 而**每一场录音服务端的时间轴都是
+        // 从 0 重计的**。于是自从第一场重连之后，**之后每一场录音开头 N 毫秒识别到的
+        // 字全部被当成重复丢掉**。
+        //
+        // 用户实测的现象：按下录音后整整 8 秒屏幕上完全空白，第 8 秒才开始出字。
+        // 8 秒 = 那次重连重喂的 **7898 毫秒**（`RecentAudioRing` 存 8 秒）。
+        //
+        // 日志里能同时看到「2 秒就到了字」和「屏幕全白」并不矛盾：诊断行打在**客户端**
+        //（`VolcengineRealtimeASRClient.publishSegment`），而丢段发生在它**下游一层**
+        //（`client.onSegment` 里那个 `endMilliseconds` 判断）。查这个 bug 时一度量错
+        // 了地方 —— 量在下游的截断点之前，得到的数字自然是「一切正常」。
+        //
+        // 和下面摄像头那段是同一类错误：一个「本轮有效」的标志忘了在本轮开头复位。
+        seamSuppressionMilliseconds = 0
+
         // **摄像头状态每一轮都必须重置。** 少了这一段，「用户退出抓帧」那个标志会
         // 一直挂着，之后**每一轮**录音都再也不抓 —— 用户实测：「关闭录音，开启全新的
         // 录音之后再触发关键词，没有效果」。
@@ -1044,7 +1064,8 @@ final class LongFormRecorderController: ObservableObject {
             lastConnectionStartedAt = Date()
             isSessionActive = true
             phase = .recording
-            publishDiagnostic("开始录音 \(sessionID) · 档位 \(settings.recordingEffectiveResourceID)")
+            publishDiagnostic("开始录音 \(sessionID) · 档位 \(settings.recordingEffectiveResourceID)"
+                          + " · 判重窗口 \(seamSuppressionMilliseconds)ms")
             startTimers()
             SoundEffectPlayer.shared.play(.listeningStarted)
         } catch {
