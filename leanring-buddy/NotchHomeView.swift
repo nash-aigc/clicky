@@ -62,13 +62,25 @@ struct NotchHomeView: View {
             }
 
             // **静音开关**（用户 2026-09-25：「放在输入框和停止按钮的上面、右上方，
-            // 宽度可以比停止按钮大」）：开 = 回复照常朗读；关 = 只显示文字。
-            // 默认是播放（开）。它只控制 CompanionManager 回复管线的朗读，
-            // 不影响 Chatting 会话自己的音频。
+            // 宽度可以比停止按钮大」）：默认是播放（开）。它只控制 CompanionManager
+            // 回复管线的朗读，不影响 Chatting 会话自己的音频。
+            //
+            // **两种情况**（用户 2026-09-25 追加）：
+            //   1. 提示词还没发送 / AI 还没开始说话 —— 点它就只是关设置，
+            //      下一条回复的门禁在发送前读它，整条合成根本不会发生。
+            //   2. 回复已经开始合成/播放 —— 点它除了关设置，还立刻停掉这一条
+            //      的声音（已合成的收不回，但不再播，剩余段也不再合成），
+            //      并且下一次自动静音。
+            // 两条情况走同一个动作：先翻转设置，再让 manager 停这一条 ——
+            // `silenceActiveReplyAudio` 的门禁是「这一条回复还在跑（或还在播）」，
+            // 情况 1 下两者都不成立，它是 no-op。
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 Button {
                     companionManager.voiceReplyMuted.toggle()
+                    if companionManager.voiceReplyMuted {
+                        companionManager.silenceActiveReplyAudio()
+                    }
                 } label: {
                     HStack(spacing: 5) {
                         Image(systemName: companionManager.voiceReplyMuted
@@ -101,7 +113,10 @@ struct NotchHomeView: View {
                       : "正在朗读回复（点击静音，只显示文字）")
             }
             .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-            .padding(.bottom, 4)
+            // 间距收紧（用户 2026-09-25：「把这个按钮往下一点，它的间距太大了」）。
+            // 输入框自己带 10 pt 顶部留白，这里再加 4 就成了 14 —— 现在贴到
+            // 输入框的留白上，按钮与输入框之间只剩那一条 10 pt。
+            .padding(.bottom, 0)
 
             composerRow
 

@@ -2808,7 +2808,19 @@ final class CompanionManager: ObservableObject {
                         // above — so the whole-reply path's post-`speakText` flip
                         // has no equivalent here.
                         streamingSpeechSession.finishStreaming()
-                    } else if !appSettings.voiceReplyMuted {
+                        // 静音开关的情况 2 在这条路径上由 `finishStreaming` 自己的
+                        // `guard !isStopped` 兜住（`BailianTTSClient.swift:795`）：
+                        // 中途静音走 `silenceActiveReplyAudio` → `stopPlayback` →
+                        // `session.stop()` 置停它，之后这个 flush 是空转，尾巴那一段
+                        // 不会被合成出来。所以这里不需要再加门禁。
+                    } else if !AppSettingsStore.snapshot().voiceReplyMuted {
+                        // **这里必须现读设置，不能用上面那份 snapshot。** 用户在整段
+                        // 合成路径上点静音的唯一时机是回答文字还在流、合成还没开始的
+                        // 这一段（2185 的 snapshot 到这一行隔着整个视觉请求），读
+                        // snapshot 会让「点了静音它照样念出来」——正是用户要求修掉的
+                        // 情况 2。`voiceReplyMuted` 只门禁播放、不参与请求内容，所以
+                        // 现读不会造成「一条回复用两份配置」（2181 那条注释管的是
+                        // 模型/音色这类进请求体的设置）。
                         do {
                             // The echo filter's reference signal for the
                             // whole-reply path (逐句快答 records its text at the
@@ -3068,6 +3080,29 @@ final class CompanionManager: ObservableObject {
         audioEngineIdleReleaseTask?.cancel()
         audioEngineIdleReleaseTask = nil
         bailianTTSClient.releaseAudioEngineNow()
+    }
+
+    /// 静音按钮的第二种情况（用户 2026-09-25：「AI 的回复结果已经开始合成并开始
+    /// 播放时，用户点击这个按钮，就是把播放静音，并且在下一次也自动静音」）。
+    ///
+    /// 只停音频，不取消回合 —— 那是停止按钮的事：文字继续流式上屏，历史照常
+    /// 记录。`stopPlayback()` 一次做完三件事：停正在播的段、取消剩余段的播放
+    /// 队列、把逐句快答的 session 置停（`isStopped` 之后 `feed()` 永久空转，
+    /// 所以**剩余段落的合成也停了** —— 已合成的收不回，但不再发出声音，也不再
+    /// 花新的合成请求）。下一次自动静音由设置本身保证：两条播报路径的门禁在
+    /// 发送前读 `voiceReplyMuted`。
+    ///
+    /// 状态收尾复用正常播完的同一台机器：`scheduleVoiceStateResetAfterPlayback`
+    /// 轮询 `isPlaying`（现在已是 false）→ 复位 `.responding` → 收刘海。
+    ///
+    /// 门禁是「这一条回复还在跑」而不是「现在有声音」：用户可能在第一段还没
+    /// 合成完、甚至视觉调用还没返回时点静音。没在播时 `stopPlayback()` 各步
+    /// 都是空转，多调一次无代价；反过来若只门禁 `isPlaying`，点早了就会让
+    /// 音频在合成完成后照样冒出来。
+    func silenceActiveReplyAudio() {
+        guard currentResponseTask != nil || bailianTTSClient.isPlaying else { return }
+        bailianTTSClient.stopPlayback()
+        scheduleVoiceStateResetAfterPlayback()
     }
 
     func interruptActiveResponse() {
