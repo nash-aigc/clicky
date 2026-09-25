@@ -1048,7 +1048,29 @@ final class BailianTTSClient {
                 await self.runPlaybackLoop()
                 // Detach from the owner only if it still points at *this*
                 // session — a newer reply's session may already have replaced it.
-                if self.owner?.activeStreamingSession === self {
+                //
+                // **而且只有这个会话真的结束了才解绑 —— 这一条是 2026-09-25 补的，
+                // 补之前它制造了一个"孤儿播放会话"。**
+                //
+                // 播放循环会因为**任何**原因结束，不只是"这一轮说完了"：
+                // `dropQueuedAudio()`（打断）就会把它取消掉 —— 而打断的设计是
+                // **"丢掉声音、这一轮继续"**，所以紧接着 `feed()` 还会把新文字喂进来、
+                // 循环会被重新拉起。原先这里无条件解绑，于是循环一被取消，
+                // `owner.activeStreamingSession` 就变成 nil，而那个会话对象**还活着、
+                // 还在被喂、还在播** —— owner 已经不知道它存在了。
+                //
+                // 后果是此后**所有**停止路径都停不掉它：`stopPlayback()` 里
+                // `activeStreamingSession?.stop()` 对 nil 是空操作，`stopSpeaking()`、
+                // `bargeInWithoutEndingSession()` 也一样 —— **挂断也停不掉**。
+                //
+                // 实测（2026-09-25，`clicky-全模态音色代际-155759.log`）：挂断后
+                // 那一轮继续合成到 segment 24、继续播 segment 5/6/7，用户听到的是
+                // 「挂断之后声音还在继续播放」，而且切到全双工之后**旧声音压过新声音**。
+                //
+                // 结束的判据只有两个：被显式停止（`stop()`），或者文字流已结束
+                // （`finishStreaming()`）且队列已排空 —— 后者由循环自己退出表达。
+                if self.owner?.activeStreamingSession === self,
+                   self.isStopped || self.hasFinishedStreaming {
                     self.owner?.activeStreamingSession = nil
                 }
             }
