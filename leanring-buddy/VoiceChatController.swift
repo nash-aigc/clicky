@@ -595,7 +595,6 @@ final class VoiceChatController: ObservableObject {
                     self?.markVoiceChatFullyConnected()
                 },
                 onBargeIn: { [weak self] in
-                    print("🔬 [duplex-bubble] onBargeIn 解绑 duplex=\(self?.duplexAssistantEntryID?.uuidString.prefix(8) ?? "nil") streaming=\(self?.streamingAnswerEntryID?.uuidString.prefix(8) ?? "nil")")
                     self?.finalizeDuplexAssistantEntryText()
                     self?.duplexAssistantEntryID = nil
                     self?.streamingAnswerEntryID = nil
@@ -970,7 +969,6 @@ final class VoiceChatController: ObservableObject {
             duplexVoiceEngine.stop()
             isDuplexSessionLive = false
         }
-        print("🔬 [duplex-bubble] disconnectCurrentSession 解绑 duplex=\(duplexAssistantEntryID?.uuidString.prefix(8) ?? "nil")")
         duplexAssistantEntryID = nil
         duplexUserEntryID = nil
         streamingAnswerEntryID = nil
@@ -1143,7 +1141,6 @@ final class VoiceChatController: ObservableObject {
         // 为什么边界在这里而不是 `response.done`：服务端会把**一条**回答拆成多次
         // `response.created`/`response.done`（实测 3 段），按 done 解绑就会把一条
         // 回答切成几张碎卡片（用户报的乱码）。见 `onAssistantTurnFinished` 的注释。
-        print("🔬 [duplex-bubble] insertDuplexUserEntry 解绑 duplexAssistantEntryID（\(duplexAssistantEntryID?.uuidString.prefix(8) ?? "nil")）")
         duplexAssistantEntryID = nil
     }
 
@@ -1346,11 +1343,6 @@ final class VoiceChatController: ObservableObject {
             streamingAnswerEntryID = entryID
         } else {
             let entryID = UUID()
-            // TEMPORARY PROBE (2026-09-25)：用户报「AI 回复的内容重复了……出现两个卡片」。
-            // 日志能证明服务端只发了一条回答（`resp_QrQmH`，194 字，中途无 `speech_started`），
-            // 所以是**我们的气泡边界在中途被解绑**，于是下一个 delta 把**已累积的全文**
-            // 写进了一条新气泡 —— 两张内容逐字相同的卡。这一行用来点名是谁解绑的。
-            print("🔬 [duplex-bubble] 新建助手气泡 \(entryID.uuidString.prefix(8))｜现有 \(transcriptEntries.count) 条｜累计 \(cumulativeText.count) 字")
             transcriptEntries.append(VoiceChatTranscriptEntry(id: entryID, isUser: false, text: cumulativeText))
             duplexAssistantEntryID = entryID
             streamingAnswerEntryID = entryID

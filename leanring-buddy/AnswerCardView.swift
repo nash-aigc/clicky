@@ -518,29 +518,21 @@ nonisolated final class CardRenderPlanCache {
         return boundary
     }
 
-    /// The settled paragraphs, folding in every line that no longer has a unit
-    /// still playing its entrance animation.
+    /// The settled paragraphs, folding in every line the live region has now
+    /// left behind.
     ///
     /// A paragraph is append-stable for the same reason a line is — once a later
     /// line exists, this one can never change — so the fold only ever adds. That
     /// matters as much as the incremental pack: this used to re-join every line
     /// of the whole reply into strings on every streamed character.
     ///
-    /// **折到哪一行由调用方给的"还在进场动画里的 unit 下界"决定，不由行数决定。**
-    /// 折进去的行会被画成一个**没有模糊修饰符的普通 `Text`**，所以折早了就等于
-    /// 把那一行里还在淡出的字**换了个视图重画** —— 动画被打断，看上去是"突然跳出来"。
-    /// 按时间判就没有这个可能：一行只有在它最后一个 unit 的进场动画已经播完之后，
-    /// 才会离开实时区。
-    ///
-    /// - Parameter firstAnimatingUnitIndex: 下标 ≥ 它的 unit 仍在进场动画里。
-    func paragraphs(settlesBeforeUnitIndex firstAnimatingUnitIndex: Int) -> [SettledParagraph] {
-        // **最后一行永远不折。** 它是实时区，流式与定稿都由同一个视图画 —— 这正是
-        // 2026-09-25 上半场修掉的那个"回复结束时末尾几个字换视图、模糊瞬间消失"。
-        // 时间下界只决定"在最后一行之前，还能安全折到哪一行"。
-        let lastLineKeptLive = max(0, lines.count - 1)
-        while foldedLineCount < lastLineKeptLive,
-              let lastUnitIndex = lines[foldedLineCount].unitIndices.last,
-              lastUnitIndex < firstAnimatingUnitIndex {
+    /// - Parameter liveLineCount: how many trailing lines stay in the live
+    ///   region and are therefore **not** folded — see
+    ///   `AnswerCardView.liveLineRegionLineCount` for why the fold has to stop
+    ///   before the writing edge rather than one line short of the end.
+    func paragraphs(liveLineCount: Int) -> [SettledParagraph] {
+        let lineCountToFold = max(0, lines.count - liveLineCount)
+        while foldedLineCount < lineCountToFold {
             foldLine(at: foldedLineCount)
             foldedLineCount += 1
         }
@@ -695,21 +687,29 @@ struct AnswerCardView: View {
     /// 有意的，用户刚确认过三段式已经对了。
     private static let freshTailMaximumAge: TimeInterval = settleAnimationDuration
 
-    /// 一个 unit 从"刚到"到"完全清晰、且它自己那次淡出也播完"要多久 —— 也就是
-    /// **它必须被单独画成视图的最短时间**。
+    /// How many trailing lines are drawn as the live region instead of being
+    /// folded into a settled paragraph.
     ///
-    /// = 模糊窗口 + 淡出时长。这不是取整也不是留余量，是这两件事的先后：
-    /// 一个 unit 在 `freshTailMaximumAge` 那一刻**开始**变清晰，而那次动画要再走
-    /// `settleAnimationDuration` 才结束。**在此之前把它换成一个合起来的 `Text`，
-    /// 动画就被打断了** —— 用户看到的就是「最后几个字一直糊着，然后突然跳出来」。
+    /// **Two, and it is exactly two — this used to be one, and that one is what
+    /// the user kept reporting as 「每一句回复内容的最后几个字，总是会卡一下」.**
     ///
-    /// 旧版本这一刀是按**字数**切的（固定最后 5 个），所以文字成串到达时，旧的那几个
-    /// unit 会整批离开 `ForEach` 被销毁：`isFresh` 的翻转落在一个不复存在的视图上，
-    /// 淡出永远不会播。按时间切就没有这个问题 —— 速率再变，一个 unit 都至少活到
-    /// 它自己那次动画结束。
-    private static var unitEntranceAnimationDuration: TimeInterval {
-        freshTailMaximumAge + settleAnimationDuration
-    }
+    /// The live region is the only place that can draw a blurred tail, because a
+    /// settled paragraph is a single plain `Text` with no blur modifier on it.
+    /// The tail is measured from the END OF THE REPLY (`unitCount − 1 − unitIndex`),
+    /// so at the instant a line wraps its last few units are still inside the
+    /// 5-unit window — and with a one-line live region that line had *already*
+    /// been folded, so those characters were redrawn sharp in the same frame,
+    /// with no fade. One such snap at the right margin of the row above the
+    /// writing edge, on every single line of every reply.
+    ///
+    /// Keeping the trailing **two** lines live removes it exactly, with no new
+    /// predicate to get wrong: the fresh window is five units, every line holds
+    /// at least one unit, so five units can never span more than two lines. A
+    /// second line's tail is inside the window only while the last line is still
+    /// shorter than five units — which is precisely the case that used to snap.
+    /// Every line that leaves the region has therefore already settled, and
+    /// leaving it is invisible.
+    private static let liveLineRegionLineCount = 2
     private static let freshBlurRadius: CGFloat = 2.6
     private static let freshOpacity: Double = 0.2
     private static let settleAnimationDuration: TimeInterval = 0.3
@@ -845,57 +845,45 @@ struct AnswerCardView: View {
         if textColumnWidth > 0 {
             let lineWidth = max(0, textColumnWidth - Self.lineFitSafetyMargin)
             let lines = renderPlanCache.plan(for: text, lineWidth: lineWidth)
-            // **实时区永远由同一批视图画，流式与定稿都一样。**
+            // **实时区那几行永远由同一个视图画，流式与定稿都一样。**
             //
             // 原先 `settlingFinalLine: !isStreaming` 在回复结束的那一刻把最后一行也
             // 折进段落里，同时实时行那条 `if isStreaming` 又被拆掉 —— 于是末尾那 5 个
             // 还模糊着的字**换了一个视图**去画，模糊瞬间消失、没有任何过渡。用户
             // 2026-09-25：「每一句回复内容的最后几个字，总是会卡一下」（三段式同样）。
             //
-            // 修法一路收敛到**同一个判据**：哪些 unit 还在**进场动画**里（时间），
-            // 就由哪些 unit 单独成视图、也只折到它们前面那一行为止。见
-            // `unitEntranceAnimationDuration` —— 那不是调参，是"模糊窗口 + 淡出时长"
-            // 这两件先后发生的事加起来的时长。
-            // **两个时间下界只在"真的在流"时才算。**
+            // 两种状态用**同一个视图**画，`isFresh` 就是在同一个视图里翻转的，它自己
+            // 那个 `.animation(value: isFresh)` 会把模糊**淡出**（0.3 秒），不再有跳变；
+            // 而且断行、行数、行距三个量两边完全一致，所以切换时**版面一动不动**。
             //
-            // 时间下界的前提是我们**看着这段文字一个字一个字长出来**。一张只渲染过
-            // 一次的历史卡片（重放的会话、定稿后重画的那一帧）只有一个到达样本，而
-            // 那一刻就是"现在" —— 于是时间窗口会认为**整段文字全都刚到**，把每一个字
-            // 都做成独立视图、把每一行都留在实时区。实测就是这样：Screen 页那张历史卡
-            // 的 AX 树里每个字各自成了一个元素。
-            //
-            // `isStreaming` 恰好就是"我们正在看着它长"这件事，所以由它把时间下界关掉。
-            // 关掉之后两个下界都取 `units.count`，于是：所有行（最后一行除外）都折进
-            // 段落，实时区那一行里没有任何 unit 单独成视图 —— 正是这段代码一贯的行为。
-            //
-            //  · `firstAnimatingUnitIndex`：还在**进场动画**里的 unit 下界
-            //    （模糊窗口 + 淡出时长）。它决定两件事 —— 哪些 unit 单独成视图，
-            //    以及段落**折到哪一行为止**。两处用同一个值是有意的：折进去的行会被
-            //    画成没有模糊修饰符的普通 `Text`，折早了就等于把还在淡出的字换个视图
-            //    重画，动画当场被打断。
-            //  · `firstFreshUnitIndexByElapsedTime`：还该**模糊**的 unit 下界
-            //    （只有模糊窗口那么久）。
-            //
-            // 快流速下（三段式，实测约 30 字/秒）时间下界落在很后面，于是行为与
-            // 改动前一致；慢流速下（全双工，实测 6.1 字/秒）它才是 binding 的那条。
-            // 详见 `freshTailMaximumAge` 与 `unitEntranceAnimationDuration`。
-            let now = Date().timeIntervalSince1970
-            let unitCount = renderPlanCache.units.count
-            let firstAnimatingUnitIndex = isStreaming
-                ? renderPlanCache.firstUnitArrivedWithin(Self.unitEntranceAnimationDuration, now: now)
-                : unitCount
-            let firstFreshUnitIndexByElapsedTime = isStreaming
-                ? renderPlanCache.firstUnitArrivedWithin(Self.freshTailMaximumAge, now: now)
-                : unitCount
+            // 2026-09-25 再次修正：实时区是**两行**不是一行，理由见
+            // `liveLineRegionLineCount` —— 一行时，换行那一刻刚闭合的那一行已经
+            // 被折进段落、用没有模糊的 `Text` 重画，它末尾那几个还在新鲜窗口里的字
+            // 于是**每一行都跳一次**。两行正好覆盖住「5 个 unit 可能落在哪几行」。
             let settledParagraphs = renderPlanCache.paragraphs(
-                settlesBeforeUnitIndex: firstAnimatingUnitIndex
+                liveLineCount: Self.liveLineRegionLineCount
             )
-            // 折剩下的都是"还有 unit 在进场动画里"的行 —— 写作边，以及它上面
-            // 一两行（一串文字一次到达时可能跨行）。
+            // The lines the fold has not taken — the writing edge and, while the
+            // last line is still under five units, the one it just wrapped off.
+            // See `liveLineRegionLineCount`: a line only leaves this region once
+            // its tail has settled, so nothing here is ever redrawn sharp by a
+            // fold that arrives too early.
             let liveLines = Array(
                 lines.dropFirst(renderPlanCache.foldedLineCountValue)
             )
             let hasLiveLine = !liveLines.isEmpty
+            // 模糊尾巴的**时间**上界 —— 下标 ≥ 它的 unit 是最近
+            // `freshTailMaximumAge` 秒内才到的，才该模糊。字数上界由
+            // `liveLineView` 自己那一刀负责（它同时决定谁单独成视图），两个判据
+            // 分开是有意的，理由见 `liveLineView`。
+            //
+            // 快流速下（三段式，实测约 30 字/秒）这个上界落在 9 个字以外，于是全部
+            // 尾巴都在窗口内，行为与改动前逐帧一致；慢流速下（全双工，实测
+            // 6.1 字/秒）它才是 binding 的那条。详见 `freshTailMaximumAge`。
+            let firstFreshUnitIndexByElapsedTime = renderPlanCache.firstUnitArrivedWithin(
+                Self.freshTailMaximumAge,
+                now: Date().timeIntervalSince1970
+            )
             let blocks = paragraphBlocks(
                 from: settledParagraphs,
                 hasLiveLine: hasLiveLine
@@ -928,7 +916,6 @@ struct AnswerCardView: View {
                 liveLineRegion(
                     lines: liveLines,
                     units: renderPlanCache.units,
-                    firstAnimatingUnitIndex: firstAnimatingUnitIndex,
                     firstFreshUnitIndexByElapsedTime: firstFreshUnitIndexByElapsedTime,
                     reduceMotion: reduceMotion
                 )
@@ -1027,7 +1014,6 @@ struct AnswerCardView: View {
     private func liveLineRegion(
         lines: [CardTextPackedLine],
         units: [CardTextUnit],
-        firstAnimatingUnitIndex: Int,
         firstFreshUnitIndexByElapsedTime: Int,
         reduceMotion: Bool
     ) -> some View {
@@ -1036,7 +1022,6 @@ struct AnswerCardView: View {
                 liveLineView(
                     line: line,
                     units: units,
-                    firstAnimatingUnitIndex: firstAnimatingUnitIndex,
                     firstFreshUnitIndexByElapsedTime: firstFreshUnitIndexByElapsedTime,
                     reduceMotion: reduceMotion
                 )
@@ -1059,34 +1044,32 @@ struct AnswerCardView: View {
     /// 「止 / 宣告 / 纪念 / 大 / ** / 八 / 代表性 / 防御」逐行排列）。
     ///
     /// 断行器本身是好的：实测一行 33 个 unit、首行填充 98%，没有任何一行只剩一个
-    /// unit —— 碎的只有渲染。而**还在进场动画里的只有最后一小段**，所以前面那一段
-    /// 完全可以是一个 `Text`：既保住了模糊尾巴，又把这一行从 33 个子视图降到十几个，
-    /// 压缩换行在结构上不可能再发生（再加 `.fixedSize` 那一层保险，见方法末尾）。
-    ///
-    /// - Parameter firstAnimatingUnitIndex: 单独成视图的下界 —— 下标 ≥ 它的 unit 还在
-    ///   自己的进场动画里（模糊窗口 + 淡出时长）。
-    /// - Parameter firstFreshUnitIndexByElapsedTime: 该**模糊**的下界 —— 下标 ≥ 它的
-    ///   unit 是最近 `freshTailMaximumAge` 秒内才到的。它只决定糊不糊。
+    /// unit —— 碎的只有渲染。而模糊只发生在末尾 `freshTailUnitCount` 个 unit 上，
+    /// 所以前面那一段完全可以是一个 `Text`：既保住了模糊尾巴，又把这一行从
+    /// 33 个子视图降到 6 个，压缩换行在结构上不可能再发生。
+    /// - Parameter firstFreshUnitIndexByElapsedTime: 时间上界 —— 下标 ≥ 它的 unit 是
+    ///   最近 `freshTailMaximumAge` 秒内才到的，才该模糊。它只改变**模糊与否**，
+    ///   不改变哪些 unit 单独成视图（那是字数上界的事），理由见下。
     private func liveLineView(
         line: CardTextPackedLine,
         units: [CardTextUnit],
-        firstAnimatingUnitIndex: Int,
         firstFreshUnitIndexByElapsedTime: Int,
         reduceMotion: Bool
     ) -> some View {
-        // 单独成视图的集合**按时间切**（不是按字数）。
+        let unitCount = units.count
+        // 末尾那几个单独成视图；其余合并。
         //
-        // 这一刀以前是 `unitCount - freshTailUnitCount`，也就是"最后 5 个字"。它错在
-        // 一个 unit 的生死被别人决定：文字成串到达时，`unitCount` 一次跳好几个，
-        // 旧的那几个 unit 当场离开 `ForEach` 被销毁 —— 而 `.animation(value: isFresh)`
-        // 只在这个视图还活着的时候才会跑。于是 `isFresh` 的翻转落在一个不复存在的
-        // 视图上，**淡出永远不播，只有跳变**。用户 2026-09-25 的「最后一次还是卡，
-        // 它是突然间跳出来的」就是这个。
+        // **这一刀仍然按字数切，不按时间切**，而这不是遗漏 —— 恰恰相反：单独成视图
+        // 的那个集合，就是「模糊状态可能发生变化」的那个集合，`.animation(value: isFresh)`
+        // 只有在这个视图还活着的时候才会跑。按字数切（固定 5 个）保证一个 unit 从
+        // "还在模糊"到"已经清晰"的那一帧，视图一定还在，淡出因此真的会播。
         //
-        // 按时间切之后，一个 unit 至少活到 `unitEntranceAnimationDuration` ——
-        // 也就是它自己那次动画走完之后，速率再变都不会被提前销毁。
-        let sharpUnitIndices = line.unitIndices.filter { $0 < firstAnimatingUnitIndex }
-        let freshUnitIndices = line.unitIndices.filter { $0 >= firstAnimatingUnitIndex }
+        // 时间上界只用来决定**糊不糊**：慢流速下（全双工，实测 6.1 字/秒）时间上界
+        // 落在字数上界之内，于是最后几个 unit 仍是独立视图、但已经不糊了 —— 看上去
+        // 与合并进前面那段文字完全一样，却让它们有了一个能播动画的落点。
+        let firstFreshIndex = max(0, unitCount - Self.freshTailUnitCount)
+        let sharpUnitIndices = line.unitIndices.filter { $0 < firstFreshIndex }
+        let freshUnitIndices = line.unitIndices.filter { $0 >= firstFreshIndex }
         let sharpText = sharpUnitIndices.map { units[$0].text }.joined()
 
         return HStack(alignment: .top, spacing: 0) {
