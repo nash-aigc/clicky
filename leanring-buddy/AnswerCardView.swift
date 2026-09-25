@@ -443,6 +443,14 @@ nonisolated final class CardRenderPlanCache {
     func plan(for text: String, lineWidth: CGFloat) -> [CardTextPackedLine] {
         guard text != planText || lineWidth != planLineWidth else { return lines }
 
+        // TEMPORARY PROBE (2026-09-25)：用户报「Screen 页面展开还是很慢……能够持续地
+        // 观察到很长时间的白板」。Screen 恢复 10 轮对话，而每个卡片的这个缓存**第一次
+        // 是空的** —— 那一次要走完整的 unit 切分 + **逐个 unit 的 CoreText 测宽** +
+        // 全篇断行 + 段落折叠，全部在首次绘制的主线程上。10 条长回复叠起来就是那段时间。
+        // 这一行把"冷启动一次完整排版"的代价量出来（带字数与 unit 数）。
+        let coldBuildStartedAt = Date()
+        let isFullBuild = lineWidth != planLineWidth || !text.hasPrefix(planText)
+
         // Either invalidation rebuilds everything. A width change leaves every
         // unit alone but invalidates every line — the pack is per width — and
         // with them the paragraphs folded from those lines; anything but an
@@ -474,6 +482,11 @@ nonisolated final class CardRenderPlanCache {
         lines = breakState.closedLines
         planText = text
         recordArrivalSample()
+        if isFullBuild {
+            print(String(format: "🔬 [card] 冷启动完整排版：%d 字 → %d unit / %d 行，耗时 %.1fms",
+                         text.count, units.count, lines.count,
+                         Date().timeIntervalSince(coldBuildStartedAt) * 1000))
+        }
         return lines
     }
 
