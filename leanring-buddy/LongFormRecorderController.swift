@@ -408,6 +408,15 @@ final class LongFormRecorderController: ObservableObject {
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
     }
 
+    /// 转写里有没有提到摄像头。
+    ///
+    /// 只在这一个地方判断，而判断结果同时决定**抓不抓**和**附不附** —— 两处各判一次
+    /// 必然漂，而漂的结果是「绿灯亮了但图没发出去」这种最难查的状态。
+    private static func transcriptMentionsCamera(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        return ["摄像头", "镜头", "相机", "webcam", "camera"].contains { lowered.contains($0) }
+    }
+
     /// 这一步到底会不会真的走模型。界面用它决定要不要进入「AI 润色中」相位 ——
     /// 判据必须和 `polishIfConfigured` 里的 guard **完全一致**，否则会出现
     /// 「闪了一下 AI 润色中但其实什么都没做」。
@@ -840,8 +849,21 @@ final class LongFormRecorderController: ObservableObject {
             ? Self.captureMainDisplayJPEG() : nil
         // 摄像头抓帧是**异步**的（要等一帧到），所以在停止这一秒启动、稍后再 await。
         // 同步等会把点击冻住最多 1.5 秒 —— 而用户按下停止时最不该有的就是卡顿。
-        cameraFrameTask = stopMomentSettings.recordingPolishCapturesCamera
+        // **摄像头是关键词触发的标记，不是「开了就一直参与」。**
+        //
+        // 用户 2026-09-26：「把摄像头也做成类似……的标记：用户提到摄像头相关关键词时，
+        // 作为一个标记，正常情况下不参与」。
+        //
+        // 而且这里**不是「抓了但不附上去」，是「根本不抓」** —— 摄像头一开，
+        // 那颗绿灯就会亮。那是用户看得见的东西，不能因为「反正不用」就每次都去开一下。
+        // 判据用停止那一刻已经攒下的转写文本：那一刻它已经包含了用户说过的全部内容。
+        let spokenSoFar = transcriptPlainText + livePartialText
+        cameraFrameTask = (stopMomentSettings.recordingPolishCapturesCamera
+                           && Self.transcriptMentionsCamera(spokenSoFar))
             ? Task { await RecordingCameraGrabber.grabOneFrameJPEG() } : nil
+        if cameraFrameTask != nil {
+            publishDiagnostic("转写里提到摄像头 → 抓一帧")
+        }
 
         // 停止的音效。
         //
