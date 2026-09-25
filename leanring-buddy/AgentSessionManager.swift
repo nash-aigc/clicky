@@ -32,8 +32,15 @@ nonisolated enum SidebarSection: String, CaseIterable, Sendable {
     var displayName: String {
         switch self {
         // 用户 2026-09-25：「把最左侧的对话按钮写成 ask」→ 随后更正为 **Ask**
-        // （大写首字母）。
-        case .conversations: return "Ask"
+        // （大写首字母）；同日晚些时候再改为 **Screen**：
+        // 「把左侧边栏的 Ask 改成 Screen，因为它所有的对话都是参考屏幕的」。
+        //
+        // 这一列回答的确实是**屏幕上的东西** —— 每个回合都把截图连同问题一起送给
+        // 视觉模型，回答里还能用 `[POINT:x,y:…]` 指到屏幕上的具体位置。所以
+        // 「Screen」比「Ask」更贴近它实际在做的事；只改**显示名**，
+        // `case conversations` 与磁盘上的存储值一律不动（那会影响已有会话与
+        // 各处的持久化判断）。
+        case .conversations: return "Screen"
         case .agents: return "Agent"
         case .voiceChat: return "Chatting"
         }
