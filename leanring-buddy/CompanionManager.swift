@@ -2000,7 +2000,32 @@ final class CompanionManager: ObservableObject {
         if !skill.isEmpty {
             systemPrompt += "\n\n" + skill
         }
+        // MCP 那一段**只有执行 agent 有**（方案 §06 §一：MCP 归「跑脚本 / 调工具」
+        // 那一类，图形和文本 agent 都没有）。而且它是**现生成的** —— 服务器清单是
+        // 用户配的，写死在技能正文里就等于「用户加了一个服务器，模型不知道」。
+        if role == .execution {
+            let mcp = mcpPromptSection()
+            if !mcp.isEmpty { systemPrompt += "\n\n" + mcp }
+        }
         return systemPrompt
+    }
+
+    /// 执行 agent 提示词里关于 MCP 的那一段。
+    ///
+    /// **只写服务器名字和标签语法，不写工具清单，更不写 schema。** 方案 §08 明写
+    /// 「工具 schema 不直接注入提示词」—— 一个 firecrawl 就有 29 个工具，全塞进来
+    /// 比整个提示词还长，而其中绝大多数这一轮用不到。所以给的是两步：
+    /// 先 `[MCP:服务器.*]` 看有什么，再 `[MCP:服务器.工具:{参数}]` 调。
+    private static func mcpPromptSection() -> String {
+        let names = MCPRegistry.shared.configuredServerNames
+        guard !names.isEmpty else { return "" }
+        return """
+        mcp tools:
+        you have MCP servers configured: \(names.joined(separator: ", ")).
+        - to see what one offers: [MCP:server.*] — do this BEFORE guessing a tool name.
+        - to call one: [MCP:server.tool:{"arg": "value"}] — the arguments are JSON.
+        you do not know their tool names until you ask; never invent one.
+        """
     }
 
     /// 这个 sub agent 的技能正文。**主 agent 看不到它** —— 见 `subAgentSystemPrompt`。
@@ -2965,6 +2990,22 @@ final class CompanionManager: ObservableObject {
                     // model can see what actually happened to its request, and a failure is
                     // also surfaced on the conversation view's error line — a spawn the
                     // model already announced out loud must not silently not exist.
+                    // **`[MCP:服务器.工具:{json}]` 在这里跑，不在上面那个动作 switch 里。**
+                    // 一次 MCP 调用不碰屏幕，所以它绝不能进「一步一动作 + 截图续写」那个循环
+                    // —— 和派活、图形板同一个理由。结果作为数据块回给模型。
+                    let mcpOutcomeLines = await runMCPRequests(parseResult.mcpRequests,
+                                                                dispatchedRole: dispatchedRole)
+                    if !mcpOutcomeLines.isEmpty {
+                        let mcpContext = "<mcp_results>\n"
+                            + mcpOutcomeLines.joined(separator: "\n")
+                            + "\n</mcp_results>"
+                        if let existingContext = pendingAccessibilityContext {
+                            pendingAccessibilityContext = existingContext + "\n" + mcpContext
+                        } else {
+                            pendingAccessibilityContext = mcpContext
+                        }
+                    }
+
                     let agentDispatchOutcomeLines = dispatchAgentRequests(parseResult.agentRequests)
                     if !agentDispatchOutcomeLines.isEmpty {
                         let dispatchContext = "<agent_dispatch_results>\n"
@@ -3991,6 +4032,62 @@ final class CompanionManager: ObservableObject {
     /// than left to `AgentSessionManager`, because a refused dispatch has to
     /// come back as a sentence the model can pass on, not as a roster-side
     /// error line the user would have to go looking for.
+
+    /// 跑这一轮里的 MCP 调用。
+    ///
+    /// **只有执行 agent 有资格。** MCP 是「跑脚本 / 调工具」那一类能力（方案 §06 §一），
+    /// 图形和文本 agent 都没有。判定放在这里而不是解析器里 —— 解析器只该回答
+    /// 「模型写了什么」，不该回答「它有没有资格」：那两件事混在一起，报错就说不清是
+    /// 写错了还是不许写。
+    ///
+    /// 结果以**数据块**回给模型，和屏幕读取、派活结果同一个通道、同一个理由：
+    /// 它是某个工具吐出来的东西，不是用户的指令，不能长着 system 消息的权威。
+    private func runMCPRequests(_ requests: [MCPToolRequest],
+                                dispatchedRole: SubAgentRole?) async -> [String] {
+        guard !requests.isEmpty else { return [] }
+        guard dispatchedRole == .execution else {
+            return ["MCP 调用被拒：MCP 工具归执行 agent，这一轮是"
+                    + (dispatchedRole.map { "\($0.displayName) agent" } ?? "主 agent 自己在答") + "。"]
+        }
+        var lines: [String] = []
+        for request in requests {
+            do {
+                switch request.kind {
+                case .listTools:
+                    let tools = try await MCPRegistry.shared.tools(ofServerNamed: request.serverName)
+                    lines.append("MCP `\(request.serverName)` 有 \(tools.count) 个工具：\n"
+                                 + tools.map { "  \($0.name) — \($0.description.prefix(70))" }
+                                       .joined(separator: "\n"))
+                case .call:
+                    guard let arguments = Self.mcpArguments(fromJSON: request.argumentsJSON) else {
+                        lines.append("MCP \(request.serverName).\(request.toolName) 的参数不是合法 JSON 对象："
+                                     + request.argumentsJSON.prefix(120))
+                        continue
+                    }
+                    let result = try await MCPRegistry.shared.call(server: request.serverName,
+                                                                   tool: request.toolName,
+                                                                   arguments: arguments)
+                    lines.append("MCP \(request.serverName).\(request.toolName) 返回：\n"
+                                 + String(result.prefix(4000)))
+                }
+            } catch {
+                // **失败要说出来**，而且要说清是哪个服务器哪个工具 —— 静默失败会让模型
+                // 以为自己调过了，然后对着用户复述一个根本没发生的结果。
+                lines.append("MCP \(request.serverName).\(request.toolName) 失败：\(error)")
+                SoundEffectPlayer.appendToDiagnosticLog(
+                    "MCP 调用失败 \(request.serverName).\(request.toolName)：\(error)")
+            }
+        }
+        return lines
+    }
+
+    private static func mcpArguments(fromJSON json: String) -> [String: Any]? {
+        guard let data = json.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        return object
+    }
+
     private func dispatchAgentRequests(_ requests: [AgentDispatchRequest]) -> [String] {
         guard !requests.isEmpty else { return [] }
 

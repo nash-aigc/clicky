@@ -162,6 +162,15 @@ nonisolated struct ActionParseResult: Sendable {
     ///
     /// 同样**不进 `actions`**：派活本身不碰屏幕，不该触发「截图 → 续写」那个循环。
     let subAgentRequest: SubAgentRole?
+    /// 每一个 `[MCP:服务器.工具:{json}]`。
+    ///
+    /// **不进 `actions`**：一次 MCP 调用不碰屏幕，不该触发「截图 → 续写」那个循环 ——
+    /// 和派活、图形板同一个理由。它当场跑完，结果作为一个数据块回给模型。
+    ///
+    /// **归执行 agent。** MCP 是「跑脚本 / 调工具」那一类能力（方案 §06 §一），
+    /// 图形和文本 agent 都没有。判定在调用处，不在这里 —— 解析器只该回答
+    /// 「模型写了什么」，不该回答「它有没有资格」。
+    let mcpRequests: [MCPToolRequest]
     /// Every [SVG_BOARD:…] tag, in the order the model wrote them — figures
     /// for the user's eyes, drawn on screen next to a named element. Deliberately NOT in
     /// `actions`: a board touches no screen state, so it must not enter the
@@ -177,6 +186,7 @@ nonisolated struct ActionParseResult: Sendable {
         shapeRequests: [AnnotationShapeRequest] = [],
         agentRequests: [AgentDispatchRequest] = [],
         subAgentRequest: SubAgentRole? = nil,
+        mcpRequests: [MCPToolRequest] = [],
         figureBoardRequests: [FigureBoardRequest] = []
     ) {
         self.spokenText = spokenText
@@ -185,8 +195,34 @@ nonisolated struct ActionParseResult: Sendable {
         self.shapeRequests = shapeRequests
         self.agentRequests = agentRequests
         self.subAgentRequest = subAgentRequest
+        self.mcpRequests = mcpRequests
         self.figureBoardRequests = figureBoardRequests
     }
+}
+
+/// 一次 `[MCP:服务器.工具:{json}]` —— 模型要调一个 MCP 工具。
+nonisolated struct MCPToolRequest: Sendable, Equatable {
+    enum Kind: Sendable, Equatable {
+        /// `[MCP:服务器.工具:{json}]` —— 调一个工具。
+        case call
+        /// `[MCP:服务器.*]` —— 先看这个服务器有什么工具。
+        ///
+        /// **这一步是必须的，不是便利。** 方案 §08 明写「工具 schema 不直接注入
+        /// 提示词」，所以模型手上根本没有工具清单；不给它一条「先问有什么」的路，
+        /// 它只能猜工具名 —— 而猜错的表现是「服务器报错」，不是「你该先列一下」。
+        case listTools
+    }
+
+    let kind: Kind
+    let serverName: String
+    let toolName: String
+    /// 参数，**原始 JSON 字符串**，由调用处解析成字典。
+    ///
+    /// 留成字符串而不是在这里就解析成字典，是因为解析器至今只依赖
+    /// Foundation + CoreGraphics、能脱离 App 单独跑（见这个文件的头注释）。
+    /// 引一个 `[String: Any]` 进来不会破坏那一点，但会把「参数对不对」这件事
+    /// 混进「标签怎么写」里 —— 它们该分开报错。
+    let argumentsJSON: String
 }
 
 /// 主 agent 写了 `[AGENT:谁]` 但那个名字认不出来时，记一次。
@@ -319,6 +355,86 @@ nonisolated enum ActionTagParser {
     /// Capture groups: 1 = sub agent 的名字（图形 / 执行 / 文本）。
     private static let subAgentPattern = #"\[AGENT:\s*([^\]:]+?)\s*\]"#
 
+    // MARK: - MCP 标签的扫描
+
+    /// 扫 `[MCP:服务器.工具:{json}]`。
+    ///
+    /// **不能用正则。** 参数是 JSON，而 JSON 的值里完全可能有 `]` ——
+    /// `{"query": "a]b"}`。`[^\]]*` 会在那个 `]` 上提前收尾，把一个合法参数截成
+    /// 半个对象；而模型那侧看到的是「参数不对」，不是「解析器错了」，**归因直接跑偏**。
+    ///
+    /// 所以这个标签自己走一遍字符：跟踪「在不在字符串里」和「花括号深度」，
+    /// 只有**深度归零且不在字符串里**遇到的 `]` 才是它的结尾。
+    ///
+    /// 标签一定要 `claim` —— 没认领的话它会留在要朗读的那句话里，用户会听见
+    /// 「firecrawl 点 firecrawl search」这种话。
+    private static func scanMCPRequests(
+        in text: String,
+        claimTagRange: (Range<String.Index>) -> Bool
+    ) -> [MCPToolRequest] {
+        let opening = "[MCP:"
+        var requests: [MCPToolRequest] = []
+        var searchStart = text.startIndex
+
+        while let openRange = text.range(of: opening, options: [.caseInsensitive],
+                                         range: searchStart..<text.endIndex) {
+            let bodyStart = openRange.upperBound
+            var index = bodyStart
+            var depth = 0
+            var inString = false
+            var isEscaped = false
+            var closing: String.Index?
+
+            while index < text.endIndex {
+                let character = text[index]
+                if isEscaped { isEscaped = false }
+                else if inString, character == "\\" { isEscaped = true }
+                else if character == "\"" { inString.toggle() }
+                else if !inString {
+                    if character == "{" { depth += 1 }
+                    else if character == "}" { depth -= 1 }
+                    else if character == "]", depth <= 0 { closing = index; break }
+                }
+                index = text.index(after: index)
+            }
+            // 没闭合就到此为止：剩下的半截不当标签，也不当正文。
+            guard let closing else { break }
+
+            let tagRange = openRange.lowerBound..<text.index(after: closing)
+            if claimTagRange(tagRange),
+               let request = parseMCPBody(String(text[bodyStart..<closing])) {
+                requests.append(request)
+            }
+            searchStart = text.index(after: closing)
+        }
+        return requests
+    }
+
+    /// 拆 `服务器.工具:{"json"}`；冒号后面那一段可以没有（= 无参数）。
+    private static func parseMCPBody(_ body: String) -> MCPToolRequest? {
+        let head: String
+        let argumentsJSON: String
+        if let colon = body.firstIndex(of: ":") {
+            head = String(body[body.startIndex..<colon])
+            let raw = String(body[body.index(after: colon)...])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            argumentsJSON = raw.isEmpty ? "{}" : raw
+        } else {
+            head = body
+            argumentsJSON = "{}"
+        }
+        // 只按**第一个**点切：工具名里再有点（`a.b.c`）也归工具名。
+        let parts = head.split(separator: ".", maxSplits: 1)
+        guard parts.count == 2 else { return nil }
+        let server = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+        let tool = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !server.isEmpty, !tool.isEmpty else { return nil }
+        // `*` 是「列出这个服务器的工具」，不是一个叫 `*` 的工具。
+        return MCPToolRequest(kind: tool == "*" ? .listTools : .call,
+                              serverName: server, toolName: tool,
+                              argumentsJSON: argumentsJSON)
+    }
+
     // MARK: - Parsing
 
     /// Pulls every action tag out of a model reply, and returns what is left to
@@ -330,6 +446,7 @@ nonisolated enum ActionTagParser {
         var shapeRequests: [AnnotationShapeRequest] = []
         var agentRequests: [AgentDispatchRequest] = []
         var subAgentRequest: SubAgentRole?
+        var mcpRequests: [MCPToolRequest] = []
         var figureBoardRequests: [FigureBoardRequest] = []
 
         // Tags are removed from the spoken text afterwards, so a tag nested inside
@@ -532,6 +649,8 @@ nonisolated enum ActionTagParser {
             shapeRequests.append(shapeRequest)
         }
 
+        mcpRequests = Self.scanMCPRequests(in: responseText, claimTagRange: claimTagRange)
+
         forEachMatch(in: responseText, pattern: subAgentPattern) { match, tagRange in
             guard claimTagRange(tagRange) else { return }
             guard let rawName = capture(1, of: match, in: responseText) else { return }
@@ -578,6 +697,7 @@ nonisolated enum ActionTagParser {
             shapeRequests: shapeRequests,
             agentRequests: agentRequests,
             subAgentRequest: subAgentRequest,
+            mcpRequests: mcpRequests,
             figureBoardRequests: figureBoardRequests
         )
     }
