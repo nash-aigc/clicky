@@ -1824,7 +1824,10 @@ struct VoiceChatSessionView: View {
             }
             .thinWhiteScrollIndicator()
             .onAppear {
-                scrollToBottom(proxy)
+                // **展开面板时不许有滑动** —— 见 `AgentSessionView` 同名位置的说明。
+                // 原来是 `scrollToBottom`（带动画 0.2 秒），用户看到的是内容从下方
+                // 滑到当前位置；换成瞬时就没有移动过程了。
+                scrollToBottomInstantly(proxy)
             }
         }
     }

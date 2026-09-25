@@ -80,6 +80,10 @@ final class SoundEffectPlayer {
     /// off or the resource is missing — callers never need to check either.
     func play(_ effect: SoundEffect) {
         guard AppSettingsStore.snapshot().playsNotchSoundEffects else { return }
+        // TEMPORARY PROBE (2026-09-25)：用户报「点击按钮之后……有两个声音，应该只有
+        // 一个声音才对」。音效本身没有日志，所以"响了几次"只能靠猜 —— 这一行让它可数：
+        // 点一次刘海，日志里应该**只有一条**。
+        print(String(format: "🔊 [sfx] t=%.3f %@", Date().timeIntervalSince1970, effect.rawValue))
         warmUpIfNeeded()
         guard let player = playersByEffect[effect] else { return }
         player.currentTime = 0

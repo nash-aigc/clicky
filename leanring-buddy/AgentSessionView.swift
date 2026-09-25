@@ -307,7 +307,20 @@ struct AgentSessionView: View {
             }
             .thinWhiteScrollIndicator()
             .onAppear {
-                scrollToBottom(proxy)
+                // **展开面板时不许有滑动。**
+                //
+                // 用户 2026-09-25：「点击展开之后，为什么会向上移动、抖动一下，从下面
+                // 向上移动到当前位置？它会有一个移动的过程。」——那一步原来是
+                // `scrollToBottom`（**带动画 0.2 秒**），于是内容从下方滑上来；用户在
+                // 视频里看到的正是它。
+                //
+                // 换成瞬时：位置一样落在最新，但**没有移动过程** —— 走的是 Screen 页
+                // 一直用的那个（`NotchHomeView` 的 onAppear 本来就是 Instantly）。
+                //
+                // 为什么不能"保留用户上次的位置"：这棵树**每次展开都会被销毁重建**
+                // （`NotchPanelRootSwitchingView` 里是 `if isExpanded`），滚动位置随树
+                // 一起没了。要真保留位置，得让树常驻 —— 那条路戳出窗口画了个黑框，已回退。
+                scrollToBottomInstantly(proxy)
             }
         }
     }

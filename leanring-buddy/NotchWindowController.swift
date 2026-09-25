@@ -666,14 +666,21 @@ final class NotchWindowController {
 
         // Watchdog: the removal above is the only thing that can make the panel
         // visible now that there is no reveal animation, so a dropped block
-        // would leave an invisible, unclickable sheet. Forced regardless of
-        // what the deadline above did.
+        // would leave an invisible, unclickable sheet.
+        //
+        // **它只补"可见性"，不再走一遍 `finishExpansionCommit`。** 那个方法里带着
+        // `SoundEffectPlayer.play(.notchRevealed)` 和 `NSApp.activate` —— 两处都该
+        // **一次展开只发生一次**。我上一版让兜底也调它，于是点一下刘海听见**两个
+        // "展开"音**（实测：间隔正好一秒，就是这条兜底的 1.0s），用户报的是
+        // 「点击按钮之后……有两个声音，应该只有一个声音才对」。
+        //
+        // 兜底与正常路径用同一个代次守卫，所以两者要么都跑、要么都不跑；正常路径既然
+        // 一定跑过，这里就只剩"遮罩没被摘掉"这一种补救。
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
             self.removeReveal(on: presence)
-            self.finishExpansionCommit(on: presence)
         }
     }
 
