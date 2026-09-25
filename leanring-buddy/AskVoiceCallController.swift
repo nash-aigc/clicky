@@ -287,6 +287,9 @@ final class AskVoiceCallController: ObservableObject {
                 // 状态切换的时机与 Chatting 一模一样。
                 try await engine.speakGreeting(Self.openingGreeting)
                 scheduleConnectionFallbackIfNoAudio()
+                // 起一条**只用于显示**的识别，接上引擎的分流口。
+                // 见 `startDisplayRecognition(engine:)` 与 `displayTranscriptionSink`。
+                startDisplayRecognition(engine: engine)
             } catch {
                 engine.stop()
                 self.engine = nil
@@ -299,6 +302,92 @@ final class AskVoiceCallController: ObservableObject {
 
     /// 打招呼的文字。用户给的例子就是两个字。
     static let openingGreeting = "你好"
+
+    // MARK: - 显示用的并行识别（全双工专用）
+
+    /// 全双工通话期间并行跑的一路**实时识别**，只为了一件事：**让用户的话在开口时
+    /// 就出现在界面上**。它不写盘、不判定回合、不影响任何上行/下行。
+    ///
+    /// ## 为什么必须有它
+    ///
+    /// 全双工协议**只在一轮结束时**下发用户的转写
+    /// （`conversation.item.input_audio_transcription.completed`，实测排在
+    /// `response.done` 之后）。所以只有服务端这一路时，用户说了一句话，界面上要等
+    /// AI 把整句回答**答完**才显示出来 —— 用户 2026-09-25 报的
+    /// 「用户的提示词在 AI 回复完成之后才突然出现」就是这个，而且它还会把
+    /// 钉在底部的卡片顶下去。
+    ///
+    /// ## 用哪个模型
+    ///
+    /// **`BuddyTranscriptionProviderFactory.makeDefaultProvider()`** —— 也就是
+    /// 「设置 → 听（识别）」里那一个角色（默认 `qwen3-asr-flash-realtime`）。
+    /// 刻意不写死模型名：它是用户可配的，而且这里要的正是"和别处同一套识别"。
+    ///
+    /// ## 它和"写盘那一份"的关系
+    ///
+    /// **两份转写，各司其职，不要合并**：
+    /// - **这一份（实时识别）** → 只喂 `liveUserTranscript`，即屏幕上那个用户气泡；
+    /// - **服务端那一份**（`onUserUtterance` → `handleUserUtterance`）→ 才是落盘、
+    ///   才是与回答配对的依据。
+    ///
+    /// 为什么不能只用这一份写盘：它和回答不是同一次推理的产物，标点、断句、
+    /// 甚至个别字都可能不同；而"用户的话"必须和"AI 的回答"来自同一条会话，
+    /// 否则记录里会出现对不上的问答。所以服务端那份一个字都不能少。
+    ///
+    /// **给未来的读者**：看到这里有两路识别、且只有一路写盘，那是设计如此，
+    /// 不是漏改 —— 这条注释就是为了防止把它当成 bug 改掉。
+    private var displayTranscriptionSession: (any BuddyStreamingTranscriptionSession)?
+
+    private func startDisplayRecognition(engine: DuplexVoiceEngine) {
+        let provider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
+        guard provider.isConfigured else {
+            print("🎙️ Ask 语音电话：显示用识别不可用（\(provider.unavailableExplanation ?? "未配置")）—— 用户的话将只在服务端转写到达后显示")
+            return
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let session = try await provider.startStreamingSession(
+                    keyterms: [],
+                    // 不传角色覆盖 = 走「听」页那个角色（不是语音聊天角色的覆盖）。
+                    onTranscriptUpdate: { [weak self] interim in
+                        // **只改显示。** 用户说的话一被认出来就画在界面上，
+                        // 而不是等一整轮结束。
+                        let trimmed = interim.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        self?.liveUserTranscript = trimmed
+                    },
+                    onFinalTranscriptReady: { _ in
+                        // **这里什么都不做。** 服务端的转写才是权威：它到达时
+                        // `handleUserUtterance` 会清掉这个实时气泡并把它配进条目。
+                        // 若在这一份的 final 上落盘，就会写出与回答不同源的一条记录。
+                    },
+                    onError: { error in
+                        // 它只是显示用，坏了不该影响通话 —— 记一行就够。
+                        print("🎙️ Ask 语音电话：显示用识别出错（不影响通话）—— \(error.localizedDescription)")
+                    }
+                )
+                guard !Task.isCancelled, self.phase != .idle else {
+                    session.cancel()
+                    return
+                }
+                self.displayTranscriptionSession = session
+                // 把引擎的麦克风分流接上：**同一块音频、两个去处**。
+                engine.displayTranscriptionSink = { [weak session] buffer in
+                    session?.appendAudioBuffer(buffer)
+                }
+                print("🎙️ Ask 语音电话：显示用识别已接上（\(provider.displayName)）—— 用户的话将在开口时显示")
+            } catch {
+                print("🎙️ Ask 语音电话：显示用识别起不来（不影响通话）—— \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func stopDisplayRecognition() {
+        engine?.displayTranscriptionSink = nil
+        displayTranscriptionSession?.cancel()
+        displayTranscriptionSession = nil
+    }
 
     /// 等不到第一段音频的兜底：15 秒后如实说明并算连上 —— 不能把界面永远吊在
     /// 「连接中」（与 Chatting 的 `scheduleConnectionFallbackIfNoAudio` 同一条思路）。
@@ -319,6 +408,9 @@ final class AskVoiceCallController: ObservableObject {
         guard phase != .idle else { return }
         connectionFallbackTask?.cancel()
         connectionFallbackTask = nil
+        // 显示用识别跟着这通电话一起收 —— 它的麦克风分流挂在引擎上，
+        // 引擎停了它就没有音频可喂了，留着只会占一个 websocket。
+        stopDisplayRecognition()
         // 挂断音效（与 Chatting 一致）—— 它必须在这里、且只响一次：
         // 刘海右翼、页内挂断按钮、报错收尾三条路都走这个漏斗。
         SoundEffectPlayer.shared.play(.sessionHungUp)
