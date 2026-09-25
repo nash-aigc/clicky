@@ -154,6 +154,14 @@ nonisolated struct ActionParseResult: Sendable {
     /// handed to `AgentSessionManager` directly, the way `shapeRequests` are
     /// handed to the annotation manager.
     let agentRequests: [AgentDispatchRequest]
+    /// 主 agent 把这件事派给了哪个 sub agent（`[AGENT:图形]`）。
+    ///
+    /// **和 `agentRequests` 是两件不同的事**，别混：那个是把活交给 Clicky 常驻的
+    /// Claude Code 会话（后台、跨轮次、有名单）；这个是主 agent 把**这一轮**的活交给
+    /// 三个 sub agent 之一，它当场跑完、结果回到这一轮的循环里。
+    ///
+    /// 同样**不进 `actions`**：派活本身不碰屏幕，不该触发「截图 → 续写」那个循环。
+    let subAgentRequest: SubAgentRole?
     /// Every [SVG_BOARD:…] tag, in the order the model wrote them — figures
     /// for the user's eyes, drawn on screen next to a named element. Deliberately NOT in
     /// `actions`: a board touches no screen state, so it must not enter the
@@ -168,6 +176,7 @@ nonisolated struct ActionParseResult: Sendable {
         actions: [CompanionAction],
         shapeRequests: [AnnotationShapeRequest] = [],
         agentRequests: [AgentDispatchRequest] = [],
+        subAgentRequest: SubAgentRole? = nil,
         figureBoardRequests: [FigureBoardRequest] = []
     ) {
         self.spokenText = spokenText
@@ -175,7 +184,27 @@ nonisolated struct ActionParseResult: Sendable {
         self.actions = actions
         self.shapeRequests = shapeRequests
         self.agentRequests = agentRequests
+        self.subAgentRequest = subAgentRequest
         self.figureBoardRequests = figureBoardRequests
+    }
+}
+
+/// 主 agent 写了 `[AGENT:谁]` 但那个名字认不出来时，记一次。
+///
+/// **不能静默丢掉。** 丢掉的后果和「模型根本没派活」在日志里长得一模一样 ——
+/// 而这两件事的修法完全不同（一个是提示词里名字写错了，一个是目录没讲清）。
+/// 只记最后一个，因为这个类型是 `nonisolated`，而它服务的是一条诊断日志。
+nonisolated enum UnknownSubAgentName {
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var lastSeen: String?
+
+    static func record(_ name: String) {
+        lock.lock(); lastSeen = name; lock.unlock()
+    }
+
+    static func consume() -> String? {
+        lock.lock(); defer { lock.unlock() }
+        let value = lastSeen; lastSeen = nil; return value
     }
 }
 
@@ -282,6 +311,14 @@ nonisolated enum ActionTagParser {
     /// Capture groups: same as `agentSpawnPattern`.
     private static let agentSendPattern = #"\[AGENT_SEND:\s*([^:\]]+?)\s*:\s*([^\]]*?)\s*\]"#
 
+    /// `[AGENT:图形]` — 主 agent 说「这件事归它」。
+    ///
+    /// **和上面两条不会撞**：它们在 `AGENT` 后面跟的是 `_SPAWN` / `_SEND`，
+    /// 而这一条要求紧跟一个冒号。
+    ///
+    /// Capture groups: 1 = sub agent 的名字（图形 / 执行 / 文本）。
+    private static let subAgentPattern = #"\[AGENT:\s*([^\]:]+?)\s*\]"#
+
     // MARK: - Parsing
 
     /// Pulls every action tag out of a model reply, and returns what is left to
@@ -292,6 +329,7 @@ nonisolated enum ActionTagParser {
         var actions: [CompanionAction] = []
         var shapeRequests: [AnnotationShapeRequest] = []
         var agentRequests: [AgentDispatchRequest] = []
+        var subAgentRequest: SubAgentRole?
         var figureBoardRequests: [FigureBoardRequest] = []
 
         // Tags are removed from the spoken text afterwards, so a tag nested inside
@@ -494,6 +532,22 @@ nonisolated enum ActionTagParser {
             shapeRequests.append(shapeRequest)
         }
 
+        forEachMatch(in: responseText, pattern: subAgentPattern) { match, tagRange in
+            guard claimTagRange(tagRange) else { return }
+            guard let rawName = capture(1, of: match, in: responseText) else { return }
+            // **认不出是谁就当没写过这个标签。** 猜一个最近的（比如把「图形大师」
+            // 猜成图形）比不派更危险：派错会把「帮我点登录」交给只会画图的 agent，
+            // 而它照样会回一句听起来合理的答复。方案 §02 那句「宁可自己答错，
+            // 不可派错活」在代码里就落在这一行。
+            guard let role = SubAgentRole(named: rawName) else {
+                UnknownSubAgentName.record(rawName)
+                return
+            }
+            // 只认第一个：一句话派两件事，第二件没人接，而屏幕上会显示一个
+            // 「已派活」的错觉。
+            if subAgentRequest == nil { subAgentRequest = role }
+        }
+
         forEachMatch(in: responseText, pattern: agentSpawnPattern) { match, tagRange in
             guard claimTagRange(tagRange) else { return }
             guard let agentName = capture(1, of: match, in: responseText)?
@@ -523,6 +577,7 @@ nonisolated enum ActionTagParser {
             actions: actions,
             shapeRequests: shapeRequests,
             agentRequests: agentRequests,
+            subAgentRequest: subAgentRequest,
             figureBoardRequests: figureBoardRequests
         )
     }

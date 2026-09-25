@@ -1906,9 +1906,19 @@ final class CompanionManager: ObservableObject {
     private static func companionSystemPrompt(for settings: AppSettings) -> String {
         let trimmedCustomPrompt = settings.customSystemPrompt?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // **第 2 步之后，主 agent 拿到的是「基础段 + 目录」，不再是全部技能正文。**
+        //
+        // 拆之前这一份是 22,649 字符（基础 3,511 + 图形 7,176 + 执行 11,958），
+        // 而其中 19,134 字符是「怎么做」—— 指位怎么算坐标、动作标签怎么写。
+        // 主 agent 不需要知道怎么做，它只需要知道**什么时候叫谁**（`SubAgentCatalog`），
+        // 怎么做由被派到的那个 agent 自己带（`subAgentSystemPrompt(for:)`）。
+        //
+        // 用户自定义了基础段时，目录**照加**：目录是机制，不是人格。用户换掉的是
+        // 「你该怎么说话」，不是「你有几个助手」。
         var systemPrompt = trimmedCustomPrompt.isEmpty
-            ? defaultVoiceResponseSystemPrompt
+            ? mainAgentBasePrompt
             : trimmedCustomPrompt
+        systemPrompt += "\n\n" + SubAgentCatalog.prompt
 
         systemPrompt += "\n\nlength for this conversation — this overrides the length guidance above: \(settings.answerLengthStyle.promptSentence)"
 
@@ -1925,13 +1935,42 @@ final class CompanionManager: ObservableObject {
         // 打出来：三段各多少、拼完多少。第 2 步让主 agent 按需派活之后，这一行会变成
         // 「这一轮实际发了哪几段」，那正是要盯的数字。
         SoundEffectPlayer.appendToDiagnosticLog(
-            "提示词 \(systemPrompt.count) 字符（基础 \(Self.mainAgentBasePrompt.count)"
-            + " + 图形 \(Self.graphicsAgentSkillPrompt.count)"
-            + " + 执行 \(Self.executionAgentSkillPrompt.count)"
-            + (trimmedCustomPrompt.isEmpty ? "" : " · 用户自定义了基础段")
-            + "）")
+            "主 agent 提示词 \(systemPrompt.count) 字符"
+            + "（基础 \(trimmedCustomPrompt.isEmpty ? Self.mainAgentBasePrompt.count : trimmedCustomPrompt.count)"
+            + " + 目录 \(SubAgentCatalog.prompt.count)"
+            + "；技能正文 图形 \(Self.graphicsAgentSkillPrompt.count)"
+            + " / 执行 \(Self.executionAgentSkillPrompt.count) 只在被派到时才发）")
 
         return systemPrompt
+    }
+
+    /// **某个 sub agent 自己那一轮发出去的提示词：基础段 + 它自己那段技能。**
+    ///
+    /// 它和主 agent 拿到的是**同一份基础段** —— 身份和说话方式不该因为被派活就换一副
+    /// 面孔（都是 clicky，都在对同一个人说话）。差的只有能力说明：主 agent 拿到的是
+    /// 目录（什么时候叫谁），sub agent 拿到的是正文（怎么做）。
+    ///
+    /// 文本 agent 今天没有正文：方案 §05 说它的内容是各专业场景的方法论
+    ///（销售/法律/财务/建筑…），而那些还没有人写。空着是诚实的 —— 它今天就靠基础段
+    /// 里的 `rules:` 写东西，和一个「负责长内容、没有工具」的 agent 该做的事一致。
+    static func subAgentSystemPrompt(for role: SubAgentRole, settings: AppSettings) -> String {
+        let trimmedCustomPrompt = settings.customSystemPrompt?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var systemPrompt = trimmedCustomPrompt.isEmpty ? mainAgentBasePrompt : trimmedCustomPrompt
+        let skill = skillPrompt(for: role)
+        if !skill.isEmpty {
+            systemPrompt += "\n\n" + skill
+        }
+        return systemPrompt
+    }
+
+    /// 这个 sub agent 的技能正文。**主 agent 看不到它** —— 见 `subAgentSystemPrompt`。
+    static func skillPrompt(for role: SubAgentRole) -> String {
+        switch role {
+        case .graphics: return graphicsAgentSkillPrompt
+        case .execution: return executionAgentSkillPrompt
+        case .text: return ""
+        }
     }
 
     /// Builds this turn's user message, optionally carrying the interface read on
@@ -2583,7 +2622,7 @@ final class CompanionManager: ObservableObject {
                     // accumulated text rather than a one-shot flag so the semantics
                     // stay "the first real content arrived".
                     var announcedAnswerStart = false
-                    let (fullResponseText, _) = try await visionChatAPI.analyzeImageStreaming(
+                    var (fullResponseText, _) = try await visionChatAPI.analyzeImageStreaming(
                         images: labeledImages,
                         systemPrompt: Self.companionSystemPrompt(for: appSettings),
                         conversationHistory: stepHistory,
@@ -2642,6 +2681,41 @@ final class CompanionManager: ObservableObject {
                     )
 
                     guard !Task.isCancelled else { return }
+
+                    // **主 agent 说「这件事归它」→ 由那个 sub agent 自己跑一轮。**
+                    //
+                    // 这是方案第 2 步的核心接线。主 agent 的提示词里没有技能正文，
+                    // 它写得出 `[AGENT:图形]`，写不出 `[POINT:…]`；真正会写那些标签的
+                    // 是被派到的那个 agent —— 它拿到的是同一份基础段，加上它自己那段技能。
+                    //
+                    // **它当场跑完，回复替掉主 agent 这一轮的回复。** 于是下面那一整段
+                    //（解析 → 指位 → 画标 → 动作 → 派 Claude Code）一行都不用改：
+                    // sub agent 产出的标签，就是主 agent 本来该产出的标签。
+                    //
+                    // 它这一轮的流式回调暂时是空的：**sub agent 的输出怎么呈现给用户**
+                    // 是方案第 4 步「回传与通知」的题目（对号 + 摘要 + 停 2–3 秒），
+                    // 在这里先做一遍等于把那一节写两处。气泡最终照样会显示这段话 ——
+                    // 收尾时 `parseResult.spokenText` 是从 `fullResponseText` 算出来的。
+                    if let role = ActionTagParser.parse(from: fullResponseText).subAgentRequest {
+                        let subAgentSystemPrompt = Self.subAgentSystemPrompt(for: role, settings: appSettings)
+                        SoundEffectPlayer.appendToDiagnosticLog("主 agent 派活 → \(role.displayName) agent"
+                            + "（它的提示词 \(subAgentSystemPrompt.count) 字符 = 基础 + 技能 "
+                            + "\(Self.skillPrompt(for: role).count)）")
+                        let subAgentReply = try await visionChatAPI.analyzeImageStreaming(
+                            images: labeledImages,
+                            systemPrompt: subAgentSystemPrompt,
+                            conversationHistory: stepHistory,
+                            conversationSummary: compressedHistorySummary,
+                            userPrompt: userPromptForThisTurn,
+                            onTextChunk: { _ in }
+                        )
+                        fullResponseText = subAgentReply.text
+                        SoundEffectPlayer.appendToDiagnosticLog("  \(role.displayName) agent 回复 \(fullResponseText.count) 字符")
+                    } else if let unknownName = UnknownSubAgentName.consume() {
+                        // 派了一个认不出的名字。**必须留下痕迹** —— 静默丢掉和
+                        // 「模型根本没派活」在日志里长得一样，而两者的修法完全不同。
+                        SoundEffectPlayer.appendToDiagnosticLog("主 agent 写了一个认不出的 agent 名字：「\(unknownName)」→ 当作没派活，自己答")
+                    }
 
                     // The stream just ended — the whole reply is in. The cursor-side
                     // card's blurred tail settles to sharp from here; the text itself
