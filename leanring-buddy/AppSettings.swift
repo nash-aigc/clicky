@@ -1180,6 +1180,19 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
             .filter { !$0.isEmpty }
     }
 
+    /// **文件访问白名单**（方案 `06-权限模型.md` §二）。
+    ///
+    /// 每一条是一个路径加两个开关，**读和写互不蕴含**；嵌套取最长匹配。
+    /// **空数组 = 文件能力全关** —— 不是「默认给桌面」。一个没配过的 Clicky
+    /// 不碰用户的任何文件。
+    ///
+    /// 它和另外两道闸门（`allowsComputerControl` / `allowsKeyboardControl`）
+    /// **互相独立**：可以「允许点击但禁止碰文件」，也可以反过来。
+    ///
+    /// 判定逻辑不在这个文件里 —— 它是纯数据；匹配、四条逃逸防线、最长匹配都在
+    /// `FileAccessPolicy`，那个类型能脱离 App 单独跑测试。
+    var fileAccessEntries: [FileAccessEntry] = []
+
     /// 润色用的模型。留空 = 用「模型」页里 🧠 那个角色配置的服务商。
     ///
     /// 用户的原话：「模型可以在录音设置页面由用户添加 URL、API key 和大模型 ID，
@@ -1322,6 +1335,7 @@ nonisolated extension AppSettings {
         case recordingPastesAfterStop
         case recordingAudioRetentionDays
         case recordingTextRetentionDays
+        case fileAccessEntries
         case recordingPolishEnabled
         case recordingPolishCapturesScreenshot
         case recordingPolishCapturesCamera
@@ -1458,6 +1472,7 @@ nonisolated extension AppSettings {
         recordingPastesAfterStop = try container.decodeIfPresent(Bool.self, forKey: .recordingPastesAfterStop) ?? defaults.recordingPastesAfterStop
         recordingAudioRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingAudioRetentionDays) ?? defaults.recordingAudioRetentionDays
         recordingTextRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingTextRetentionDays) ?? defaults.recordingTextRetentionDays
+        fileAccessEntries = try container.decodeIfPresent([FileAccessEntry].self, forKey: .fileAccessEntries) ?? defaults.fileAccessEntries
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
         recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot
         recordingPolishCapturesCamera = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesCamera) ?? defaults.recordingPolishCapturesCamera

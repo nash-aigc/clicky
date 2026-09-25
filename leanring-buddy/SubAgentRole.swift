@@ -67,6 +67,85 @@ nonisolated enum SubAgentRole: String, CaseIterable, Sendable {
     }
 }
 
+/// 一个 sub agent 的**能力面**。
+///
+/// **权限不只是安全边界，也是能力边界** —— 工具少的 agent 更不容易跑偏，所以
+/// 「文本 agent 一个工具都不给」同时是质量控制手段，不是事后补的安全措施
+///（方案 `06-权限模型.md` §一）。
+///
+/// 它是**独立于白名单**的一层：白名单管「这个路径允不允许」，能力面管「这个 agent
+/// 有没有资格问这个问题」。两道都过才放行 —— 少了这一层，「文本 agent 写文件」
+/// 就会因为路径恰好在白名单里而通过。
+nonisolated struct SubAgentPermissionFace: Sendable {
+    let canReadFiles: Bool
+    let canWriteFiles: Bool
+    /// 点击 / 打字 / 按键。
+    let canActOnScreen: Bool
+    /// 跑脚本 / 调 MCP。
+    let canRunScripts: Bool
+}
+
+extension SubAgentRole {
+    var permissionFace: SubAgentPermissionFace {
+        switch self {
+        case .graphics:
+            // 只碰图形相关文件；不点击、不打字、不跑脚本 —— 它产出图形**数据**，
+            // 显示由 App 自己画（`ScreenAnnotationManager` / `FigureBoardController`）。
+            return SubAgentPermissionFace(canReadFiles: true, canWriteFiles: true,
+                                          canActOnScreen: false, canRunScripts: false)
+        case .execution:
+            // 工具最多的那一个：动作、脚本、文件都归它。
+            return SubAgentPermissionFace(canReadFiles: true, canWriteFiles: true,
+                                          canActOnScreen: true, canRunScripts: true)
+        case .text:
+            // **一个工具都不给。** 方案 §一：它只产出文字。
+            return SubAgentPermissionFace(canReadFiles: true, canWriteFiles: false,
+                                          canActOnScreen: false, canRunScripts: false)
+        }
+    }
+
+    /// 图形 agent 写文件时，还要求路径落在图形目录里。
+    ///
+    /// 方案 §六 P5：「图形 agent 尝试写非图形文件 → 被拒」。这条不能用白名单表达 ——
+    /// 白名单是用户配的，而这是**角色自带的**限制：一个被派去画图的 agent，没有任何
+    /// 理由去写别的地方，哪怕用户把整个桌面加进了白名单。
+    static let graphicsRootPath = (NSHomeDirectory() as NSString)
+        .appendingPathComponent("Desktop/Clicky图形")
+}
+
+/// 两道闸门都过才放行：**先看这个 agent 有没有资格，再看这个路径允不允许。**
+///
+/// 顺序不能反。反过来的话，被拒的理由会变成「路径不在白名单里」—— 而真正的原因是
+/// 「这个 agent 根本不该写文件那一条，模型会去改路径重试。方案 §02 那句「拒绝要说
+/// 理由」在这里的具体含义就是：**说清楚是哪一道闸门拦的**。
+nonisolated func fileAccessDecision(for role: SubAgentRole,
+                                    path: String,
+                                    operation: FileAccessOperation,
+                                    policy: FileAccessPolicy) -> FileAccessDecision {
+    let face = role.permissionFace
+    switch operation {
+    case .read where !face.canReadFiles:
+        return FileAccessDecision(isAllowed: false,
+                                  reason: "\(role.displayName) agent 没有读文件的权限。", matchedEntry: nil)
+    case .write where !face.canWriteFiles:
+        return FileAccessDecision(isAllowed: false,
+                                  reason: "\(role.displayName) agent 不写文件 —— 它只产出文字。", matchedEntry: nil)
+    default:
+        break
+    }
+    if operation == .write, role == .graphics {
+        let graphicsRoot = URL(fileURLWithPath: SubAgentRole.graphicsRootPath).standardizedFileURL.path
+        let target = URL(fileURLWithPath: path).standardizedFileURL.path
+        guard target == graphicsRoot || target.hasPrefix(graphicsRoot + "/") else {
+            return FileAccessDecision(
+                isAllowed: false,
+                reason: "图形 agent 只能写 \(graphicsRoot) 里面的文件，而这条路径在外面：\(target)",
+                matchedEntry: nil)
+        }
+    }
+    return policy.decide(path: path, operation: operation)
+}
+
 /// 主 agent 提示词里那段**目录** —— 第 2 步给主 agent 加的全部新增内容就这么多。
 ///
 /// 它取代了原来躺在提示词里的 19,134 字符技能正文（图形 7,176 + 执行 11,958）。
