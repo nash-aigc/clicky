@@ -303,6 +303,13 @@ extension GeneralSettingsView {
             }
             SettingsCardRowDivider()
             SettingsRow(
+                label: "摄像头画面",
+                description: "每次停止录音的那一刻，从摄像头抓**一帧**（不是录像）和转写内容一起发给模型参考。适合「你看一下我手上这个东西」这类场景。实测一帧约 33KB，几乎没有成本。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingPolishCapturesCamera))
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
                 label: "模型 ID",
                 description: "默认 deepseek-flash。留空则用「模型」页里 🧠 那个角色的配置。"
             ) {

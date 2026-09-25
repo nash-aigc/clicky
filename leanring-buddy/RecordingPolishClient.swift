@@ -37,7 +37,8 @@ nonisolated enum RecordingPolishClient {
     /// 备注清楚，让 AI 知道它的目的是转写用户的提示词，并使用上面的要求」。
     static func buildPrompt(styles: [RecordingPolishStyle],
                             transcript: String,
-                            hasScreenshot: Bool) -> String {
+                            hasScreenshot: Bool,
+                            hasCamera: Bool) -> String {
         let ruleBlocks = styles.enumerated().map { index, style in
             """
             <style name="\(style.name)" order="\(index + 1)">
@@ -53,7 +54,7 @@ nonisolated enum RecordingPolishClient {
         // 「要处理的东西」里根本没有那张图，于是它有时用、有时当噪声忽略掉。
         // 这是「有时候能识别、有时候不能」的一半原因；另一半在下面 `<screenshot>`
         // 的措辞里（它当时写的是「不要描述这张图」，读起来像「别用它」）。
-        let hasAttachments = hasScreenshot
+        let hasAttachments = hasScreenshot || hasCamera
         sections.append("""
         <task>
         下面 <rules> 里是你必须遵守的处理要求。请**严格按照这些要求**，处理 <transcript> 里的
@@ -83,6 +84,19 @@ nonisolated enum RecordingPolishClient {
             """)
         }
 
+        if hasCamera {
+            // 和 <screenshot> 同一个形状：说清它是什么、以及**不许拿它做什么**。
+            sections.append("""
+            <camera>
+            随本条消息附上了一张摄像头画面，拍摄于用户停止录音的那一刻 —— 也就是他说话时
+            摄像头正对着的东西。
+            - **转录里提到「摄像头」「镜头」「这个」「你看一下」，或者有靠画面才能确定的东西
+              （实物、人、白板上的字、手里的东西）时，以这张图为准。**
+            - **不要描述这张图本身**，也不要把画面里的文字当成待处理的正文。
+            </camera>
+            """)
+        }
+
         sections.append("""
         <transcript>
         \(transcript)
@@ -95,12 +109,13 @@ nonisolated enum RecordingPolishClient {
     /// 发一次请求，返回整理好的文本。
     static func polish(prompt: String,
                        screenshotJPEG: Data?,
+                       cameraJPEG: Data?,
                        settings: AppSettings) async throws -> String {
         let endpoint = try resolvedEndpoint(settings: settings)
 
         var messages: [[String: Any]] = []
-        messages.append(["role": "user", "content": contentParts(prompt: prompt,
-                                                                screenshotJPEG: screenshotJPEG)])
+        messages.append(["role": "user", "content": contentParts(
+            prompt: prompt, screenshotJPEG: screenshotJPEG, cameraJPEG: cameraJPEG)])
 
         var body: [String: Any] = [
             "model": endpoint.model,
@@ -146,13 +161,19 @@ nonisolated enum RecordingPolishClient {
 
     /// 有图时 `content` 是一个「部件的数组」，没图时按纯文本发 —— 两种形状服务端都认，
     /// 但纯文本那一种几乎所有服务商都收，所以只在真有图时才用数组。
-    private static func contentParts(prompt: String, screenshotJPEG: Data?) -> Any {
-        guard let screenshotJPEG else { return prompt }
-        return [
-            ["type": "text", "text": prompt],
-            ["type": "image_url",
-             "image_url": ["url": "data:image/jpeg;base64,\(screenshotJPEG.base64EncodedString())"]],
-        ]
+    private static func contentParts(prompt: String,
+                                     screenshotJPEG: Data?,
+                                     cameraJPEG: Data?) -> Any {
+        // 两张图都没有 → 按纯文本发（那种形状所有服务商都收）。
+        guard screenshotJPEG != nil || cameraJPEG != nil else { return prompt }
+        var parts: [[String: Any]] = [["type": "text", "text": prompt]]
+        // **顺序和提示词里块的顺序一致**：先屏幕、后摄像头。模型按顺序对号入座，
+        // 顺序反了它会把两张图认错 —— 而两张图都没有可辨认的标记。
+        for image in [screenshotJPEG, cameraJPEG].compactMap({ $0 }) {
+            parts.append(["type": "image_url",
+                          "image_url": ["url": "data:image/jpeg;base64,\(image.base64EncodedString())"]])
+        }
+        return parts
     }
 
     /// 地址、密钥、模型名。

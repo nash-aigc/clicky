@@ -1123,6 +1123,13 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 送给模型参考 —— 用于「我刚才指着屏幕说的那段话」这类场景。
     var recordingPolishCapturesScreenshot: Bool = false
 
+    /// 停止录音那一刻，从摄像头抓**一帧**，作为提示词的一部分一起发给模型。
+    ///
+    /// **默认不勾选。** 和「屏幕截图」同一个形状，只是取的是摄像头那一帧 ——
+    /// 用户：「录制摄像头，瞬间截屏一个摄像头屏幕……揪一帧就可以」。抓的是**当下**
+    /// 那一帧（`alwaysDiscardsLateVideoFrames`），不是缓冲里最旧的。
+    var recordingPolishCapturesCamera: Bool = false
+
     /// 润色用的模型。留空 = 用「模型」页里 🧠 那个角色配置的服务商。
     ///
     /// 用户的原话：「模型可以在录音设置页面由用户添加 URL、API key 和大模型 ID，
@@ -1264,6 +1271,7 @@ nonisolated extension AppSettings {
         case recordingTextRetentionDays
         case recordingPolishEnabled
         case recordingPolishCapturesScreenshot
+        case recordingPolishCapturesCamera
         case recordingPolishBaseURL
         case recordingPolishAPIKey
         case recordingPolishModelID
@@ -1394,6 +1402,7 @@ nonisolated extension AppSettings {
         recordingTextRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingTextRetentionDays) ?? defaults.recordingTextRetentionDays
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
         recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot
+        recordingPolishCapturesCamera = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesCamera) ?? defaults.recordingPolishCapturesCamera
         recordingPolishBaseURL = try container.decodeIfPresent(String.self, forKey: .recordingPolishBaseURL) ?? defaults.recordingPolishBaseURL
         recordingPolishAPIKey = try container.decodeIfPresent(String.self, forKey: .recordingPolishAPIKey) ?? defaults.recordingPolishAPIKey
         recordingPolishModelID = try container.decodeIfPresent(String.self, forKey: .recordingPolishModelID) ?? defaults.recordingPolishModelID

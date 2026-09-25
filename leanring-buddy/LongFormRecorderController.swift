@@ -387,6 +387,10 @@ final class LongFormRecorderController: ObservableObject {
     /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
     private var polishScreenshotJPEG: Data?
 
+    /// 停止那一刻开始的摄像头抓帧任务。**在停止那一秒启动、收尾时 await** ——
+    /// 启动的时机决定画面是哪一刻的，await 的位置决定它不阻塞点击。
+    private var cameraFrameTask: Task<Data?, Never>?
+
     /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
     private let recentAudio = RecentAudioRing(
         maximumSeconds: 8,
@@ -411,28 +415,31 @@ final class LongFormRecorderController: ObservableObject {
         let settings = AppSettingsStore.snapshot()
         guard settings.recordingPolishEnabled else { return false }
         let styles = RecordingPolishStyleStore.shared.enabledStyles()
-        return !styles.isEmpty || polishScreenshotJPEG != nil
+        return !styles.isEmpty || polishScreenshotJPEG != nil || cameraFrameTask != nil
     }
 
     /// 按「自定义风格」重写一遍转写原文。
     ///
     /// **没勾选任何风格、也没勾截图时原样返回** —— 用户明确要求这种情况下必须和以前
     /// 完全一致，一步都不多走（不建请求、不动文本）。
-    private func polishIfConfigured(rawText: String) async -> String {
+    private func polishIfConfigured(rawText: String, cameraFrame: Data?) async -> String {
         let settings = AppSettingsStore.snapshot()
         guard settings.recordingPolishEnabled else { return rawText }
         let styles = RecordingPolishStyleStore.shared.enabledStyles()
         let screenshot = polishScreenshotJPEG
-        guard !styles.isEmpty || screenshot != nil else { return rawText }
+        guard !styles.isEmpty || screenshot != nil || cameraFrame != nil else { return rawText }
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return rawText }
 
         let prompt = RecordingPolishClient.buildPrompt(
-            styles: styles, transcript: trimmed, hasScreenshot: screenshot != nil)
-        publishDiagnostic("自定义风格：\(styles.count) 条风格 + 截图\(screenshot != nil ? "有" : "无")，开始重写")
+            styles: styles, transcript: trimmed,
+            hasScreenshot: screenshot != nil, hasCamera: cameraFrame != nil)
+        publishDiagnostic("自定义风格：\(styles.count) 条风格 + 截图\(screenshot != nil ? "有" : "无")"
+            + " + 摄像头\(cameraFrame != nil ? "有" : "无")，开始重写")
         do {
             let result = try await RecordingPolishClient.polish(
-                prompt: prompt, screenshotJPEG: screenshot, settings: settings)
+                prompt: prompt, screenshotJPEG: screenshot,
+                cameraJPEG: cameraFrame, settings: settings)
             publishDiagnostic("自定义风格：重写完成，\(result.count) 字（原文 \(trimmed.count) 字）")
             return result
         } catch {
@@ -828,8 +835,13 @@ final class LongFormRecorderController: ObservableObject {
         // **抓屏必须在「停止」这一秒**，不能等收尾完再抓 —— 用户的原话是
         // 「每一次录音结束、也就是停止录音的那一刻，用户按下按钮或快捷键的那一秒，
         // 自动抓取当前屏幕的截图」。晚几百毫秒，屏幕上可能已经换了个样。
-        polishScreenshotJPEG = AppSettingsStore.snapshot().recordingPolishCapturesScreenshot
+        let stopMomentSettings = AppSettingsStore.snapshot()
+        polishScreenshotJPEG = stopMomentSettings.recordingPolishCapturesScreenshot
             ? Self.captureMainDisplayJPEG() : nil
+        // 摄像头抓帧是**异步**的（要等一帧到），所以在停止这一秒启动、稍后再 await。
+        // 同步等会把点击冻住最多 1.5 秒 —— 而用户按下停止时最不该有的就是卡顿。
+        cameraFrameTask = stopMomentSettings.recordingPolishCapturesCamera
+            ? Task { await RecordingCameraGrabber.grabOneFrameJPEG() } : nil
 
         // 停止的音效。
         //
@@ -984,7 +996,8 @@ final class LongFormRecorderController: ObservableObject {
         let willPolish = shouldRunPolishStep()
         if willPolish { isPolishingTranscript = true }
         let generationBeforePolish = cancellationGeneration
-        let polished = await polishIfConfigured(rawText: text)
+        let cameraFrame = await cameraFrameTask?.value
+        let polished = await polishIfConfigured(rawText: text, cameraFrame: cameraFrame)
         isPolishingTranscript = false
         // 用户在润色期间按了取消 → 这条路到此为止。录音文件和已转写的文本**照常保留**
         // （它们早就落盘了），只是不再往下走：不粘贴、不进剪贴板、不收尾。
