@@ -319,6 +319,26 @@ struct NotchHomeView: View {
                         if !askVoiceCallController.liveAssistantText.isEmpty {
                             assistantBubble(askVoiceCallController.liveAssistantText, isStreaming: true)
                                 .id("ask-call-assistant")
+                            // **语音通话那张卡片也要有底部那一行**（用户 2026-09-25：
+                            // 「缺少时间参数和速度参数……应该显示在界面上。我记得使用
+                            // DeepSeek Flash 的时候，它是有这个参数的」）。
+                            //
+                            // 打字那条路有 `liveTurnFooter`，而语音通话这条**一行都没有**
+                            // —— 通话时用户看到的卡片底下是空的，和 DeepSeek 的卡片
+                            // 明显不一样。顺序与打字那条路一致：复制 · 时间（· 耗时，
+                            // 通话中还不知道，回合结束时才写进条目）。
+                            HStack(spacing: 8) {
+                                MessageCopyButton(
+                                    text: askVoiceCallController.liveAssistantText,
+                                    helpText: "复制这条回复"
+                                )
+                                if let beganAt = askVoiceCallController.assistantTextBeganAt {
+                                    Text(Self.cachedTimeFormatter.string(from: beganAt))
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.white.opacity(0.35))
+                                }
+                                Spacer(minLength: 0)
+                            }
                         }
                     }
 
