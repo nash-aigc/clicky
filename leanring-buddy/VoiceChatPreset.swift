@@ -142,6 +142,21 @@ extension VoiceChatPreset {
             case .threeStage, .omni:
                 updated.ttsVoice = preferredVoiceID
             }
+        } else if engine == .duplexVoice {
+            // **预设不带音色时，沿用角色里那个之前，必须先看它对不对得上这一代的模型。**
+            //
+            // 这是 2026-09-25 那次「全双工连不上」的**上游写入者**：音色字段是全家族
+            // **共用的一格**，而预设只在自己携带音色时才覆盖它。于是从「全双工 3.1 Plus」
+            // （自带 `longanqian_v3.1`）切回「全双工 3.0 Flash」（不带音色）时，
+            // `duplexModelID` 换了、**音色却留在 3.1 那一代**，整条 `session.update`
+            // 随后被服务端拒绝，界面立刻挂断 —— 用户看到的是"刘海两侧什么都不显示"。
+            //
+            // 能力层现在会在握手时兜住（`isSelectable` 判到异代就换兜底 + 记说明），
+            // 但那是**事后纠正**：这里把不该活下来的值直接换掉，那一格从一开始就是对的。
+            let effectiveDuplexModel = duplexModelID ?? VoiceCatalog.defaultDuplexModel
+            if !VoiceCatalog.isSelectable(updated.duplexVoice, for: .duplexVoice, model: effectiveDuplexModel) {
+                updated.duplexVoice = VoiceCatalog.fallbackVoice(for: .duplexVoice, model: effectiveDuplexModel)
+            }
         }
 
         let allowsVideo = channel.allowsVideoInputAtAll

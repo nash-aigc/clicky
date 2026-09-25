@@ -552,6 +552,7 @@ final class VoiceChatController: ObservableObject {
         表达=\(connectingPreset.expressionModelID ?? connectingPreset.duplexModelID ?? "-")
            音色=\(connectingCapability.effectiveVoiceID)（族=\(connectingCapability.effectiveVoiceEngine.displayName)）\
         画面=\(connectingCapability.isVideoInputAllowed ? "允许" : "不允许")
+           说明=\(connectingCapability.notes.isEmpty ? "无" : connectingCapability.notes.joined(separator: "；"))
         """)
 
         // 应用这个角色的「连接时自动开启什么」。
@@ -845,7 +846,14 @@ final class VoiceChatController: ObservableObject {
             // （`onFirstAudioScheduled` → `markVoiceChatFullyConnected`）。
             connectionPhase = .connecting
             setNotchOverride(.externalConnecting)
-            print("💬 语音聊天：全双工语音会话已开始（角色「\(role.displayName)」，模型 \(selectedDuplexModel(for: role))，音色 \(role.duplexVoice)）")
+            // **打印"真正发出去"的那一对，不是角色里存的原始值。**
+            //
+            // 原先这里打的是 `selectedDuplexModel(for:)`（一个返回默认常量的函数，
+            // 忽略角色的 `duplexModelID`）和 `role.duplexVoice`（未经能力层校验的原始
+            // 字段）—— 2026-09-25 排查「全双工连不上」时，这一行显示的模型和音色
+            // **都跟实际握手用的不一样**，正好把问题盖住。能力层是唯一知道
+            // "最终发什么"的地方，日志就该读它。
+            print("💬 语音聊天：全双工语音会话已开始（角色「\(role.displayName)」，模型 \(role.duplexModelID ?? VoiceCatalog.defaultDuplexModel)，音色 \(effectiveDuplexVoiceID(for: role))）")
 
             let greetingSettings = AppSettingsStore.snapshot()
             if greetingSettings.voiceChatGreetsOnConnect {
@@ -868,10 +876,15 @@ final class VoiceChatController: ObservableObject {
         }
     }
 
-    /// 全双工用哪个模型。Phase 2 之前它是个常量（`VoiceCatalog.defaultDuplexModel`），
-    /// 之后会成为设置项；写在一处，免得散落。
-    private func selectedDuplexModel(for role: VoiceChatRole) -> String {
-        VoiceCatalog.defaultDuplexModel
+    /// 全双工**最终会用**的音色（能力层校验过的那个，异代会被换成兜底）。
+    /// 只给日志用 —— 引擎那一侧读的是同一个值（`capability.effectiveVoiceID`），
+    /// 所以日志与实际握手不会分家。
+    private func effectiveDuplexVoiceID(for role: VoiceChatRole) -> String {
+        VoiceCatalog.capability(
+            for: currentPreset,
+            channel: currentChannel,
+            role: role
+        ).effectiveVoiceID
     }
 
     func disconnectCurrentSession() {
