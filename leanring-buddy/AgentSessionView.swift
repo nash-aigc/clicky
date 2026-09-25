@@ -293,7 +293,9 @@ struct AgentSessionView: View {
                 scrollToBottom(proxy)
             }
             .onChange(of: streamingText) { _, _ in
-                scrollToBottom(proxy)
+                // 流式期间瞬时滚动（每 delta 一次 0.2s 动画 = 动画永不停止，
+                // 每帧都带着正在变大的内容重新定位 —— 与 Ask 页同一处收敛）。
+                scrollToBottomInstantly(proxy)
             }
             .onChange(of: agentSessionManager.selectedAgentID) { _, _ in
                 // One turn of the main loop later: the newly selected agent's
@@ -318,6 +320,12 @@ struct AgentSessionView: View {
         withAnimation(.easeOut(duration: 0.2)) {
             proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
         }
+    }
+
+    /// 流式期间用的瞬时滚动：带动画的版本 0.2s 长于 delta 间隔，动画在整段
+    /// 流式期间永远处于「被改目标」状态，每一帧都带着正在变大的内容重新定位。
+    private func scrollToBottomInstantly(_ proxy: ScrollViewProxy) {
+        proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
     }
 
     private func scheduleScrollToBottom(_ proxy: ScrollViewProxy) {

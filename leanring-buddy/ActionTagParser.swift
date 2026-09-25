@@ -725,7 +725,11 @@ nonisolated enum ActionTagParser {
     static func speakableTextFromStreamedReply(_ streamedReplyText: String) -> String {
         var speakableText = streamedReplyText
 
-        if let completeTagRegex = try? NSRegularExpression(pattern: streamingCompleteTagPattern, options: [.caseInsensitive]) {
+        // **两个正则提为静态缓存**（2026-09-25 性能修复）：这个函数在流式回答期间
+        // **每个文字 delta 调用一次**（三段式喂朗读 + 更新卡片都要过它），原先每次
+        // 都现场编译两个 `NSRegularExpression` —— 主线程上每 delta 两次正则编译，
+        // 整轮 O(n²)。模式是常量，编译一次终身复用。
+        if let completeTagRegex = Self.streamingCompleteTagRegex {
             let wholeTextRange = NSRange(streamedReplyText.startIndex..., in: streamedReplyText)
             speakableText = completeTagRegex.stringByReplacingMatches(
                 in: streamedReplyText,
@@ -735,7 +739,7 @@ nonisolated enum ActionTagParser {
             )
         }
 
-        if let openTagRegex = try? NSRegularExpression(pattern: streamingOpenTagPattern, options: [.caseInsensitive]) {
+        if let openTagRegex = Self.streamingOpenTagRegex {
             let wholeTextRange = NSRange(speakableText.startIndex..., in: speakableText)
             if let openTagMatch = openTagRegex.firstMatch(in: speakableText, options: [], range: wholeTextRange),
                let openTagRange = Range(openTagMatch.range, in: speakableText) {
@@ -745,6 +749,16 @@ nonisolated enum ActionTagParser {
 
         return speakableText
     }
+
+    /// 编译一次、终身复用的流式剥标签正则（见 `speakableTextFromStreamedReply`）。
+    private static let streamingCompleteTagRegex = try? NSRegularExpression(
+        pattern: streamingCompleteTagPattern,
+        options: [.caseInsensitive]
+    )
+    private static let streamingOpenTagRegex = try? NSRegularExpression(
+        pattern: streamingOpenTagPattern,
+        options: [.caseInsensitive]
+    )
 
     private static func forEachMatch(
         in text: String,

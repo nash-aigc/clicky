@@ -327,7 +327,10 @@ struct NotchHomeView: View {
                 scrollToBottom(proxy)
             }
             .onChange(of: askVoiceCallController.liveAssistantText) { _ in
-                scrollToBottom(proxy)
+                // **流式期间用瞬时滚动**（2026-09-25 性能收敛）：带动画的滚动 0.2s
+                // 长于 delta 间隔 —— 动画在整个流式期间永远处于「被改目标」状态，
+                // 每一帧都要带着正在变大的内容重新定位。瞬时滚动无此成本。
+                scrollToBottomInstantly(proxy)
             }
             .onChange(of: sessionsModel.activeSessionID) { _ in
                 // Switching conversations has to land at the newest message,
@@ -338,7 +341,8 @@ struct NotchHomeView: View {
             }
             .thinWhiteScrollIndicator()
             .onChange(of: companionManager.streamingAnswerText) { _ in
-                scrollToBottom(proxy)
+                // 同上：流式期间瞬时滚动（每 delta 一次 0.2s 动画 = 动画永不停止）。
+                scrollToBottomInstantly(proxy)
             }
             .onChange(of: companionManager.liveJobProgressSteps.count) { _ in
                 scrollToBottom(proxy)
@@ -568,6 +572,14 @@ struct NotchHomeView: View {
 
     /// "23s · 21:59" — seconds when short, minutes when long; the finish time
     /// only when the turn carries one (older entries never will).
+    /// `DateFormatter` 创建/配置很贵，而 footer 会对每个带时间戳的历史条目、
+    /// 每次 body 求值（流式期间 = 每个文字 delta）调用一次 —— 缓存一个终身复用。
+    private static let cachedTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
     private static func footerDurationText(durationSeconds: Int, finishedAt: Date?) -> String {
         let durationPart: String
         if durationSeconds < 60 {
@@ -577,9 +589,7 @@ struct NotchHomeView: View {
         }
 
         guard let finishedAt else { return durationPart }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return "\(durationPart) · \(formatter.string(from: finishedAt))"
+        return "\(durationPart) · \(Self.cachedTimeFormatter.string(from: finishedAt))"
     }
 
     // MARK: - Composer (keyboard; talking is still push-to-talk)
@@ -641,14 +651,38 @@ struct NotchHomeView: View {
     /// The conversation view shows what the user hears, not the tags the
     /// executor reads — the same split the spoken answer makes. [POINT:…] and
     /// friends are stripped for display only; the stored entry keeps them.
+    ///
+    /// **结果按输入文本缓存**（2026-09-25 性能修复）：这个函数在 Ask 页的 body 里
+    /// 对**每条历史 entry** 调用（有的地方一帧两次），而 body 在流式回答期间
+    /// **每个文字 delta 都重算一次** —— 原先每条历史每帧都做一次正则 + 全文替换。
+    /// 历史条目的文本不可变，结果必然相同，用内存字典缓存后只有流式中的那条
+    /// 真正计算。
+    private static let actionTagStripCacheLock = NSLock()
+    private static var actionTagStripCache: [String: String] = [:]
+
     private func stripActionTagsForDisplay(_ text: String) -> String {
+        Self.actionTagStripCacheLock.lock()
+        if let cached = Self.actionTagStripCache[text] {
+            Self.actionTagStripCacheLock.unlock()
+            return cached
+        }
+        Self.actionTagStripCacheLock.unlock()
+
         // Tags look like [NAME:...] — drop everything from the opening
         // bracket to the closing one. Simple regex on a display copy only.
-        return text.replacingOccurrences(
+        let stripped = text.replacingOccurrences(
             of: "\\[[A-Z_]+:[^\\]]*\\]",
             with: "",
             options: .regularExpression
         )
         .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 缓存上限保护：足够覆盖最长会话的全部条目，超了就清（历史不可变，
+        // 重建的也只是重复计算一次）。
+        Self.actionTagStripCacheLock.lock()
+        if Self.actionTagStripCache.count > 512 { Self.actionTagStripCache.removeAll() }
+        Self.actionTagStripCache[text] = stripped
+        Self.actionTagStripCacheLock.unlock()
+        return stripped
     }
 }
