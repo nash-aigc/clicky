@@ -793,7 +793,7 @@ final class LongFormRecorderController: ObservableObject {
         // 末包必须发 —— 服务端收到它才会把最后一句判成 definite（实测如此）。
         // 等它回完再收尾，否则用户说的最后几个字进不了落盘的那一份。
         let client = asrClient
-        client?.finishAndAwaitFinalResult(timeoutSeconds: 4.0) { [weak self] in
+        client?.finishAndAwaitFinalResult(timeoutSeconds: 2.5) { [weak self] in
             Task { @MainActor in await self?.completeStop() }
         }
         // 兜底：万一回调因为任何原因没来，2 秒后也必须把界面放掉。
@@ -823,6 +823,9 @@ final class LongFormRecorderController: ObservableObject {
         // 先作废正在跑的那条收尾链 —— 它可能正卡在润色的网络请求里。
         cancellationGeneration += 1
         isPolishingTranscript = false
+        // 退出音效。用户：「在用户点击退出或按 ESC 退出时，播放退出音效」。
+        // 用比「完成」更沉的那一条，让人一听就知道是撤回而不是做完了。
+        SoundEffectPlayer.shared.play(.recordingCancelled)
         publishDiagnostic("用户取消了这一场：录音和已转写的部分都保留，不进剪贴板")
         finalizeCountdownTask?.cancel()
         finalizeCountdownTask = nil

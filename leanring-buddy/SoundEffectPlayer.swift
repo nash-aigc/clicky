@@ -67,6 +67,13 @@ final class SoundEffectPlayer {
         ///      基频留得久。所有分音同样衰减就是爆音。
         ///   ② **几毫秒的起振斜坡** —— 波形从 0 平滑升上去，去掉音头的「呲」。
         case recordingEditorOpened = "ui-recording-open"
+
+        /// 录音被 ESC / 退出按钮取消时的音效。
+        ///
+        /// 和 `recordingEditorOpened` **同一族、更低一个八度**（木块 294Hz 对 659Hz）：
+        /// 音色一致所以听起来是一套的，音高更低所以是「中断 / 撤回」而不是「完成」。
+        /// 取消和完成用同一个音会让人分不清刚才那一下到底是做了还是没做。
+        case recordingCancelled = "ui-recording-cancel"
     }
 
     private var playersByEffect: [SoundEffect: AVAudioPlayer] = [:]

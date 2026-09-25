@@ -82,6 +82,13 @@ nonisolated final class VolcengineRealtimeASRClient {
     private var lastAnnouncedSegmentStartMilliseconds = -1
     /// 连接真正建立的时刻。`新段 @连接后 Ns` 里的 N 用它算。
     private var connectionEstablishedAt: Date?
+    /// 末包已发、正等服务端把最后一段判成 `definite` 时挂着这个回调。
+    ///
+    /// **它的存在就是为了提前返回。** 原来 `finishAndAwaitFinalResult` 是
+    /// `asyncAfter(timeoutSeconds)` 到点才回调 —— 也就是说**每一次停止都固定等满
+    /// 那 4 秒**，和用户说了两个字还是两百个字毫无关系。而服务端的定稿通常几百毫秒
+    /// 就回来了。用户报的「说两个字也要等很久」就是这个。
+    private var finalResultCompletion: (() -> Void)?
 
     init(configuration: Configuration) {
         self.configuration = configuration
@@ -205,11 +212,13 @@ nonisolated final class VolcengineRealtimeASRClient {
             self.hasFinished = true
             self.watchdogTimer?.cancel()
             self.watchdogTimer = nil
+            // 定稿一到就由 `handleJSONPayloadOnQueue` 调它 —— 那是**正常出口**。
+            self.finalResultCompletion = completion
             self.sendOnQueue(VolcengineASRFrame.audioRequest(pcm: Data(), isLastPacket: true),
                              label: "末包", generation: self.generation)
+            // 超时只是**兜底**：连接死了、或者服务端根本不回定稿时才走到这里。
             self.socketQueue.asyncAfter(deadline: .now() + timeoutSeconds) { [weak self] in
-                self?.teardownOnQueue(sendLastPacket: false, notify: true)
-                DispatchQueue.main.async { completion() }
+                self?.finishFinalResultWaitOnQueue(reason: "超时兜底")
             }
         }
     }
@@ -301,6 +310,17 @@ nonisolated final class VolcengineRealtimeASRClient {
         for utterance in utterances {
             let text = utterance["text"] as? String ?? ""
             guard !text.isEmpty else { continue }
+            // **定稿一到，「等定稿」这件事立刻结束。** 这是正常出口，超时那条只是
+            // 兜底。没有这一句，每次停止都要白等满 `timeoutSeconds`。
+            if (utterance["definite"] as? Bool) == true, finalResultCompletion != nil {
+                publishSegment(VolcengineASRSegment(
+                    text: text,
+                    isDefinite: true,
+                    startMilliseconds: utterance["start_time"] as? Int ?? 0,
+                    endMilliseconds: utterance["end_time"] as? Int ?? 0))
+                finishFinalResultWaitOnQueue(reason: "定稿已到")
+                return
+            }
             publishSegment(VolcengineASRSegment(
                 text: text,
                 isDefinite: (utterance["definite"] as? Bool) ?? false,
@@ -334,6 +354,15 @@ nonisolated final class VolcengineRealtimeASRClient {
         }
         timer.resume()
         watchdogTimer = timer
+    }
+
+    /// 结束「等定稿」这件事，只走一次。
+    private func finishFinalResultWaitOnQueue(reason: String) {
+        guard let completion = finalResultCompletion else { return }
+        finalResultCompletion = nil
+        publishDiagnostic("末包定稿结束（\(reason)）")
+        teardownOnQueue(sendLastPacket: false, notify: true)
+        DispatchQueue.main.async { completion() }
     }
 
     // MARK: - 收尾
