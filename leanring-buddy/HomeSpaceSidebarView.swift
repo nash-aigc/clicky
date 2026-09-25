@@ -28,6 +28,13 @@ struct HomeSpaceSidebarView: View {
     /// its published presets and connection phase, and its rows select.
     @ObservedObject var voiceChatController: VoiceChatController
     @Binding var showsSettings: Bool
+
+    /// 「录音」快捷入口：点一下直接跳到设置里的录音页。
+    ///
+    /// 用户 2026-09-25：「主页面设置按钮的右侧显示一个录音按钮，点击后自动跳转到
+    /// 设置页面的录音位置，即设置一个快捷跳转按钮」。做成一��闭包而不是让侧栏
+    /// 自己去改 `selectedSettingsPage` —— 那一页的状态住在上层，侧栏不该伸手进去。
+    var openRecordingSettingsAction: () -> Void = {}
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
 
@@ -807,6 +814,17 @@ struct HomeSpaceSidebarView: View {
             ) {
                 SoundEffectPlayer.shared.play(.sidebarButton)
                 showsSettings = true
+            }
+
+            // 「录音」紧挨着设置右边 —— 一步跳到录音页，不用先进设置再找。
+            NotchBarActionButton(
+                title: "录音",
+                systemImage: "record.circle",
+                isHighlighted: showsSettings,
+                help: "录音历史与设置"
+            ) {
+                SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                openRecordingSettingsAction()
             }
 
             Spacer(minLength: 8)

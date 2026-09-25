@@ -89,7 +89,14 @@ struct NotchSheetRootView: View {
                         sessionsModel: sessionsModel,
                         agentSessionManager: agentSessionManager,
                         voiceChatController: voiceChatController,
-                        showsSettings: $showsSettings
+                        showsSettings: $showsSettings,
+                        openRecordingSettingsAction: {
+                            // 先落页、再开门 —— 顺序不能反：`NotchSettingsArea` 是在
+                            // `showsSettings` 变真的那一刻被插进树的，它读的是当时的
+                            // `selectedSettingsPage`。
+                            selectedSettingsPage = .recording
+                            showsSettings = true
+                        }
                     )
                     .frame(width: 245)
 

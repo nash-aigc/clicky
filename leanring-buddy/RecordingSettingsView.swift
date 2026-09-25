@@ -26,10 +26,12 @@ extension GeneralSettingsView {
                 subtitle: "按住快捷键开始录，再按一次结束。音频和文字都是边录边落盘的，中途断电也能在本地看到已经录到的部分。"
             )
 
+            // **录音历史放在最顶上**（用户 2026-09-25：「最顶部是录音历史」），
+            // 其余设置参数依次排在它下面。
+            recordingHistorySection
             recordingShortcutSection
             recordingServiceSection
             recordingStorageSection
-            recordingHistorySection
         }
     }
 
@@ -234,60 +236,179 @@ extension GeneralSettingsView {
 
     // MARK: - 历史
 
-    @ViewBuilder
-    private var recordingHistorySection: some View {
-        SettingsGroupLabel("历史录音")
-        SettingsCard {
-            let sessions = RecordingLibraryStore.shared.allSessions()
-            if sessions.isEmpty {
-                SettingsRow(
-                    label: "还没有录音",
-                    description: "录完第一场之后，这里会列出每一场的时长、字数，以及打开音频 / 打开文件夹 / 复制全文三个动作。"
-                ) {
-                    EmptyView()
-                }
-            } else {
-                ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
-                    if index > 0 { SettingsCardRowDivider() }
-                    recordingHistoryRow(session)
-                }
-            }
-        }
-
-        SettingsCard {
-            SettingsNote(
-                text: "这里只列已经录过的场次。**删文件请到访达里删** —— 这个界面不会替你删掉任何一段录音。"
-            )
-        }
+    /// 历史卡片要用的保存目录。
+    private var folderURLForHistory: URL {
+        RecordingLibraryStore.resolvedFolderURL(
+            fromSettingsPath: generalSettingsViewModel.draftSettings.recordingSaveFolderPath)
     }
 
     @ViewBuilder
-    private func recordingHistoryRow(_ session: RecordingSession) -> some View {
-        let folder = RecordingLibraryStore.resolvedFolderURL(
-            fromSettingsPath: generalSettingsViewModel.draftSettings.recordingSaveFolderPath)
-        SettingsRow(
-            label: "\(session.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(session.formattedDuration)",
-            description: "\(session.characterCount) 字 · \(session.segmentCount) 句"
-                + (session.endedCleanly ? "" : " · 未正常结束")
-                + (session.connectionRotationCount > 0 ? " · 换过 \(session.connectionRotationCount) 次连接" : "")
-        ) {
-            HStack(spacing: 8) {
-                Button("播放") {
-                    NSWorkspace.shared.open(session.audioFileURL(inFolder: folder))
+    private var recordingHistorySection: some View {
+        SettingsGroupLabel("录音历史")
+        SettingsCard {
+            let sessions = Array(RecordingLibraryStore.shared.allSessions().prefix(50))
+            if sessions.isEmpty {
+                SettingsRow(
+                    label: "还没有录音",
+                    description: "录完第一场之后，这里会列出每一场的时间和字数，每一条都能复制全文、播放、在访达里打开。"
+                ) { EmptyView() }
+            } else {
+                // **只露出最近五条的高度，其余靠滑动。** 用户：「只显示最近五条内容，
+                // 剩余内容通过滑动显示更多」。外层的设置页本身也在滚，所以这里用一个
+                // 定高的内层滚动区 —— 不这么做的话，历史一长就把下面所有设置推到很远。
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(spacing: 8) {
+                        ForEach(sessions, id: \.id) { session in
+                            RecordingHistoryCard(session: session, folder: folderURLForHistory)
+                        }
+                    }
+                    .padding(.vertical, 2)
                 }
-                .buttonStyle(.bordered)
-                Button("文件夹") {
-                    NSWorkspace.shared.activateFileViewerSelecting([session.audioFileURL(inFolder: folder)])
-                }
-                .buttonStyle(.bordered)
-                Button("复制全文") {
-                    let text = (try? String(contentsOf: session.transcriptFileURL(inFolder: folder),
-                                            encoding: .utf8)) ?? ""
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(text, forType: .string)
-                }
-                .buttonStyle(.bordered)
+                .frame(height: Self.historyViewportHeight)
             }
         }
+
+        if !RecordingLibraryStore.shared.allSessions().isEmpty {
+            SettingsCard {
+                SettingsNote(
+                    text: "这里只列已经录过的场次。**删文件请到访达里删** —— 这个界面不会替你删掉任何一段录音。"
+                )
+            }
+        }
+    }
+
+    /// 五条卡片出头的高度。卡片两行、加上内边距，单条约 78pt。
+    private static let historyViewportHeight: CGFloat = 400
+
+    /// 展开区十行出头的高度。行高（12.5pt 字 + 4pt 行距）约 21pt。
+    private static let expandedTranscriptHeight: CGFloat = 210
+
+    /// 标题：「26 年 09 月 30 日 14 点 · 3:24 · 812 字」。
+    private static func historyTitle(for session: RecordingSession) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yy 年 MM 月 dd 日 H 点"
+        return "\(formatter.string(from: session.startedAt)) · \(session.formattedDuration) · \(session.characterCount) 字"
+    }
+
+    private static func transcriptText(of session: RecordingSession, inFolder folder: URL) -> String {
+        (try? String(contentsOf: session.transcriptFileURL(inFolder: folder), encoding: .utf8))?
+            .replacingOccurrences(of: "\n", with: "") ?? ""
+    }
+
+    private static func transcriptPreview(of session: RecordingSession, inFolder folder: URL) -> String {
+        let text = transcriptText(of: session, inFolder: folder)
+        return text.isEmpty ? "（没有识别到文字）" : text
+    }
+
+    private func historyActionButton(_ title: String, systemImage: String,
+                                     action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(DS.Colors.textSecondary)
+                .frame(width: 26, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(DS.Colors.surface4)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(title)
+    }
+}
+
+/// 一条录音历史。**两行**。
+///
+/// 第一行 = 标题（时间 · 时长 · 字数）+ 右侧四个动作（复制全文 / 播放 / 在访达中显示 / 展开）。
+/// 第二行 = 内容预览；展开后显示全文，**最多十行**，再多在这个小区域里滑。
+///
+/// 做成独立的 `View` 而不是 `GeneralSettingsView` 扩展里的一个函数：展开状态需要
+/// `@State`，而 **extension 里不能声明存储属性** —— 每张卡片自己持状态，顺带也让
+/// 「展开哪一条」天然是每张卡各管各的。
+private struct RecordingHistoryCard: View {
+    let session: RecordingSession
+    let folder: URL
+
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 6) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(DS.Colors.textPrimary)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                action("复制全文", systemImage: "doc.on.doc") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(fullText, forType: .string)
+                }
+                action("播放", systemImage: "play.circle") {
+                    NSWorkspace.shared.open(session.audioFileURL(inFolder: folder))
+                }
+                action("在访达中显示", systemImage: "folder") {
+                    NSWorkspace.shared.activateFileViewerSelecting([session.audioFileURL(inFolder: folder)])
+                }
+                action(isExpanded ? "收起" : "展开",
+                       systemImage: isExpanded ? "chevron.up" : "chevron.down") {
+                    withAnimation(.easeInOut(duration: 0.18)) { isExpanded.toggle() }
+                }
+            }
+
+            if isExpanded {
+                ScrollView(.vertical, showsIndicators: true) {
+                    Text(fullText.isEmpty ? "（这一场没有识别到文字）" : fullText)
+                        .font(.system(size: 12.5))
+                        .foregroundColor(DS.Colors.textSecondary)
+                        .lineSpacing(4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                }
+                .frame(height: 210)
+            } else {
+                Text(preview)
+                    .font(.system(size: 12.5))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(11)
+        .background(
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(DS.Colors.surface2)
+        )
+    }
+
+    private var fullText: String {
+        (try? String(contentsOf: session.transcriptFileURL(inFolder: folder), encoding: .utf8))?
+            .replacingOccurrences(of: "\n", with: "") ?? ""
+    }
+    private var preview: String { fullText.isEmpty ? "（没有识别到文字）" : fullText }
+
+    /// 标题：「26 年 09 月 30 日 14 点 · 3:24 · 812 字」。
+    private var title: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yy 年 MM 月 dd 日 H 点"
+        return "\(formatter.string(from: session.startedAt)) · \(session.formattedDuration) · \(session.characterCount) 字"
+    }
+
+    private func action(_ title: String, systemImage: String,
+                        action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(DS.Colors.textSecondary)
+                .frame(width: 26, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .fill(DS.Colors.surface4)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(title)
     }
 }
