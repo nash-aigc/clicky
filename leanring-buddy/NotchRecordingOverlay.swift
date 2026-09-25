@@ -593,7 +593,17 @@ private struct SmoothRevealedTranscriptText: View {
                    alignment: measuredWidth > availableWidth ? .trailing : .leading)
             .onReceive(ticker) { _ in advance() }
             .onChange(of: text) { _, _ in advance() }
-            .onAppear { advance() }
+            // **首次出现直接对齐，不从空串逐字爬。**
+            //
+            // 平滑揭示是给「新字到达」用的（30 字/秒，跟得上服务端每秒 ~25 字的
+            // 吞吐）。但视图第一次出现时**根本没有新字** —— 文本早就在那儿了，
+            // 应该立刻完整显示。原来这里调的是 `advance()`，而它每次只推进一个字，
+            // 于是几十秒的录音要从空白爬十几秒才能爬完，用户看到的就是
+            // 「第一次展开只显示左侧一点点」。第二次展开时 SwiftUI 复用了这个视图、
+            // `shownText` 还留着上一次爬完的结果，所以看起来「第二次就正常了」。
+            .onAppear {
+                shownText = String(text.suffix(Self.windowCharacterCount))
+            }
     }
 
     /// 用同一个字体直接量文字宽度。
