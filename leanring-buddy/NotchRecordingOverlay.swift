@@ -39,9 +39,9 @@ struct NotchRecordingBandView: View {
     /// 小窗标题栏的高度。控制器算它的命中矩形时要用 —— 画的和点的必须是同一个数。
     static let titleBarHeight: CGFloat = 26
 
-    /// 刘海自己底角的圆角半径。小窗的宽度要把它两侧各减掉一个 —— 见挂载处的注释。
-    /// 10 是 `NotchPillRootView` 里那个值（「底角 10pt 接近系统圆角」）。
-    static let notchCornerRadius: CGFloat = 10
+    /// 字幕条（转写那一行）的圆角半径。小窗的宽度要把它两侧各减掉一个 —— 见挂载处。
+    /// 22 是 `transcriptRibbon` 里 `RecordingRibbonShape(cornerRadius: 22)` 那个值。
+    static let ribbonCornerRadius: CGFloat = 22
 
     var body: some View {
         VStack(spacing: 0) {
@@ -62,15 +62,17 @@ struct NotchRecordingBandView: View {
                     // 只在**收起态**显示：展开时那块面板正好占满窗口高度，没地方放了
                     // （而展开态本来就在看文字，不需要这个窗）。
                     if recorder.isCameraCapturing {
-                        // **宽度取刘海圆角之间那段「直的」**，不是整条带。
+                        // **宽度 = 字幕条的宽 − 它自己两个圆角的半径。**
                         //
-                        // 用户 2026-09-26：「你要知道这个刘海，他左右两侧是有圆角的……
-                        // 圆角的下面是不应该有东西的，它应该放在圆角这个里面……
-                        // 左边圆角的半径、右边圆角的半径删掉，然后中间那部分才是真正的
-                        // 摄像头的宽度」。小窗挂在刘海正下方，如果和整条带一样宽，
-                        // 就会压在刘海两个圆角下面 —— 那里按物理形状是没有东西的。
-                        NotchCameraPreviewStrip(recorder: recorder,
-                                                width: max(notchWidth - Self.notchCornerRadius * 2, 120))
+                        // 用户 2026-09-26：「音频转写这一行是由圆角的。圆角的半径。
+                        // 就应该删掉左边的半径、右边的圆角的半径删掉，然后中间那部分
+                        // 才是真正的摄像头的宽度」。
+                        //
+                        // 参照物是**字幕条**，不是刘海 —— 我上一版拿刘海算（185−20=165），
+                        // 用户当场说「太小了」。字幕条是整条带宽（359），它的圆角是 18。
+                        NotchCameraPreviewStrip(
+                            recorder: recorder,
+                            width: max(bandWidth - Self.ribbonCornerRadius * 2, 120))
                     }
                 }
             }
@@ -1153,8 +1155,8 @@ final class NotchRecordingOverlayController {
     /// 「窗口顶 − 刘海高 − 字幕条高 − 标题栏高」。横向以刘海居中，宽度是刘海
     /// 圆角之间那段直的。
     private func computeCameraStripTitleBarRect(for panel: NSPanel, notch: CGRect) -> CGRect? {
-        let stripWidth = max(notch.width - NotchRecordingBandView.notchCornerRadius * 2, 120)
         let bandWidth = NotchSupport.leadingWingWidth + notch.width + NotchSupport.trailingWingWidth
+        let stripWidth = max(bandWidth - NotchRecordingBandView.ribbonCornerRadius * 2, 120)
         let stripLeft = panel.frame.midX - bandWidth / 2 + (bandWidth - stripWidth) / 2
         let titleBarTop = panel.frame.maxY - notch.height - NotchRecordingBandView.ribbonHeight
         return CGRect(x: stripLeft, y: titleBarTop - NotchRecordingBandView.titleBarHeight,

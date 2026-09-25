@@ -387,8 +387,12 @@ final class LongFormRecorderController: ObservableObject {
     /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
     private var polishScreenshotJPEG: Data?
 
-    /// 录音期间持续抓摄像头帧的会话。**只有转写里出现「摄像头」才启动**。
-    private let cameraSession = RecordingCameraSession()
+    /// 录音期间持续抓摄像头帧的会话。**每一轮录音都新建一个。**
+    ///
+    /// 不能跨轮次复用一个：`AVCaptureSession` 重复 `addInput` 时 `canAddInput`
+    /// 会返回 false，而那是**静默失败** —— 第二轮开始摄像头就再也起不来了。
+    /// 用户实测的「关掉摄像头之后，下一轮再提就没反应」就是这个。
+    private var cameraSession = RecordingCameraSession()
 
     /// 这一轮会话里抓到的帧。停止时一并交给润色。
     private var cameraFrames: [Data] = []
@@ -478,15 +482,21 @@ final class LongFormRecorderController: ObservableObject {
     /// 正在抓帧。刘海下面的小窗读它决定要不要显示。
     @Published private(set) var isCameraCapturing = false
 
-    /// 转写里有没有提到摄像头。
+    /// 转写里有没有说出**触发短语**。
     ///
-    /// 词表放宽到口语里真会出现的说法：ASR 把「摄像头」转成「摄象头」「摄像头儿」都
-    /// 有可能，而漏判的代价是「用户明明在问镜头，模型却看不到」—— 那正是它存在的意义。
-    /// 宁可有几个错判（多附一张 33KB 的图），不可漏判。
+    /// **刻意不用裸的「摄像头」。** 用户 2026-09-26：「不能单纯是'摄像头'，因为很有
+    /// 可能我说的话或者我平时的任务跟摄像头也是有关系的」。开会、写文档、聊天时说到
+    /// 这个词太正常了，而每一次误触发都会开一次摄像头、发一批图。
+    ///
+    /// 所以要求是**精准的整词**：`123摄像头` 或 `打开摄像头`。这两串在日常句子里
+    /// 不会偶然出现，而只在用户真的要用的时候说出来。
+    ///
+    /// 这也解释了它为什么必须是「整词包含」而不是「关键词 + 上下文判断」——
+    /// 判断要花一次模型调用，而触发与否决定的是**要不要开摄像头**，那件事必须在
+    /// 本地、在毫秒内定下来。
     private static func transcriptMentionsCamera(_ text: String) -> Bool {
         let lowered = text.lowercased()
-        let keywords = ["摄像头", "摄象头", "镜头", "相机", "摄像", "webcam", "camera", "cam"]
-        return keywords.contains { lowered.contains($0) }
+        return ["123摄像头", "打开摄像头"].contains { lowered.contains($0) }
     }
 
     /// 这一步到底会不会真的走模型。界面用它决定要不要进入「AI 润色中」相位 ——
