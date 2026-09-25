@@ -318,6 +318,29 @@ The recording mute is now the between-replies half, and the AEC covers the windo
 
 **Cursor Shape and Follow Distance**: `ArrowCursorShape` draws the macOS pointer with its **tip at `rect` centre**, matching `Triangle`, so `.position(cursorPosition)` means the same thing for both and no anchor correction is needed. `CursorFollowDistance` replaces the four hardcoded `+35 / +25` sites — the `init` default, the `onAppear` placement, the per-frame follow in `startTrackingCursor`, and the landing point in `startFlyingBackToCursor`. Missing the last one makes the companion fly back to the old spot and then jump. The pointing offset in `startNavigatingToElement` (`+8 / +12`) is deliberately untouched: "rest beside the element" is a different idea from "follow the mouse".
 
+### The 长录音 subsystem（转写 + 自定义风格）
+
+**一个和语音管线零共享的独立子系统**：按住快捷键开始录、再按一次结束，音频和文字边录边落盘。用户对这个功能的硬要求是「独立接线，跟当前整个面板里任何功能都没有关系」—— 所以它有自己的 `AVAudioEngine`（`BuddyDictationManager` 只有**一份**连续监听窗口，共用必然串台）、自己的状态、自己的快捷键。刘海是唯一共享的东西，而那是**画布不是状态机**。
+
+**四条腿撑起「3 小时不断」，缺一条都站不住：**
+
+1. **连接是可替换的。** 单次连接能活多久官方**没有给上限**（这一点专门查过），所以设计上不依赖它 —— 每 `recordingRotationMinutes`（默认 20 分钟）在**静音处**换一条，加上**间隔两倍的硬上限**。硬上限是必须的：只有「静音才换」的话，连续说 20 分钟、中间从不停顿 1.5 秒的用户永远不会轮换，连接就无限跑下去。小时版按音频**时长**计费、不按连接数，所以轮换不额外花钱。
+2. **接缝是缝上的，不是假设干净的。** 硬上限让接缝可能落在句子中间，而「静音处无词可丢」正是原来唯一的依据。所以保留最近 8 秒音频，重连时**先重喂**，再用**服务端自己的毫秒时间戳**把重喂那段回来的文字丢掉。用时间戳不用文本：重喂的段会被重新识别、用词不同，只有毫秒位置稳定。宁可重、不可丢 —— 重复有确定的方法识别，丢掉的词没有任何办法找回。
+3. **音频直接落盘，永不进内存。** 345MB 攒着必然出事。而落盘的就是上行的字节流（同一个重采样缓冲），所以 `.wav` 可以原样重放给服务端、完整复现一次识别 —— 3 小时的问题只能靠这个性质调试。
+4. **文本的运行时开销与会话长度无关。** 磁盘是真相、内存只留「当前句 + 一个滚动窗口」。3 小时的文本塞进一个 `@Published String`，每来一个字重排整串 —— 那是这个仓库在回答卡片上已经踩过一次的坑。
+
+**`result_type` 必须是 `"single"`，这是长会话能不能跑下去的分水岭。** 默认的 `"full"` 每帧回**整场累积**文本，实测 28.6 秒时每帧已 ~150 字且随会话线性增长；3 小时是它的 377 倍，也就是每秒重下上百 KB 冗余。`"single"` 只回当前这一段，每帧稳定在 1.8–2.1 KB。
+
+**转写完成后可选地走一次「自定义风格」**：勾选中的风格提示词 + 转写原文（+ 可选的屏幕截图）拼成一次请求，回复就是最终内容。**没勾选任何风格、也没勾截图时一步都不走** —— 不建请求、不动文本，和这个功能不存在时完全一致。提示词按用户定的形状组装：**标签在上、内容在下**，`<rules>` 里是要遵守的要求，`<transcript>` 是要处理的材料，截图居中并明确标注为「理解内容的参考，不要描述这张图」。
+
+**这一步最大的开销是模型的思考，不是网络。** `deepseek-flash` 是推理模型，`thinking: {"type": "disabled"}` 是必须发的 —— 这个仓库自己量过那笔账（视觉那条路上 4.5 秒的请求里 3.4 秒是思考）。润色是改写任务，那段思考用户一个字都看不到。实测关掉之前一次 23 秒、一次 8 秒，关掉之后是 1 秒量级。
+
+**刘海 UI 是一块独立面板，不是刘海窗口的子视图** —— 刘海窗口的高度只有刘海加一点余量，而转写那一行挂在刘海**下面**，画进去根本看不见。**而且窗口尺寸建好一次、永不改变**：它是透明窗口、黑色靠 SwiftUI 画，几何在 CA 提交**之前**就改了，中间那一瞬新露出来的区域是空的、桌面会透出来。收起时多出来的透明区靠 `ignoresMouseEvents` 让开，两翼的点击走全局监听。
+
+**滚动那一行反复出问题的根因只有一个，值得单独记住**：它的位移是 `可用宽度 − 文字宽度`，所以**只要文字变短，屏幕上就向右跳**。这条决定了三件事：显示源必须**只增不减**（`transcriptPlainText + livePartialText`，不是那个被 `suffix(90)` 截过的行）；窗口上限必须带**迟滞**（160↔220 先长后裁，否则上限本身就把窗口变回了定长窗口、宽度恒定、`onChange` 不触发、动画再也不被调度）；窗口**必须能长**（`suffix(N)` 永远会饱和，而汉字 advance 完全相同 —— 实测 14.883268pt，纯中文 64 字窗口恒为 952.53pt —— 所以定长窗口满了之后「前掉一个后进一个」宽度一个 bit 都不变）。
+
+**交互规则**（用户逐条定的）：粘贴**只发生在**「窗口没开 + 按快捷键停止」；其余一律**只进剪贴板**，且挂在**关窗**这个唯一收口上，保证没点过复制的也不会丢。ESC 分两档 —— 有活在跑时是「取消整件事」（录音和已转写的部分都保留，因为用户可能只是误触），都停了才是「收起窗口」；顺序不能反，否则用户会以为没生效。取消的闸门是 `cancellationGeneration`：润色正卡在网络请求里时，取消是从**另一个入口**按下来的，两者不在同一条任务链上。
+
 ### Acting on the computer
 
 The model can do more than point — `[CLICK:]`, `[RIGHT_CLICK:]`, `[DOUBLE_CLICK:]`, `[SCROLL:]`, `[TYPE:]`, `[SELECT:]`, `[PRESS:]`, `[OPEN:]`, `[WAIT:]` and `[AX_TREE]` are executed for real by `MacosUseController`, the **only file that imports `MacosUseSDK`** (SPM, pinned to revision `a2d78663`; the same SDK the machine's `mcp-server-macos-use` project uses). Four things about it are load-bearing:
@@ -403,6 +426,16 @@ The model can do more than point — `[CLICK:]`, `[RIGHT_CLICK:]`, `[DOUBLE_CLIC
 | `ModelSettingsView.swift` | ~602 | The 模型 page: 「当前使用」 (one row per role) and 「服务商」 (credentials only), with the test/save bar pinned outside the scroll view. Rendered inside the settings window's content area, so it draws no window chrome of its own. |
 | `worker/src/index.ts` | ~142 | Retired Cloudflare Worker proxy, kept for reference only. |
 | `geometry-dsl/` | — | **画图技能子项目（第五出口的引擎）**。完整的上游 Git 项目（shand001/geometry-dsl，自带 `.git`，历史上游），Clicky 不改它、只通过 CLI 调用：`node dist/cli.js 文件.geom -o 图.svg` 渲染、`node scripts/validate_geometry.mjs 文件.geom` 校验（退出码 0 = 通过）。出口⑤的桥接脚本 `geometry-dsl/figure_agent.py` 也住在这里（不在上游仓库的追踪里）：Clicky 的大模型在回复里写 `[SVG_AGENT:任务]`（开文件模式）或 `[SVG_BOARD:元素名：任务]`（屏幕白板模式，加 `--no-open`）→ `MacosUseController`（`figureAgentScriptPath`）用 python3 跑它 → DeepSeek 写 .geom → 校验失败自动让模型修（最多 3 轮）→ SVG 落 `~/Desktop/Clicky图形/`；开文件模式自动打开预览，白板模式由 `FigureBoardController` 画在屏幕上。stdout 第一行固定是「图已画好：<路径>」，Swift 靠这一行取路径。分工是「模型只描述，编译器算坐标」。 |
+| `LongFormRecorderController.swift` | ~1239 | 长录音的编排器。它和语音管线**零共享** —— 自己的 `AVAudioEngine`（`BuddyDictationManager` 只有一份连续监听窗口，共用必然串台）、自己的状态、自己的快捷键。音频 tap 每 ~100ms 出一块，重采样到 16kHz 单声道 PCM16 之后**一份落盘、一份上行**（同一个缓冲，所以 `.wav` 里的字节就是发给服务端的字节，可原样重放复现一次识别）。3 小时不断靠四条腿：`recordingRotationMinutes`（默认 20 分钟，在**静音处**换连接）、**间隔两倍的硬上限**（连续说话没有停顿的用户也要换，否则连接无限跑）、断线重连、以及接缝的**重叠重喂 + 毫秒时间戳去重**（`RecentAudioRing` 留最近 8 秒，重连时先喂回去，`seamSuppressionMilliseconds` 把重喂那段回来的文字按服务端时间戳丢掉 —— 用时间戳不用文本，因为重喂的段会被重新识别、用词不同）。转写结束后按「自定义风格」重写一遍（`polishIfConfigured`），**没勾选任何风格也没勾截图时一步都不走**，原文直接就是最终内容。`polishScreenshotJPEG` 在**停止那一刻**抓 —— 晚几百毫秒屏幕上就可能换了样。`cancellationGeneration` 是取消的闸门：润色正卡在网络请求里时取消是从另一个入口按下来的，两者不在同一条任务链上，代次是唯一能跨入口说的「这件事作废了」。`transcriptPlainText` 与 `livePartialText` 都**只追加**，`marqueeText` 由两者拼成 —— 位移是 `可用宽度 − 文字宽度`，**文字一旦变短就会向右跳**，而 `liveTranscriptLine`（尾巴 `suffix(90)` + 当前段）每定稿一次就变短。 |
+| `VolcengineRealtimeASRClient.swift` | ~430 | 豆包流式识别的 WebSocket 客户端。**四条实测出来的硬约束**（2026-09-25，真服务）：`result_type` 必须是 `"single"`（默认的 `"full"` 每帧回**整场累积**文本，实测 28.6 秒时每帧已 ~150 字且线性增长，3 小时是它的 377 倍）；`compression: none` 服务端接受（省掉手写 gzip 外壳 —— Foundation 的 `.zlib` 出的是裸 deflate，实测 `73 74 1c 05`）；**末包一发出服务端立刻关连接**，所以长录音中途绝不能发；跨重连的判重必须**按文本**不能按时间戳（新连接的时间轴从零重计，按时间戳比会丢真实内容、留重复）。`finishAndAwaitFinalResult` 的定稿回调由**定稿到达**触发，超时只作兜底 —— 原来它是 `asyncAfter(timeout)` 到点才回调，于是每次停止都白等满 4 秒，和说了两个字还是两百个字无关。 |
+| `VolcengineASRFrame.swift` | ~195 | 豆包识别的二进制帧编解码。**只有纯函数**：没有网络、没有状态、没有并发，所以能脱离整个 App 单独编译运行 —— 一个探针就能把每一帧验到底。帧结构是「≥4 字节可变 header + payload 长度 + payload」，header 描述消息类型 / 序列化方式 / 压缩。 |
+| `RecordingAudioWriter.swift` | ~186 | 边录边写的 WAV 落盘器。3 小时 = 345MB，攒在内存里必然出事，所以开文件时先写 44 字节占位头、之后每来一块追加一块、停止时 seek 回开头回填两个长度字段。`appendingToExistingFile` 是「挂断后继续录、内容追加」的地基 —— `createFile` 在文件已存在时是**截断**，直接复用会把上一段录音抹掉且不报错。 |
+| `LongFormTranscriptWriter.swift` | ~188 | 转录落盘：磁盘是真相、内存只留窗口。`.jsonl` 逐段追加（带毫秒时间戳），`.txt` 是给人看和给剪贴板用的纯文本，`definite` 一到立刻 `synchronize()`。`commit` **返回是否真的落盘** —— 调用方必须跟着返回值走，否则被判重丢掉的那一段仍然会显示出来，屏幕上就是每句出现两遍。 |
+| `RecordingLibrary.swift` | ~188 | 录音元数据与历史索引。每场录音自己带一份 `.json`（所以一整场可以直接拖走，不需要外部索引也对得上），`Recordings.json` 只是缓存 —— `rescanFromDisk` 能只靠目录重建历史。**只删索引不删文件**：删录音是删除文件本身的事，由界面上带确认的操作负责。 |
+| `NotchRecordingOverlay.swift` | ~1085 | 刘海上的录音 UI：左右两翼 + 刘海下方那一行滚动转录。**是一块独立面板，不是刘海窗口的子视图** —— 刘海窗口的高度只有刘海加一点余量，而转写那一行挂在刘海**下面**，画进去根本看不见。**窗口尺寸建好一次、永不改变**：它是透明窗口、黑色靠 SwiftUI 画，而几何在 CA 提交**之前**就改了，中间那一瞬新露出来的区域是空的、桌面会透出来（用户报的「背景穿透」）。收起时多出来的透明区靠 `ignoresMouseEvents` 让开，两翼的点击走全局监听（刘海 pill 用的就是这套）。`SmoothRevealedTranscriptText` 的位置是 `可用宽度 − 文字宽度`，所以**文字变短就会向右跳** —— 这是它反复出问题的唯一原因，改动的每一次都要先问「这个改动会不会让宽度变小」。窗口上限必须带**迟滞**（160↔220 先长后裁），否则上限本身就把窗口变回了定长窗口、宽度恒定、动画再也不被调度。 |
+| `RecordingSettingsView.swift` | ~597 | 设置页「录音」。历史在最顶、其余参数在下；每条历史两行（标题 + 复制/播放/在访达中显示/展开，第二行预览或十行全文）。「自定义风格」那一节含总开关、屏幕截图开关、模型 URL/Key/模型 ID，以及**从「模型」页导入**的选择器 —— 模型 ID 跟着服务商一起换，因为一个地址配别家的模型名必然 404。 |
+| `RecordingPolishStyle.swift` | ~280 | 「自定义风格」的数据与存储。多条风格各自一个开关 + 可改名的名称 + 提示词，出厂那条是用户给的 3556 字「文本后处理引擎」提示词，**逐字照抄**（那是他写好的规则，改一个字都可能改变行为），**可以关但不给删** —— 恢复它意味着让用户重新贴一遍三千多字。 |
+| `RecordingPolishClient.swift` | ~206 | 转写结束后的模型调用。**必须发 `thinking: {"type": "disabled"}`** —— `deepseek-flash` 是推理模型，会在给出答案前先吐几百上千个推理 token，而这个仓库自己量过那笔账（视觉那条路上 4.5 秒的请求里 3.4 秒是思考）。润色是改写任务，那段思考用户一个字都看不到，全是白等；实测一次 23 秒、一次 8 秒，关掉之后是 1 秒量级。地址留空时回落到「模型」页里 🧠 那个服务商。**失败就用原文** —— 用户要的是「整理一下再给我」，整理失败时他最需要的仍然是他说过的话。 |
 | `FigureBoardController.swift` | ~195 | `[SVG_BOARD:元素名：任务]` 的屏幕白板：把画图助手的 SVG 画在一块白色圆角小板上，板子放在锚点元素（AX 解析出的真实 Quartz 坐标系 frame）旁边——先放右边，放不下翻到左边，再夹进屏幕内。窗口配方照抄 `ScreenAnnotationManager`：一块透明点击穿透 `OverlayWindow`、自动淡出（20 秒，比绿圈久，图要读）、generation 计数防旧淡出任务误杀新板。纯视觉：跟绿圈一样在每次新截图、打断、新按键前清掉，模型永远不会看到自己画的图。 |
 
 ## Build & Run
