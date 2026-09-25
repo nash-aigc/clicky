@@ -1949,6 +1949,16 @@ final class CompanionManager: ObservableObject {
             : trimmedCustomPrompt
         systemPrompt += "\n\n" + SubAgentCatalog.prompt
 
+        // **高速通道**（方案第 5 步）：复盘统计出来、用户批准过的那几条。
+        //
+        // 空的时候 `promptSection` 返回空串，所以这一行在没有人用过复盘之前
+        // **一个字符都不加** —— 这正是方案 §09 总验收第 5 条要的性质：
+        // 「把高速通道关掉，所有功能仍然正常（只是慢）」。
+        let fastPathSection = FastPathCatalog.promptSection(from: settings.fastPathEntries)
+        if !fastPathSection.isEmpty {
+            systemPrompt += "\n\n" + fastPathSection
+        }
+
         systemPrompt += "\n\nlength for this conversation — this overrides the length guidance above: \(settings.answerLengthStyle.promptSentence)"
 
         let extraInstructions = settings.extraSystemPromptInstructions

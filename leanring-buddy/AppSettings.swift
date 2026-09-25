@@ -1191,6 +1191,16 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     ///
     /// 判定逻辑不在这个文件里 —— 它是纯数据；匹配、四条逃逸防线、最长匹配都在
     /// `FileAccessPolicy`，那个类型能脱离 App 单独跑测试。
+    /// **高速通道**：复盘从真实使用里统计出来、经用户批准后写进提示词的那几条。
+    ///
+    /// 它是**唯一**往主 agent 提示词里加东西的地方（方案 §08 §一），也是这套架构里
+    /// 唯一会自己长大的部分 —— 所以三条防退化规则全在 `FastPathCatalog` 里：
+    /// 20 行 / 800 字符的预算、超了按频率淘汰、60 天没命中自动撤出。
+    ///
+    /// **批准才生效**（方案 §5.2）：一条统计错的条目不是「没用」，是**每次遇到都会
+    /// 被错误地执行**。所以这张表里只放用户点过头的，候选另外存。
+    var fastPathEntries: [FastPathEntry] = []
+
     var fileAccessEntries: [FileAccessEntry] = []
 
     /// 润色用的模型。留空 = 用「模型」页里 🧠 那个角色配置的服务商。
@@ -1335,6 +1345,7 @@ nonisolated extension AppSettings {
         case recordingPastesAfterStop
         case recordingAudioRetentionDays
         case recordingTextRetentionDays
+        case fastPathEntries
         case fileAccessEntries
         case recordingPolishEnabled
         case recordingPolishCapturesScreenshot
@@ -1472,6 +1483,7 @@ nonisolated extension AppSettings {
         recordingPastesAfterStop = try container.decodeIfPresent(Bool.self, forKey: .recordingPastesAfterStop) ?? defaults.recordingPastesAfterStop
         recordingAudioRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingAudioRetentionDays) ?? defaults.recordingAudioRetentionDays
         recordingTextRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingTextRetentionDays) ?? defaults.recordingTextRetentionDays
+        fastPathEntries = try container.decodeIfPresent([FastPathEntry].self, forKey: .fastPathEntries) ?? defaults.fastPathEntries
         fileAccessEntries = try container.decodeIfPresent([FileAccessEntry].self, forKey: .fileAccessEntries) ?? defaults.fileAccessEntries
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
         recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot
