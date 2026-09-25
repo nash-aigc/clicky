@@ -4054,7 +4054,15 @@ final class CompanionManager: ObservableObject {
             do {
                 switch request.kind {
                 case .listTools:
+                    let started = Date()
                     let tools = try await MCPRegistry.shared.tools(ofServerNamed: request.serverName)
+                    // **成功也要打。** 原来只有失败打日志，于是「它到底调没调」这个问题
+                    // 在日志里和「模型压根没写这个标签」长得一模一样 —— 而这两件事的
+                    // 修法完全不同（一个是接线，一个是提示词）。第一次 npx 还要下载，
+                    // 所以耗时也记下来。
+                    SoundEffectPlayer.appendToDiagnosticLog(String(
+                        format: "MCP 列出 %@ 的工具：%d 个（%.1f 秒，首次会下载）",
+                        request.serverName, tools.count, Date().timeIntervalSince(started)))
                     lines.append("MCP `\(request.serverName)` 有 \(tools.count) 个工具：\n"
                                  + tools.map { "  \($0.name) — \($0.description.prefix(70))" }
                                        .joined(separator: "\n"))
@@ -4064,9 +4072,14 @@ final class CompanionManager: ObservableObject {
                                      + request.argumentsJSON.prefix(120))
                         continue
                     }
+                    let started = Date()
                     let result = try await MCPRegistry.shared.call(server: request.serverName,
                                                                    tool: request.toolName,
                                                                    arguments: arguments)
+                    SoundEffectPlayer.appendToDiagnosticLog(String(
+                        format: "MCP 调用 %@.%@ 成功：参数 %d 项，返回 %d 字符，耗时 %.1f 秒",
+                        request.serverName, request.toolName, arguments.count,
+                        result.count, Date().timeIntervalSince(started)))
                     lines.append("MCP \(request.serverName).\(request.toolName) 返回：\n"
                                  + String(result.prefix(4000)))
                 }
