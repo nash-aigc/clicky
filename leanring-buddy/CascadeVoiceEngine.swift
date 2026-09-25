@@ -210,6 +210,12 @@ final class CascadeVoiceEngine {
 
             if Task.isCancelled { return }
 
+            // **文字到此为止了**（正常收完）。这一步必须在这里报，不能等
+            // `onTurnFinished`：那要等「说」那条路把排队的音频放完，而卡片的模糊
+            // 尾巴只该在文字还在来的时候存在 —— 中间那段时间尾巴是糊的，用户读到
+            // 的最后一行是半透明的。
+            callbacks.onAnswerTextComplete()
+
             // 收尾：告诉合成器「不会再有新句子了」，把最后一段放出去。
             speechSession.finishStreaming()
 
@@ -228,6 +234,12 @@ final class CascadeVoiceEngine {
             // 被当成失败报错）。同一个陷阱，同一处绕开。
         } catch {
             if Task.isCancelled { return }
+            // **失败也要报「文字到此为止」。** 这个 `catch` 不调 `onTurnFinished`，
+            // 而 `streamingAnswerEntryID` 原先只有 `finishTurn` 会清 —— 于是文字已经
+            // 流进卡片、流中途断掉的那一轮，卡片的「还在长」永远为真，最后 5 个字
+            // 一直停在模糊 + 20% 透明度上，直到下一次提问。用户 2026-09-25 报的
+            // 「最后那几个字渲染不出来」，永久化的那一档就是从这里来的。
+            callbacks.onAnswerTextComplete()
             reportFailure("语音聊天：这一轮失败了 — \(error.localizedDescription)")
         }
     }
@@ -281,12 +293,19 @@ final class CascadeVoiceEngine {
     }
 }
 
-/// 一个回合向外的三个回调。用结构体而不是三个闭包参数，是因为控制器要按回合
+/// 一个回合向外的四个回调。用结构体而不是四个闭包参数，是因为控制器要按回合
 /// 传不同的目标（例如打断后换一轮），结构体让「这是一组」这件事在类型上成立。
 @MainActor
 struct CascadeTurnCallbacks {
     /// 回答文字变了（流式，每次都是**到目前为止的全文**，不是增量）。
     let onAnswerTextChanged: (String) -> Void
+    /// **这一轮的文字到此为止了** —— 正常收完或中途失败都算，取消不算（取消意味着
+    /// 有新的一轮要接手）。
+    ///
+    /// 它和 `onTurnFinished` 是两件事，中间隔着一整段朗读：卡片据此停止「还在长」
+    /// 的渲染（模糊尾巴），而 `onTurnFinished` 管的是「这一轮结束、可以把回答写进
+    /// 定稿并交给光标旁的气泡」。合成一个的话，用户要等整段话念完才能看清最后一行。
+    let onAnswerTextComplete: () -> Void
     /// 这一轮结束了（念完或被打断）。
     let onTurnFinished: (_ finalReplyText: String, _ spokenText: String) -> Void
 }

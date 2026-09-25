@@ -1271,8 +1271,8 @@ final class VoiceChatController: ObservableObject {
     /// 卡片靠它判断"这段文字**还在长**"，而那一个判断决定了两件完全不同的事：
     ///
     /// ```swift
-    /// paragraphs(settlingFinalLine: !isStreaming)   // AnswerCardView
-    /// if isStreaming, let liveLine = lines.last { liveLineView(...) }
+    /// paragraphs(liveLineCount:)          // AnswerCardView：实时区那几行不折叠
+    /// if isStreaming { … .blur(2.6).opacity(0.2) … }
     /// ```
     ///
     /// `streamingAnswerEntryID` 原先**只在三段式那条路（`startTurn`）被赋值**，而全双工
@@ -1349,6 +1349,9 @@ final class VoiceChatController: ObservableObject {
                 onAnswerTextChanged: { [weak self] answerSoFar in
                     self?.updateAnswerEntry(answerEntryID, text: answerSoFar)
                 },
+                onAnswerTextComplete: { [weak self] in
+                    self?.finishAnswerTextStreaming(answerEntryID)
+                },
                 onTurnFinished: { [weak self] finalReplyText, spokenText in
                     self?.finishTurn(answerEntryID,
                                      finalReplyText: finalReplyText,
@@ -1398,6 +1401,25 @@ final class VoiceChatController: ObservableObject {
     private func updateAnswerEntry(_ answerEntryID: UUID, text: String) {
         guard let index = transcriptEntries.firstIndex(where: { $0.id == answerEntryID }) else { return }
         transcriptEntries[index].text = text
+    }
+
+    /// 这一轮的文字到此为止了 —— 正常收完，或中途失败。
+    ///
+    /// **卡片的模糊尾巴只该在文字还在来的时候存在**，而 `streamingAnswerEntryID`
+    /// 原先要到 `finishTurn` 才清，那要等「说」那条路把排队的音频全部放完：文字
+    /// 早就完整地摆在屏幕上，最后 5 个字却还是模糊 + 20% 透明度，直到朗读走到
+    /// 某个分段间隙才淡出来。
+    ///
+    /// 更糟的是**失败那一轮根本清不掉**（`CascadeVoiceEngine` 的 `catch` 不调
+    /// `onTurnFinished`），于是最后 5 个字会一直糊在那里 —— 用户报的「最后那几个字
+    /// 渲染不出来」永久化的那一档就是它。所以这个出口由引擎在**两个地方**都报：
+    /// 流正常收完，以及出错。
+    ///
+    /// 只清「还指着这一轮」的那个槽：取消时 `startTurn` 已经把槽指到新的一轮上，
+    /// 旧一轮迟到的这个回调不能把新一轮的尾巴一并收掉。
+    private func finishAnswerTextStreaming(_ answerEntryID: UUID) {
+        guard streamingAnswerEntryID == answerEntryID else { return }
+        streamingAnswerEntryID = nil
     }
 
     /// 一轮结束：定稿那一行，并把回答交给光标旁的气泡。

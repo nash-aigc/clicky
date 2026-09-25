@@ -455,25 +455,30 @@ nonisolated final class CardRenderPlanCache {
         return lines
     }
 
-    /// The settled paragraphs, folding in every line a later line has now made
-    /// immutable.
+    /// The settled paragraphs, folding in every line the live region has now
+    /// left behind.
     ///
     /// A paragraph is append-stable for the same reason a line is — once a later
     /// line exists, this one can never change — so the fold only ever adds. That
     /// matters as much as the incremental pack: this used to re-join every line
     /// of the whole reply into strings on every streamed character.
     ///
-    /// - Parameter settlingFinalLine: true once the reply has stopped streaming,
-    ///   which is what makes the last line immutable too. While it is still
-    ///   arriving that line is the live one and is rendered separately.
-    func paragraphs(settlingFinalLine: Bool) -> [SettledParagraph] {
-        let lineCountToFold = settlingFinalLine ? lines.count : max(0, lines.count - 1)
+    /// - Parameter liveLineCount: how many trailing lines stay in the live
+    ///   region and are therefore **not** folded — see
+    ///   `AnswerCardView.liveLineRegionLineCount` for why the fold has to stop
+    ///   before the writing edge rather than one line short of the end.
+    func paragraphs(liveLineCount: Int) -> [SettledParagraph] {
+        let lineCountToFold = max(0, lines.count - liveLineCount)
         while foldedLineCount < lineCountToFold {
             foldLine(at: foldedLineCount)
             foldedLineCount += 1
         }
         return settledParagraphs
     }
+
+    /// How many of `lines` have been folded into `settledParagraphs` — and
+    /// therefore the index the live region starts at.
+    var foldedLineCountValue: Int { foldedLineCount }
 
     private func foldLine(at lineIndex: Int) {
         let line = lines[lineIndex]
@@ -598,6 +603,30 @@ struct AnswerCardView: View {
     /// How many trailing units stay blurred while streaming (the reference's
     /// settle rule: the unit five positions back is settled to sharp).
     private static let freshTailUnitCount = 5
+
+    /// How many trailing lines are drawn as the live region instead of being
+    /// folded into a settled paragraph.
+    ///
+    /// **Two, and it is exactly two — this used to be one, and that one is what
+    /// the user kept reporting as 「每一句回复内容的最后几个字，总是会卡一下」.**
+    ///
+    /// The live region is the only place that can draw a blurred tail, because a
+    /// settled paragraph is a single plain `Text` with no blur modifier on it.
+    /// The tail is measured from the END OF THE REPLY (`unitCount − 1 − unitIndex`),
+    /// so at the instant a line wraps its last few units are still inside the
+    /// 5-unit window — and with a one-line live region that line had *already*
+    /// been folded, so those characters were redrawn sharp in the same frame,
+    /// with no fade. One such snap at the right margin of the row above the
+    /// writing edge, on every single line of every reply.
+    ///
+    /// Keeping the trailing **two** lines live removes it exactly, with no new
+    /// predicate to get wrong: the fresh window is five units, every line holds
+    /// at least one unit, so five units can never span more than two lines. A
+    /// second line's tail is inside the window only while the last line is still
+    /// shorter than five units — which is precisely the case that used to snap.
+    /// Every line that leaves the region has therefore already settled, and
+    /// leaving it is invisible.
+    private static let liveLineRegionLineCount = 2
     private static let freshBlurRadius: CGFloat = 2.6
     private static let freshOpacity: Double = 0.2
     private static let settleAnimationDuration: TimeInterval = 0.3
@@ -733,7 +762,7 @@ struct AnswerCardView: View {
         if textColumnWidth > 0 {
             let lineWidth = max(0, textColumnWidth - Self.lineFitSafetyMargin)
             let lines = renderPlanCache.plan(for: text, lineWidth: lineWidth)
-            // **最后一行永远交给下面的实时行画，流式与定稿都一样。**
+            // **实时区那几行永远由同一个视图画，流式与定稿都一样。**
             //
             // 原先 `settlingFinalLine: !isStreaming` 在回复结束的那一刻把最后一行也
             // 折进段落里，同时实时行那条 `if isStreaming` 又被拆掉 —— 于是末尾那 5 个
@@ -743,8 +772,23 @@ struct AnswerCardView: View {
             // 两种状态用**同一个视图**画，`isFresh` 就是在同一个视图里翻转的，它自己
             // 那个 `.animation(value: isFresh)` 会把模糊**淡出**（0.3 秒），不再有跳变；
             // 而且断行、行数、行距三个量两边完全一致，所以切换时**版面一动不动**。
-            let settledParagraphs = renderPlanCache.paragraphs(settlingFinalLine: false)
-            let hasLiveLine = !lines.isEmpty
+            //
+            // 2026-09-25 再次修正：实时区是**两行**不是一行，理由见
+            // `liveLineRegionLineCount` —— 一行时，换行那一刻刚闭合的那一行已经
+            // 被折进段落、用没有模糊的 `Text` 重画，它末尾那几个还在新鲜窗口里的字
+            // 于是**每一行都跳一次**。两行正好覆盖住「5 个 unit 可能落在哪几行」。
+            let settledParagraphs = renderPlanCache.paragraphs(
+                liveLineCount: Self.liveLineRegionLineCount
+            )
+            // The lines the fold has not taken — the writing edge and, while the
+            // last line is still under five units, the one it just wrapped off.
+            // See `liveLineRegionLineCount`: a line only leaves this region once
+            // its tail has settled, so nothing here is ever redrawn sharp by a
+            // fold that arrives too early.
+            let liveLines = Array(
+                lines.dropFirst(renderPlanCache.foldedLineCountValue)
+            )
+            let hasLiveLine = !liveLines.isEmpty
             let blocks = paragraphBlocks(
                 from: settledParagraphs,
                 hasLiveLine: hasLiveLine
@@ -774,13 +818,11 @@ struct AnswerCardView: View {
                         Color.clear.frame(height: block.spaceBelow)
                     }
                 }
-                if let liveLine = lines.last {
-                    liveLineView(
-                        line: liveLine,
-                        units: renderPlanCache.units,
-                        reduceMotion: reduceMotion
-                    )
-                }
+                liveLineRegion(
+                    lines: liveLines,
+                    units: renderPlanCache.units,
+                    reduceMotion: reduceMotion
+                )
                 // The live-line buffer: blank space held below the reply's last
                 // line, worth one line pitch when that line is empty and nothing
                 // when it is full. It is drawn for a settled card too — see
@@ -859,11 +901,37 @@ struct AnswerCardView: View {
         }
     }
 
+    /// The lines still being written — the writing edge, plus the line it wrapped
+    /// off while that line's own tail is still inside the fresh window.
+    ///
+    /// Two lines is not a tuning choice; it is the exact bound. `isFresh` counts
+    /// from the end of the reply and covers five units, and a line holds at least
+    /// one unit, so five units cannot span more than two lines. Drawing those two
+    /// here (instead of folding all but the last) is what stops the fold from
+    /// redrawing a just-wrapped line's blurred tail as sharp text with no fade —
+    /// see `liveLineRegionLineCount`.
+    ///
+    /// The inter-line gap is `lineSpacing`, the same one the settled paragraphs
+    /// use, so a line crossing out of this region into a paragraph does not move:
+    /// the paragraph's own `spaceBelow` accounts for the gap either way.
+    @ViewBuilder
+    private func liveLineRegion(
+        lines: [CardTextPackedLine],
+        units: [CardTextUnit],
+        reduceMotion: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Self.lineSpacing) {
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                liveLineView(line: line, units: units, reduceMotion: reduceMotion)
+            }
+        }
+    }
+
     /// The one line still being written: a small `Text` per unit, so the last
     /// `freshTailUnitCount` of them can stay blurred and translucent — SwiftUI
     /// cannot blur part of a `Text`. This is the only place per-unit views
-    /// survive, and it is one line (about 25 views) rather than every unit in
-    /// the reply.
+    /// survive, and it is the live region (at most two lines, about 25 views
+    /// each) rather than every unit in the reply.
     ///
     /// **只有尾巴那几个 unit 需要各自的 `Text`，前面的合并成一个。**
     ///
