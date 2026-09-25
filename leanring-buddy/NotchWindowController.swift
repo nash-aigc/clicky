@@ -334,6 +334,16 @@ final class NotchWindowController {
     private func syncExpansionProgressWithPanelFrame(_ panel: NotchPanel, on screen: NSScreen) {
         guard let restingFrame = NotchSupport.restingWindowFrame(on: screen) else { return }
         let expandedFrame = NotchSupport.expandedSheetFrame(on: screen)
+        // TEMPORARY PROBE (2026-09-25)：用户报「动画一开始的时候整体偏低，然后就整体
+        // 向上移动了一下」——他截的两帧里面板**上沿没动、下沿动了**，也就是说展开之后
+        // 还有东西在改窗口 frame。这一行把每一次改动连同"与最终 frame 的差"打出来：
+        // 展开完成后不该再有这一行。
+        if panelModel.isExpanded {
+            let dy = panel.frame.height - expandedFrame.height
+            let dy0 = panel.frame.origin.y - expandedFrame.origin.y
+            print(String(format: "🔬 [frame] 展开中窗口被改：h=%.1f（比最终矮 %.1f）y=%.1f（比最终低 %.1f）",
+                         panel.frame.height, -dy, panel.frame.origin.y, -dy0))
+        }
         let heightRange = expandedFrame.height - restingFrame.height
         guard heightRange > 1 else { return }
         let progress = (panel.frame.height - restingFrame.height) / heightRange

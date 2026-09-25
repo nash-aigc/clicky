@@ -1093,33 +1093,44 @@ struct NotchExpandedSheetView: View {
             // （侧栏没有滚动，它看到的抖动只能来自这个偏移）。淡入 + 模糊
             // 仍然是参考页的入场语言；丢掉的只有那 8pt。
             .opacity(hasContentSettledIn ? 1 : 0)
+            // **不再加位移 —— 一个字都不许动。**
+            //
+            // 这里原先还有一行 `.offset(y: hasContentSettledIn ? 0 : 8)`，而它上面的
+            // 注释当时就写着「**故意不移植**……丢掉的只有那 8pt」—— **注释说删了，
+            // 代码没删**，于是那 8pt 一直活着。
+            //
+            // 它以前看不出来，是因为展开动画（遮罩揭示）把它盖住了：用户先看见面板
+            // 长出来，内容那 8pt 的上滑混在里面。2026-09-25 展开动画被去掉之后，
+            // **它成了屏幕上唯一在动的东西**，用户立刻拍到并报回来：「动画一开始的时候
+            // 整体偏低，然后就整体向上移动了一下，我希望完全不动」。
+            //
+            // 这不是新问题 —— 2026-09-24 他报过同一条：「所有消息整体向上抖动一下，
+            // 然后又下来」。当时的结论就是删掉这 8pt，只是没执行到位。
+            //
             // **不再加模糊**（用户 2026-09-25：「Ask 页面展开时有一个蒙版/模糊特效，
             // 删掉，因为在 Agent 和 Chatting 两个页面都没有，体验很好」）。
             //
             // 它来自参考实现入场动画的 'line' 模式（+8pt / 8px blur / 透明→清晰）。
-            // 面板的展开本身已经有揭示动画（幕布/缩放），再叠一层内容模糊只是多一次
-            // 全屏光栅化 —— 去掉它，三个页面的入场观感由此一致。
-            .offset(y: hasContentSettledIn ? 0 : 8)
+            // 参考页那 8px 是在一个静态演示面板上播的，没有滚动、没有实时列表；
+            // 这里是活的对话列，任何位移都会被读成"抖一下"。
+            // 留下的只有**淡入** —— 它不改变任何东西的位置。
             .onAppear {
                 guard !shouldReduceMotion else {
                     hasContentSettledIn = true
                     return
                 }
-                // 延迟跟着用户选的窗口样式走：参考页里 02 幕布垂落配 140ms、
-                // 01 中心缩放配 230ms，各自跟自己的窗口动画成对
-                // （见 NotchSupport.expansionContentEntranceDelay）。用幕布那
-                // 个延迟配缩放，内容会在板子还只有一半大的时候就完整画出来，
-                // 两个动画看起来是两件事。样式在这里现读一次：它跟
-                // `beginExpansion` 读的是同一个值，而中间没有人能改设置。
+                // 延迟跟着用户选的窗口样式走（见
+                // `NotchSupport.expansionContentEntranceDelay`）。
                 let appSettingsSnapshot = AppSettingsStore.snapshot()
                 let entranceDelay = appSettingsSnapshot.expansionContentEntranceDelayInForce(
                     appSettingsSnapshot.notchExpansionSpeedMultiplier
                 )(appSettingsSnapshot.windowExpansionStyle)
-                // The entrance animation itself is scaled with the window: at 2×
-                // the panel grows twice as fast, so a 0.45 s entrance would finish
-                // long after a 0.215 s reveal had landed. Same duration, same curve
-                // family, same relative shape — just faster with everything else.
-                withAnimation(.easeOut(duration: 0.45 / appSettingsSnapshot.notchExpansionSpeedMultiplier).delay(entranceDelay)) {
+                // **淡入 0.15 秒**（用户 2026-09-25：「要有动画效果，要快」）。
+                //
+                // 原先 0.45 秒是配着"窗口长出来"那个动画的；展开动画已经没有了，这
+                // 个时长就只是"面板亮起来"要多久 —— 0.15 秒够看见是一次出现，又不至于
+                // 让人等。它和**收起**那条路是对称的：收起本来就是淡出。
+                withAnimation(.easeOut(duration: 0.15).delay(entranceDelay)) {
                     hasContentSettledIn = true
                 }
             }
