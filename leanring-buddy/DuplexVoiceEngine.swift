@@ -582,6 +582,11 @@ final class DuplexVoiceEngine {
             let responseID = event["response_id"] as? String ?? "-"
             let delta = event["delta"] as? String ?? ""
             print("🧾 [ai-text +\(delta.count)字] resp=\(responseID.prefix(10)) 累计\((currentAssistantText + delta).count)字：「\(delta.prefix(24))」")
+        case "response.audio_transcript.done":
+            // 官方权威全文到达 —— 与累积值一对比就知道增量有没有丢过片。
+            let responseID = event["response_id"] as? String ?? "-"
+            let transcript = event["transcript"] as? String ?? ""
+            print("🧾 [ai-text-done] resp=\(responseID.prefix(10)) 官方全文 \(transcript.count) 字（累积值 \(currentAssistantText.count) 字）")
         case "response.audio.delta":
             let responseID = event["response_id"] as? String ?? "-"
             print("🔊 [ai-audio块] resp=\(responseID.prefix(10))")
@@ -653,6 +658,33 @@ final class DuplexVoiceEngine {
             // `response.output_audio_transcript`，代码里这个才是真的）。
             guard let delta = event["delta"] as? String else { return }
             currentAssistantText += delta
+            callbacks.onAssistantText(currentAssistantText)
+
+        case "response.audio_transcript.done":
+            // **官方给的"完整字幕文本"，我们原先完全没接。**
+            //
+            // 官方服务端事件页：`response.audio_transcript.done` —— 「音频模式下的字幕
+            // 输出完成事件」，字段 `transcript` = 「完整的字幕文本」。**两份官方快速
+            // 上手的接收循环都只读这一个事件、从不拼增量**
+            // （`elif t == "response.audio_transcript.done": print(f"[AI] {event['transcript']}")`）。
+            //
+            // 而我们只接了 `response.audio_transcript.delta`，靠 `+=` 累积 —— 而那个
+            // "增量只增不重"的前提**官方没有写**：同一页对
+            // `conversation.item.input_audio_transcription.delta` 明确写了
+            // 「实时预览句子 = text + stash」，对 `response.function_call_arguments.delta`
+            // 也写了要按接收顺序拼接，**唯独助手文字这一条什么规则都没给**。
+            //
+            // 所以把服务端给的完整文本作为**权威值**落下来：增量若丢过一片、或与音频
+            // 不同步，累积值会静默偏短，而这一步能自愈 —— 不靠任何未成文的假设。
+            //
+            // 只在它**不比累积值短**时才采用：多段回答（官方说只有 Function Calling
+            // 会产生，本 App 没开 tools）里后一段的 done 更短，直接替换会把前一段吃掉，
+            // 那就从"补齐"变成了"丢字"。
+            guard let transcript = event["transcript"] as? String,
+                  !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            if transcript.count >= currentAssistantText.count {
+                currentAssistantText = transcript
+            }
             callbacks.onAssistantText(currentAssistantText)
 
         case "conversation.item.input_audio_transcription.delta":

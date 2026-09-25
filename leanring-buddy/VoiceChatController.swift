@@ -646,7 +646,15 @@ final class VoiceChatController: ObservableObject {
     /// 全双工那一轮回答的气泡 id。服务端的回答是流式推来的、没有「回合开始」这个
     /// 明确信号（`response.created` 才是），所以气泡在第一个 delta 到达时建、
     /// 在 `response.done` 时解绑 —— 和打字那条路同一个「一个回合一个气泡」的形状。
-    private var duplexAssistantEntryID: UUID?
+    /// 全双工那一轮回答气泡的 id。
+    ///
+    /// `private(set)` 而不是 `private`：Chatting 页拿它判断"这张卡还在长"，
+    /// 而**不能只靠 `streamingAnswerEntryID`** —— 那个槽是三段式与全双工共用的，
+    /// 全双工回复播放期间用户往输入框打一句话并回车（`sendText` → `startTurn`）
+    /// 会把槽暂时指到那个新条目上，于是正在长的那张卡会被当成"已定稿"折叠一次，
+    /// 那一行随即被画两遍、后面的字丢掉。这一个 id 只属于全双工，抢不走。
+    /// 见 `VoiceChatSessionView` 里那句 `isStreaming`。
+    private(set) var duplexAssistantEntryID: UUID?
 
     /// 这一场会话是不是全双工起的。**只有它为真时才去碰全双工引擎** ——
     /// `duplexVoiceEngine` 是 lazy 的，而 `disconnectCurrentSession` 三种模式共用，

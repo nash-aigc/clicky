@@ -1724,7 +1724,17 @@ struct VoiceChatSessionView: View {
                         } else {
                             assistantBubble(
                                 entry.text,
+                                // **「这张卡还在长吗」不能只看 `streamingAnswerEntryID`。**
+                                //
+                                // 那个槽是三段式与全双工**共用**的：全双工回复播放期间
+                                // 用户往输入框打一句话并回车（`sendText` → `startTurn`）
+                                // 会把它暂时指到那个新条目上。正在长的那张卡于是被当成
+                                // "已定稿"折叠一次 —— 而折叠只增不减，那一行会被画两遍、
+                                // 后面的字丢掉（实测探针：干净路径 55/55 字，被这一下
+                                // 污染后剩 41/55）。`duplexAssistantEntryID` 只属于全双工，
+                                // 抢不走，所以两个一起判。
                                 isStreaming: controller.streamingAnswerEntryID == entry.id
+                                    || controller.duplexAssistantEntryID == entry.id
                             )
                             .id(entry.id)
                         }
