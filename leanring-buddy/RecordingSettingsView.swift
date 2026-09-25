@@ -168,6 +168,39 @@ extension GeneralSettingsView {
             SettingsCardRowDivider()
 
             SettingsRow(
+                label: "音频保留",
+                description: "录音文件很占空间（3 小时一场约 345MB），所以默认只留最近一天。**到期的只是音频文件，历史记录和文字都还在** —— 列表里那一条依然能看到、能复制。"
+            ) {
+                SettingsMenuPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingAudioRetentionDays),
+                    options: [
+                        SettingsPickerOption(label: "保留 1 天", value: 1),
+                        SettingsPickerOption(label: "保留 3 天", value: 3),
+                        SettingsPickerOption(label: "保留 7 天", value: 7),
+                        SettingsPickerOption(label: "保留 30 天", value: 30),
+                        SettingsPickerOption(label: "永久保存", value: 0),
+                    ]
+                )
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "文字保留",
+                description: "文字比音频小三个数量级（3 小时约 6 万字 = 180KB），所以留得久得多 —— 回头看的是文字，不是那段录音。到期后**整场记录连同音频一起删掉**。"
+            ) {
+                SettingsMenuPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingTextRetentionDays),
+                    options: [
+                        SettingsPickerOption(label: "保留 7 天", value: 7),
+                        SettingsPickerOption(label: "保留 30 天", value: 30),
+                        SettingsPickerOption(label: "保留 90 天", value: 90),
+                        SettingsPickerOption(label: "保留 1 年", value: 365),
+                        SettingsPickerOption(label: "永久保存", value: 0),
+                    ]
+                )
+            }
+            SettingsCardRowDivider()
+
+            SettingsRow(
                 label: "换连接的间隔",
                 description: "单次连接能活多久，官方没有给明确上限 —— 所以这里不依赖它。每隔一段时间在**静音处**换一条新连接：静音处换，接缝上没有字可丢。小时版按音频时长计费，换连接不额外花钱。"
             ) {
@@ -404,21 +437,27 @@ private struct RecordingHistoryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
+            // ── 第一行：标题 + 动作（**没有复制按钮** —— 复制按内容分两行，
+            //    因为源文本和润色文本是两份不同的东西，一个按钮说不清复制的是哪份）。
             HStack(spacing: 6) {
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(DS.Colors.textPrimary)
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                action("复制全文", systemImage: "doc.on.doc") {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(fullText, forType: .string)
-                }
-                action("播放", systemImage: "play.circle") {
-                    NSWorkspace.shared.open(session.audioFileURL(inFolder: folder))
-                }
                 action("在访达中显示", systemImage: "folder") {
                     NSWorkspace.shared.activateFileViewerSelecting([session.audioFileURL(inFolder: folder)])
+                }
+                if audioExists {
+                    action("播放", systemImage: "play.circle") {
+                        NSWorkspace.shared.open(session.audioFileURL(inFolder: folder))
+                    }
+                } else {
+                    // 音频按保留天数删掉了，但记录还在。**要说出来**，而不是让播放
+                    // 按钮点了没反应。
+                    Text("音频已清理")
+                        .font(.system(size: 11))
+                        .foregroundColor(DS.Colors.textTertiary)
                 }
                 action(isExpanded ? "收起" : "展开",
                        systemImage: isExpanded ? "chevron.up" : "chevron.down") {
@@ -426,24 +465,11 @@ private struct RecordingHistoryCard: View {
                 }
             }
 
-            if isExpanded {
-                ScrollView(.vertical, showsIndicators: true) {
-                    Text(fullText.isEmpty ? "（这一场没有识别到文字）" : fullText)
-                        .font(.system(size: 12.5))
-                        .foregroundColor(DS.Colors.textSecondary)
-                        .lineSpacing(4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                }
-                .frame(height: 210)
-            } else {
-                Text(preview)
-                    .font(.system(size: 12.5))
-                    .foregroundColor(DS.Colors.textTertiary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            // ── 第二行：源文本
+            textRow(label: "源文本", text: sourceText, isEmpty: "（没有识别到文字）")
+
+            // ── 第三行：润色文本
+            textRow(label: "润色文本", text: polishedText, isEmpty: "（未润色 / 这一场没开自定义风格）")
         }
         .padding(11)
         .background(
@@ -452,11 +478,55 @@ private struct RecordingHistoryCard: View {
         )
     }
 
-    private var fullText: String {
-        (try? String(contentsOf: session.transcriptFileURL(inFolder: folder), encoding: .utf8))?
+    /// 一行文本：**开头是标识，右侧是复制按钮**，中间是内容。
+    ///
+    /// 标识必须在，否则两行看起来是同一种东西 —— 而它们不是：一份是识别器听到的，
+    /// 一份是模型改写的。用户要能一眼分清自己在复制哪一份。
+    @ViewBuilder
+    private func textRow(label: String, text: String, isEmpty emptyPlaceholder: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(DS.Colors.textTertiary)
+                .padding(.horizontal, 6).padding(.vertical, 2)
+                .background(RoundedRectangle(cornerRadius: 5).fill(DS.Colors.surface4))
+                .fixedSize()
+
+            Text(text.isEmpty ? emptyPlaceholder : text)
+                .font(.system(size: 12.5))
+                .foregroundColor(text.isEmpty ? DS.Colors.textTertiary : DS.Colors.textSecondary)
+                .lineSpacing(4)
+                .lineLimit(isExpanded ? 5 : 1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+
+            action("复制\(label)", systemImage: "doc.on.doc") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+            }
+            .opacity(text.isEmpty ? 0.35 : 1)
+            .disabled(text.isEmpty)
+        }
+    }
+
+    private var audioExists: Bool {
+        FileManager.default.fileExists(atPath: session.audioFileURL(inFolder: folder).path)
+    }
+
+    /// **源文本**：识别器逐句落盘的原文。润色不改它。
+    private var sourceText: String {
+        Self.flattenedText(at: session.transcriptFileURL(inFolder: folder))
+    }
+    /// **润色文本**：走「自定义风格」重写之后的结果。没开润色时文件不存在 → 空串。
+    private var polishedText: String {
+        Self.flattenedText(at: session.polishedTranscriptFileURL(inFolder: folder))
+    }
+
+    private static func flattenedText(at url: URL) -> String {
+        (try? String(contentsOf: url, encoding: .utf8))?
             .replacingOccurrences(of: "\n", with: "") ?? ""
     }
-    private var preview: String { fullText.isEmpty ? "（没有识别到文字）" : fullText }
 
     /// 标题：「26 年 09 月 30 日 14 点 · 3:24 · 812 字」。
     private var title: String {

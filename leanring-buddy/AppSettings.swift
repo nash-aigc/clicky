@@ -1100,6 +1100,17 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 停止后把全文放进剪贴板。
     var recordingCopiesToClipboard: Bool = true
 
+    /// 音频保留几天。**0 = 永久保存。**
+    ///
+    /// 用户：「录音文件很占空间」—— 3 小时一场就是 345MB。默认只留最近一天。
+    var recordingAudioRetentionDays: Int = 1
+
+    /// 文本保留几天。**0 = 永久保存。** 默认 30 天。
+    ///
+    /// 文本比音频小好几个数量级（3 小时约 6 万字 = 180KB），所以留得久得多 ——
+    /// 用户会回头看的是文字，不是那段录音。
+    var recordingTextRetentionDays: Int = 30
+
     /// 「自定义风格」总开关。**默认开启**（用户要求）。
     ///
     /// 关掉它 = 不做任何后处理，转写原文直接就是最终内容 —— 也就是这一版之前的行为。
@@ -1150,6 +1161,8 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.audioEngineIdleReleaseMinutes = min(max(settings.audioEngineIdleReleaseMinutes, 0), 60)
         settings.notchExpansionSpeedMultiplier = min(max(settings.notchExpansionSpeedMultiplier, 1.0), 4.0)
         settings.recordingRotationMinutes = min(max(settings.recordingRotationMinutes, 0), 120)
+        settings.recordingAudioRetentionDays = min(max(settings.recordingAudioRetentionDays, 0), 365)
+        settings.recordingTextRetentionDays = min(max(settings.recordingTextRetentionDays, 0), 3650)
         return settings
     }
 }
@@ -1247,6 +1260,8 @@ nonisolated extension AppSettings {
         case recordingRotationMinutes
         case recordingCopiesToClipboard
         case recordingPastesAfterStop
+        case recordingAudioRetentionDays
+        case recordingTextRetentionDays
         case recordingPolishEnabled
         case recordingPolishCapturesScreenshot
         case recordingPolishBaseURL
@@ -1375,6 +1390,8 @@ nonisolated extension AppSettings {
         recordingRotationMinutes = try container.decodeIfPresent(Int.self, forKey: .recordingRotationMinutes) ?? defaults.recordingRotationMinutes
         recordingCopiesToClipboard = try container.decodeIfPresent(Bool.self, forKey: .recordingCopiesToClipboard) ?? defaults.recordingCopiesToClipboard
         recordingPastesAfterStop = try container.decodeIfPresent(Bool.self, forKey: .recordingPastesAfterStop) ?? defaults.recordingPastesAfterStop
+        recordingAudioRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingAudioRetentionDays) ?? defaults.recordingAudioRetentionDays
+        recordingTextRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingTextRetentionDays) ?? defaults.recordingTextRetentionDays
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
         recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot
         recordingPolishBaseURL = try container.decodeIfPresent(String.self, forKey: .recordingPolishBaseURL) ?? defaults.recordingPolishBaseURL

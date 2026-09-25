@@ -708,6 +708,22 @@ final class CompanionManager: ObservableObject {
         // 的相位：一开录就出现，录完就整个消失。不碰刘海的相位机、面板和点击逻辑。
         NotchRecordingOverlayController.shared.startObservingRecorder()
 
+        // 按保留天数清理过期录音。**只在启动时跑一次，不在录制过程中删** ——
+        // 删文件是这个 App 里唯一一处不可逆的动作，它不该出现在任何一条活跃的
+        // 时间线上。放后台队列：文件多的时候删起来是秒级的，不该拖住启动。
+        Task.detached(priority: .utility) {
+            let settings = AppSettingsStore.snapshot()
+            let folder = RecordingLibraryStore.resolvedFolderURL(
+                fromSettingsPath: settings.recordingSaveFolderPath)
+            let deletedCount = RecordingLibraryStore.shared.purgeExpiredRecordings(
+                folder: folder,
+                audioRetentionDays: settings.recordingAudioRetentionDays,
+                textRetentionDays: settings.recordingTextRetentionDays)
+            if deletedCount > 0 {
+                NSLog("[Recording] 按保留天数清理了 \(deletedCount) 个文件")
+            }
+        }
+
         if systemSpeakerMuteCoordinator == nil {
             systemSpeakerMuteCoordinator = SystemSpeakerMuteCoordinator(
                 recordingActiveProvider: { [weak self] in

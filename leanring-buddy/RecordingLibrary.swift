@@ -30,11 +30,21 @@ nonisolated struct RecordingSession: Codable, Identifiable, Equatable {
     var lastErrorMessage: String?
 
     var audioFileName: String { "\(id).wav" }
+    /// **源文本**：识别器逐句落盘的原文，录制过程中就在写，润色不碰它。
     var transcriptFileName: String { "\(id).txt" }
+    /// **润色文本**：走「自定义风格」重写之后的结果。没开润色时这个文件不存在。
+    ///
+    /// 用户的要求：「润色文本与原文（撰写文本）要保存两份，分别是不同的文本文件，
+    /// 因为用户很有可能去看原文、原文档」。合成一份的话，润色一跑原文就没了 ——
+    /// 而那恰恰是他最想回头核对的东西。
+    var polishedTranscriptFileName: String { "\(id).polished.txt" }
     var segmentFileName: String { "\(id).jsonl" }
 
     func audioFileURL(inFolder folder: URL) -> URL { folder.appendingPathComponent(audioFileName) }
     func transcriptFileURL(inFolder folder: URL) -> URL { folder.appendingPathComponent(transcriptFileName) }
+    func polishedTranscriptFileURL(inFolder folder: URL) -> URL {
+        folder.appendingPathComponent(polishedTranscriptFileName)
+    }
     func segmentFileURL(inFolder folder: URL) -> URL { folder.appendingPathComponent(segmentFileName) }
     func metadataFileURL(inFolder folder: URL) -> URL { folder.appendingPathComponent("\(id).json") }
 
@@ -165,6 +175,52 @@ nonisolated final class RecordingLibraryStore {
 
         writeIndexToDisk(sessions)
         NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
+    }
+
+    /// 按保留天数清掉过期的东西。返回删了几个文件。
+    ///
+    /// **音频先删、文本后删，而且只删文件、不删记录** —— 历史列表里那一条依然在，
+    /// 只是打不开音频了。用户的要求是「录音文件很占空间」，所以音频留一天、文本留
+    /// 三十天（3 小时约 6 万字 = 180KB，比音频小三个数量级）。
+    ///
+    /// `0` = 永久保存，那一路什么都不做。
+    ///
+    /// **删文件是这个 App 里唯一一处不可逆的动作**，所以它只在启动时跑一次、
+    /// 只按天数判断、并且把每一步都写进诊断日志 —— 不留任何「悄悄删掉」的路径。
+    @discardableResult
+    func purgeExpiredRecordings(folder: URL,
+                                audioRetentionDays: Int,
+                                textRetentionDays: Int) -> Int {
+        let fileManager = FileManager.default
+        let now = Date()
+        var deletedCount = 0
+
+        for session in allSessions() {
+            let ageInDays = now.timeIntervalSince(session.startedAt) / 86_400
+
+            // 文本到期 → 整场都删掉（音频必然更早到期）。
+            if textRetentionDays > 0, ageInDays > Double(textRetentionDays) {
+                for url in [session.audioFileURL(inFolder: folder),
+                            session.transcriptFileURL(inFolder: folder),
+                            session.polishedTranscriptFileURL(inFolder: folder),
+                            session.segmentFileURL(inFolder: folder),
+                            session.metadataFileURL(inFolder: folder)] {
+                    if (try? fileManager.removeItem(at: url)) != nil { deletedCount += 1 }
+                }
+                forget(sessionID: session.id)
+                continue
+            }
+
+            // 只删音频。
+            if audioRetentionDays > 0, ageInDays > Double(audioRetentionDays) {
+                let audioURL = session.audioFileURL(inFolder: folder)
+                if fileManager.fileExists(atPath: audioURL.path),
+                   (try? fileManager.removeItem(at: audioURL)) != nil {
+                    deletedCount += 1
+                }
+            }
+        }
+        return deletedCount
     }
 
     private func writeIndexToDisk(_ sessions: [RecordingSession]) {

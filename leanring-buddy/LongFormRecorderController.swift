@@ -528,6 +528,23 @@ final class LongFormRecorderController: ObservableObject {
         }
     }
 
+    /// 只写「润色文本」那一份。原文的 `.txt` 由 `LongFormTranscriptWriter` 在录制
+    /// 过程中逐句写成，任何后处理都不该覆盖它。
+    private func writePolishedTextFile(_ text: String) {
+        guard let session = currentSession else {
+            publishDiagnostic("写回失败：currentSession 已经是 nil")
+            return
+        }
+        let url = session.polishedTranscriptFileURL(inFolder: folderURL)
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            let written = (try? String(contentsOf: url, encoding: .utf8))?.count ?? -1
+            publishDiagnostic("写润色文本 \(url.lastPathComponent)：送入 \(text.count) 字，读回 \(written) 字")
+        } catch {
+            publishDiagnostic("写润色文本失败：\(error)")
+        }
+    }
+
     private func writePlainTextFile(_ text: String) {
         guard let session = currentSession else {
             publishDiagnostic("写回失败：currentSession 已经是 nil")
@@ -967,7 +984,11 @@ final class LongFormRecorderController: ObservableObject {
         }
         if polished != text {
             transcriptPlainText = polished
-            writePlainTextFile(polished)
+            // **写进「润色文本」那个文件，不动 `.txt`。**
+            // 用户的要求：「润色文本与原文（撰写文本）要保存两份，分别是不同的文本文件，
+            // 因为用户很有可能去看原文、原文档」。`.txt` 是识别器逐句落盘的原文，
+            // 录制过程中就在写，润色不碰它。
+            writePolishedTextFile(polished)
         }
 
         // 停止之后去往哪一条分支，由「停止的那一刻编辑窗开没开」决定。
