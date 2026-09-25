@@ -42,7 +42,7 @@ nonisolated enum SidebarSection: String, CaseIterable, Sendable {
         // 各处的持久化判断）。
         case .conversations: return "Screen"
         case .agents: return "Agent"
-        case .voiceChat: return "Chatting"
+        case .voiceChat: return "Call"
         }
     }
 }

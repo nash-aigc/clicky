@@ -80,7 +80,7 @@ extension NotchActivityPhase {
         // 那些字母是在**描述字距拉开的样子**，不是在要求字距；六个状态词现在
         // 共用同一套字距（不设 `.tracking`，即 `0`），和 `Connecting` 一致。
         case .externalConnecting: return "Connecting"
-        case .externalChatting: return "Chatting"
+        case .externalChatting: return "Call"
         }
     }
 
