@@ -397,7 +397,17 @@ final class BailianTTSClient {
         // 每次合成都把「用了哪个模型、哪个音色」打出来。用户报的症状是「我点了使用，
         // 但连接时播放的不是那个音色」—— 这一行是那条症状唯一能直接对照的判据：
         // 日志里的 voice 必须等于他刚点的那个 id。
-        print("🔊 TTS 合成：model=\(resolvedSpeechRole.modelID) voice=\(resolvedSpeechRole.speechVoiceID ?? "(未指定，用服务端默认)") 文本 \(textChunk.count) 字")
+        // TEMPORARY PROBE (2026-09-25)：合成**请求发出**的时刻。与下面 `playing segment`
+        // 那一行配对，就能把"入队→出声"那段拆成两半：
+        //   ① 入队 → 这里 = 排队等前一个合成让位
+        //   ② 这里 → playing = **服务端合成 + WAV 下载 + 解码 + 起播**
+        // 实测（`clicky-首段12字-162114.log`）17 字与 20 字两段只差 3 字，出声却差
+        // 476ms（按 19ms/字只该差 57），所以波动在②里 —— 这一行就是为它加的。
+        print(String(format: "🔊 TTS 请求 t=%.3f model=%@ voice=%@ 文本 %d 字",
+                     Date().timeIntervalSince1970,
+                     resolvedSpeechRole.modelID,
+                     resolvedSpeechRole.speechVoiceID ?? "(未指定，用服务端默认)",
+                     textChunk.count))
 
         let body: [String: Any] = [
             "model": resolvedSpeechRole.modelID,
