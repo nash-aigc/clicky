@@ -1,0 +1,139 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>分流测速对比</title>
+<style>
+  :root { color-scheme: light;
+    --surface:#fcfcfb; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis-line:#c3c2b7;
+    --s1:#2a78d6; --s2:#eb6834; --chip:#f0efec;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark;
+    --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis-line:#383835; --s1:#3987e5; --s2:#d95926; --chip:#242422; } }
+  :root[data-theme="dark"] { color-scheme: dark;
+    --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis-line:#383835; --s1:#3987e5; --s2:#d95926; --chip:#242422; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding-block:36px 52px; padding-inline:20px; background:var(--surface); color:var(--ink);
+         font-family:var(--sans); font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:900px; margin:0 auto; display:flex; flex-direction:column; gap:22px; }
+  h1 { font-size:26px; margin:0; letter-spacing:-.02em; text-wrap:balance; }
+  .lede { color:var(--ink-2); margin:0; max-width:72ch; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .tile { border:1px solid var(--grid); border-radius:10px; padding:12px 14px; }
+  .tile .k { font-size:12px; color:var(--muted); letter-spacing:.02em; }
+  .tile .v { font-size:23px; font-weight:650; font-variant-numeric:tabular-nums; margin-top:2px; }
+  .tile .v small { font-size:12.5px; font-weight:450; color:var(--ink-2); }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:6px; }
+  figure { margin:0; border:1px solid var(--grid); border-radius:12px; padding:16px 12px 8px; position:relative; }
+  .legend { display:flex; gap:18px; padding:2px 8px 6px; font-size:13px; }
+  .legend span { display:inline-flex; align-items:center; }
+  svg { display:block; width:100%; height:auto; }
+  .grid { stroke:var(--grid); stroke-width:1; }
+  .baseline { stroke:var(--axis-line); stroke-width:1.2; }
+  .axis { fill:var(--muted); font-family:var(--mono); font-size:10.5px; }
+  .line1 { fill:none; stroke:var(--s1); stroke-width:2; stroke-linejoin:round; }
+  .line2 { fill:none; stroke:var(--s2); stroke-width:2; stroke-linejoin:round; stroke-dasharray:none; }
+  .mj { fill:var(--s1); stroke:var(--surface); stroke-width:2; }
+  .md { fill:var(--s2); stroke:var(--surface); stroke-width:2; }
+  .endlabel { font-family:var(--sans); font-size:12px; font-weight:600; }
+  #tip { position:absolute; pointer-events:none; background:var(--ink); color:var(--surface); border-radius:7px;
+          padding:6px 9px; font-size:12px; line-height:1.45; opacity:0; transition:opacity .08s; white-space:nowrap;
+          font-variant-numeric:tabular-nums; z-index:2; }
+  figcaption { font-size:12.5px; color:var(--ink-2); padding:6px 8px 6px; }
+  .card { border:1px solid var(--grid); border-radius:12px; padding:14px 18px; }
+  .card h2 { font-size:16px; margin:0 0 8px; }
+  ul.tight { margin:0; padding-left:20px; }
+  ul.tight li { margin-bottom:6px; }
+  code { font-family:var(--mono); font-size:12.5px; background:var(--chip); padding:1px 5px; border-radius:5px; }
+  details { border:1px solid var(--grid); border-radius:12px; padding:10px 16px; }
+  summary { font-size:14px; font-weight:600; cursor:pointer; }
+  table { border-collapse:collapse; width:100%; font-size:13px; font-variant-numeric:tabular-nums; margin-top:10px; }
+  th,td { text-align:right; padding:5px 10px; border-bottom:1px solid var(--grid); }
+  th:first-child,td:first-child { text-align:left; }
+  thead th { color:var(--muted); font-weight:500; font-size:12px; }
+  footer { font-size:12.5px; color:var(--muted); border-top:1px solid var(--grid); padding-top:12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>分流测速：JEV 筛选 vs DeepSeek 分类，谁快</h1>
+    <p class="lede">同一份 20 条候选目录、同一批 10 句真实需求，各跑一轮计时。结论先说：<strong>DeepSeek（thinking 关闭）中位数更快，
+    但 JEV 的方差只有它的 1/10，且每句都带回 confidence=1.0 的把握度</strong>——快慢之外，稳定性才是这条路由真正要的东西。
+    两排数字的下面还有一行更该看的：纯代码 L0 查表 0.05 µs/句，比两者快 6~7 个数量级。</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="k"><span class="dot" style="background:var(--s1)"></span>JEV · 中位 / 均值</div><div class="v">701 <small>/ 698 ms</small></div></div>
+    <div class="tile"><div class="k"><span class="dot" style="background:var(--s2)"></span>DeepSeek · 中位 / 均值</div><div class="v">547 <small>/ 560 ms</small></div></div>
+    <div class="tile"><div class="k">波动范围（max−min）</div><div class="v">61 <small>vs 632 ms</small></div></div>
+    <div class="tile"><div class="k">命中率（双双）</div><div class="v">10/10 <small>· 10/10</small></div></div>
+  </div>
+
+  <figure>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--s1)"></span>JEV choice 原语</span>
+      <span><span class="dot" style="background:var(--s2)"></span>DeepSeek deepseek-flash（thinking disabled）</span>
+    </div>
+    <svg viewBox="0 0 900 470" role="img" aria-label="折线图：10 句查询上 JEV 与 DeepSeek 的路由耗时逐句对比。JEV 稳定在 665 到 727 毫秒，DeepSeek 在 329 到 961 毫秒之间大幅波动">
+      <line x1="120" y1="430.0" x2="830" y2="430.0" class="grid"/><text class="axis" x="112" y="434.0" text-anchor="end">0</text><line x1="120" y1="362.0" x2="830" y2="362.0" class="grid"/><text class="axis" x="112" y="366.0" text-anchor="end">200</text><line x1="120" y1="294.0" x2="830" y2="294.0" class="grid"/><text class="axis" x="112" y="298.0" text-anchor="end">400</text><line x1="120" y1="226.0" x2="830" y2="226.0" class="grid"/><text class="axis" x="112" y="230.0" text-anchor="end">600</text><line x1="120" y1="158.0" x2="830" y2="158.0" class="grid"/><text class="axis" x="112" y="162.0" text-anchor="end">800</text><line x1="120" y1="90.0" x2="830" y2="90.0" class="grid"/><text class="axis" x="112" y="94.0" text-anchor="end">1000</text>
+      <line x1="120" y1="430" x2="830" y2="430" class="baseline"/>
+      <text class="axis" x="112" y="448" text-anchor="end">ms</text>
+      <text class="axis" x="120.0" y="448" text-anchor="middle">Q1</text><text class="axis" x="198.9" y="448" text-anchor="middle">Q2</text><text class="axis" x="277.8" y="448" text-anchor="middle">Q3</text><text class="axis" x="356.7" y="448" text-anchor="middle">Q4</text><text class="axis" x="435.6" y="448" text-anchor="middle">Q5</text><text class="axis" x="514.4" y="448" text-anchor="middle">Q6</text><text class="axis" x="593.3" y="448" text-anchor="middle">Q7</text><text class="axis" x="672.2" y="448" text-anchor="middle">Q8</text><text class="axis" x="751.1" y="448" text-anchor="middle">Q9</text><text class="axis" x="830.0" y="448" text-anchor="middle">Q10</text>
+      <polyline class="line1" points="120.0,201.9 198.9,191.3 277.8,197.8 356.7,198.5 435.6,186.2 514.4,192.3 593.3,203.9 672.2,183.5 751.1,190.0 830.0,182.8"/>
+      <polyline class="line2" points="120.0,254.2 198.9,318.1 277.8,222.3 356.7,103.3 435.6,283.1 514.4,221.2 593.3,204.2 672.2,298.4 751.1,233.8 830.0,256.9"/>
+      <circle cx="120.0" cy="201.9" r="4.5" class="mj"/><circle cx="198.9" cy="191.3" r="4.5" class="mj"/><circle cx="277.8" cy="197.8" r="4.5" class="mj"/><circle cx="356.7" cy="198.5" r="4.5" class="mj"/><circle cx="435.6" cy="186.2" r="4.5" class="mj"/><circle cx="514.4" cy="192.3" r="4.5" class="mj"/><circle cx="593.3" cy="203.9" r="4.5" class="mj"/><circle cx="672.2" cy="183.5" r="4.5" class="mj"/><circle cx="751.1" cy="190.0" r="4.5" class="mj"/><circle cx="830.0" cy="182.8" r="4.5" class="mj"/><circle cx="120.0" cy="254.2" r="4.5" class="md"/><circle cx="198.9" cy="318.1" r="4.5" class="md"/><circle cx="277.8" cy="222.3" r="4.5" class="md"/><circle cx="356.7" cy="103.3" r="4.5" class="md"/><circle cx="435.6" cy="283.1" r="4.5" class="md"/><circle cx="514.4" cy="221.2" r="4.5" class="md"/><circle cx="593.3" cy="204.2" r="4.5" class="md"/><circle cx="672.2" cy="298.4" r="4.5" class="md"/><circle cx="751.1" cy="233.8" r="4.5" class="md"/><circle cx="830.0" cy="256.9" r="4.5" class="md"/>
+      <text class="endlabel" x="838.0" y="180.8" fill="var(--s1)" text-anchor="start">JEV</text>
+      <text class="endlabel" x="838.0" y="268.9" fill="var(--s2)" text-anchor="start">DS</text>
+      <g id="hit" fill="transparent">
+        <rect x="86.0" y="60" width="68" height="390" data-i="0" onmouseenter="showTip(0,evt)" onmouseleave="hideTip()"/><rect x="164.9" y="60" width="68" height="390" data-i="1" onmouseenter="showTip(1,evt)" onmouseleave="hideTip()"/><rect x="243.8" y="60" width="68" height="390" data-i="2" onmouseenter="showTip(2,evt)" onmouseleave="hideTip()"/><rect x="322.7" y="60" width="68" height="390" data-i="3" onmouseenter="showTip(3,evt)" onmouseleave="hideTip()"/><rect x="401.6" y="60" width="68" height="390" data-i="4" onmouseenter="showTip(4,evt)" onmouseleave="hideTip()"/><rect x="480.4" y="60" width="68" height="390" data-i="5" onmouseenter="showTip(5,evt)" onmouseleave="hideTip()"/><rect x="559.3" y="60" width="68" height="390" data-i="6" onmouseenter="showTip(6,evt)" onmouseleave="hideTip()"/><rect x="638.2" y="60" width="68" height="390" data-i="7" onmouseenter="showTip(7,evt)" onmouseleave="hideTip()"/><rect x="717.1" y="60" width="68" height="390" data-i="8" onmouseenter="showTip(8,evt)" onmouseleave="hideTip()"/><rect x="796.0" y="60" width="68" height="390" data-i="9" onmouseenter="showTip(9,evt)" onmouseleave="hideTip()"/>
+      </g>
+    </svg>
+    <div id="tip"></div>
+    <figcaption>横轴 Q1–Q10 是十句真实需求（音量30 / 亮度70 / 贴左半屏 / 静音 / 深色模式 / 截图进剪贴板 / 锁屏 / 蓝牙设置 / 隐藏他窗 / 清空废纸篓），纵轴为单句路由耗时。悬停任意一列看两家的精确值与选中的目录条目。</figcaption>
+  </figure>
+
+  <section class="card">
+    <h2>怎么读这组数</h2>
+    <ul class="tight">
+      <li><strong>「JEV 很快」这个前提，实测不完全成立。</strong>单句中位数 DeepSeek 547 ms 反而低于 JEV 701 ms（约 0.8×）——两家都是网络往返，模型大小在这里不构成壁垒。</li>
+      <li><strong>但 DeepSeek 是不可预测的 547±316 ms。</strong>同一句「帮我静音」它跑了 961 ms，「屏幕太亮」只要 329 ms；JEV 十条全压在 665–727 ms 的带子里。<strong>做交互路由时，P95 比中位数重要</strong>——用户会为那个 961 ms 的那一次骂街，不会记得那次的 329 ms。</li>
+      <li><strong>JEV 每句都带 confidence（本轮 10/10 全是 1.0），还能输出 noul 弃权</strong>；DeepSeek 只吐一个 id，「不像目录里的东西」这种拒绝要靠提示词自己兜。这是设计口径的差别，不是快慢能换算的。</li>
+      <li><strong>两条都赢不了纯代码。</strong>本项目 L0 整句查表（防线①）实测 <code>0.05 µs/句</code>（224 条短语字典）——零网络、零模型。模型路由只处理 L0 没命中的那句话，所以它真正的对手是「误触发率」，不是毫秒。</li>
+    </ul>
+  </section>
+
+  <details>
+    <summary>数据表（无障碍视图，与图同源）</summary>
+    <table><thead><tr><th># 用户原话</th><th>JEV ms</th><th>DeepSeek ms</th><th>两者之差</th><th>选中条目</th></tr></thead><tbody id="tbody"></tbody></table>
+  </details>
+
+  <footer>
+    测于 2026-09-25 · 本机 · JEV 走 typesafe/jev-1.13（openrouter alpha，CONF_GATE 0.55 / MIN_PROB_GAP 0.20），
+    DeepSeek 走 api.deepseek.com <code>/chat/completions</code> <code>deepseek-flash</code> + <code>thinking:{"type":"disabled"}</code>、temperature 0、max_tokens 60，keep-alive 连接复用。
+    每模型 10 句各跑一次（未取均值）；脚本与原始 JSON 在同目录 <code>bench_route.py</code> / <code>bench_result.json</code>。
+    密钥不落盘于此（脚本从 <code>$DS_KEY_FILE</code> 指定的 0600 文件读取）。
+  </footer>
+</div>
+
+<script>
+const D = {"jev": [671, 702, 683, 681, 717, 699, 665, 725, 706, 727], "ds": [517, 329, 611, 961, 432, 614, 664, 387, 577, 509], "q": ["把音量调到 30", "屏幕太亮了，调到 70", "当前窗口贴到左半屏", "帮我静音", "换成深色模式", "截个屏放到剪贴板", "我要离开一下，把电脑锁了", "打开蓝牙设置", "把别的窗口都藏起来", "清空一下废纸篓"], "medJ": 701, "medD": 547, "x": [120.0, 198.9, 277.8, 356.7, 435.6, 514.4, 593.3, 672.2, 751.1, 830.0], "yj": [201.9, 191.3, 197.8, 198.5, 186.2, 192.3, 203.9, 183.5, 190.0, 182.8], "yd": [254.2, 318.1, 222.3, 103.3, 283.1, 221.2, 204.2, 298.4, 233.8, 256.9]};
+const fmt = n => n.toLocaleString('zh-CN');
+function showTip(i, evt) {
+  const tip = document.getElementById('tip');
+  const fig = document.querySelector('figure');
+  const box = fig.getBoundingClientRect(), svg = fig.querySelector('svg').getBoundingClientRect();
+  const scale = svg.width / 900;
+  const gx = (svg.left - box.left) + D.x[i] * scale;
+  tip.innerHTML = '<strong>Q' + (i+1) + ' · ' + D.q[i] + '</strong><br>'
+    + '<span style="color:#7db3ef">■</span> JEV ' + fmt(D.jev[i]) + ' ms<br>'
+    + '<span style="color:#f0996f">■</span> DeepSeek ' + fmt(D.ds[i]) + ' ms';
+  tip.style.opacity = 1;
+  const w = tip.offsetWidth;
+  tip.style.left = Math.min(Math.max(8, gx - w/2), box.width - w - 8) + 'px';
+  tip.style.top = (Math.min(D.yj[i], D.yd[i]) * scale + (svg.top - box.top) - tip.offsetHeight - 10) + 'px';
+}
+function hideTip() { document.getElementById('tip').style.opacity = 0; }
+document.getElementById('tbody').innerHTML = D.q.map((q,i) =>
+  '<tr><td>Q' + (i+1) + ' ' + q + '</td><td>' + fmt(D.jev[i]) + '</td><td>' + fmt(D.ds[i])
+  + '</td><td>' + (D.jev[i]-D.ds[i] > 0 ? '+' : '−') + fmt(Math.abs(D.jev[i]-D.ds[i])) + '</td><td style="font-family:var(--mono);font-size:12px">✓</td></tr>').join('');
+</script></head><body></body></html>

@@ -1,0 +1,125 @@
+<title>循环地图</title>
+<style>
+  :root { color-scheme: light;
+    --ground:#F6F7F9; --surface:#FFFFFF; --ink:#14161A; --ink-2:#5C636E; --ink-3:#878E99;
+    --line:#DCE0E6; --chip:#EFF1F4; --accent:#0A6FD8; --accent-2:#E6F0FC;
+    --green:#178A46; --green-2:#E7F5EC; --purple:#6D4FC2; --purple-2:#EFEBFA; --warn:#9A5B00; --warn-2:#FDF3E3;
+    --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark;
+    --ground:#0B0C0E; --surface:#18181C; --ink:#F2F2F4; --ink-2:#A6A6B0; --ink-3:#7E7E89;
+    --line:#2A2A2E; --chip:#212127; --accent:#0A84FF; --accent-2:#10243D;
+    --green:#34D46A; --green-2:#102A1B; --purple:#A794E8; --purple-2:#241F38; --warn:#E0A75B; --warn-2:#2A2113; } }
+  :root[data-theme="dark"] { color-scheme: dark;
+    --ground:#0B0C0E; --surface:#18181C; --ink:#F2F2F4; --ink-2:#A6A6B0; --ink-3:#7E7E89;
+    --line:#2A2A2E; --chip:#212127; --accent:#0A84FF; --accent-2:#10243D;
+    --green:#34D46A; --green-2:#102A1B; --purple:#A794E8; --purple-2:#241F38; --warn:#E0A75B; --warn-2:#2A2113; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding-block:40px 56px; padding-inline:20px; background:var(--ground); color:var(--ink);
+         font-family:var(--sans); font-size:15px; line-height:1.65; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1080px; margin:0 auto; display:flex; flex-direction:column; gap:32px; }
+  h1 { font-size:29px; margin:0 0 10px; letter-spacing:-.02em; }
+  .lede { color:var(--ink-2); margin:0; max-width:70ch; }
+  figure { margin:0; }
+  .figbox { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 14px 6px; }
+  .scroll { overflow-x:auto; }
+  svg { display:block; width:100%; height:auto; min-width:760px; }
+  figcaption { font-size:13px; color:var(--ink-2); padding:12px 4px 10px; max-width:76ch; }
+  .nd { fill:var(--surface); stroke:var(--line); stroke-width:1.4; }
+  .nd-a { fill:var(--accent-2); stroke:var(--accent); stroke-width:1.6; }
+  .nd-g { fill:var(--green-2); stroke:var(--green); stroke-width:1.4; }
+  .nd-p { fill:var(--purple-2); stroke:var(--purple); stroke-width:1.4; }
+  .t { fill:var(--ink); font-family:var(--sans); font-size:13.5px; font-weight:600; }
+  .t-sm { fill:var(--ink-2); font-family:var(--sans); font-size:12.5px; }
+  .t-xs { fill:var(--ink-3); font-family:var(--sans); font-size:11.5px; }
+  .t-a { fill:var(--accent); font-family:var(--sans); font-size:12px; font-weight:600; }
+  .t-g { fill:var(--green); font-family:var(--sans); font-size:12px; font-weight:600; }
+  .t-p { fill:var(--purple); font-family:var(--sans); font-size:12px; font-weight:600; }
+  .tg { fill:var(--ink); font-family:var(--mono); font-size:11.5px; }
+  .ln { stroke:var(--ink-3); stroke-width:1.4; fill:none; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 20px; }
+  ul.tight { margin:8px 0 0; padding-left:20px; }
+  ul.tight li { margin-bottom:7px; }
+  code { font-family:var(--mono); font-size:12.5px; background:var(--chip); padding:1px 5px; border-radius:5px; }
+  footer { font-size:12.5px; color:var(--ink-3); border-top:1px solid var(--line); padding-top:14px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>循环地图：外环与内环</h1>
+    <p class="lede">
+      循环分两层：<strong>外环</strong>是任务级的决策循环（模型看完结果决定下一步），<strong>内环</strong>是执行体肚子里的
+      工作流循环（代码写死结构，模型只在固定点位被调用）。只有外环才是「agent」的标志；有内环没外环的，是工作流不是 agent。
+    </p>
+  </header>
+
+  <figure>
+    <div class="figbox"><div class="scroll">
+      <svg viewBox="0 0 980 560" role="img" aria-label="五条分流各自的内外循环标注：纯显示无外环有内环、纯代码无环、组装两条10到30轮外环、复盘批处理内环">
+        <text class="t-xs" x="490" y="24" text-anchor="middle">五条分流 × 两层循环（🟢 外环 = 决策循环 · 🔵 内环 = 工作流循环）</text>
+
+        <!-- ⓪ 纯文本（默认类） -->
+        <rect class="nd-a" x="30" y="44" width="920" height="72" rx="10"/>
+        <text class="t" x="46" y="72">⓪ 纯文本（默认类）· 翻译 / 写作 / 问答 / 讲解</text>
+        <text class="t-xs" x="46" y="96">无环 · 无标签回复 · 零风险——分不动的、拿不准的、被哨兵词拦下的一律落这里（误执行的坏结果在机器上，纯文本最坏只是回答不佳）</text>
+
+        <!-- ① 纯显示 -->
+        <rect class="nd" x="30" y="128" width="920" height="96" rx="10"/>
+        <text class="t" x="46" y="154">① 纯显示（画圈 / 飞光标 / 画图讲解）</text>
+        <text class="t-xs" x="46" y="176">外环：无 —— 画完即结束</text>
+        <text class="t-g" x="46" y="198">内环：有 —— 画图工作流里「编译器校验 → 失败让模型修」≤3 轮；讲解按步推进（节奏循环，非决策循环）</text>
+        <text class="t-xs" x="620" y="70">看得见的工具：</text>
+        <text class="t-xs" x="620" y="90">全部（同一模型上下文）</text>
+        <text class="t-xs" x="620" y="110">内部 DeepSeek 封闭：只见任务文本</text>
+
+        <!-- ② 纯代码 -->
+        <rect class="nd" x="30" y="236" width="920" height="96" rx="10"/>
+        <text class="t" x="46" y="262">② 纯代码（预设脚本+参数 / 现写一行）</text>
+        <text class="t-xs" x="46" y="284">外环：无</text>
+        <text class="t-g" x="46" y="306">内环：仅一次 verify（脚本声明了才跑，独立读回比对；失败回落手动路径）</text>
+        <text class="t-xs" x="620" y="262">看得见的工具：全部</text>
+        <text class="t-xs" x="620" y="282">现写代码过危险词检查</text>
+
+        <!-- ③ 组装·自由 -->
+        <rect class="nd-g" x="30" y="344" width="920" height="118" rx="10"/>
+        <text class="t" x="46" y="370">③ 组装 · 自由（AI 自己研究怎么拼）</text>
+        <text class="t-g" x="46" y="394">外环：≤10 轮决策循环 —— 执行一步 → 截图 → 模型看结果 → 决定下一步；10 轮未完成 → 打包升级给 Claude Code（不向用户报失败）</text>
+        <text class="t-xs" x="46" y="416">内环：C 类子链一次做完（连开三个 App、改名→移动——结果事先确定的不回头）</text>
+        <text class="tg" x="46" y="442">工具可见性：L0 索引全量（工具+技能+MCP 摘要）· 每步观察回填 · 失败细节保留</text>
+
+        <!-- ④ 技能引导 -->
+        <rect class="nd-g" x="30" y="474" width="920" height="118" rx="10"/>
+        <text class="t" x="46" y="500">④ 组装 · 技能引导（按用户预设方法论拼）</text>
+        <text class="t-g" x="46" y="524">外环：同 ③ ≤10 轮 —— 技能正文只是「加进视野的方法论」，不是独立笼子</text>
+        <text class="t-xs" x="46" y="546">内环：同 ③；技能的每个步骤内部还可以再是 C 类链或工具调用</text>
+        <text class="tg" x="46" y="572">工具可见性：技能正文 + L0 全量索引并存 —— 写文案时照样能调搜索/截图/任何工具</text>
+
+        <!-- ⑤ 复盘 -->
+        <rect class="nd-p" x="30" y="580" width="920" height="52" rx="10"/>
+        <text class="t-p" x="46" y="604">⑤ 复盘（旁路）</text>
+        <text class="t-xs" x="230" y="604">链条最末端的兜底：50 任务计数 / 手动触发 · 内环=批处理 · 仅文本生成 + AnySearch + 锁死子文件夹写入 · 产出全是建议</text>
+      </svg>
+    </div></div>
+    <figcaption>
+      判断标准一句话：<strong>外环（模型看结果自由决策下一步）= agent；只有内环（结构写死的循环）= 工作流</strong>。
+      你发现的「纯显示内部其实有循环」就是内环——画图工作流的校验修复循环。它有循环但结构写死，所以不是 agent。
+    </figcaption>
+  </figure>
+
+  <section>
+    <h2>工具可见性：谁被封闭了</h2>
+    <div class="card">
+      <ul class="tight">
+        <li><strong>①②③④ 全部共享同一个模型上下文</strong>——没有「独立的类 agent」被分流出去；技能是<strong>加进</strong>视野的方法论，不是换一个 AI</li>
+        <li><strong>④ 的关键事实</strong>：技能正文注入后，L0 工具索引原封不动还在——「教它写文案」不等于「它只会写文案」，查资料、截图、调任何工具都还在</li>
+        <li><strong>刻意封闭的只有两处</strong>：画图工作流内部的 DeepSeek（只见任务文本，职责窄）；Claude Code（只见任务文本+自己的工具链，且仅两条入口进入）</li>
+        <li><strong>复盘</strong>是独立模型角色，但看的是历史与审批目录——它本来就不该接用户请求</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    回答「现在有几个 agent」：按「外环 = 模型自由决策循环」的口径，<strong>3 个</strong>——主控循环、Claude Code、复盘。
+    画图助手有内环无外环，是工作流；工具脚本无环，是工具。
+  </footer>
+</div>
