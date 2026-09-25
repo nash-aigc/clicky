@@ -379,12 +379,10 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "窗口动画",
-                    description: WindowRevealAnimation.catkinDrift.explanation
+                    description: WindowRevealAnimation.fogBloom.explanation
                         + "（默认）\n"
-                        + WindowRevealAnimation.fogBloom.explanation
-                        + "\n"
                         + WindowRevealAnimation.none.explanation
-                        + "\n两种动画都只动盖在面板上的一层遮罩，组件只改透明度与缩放 —— 全是合成器属性，不改版面，所以不会卡。"
+                        + "\n两种都只动盖在面板上的一层遮罩，组件只改透明度与缩放 —— 全是合成器属性，不改版面，所以不会卡。"
                 ) {
                     SettingsSegmentedPicker(
                         selection: generalSettingsViewModel.binding(\.windowRevealAnimation),

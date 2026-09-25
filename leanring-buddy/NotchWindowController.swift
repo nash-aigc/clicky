@@ -121,10 +121,6 @@ final class NotchWindowController {
 
     /// 窗口动画那两条用的遮罩层（径向 / 线性渐变），只在展开期间存在。
     private var revealMaskLayer: CAGradientLayer?
-    /// 柳絮那一层。撒完就摘，不留着烧 GPU。
-    private var catkinEmitterLayer: CAEmitterLayer?
-    /// 柳絮的 cell 贴图 —— 程序画的，只画一次，之后复用。
-    private static var cachedCatkinFilamentImage: NSImage?
     private let audioHistoryProvider: () -> [CGFloat]
 
     private var screenPresences: [ScreenPresence] = []
@@ -651,7 +647,7 @@ final class NotchWindowController {
 
         presence.panel.ignoresMouseEvents = false
 
-        let catkinRevealDurationAtStart = revealDuration
+        let revealDurationAtStart = revealDuration
 
         // The content flip is DEFERRED one run-loop tick. Measured 2026-09-23
         // (「点击刘海之后没有马上开始展开，而是等了一段时间」): with the flip
@@ -678,10 +674,7 @@ final class NotchWindowController {
                     self.removeReveal(on: presence)
                 case .fogBloom:
                     self.startFogBloomReveal(on: presence, expandedFrame: expandedFrame,
-                                             duration: catkinRevealDurationAtStart)
-                case .catkinDrift:
-                    self.startCatkinDriftReveal(on: presence, expandedFrame: expandedFrame,
-                                                duration: catkinRevealDurationAtStart)
+                                             duration: revealDurationAtStart)
                 }
                 self.finishExpansionCommit(on: presence)
             }
@@ -718,10 +711,16 @@ final class NotchWindowController {
         gradient.type = .radial
         gradient.frame = CGRect(origin: .zero, size: expandedFrame.size)
         // 圆心略高于正中：观感上"雾的源"落在面板上部，和刘海的关系更近。
-        gradient.startPoint = CGPoint(x: 0.5, y: 0.40)
-        gradient.endPoint = CGPoint(x: 1.35, y: 1.35)
-        let hidden: [NSNumber] = [-1.75, -1.35, -1.20, -0.70]
-        let shown: [NSNumber] = [0.10, 0.50, 0.68, 1.30]
+        //
+        // **`endPoint` 就是那个圆的半径**，而用户 2026-09-25 说它太大
+        // （「中间的可见的那个圆圈太大了，让他小一点，因为窗口本身不大」）——
+        // 从 (1.35, 1.35) 收到 (1.05, 1.05)：半径小了约 22%，同一个 `locations`
+        // 下露出的圆明显更小。(stop 的位置要跟着往后挪，否则右下角永远盖不住 ——
+        // 面板四角在归一化半径上离圆心 1.16~1.42。)
+        gradient.startPoint = CGPoint(x: 0.5, y: 0.44)
+        gradient.endPoint = CGPoint(x: 1.05, y: 1.05)
+        let hidden: [NSNumber] = [-1.60, -1.24, -1.08, -0.62]
+        let shown: [NSNumber] = [0.12, 0.62, 1.18, 1.62]
         gradient.colors = [
             NSColor.white.cgColor, NSColor.white.cgColor,
             NSColor.clear.cgColor, NSColor.clear.cgColor,
@@ -736,136 +735,13 @@ final class NotchWindowController {
         animation.fromValue = hidden
         animation.toValue = shown
         animation.duration = duration
-        animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 0.9, 0.3, 1)
+        // **曲线换掉了。** 原来是参考页的 `cubic-bezier(.22,.9,.3,1)` —— 那条曲线把
+        // 九成的位移压在前三成时间里，末段几乎不动，用户读到的是「展开到窗口边缘的时候
+        // 有个卡顿」。`easeInEaseOut` 把位移均开，末尾不再爬行。
+        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
         gradient.locations = shown
         gradient.add(animation, forKey: "fogBloomReveal")
         revealMaskLayer = gradient
-    }
-
-    /// **柳絮扫过**（`WindowRevealAnimation.catkinDrift`，用户指定的默认值）。
-    ///
-    /// 两层：一条**斜向的线性渐变遮罩**从右上扫到左下（边缘是软的，所以看不到一条线），
-    /// 加上一层 `CAEmitterLayer` 撒细丝状的柳絮。柳絮的 cell 是**程序画出来的一根弯丝
-    /// 带短绒毛**，不是圆点 —— 圆点会读成泡泡，而柳絮的辨识度全在"细、弯、有绒毛"上。
-    private func startCatkinDriftReveal(on presence: ScreenPresence, expandedFrame: CGRect, duration: TimeInterval) {
-        guard let hosting = presence.contentHostingView.layer else { return }
-        let size = expandedFrame.size
-        let gradient = CAGradientLayer()
-        gradient.frame = CGRect(origin: .zero, size: size)
-        gradient.startPoint = CGPoint(x: 0.12, y: 0.0)
-        gradient.endPoint = CGPoint(x: 0.92, y: 1.0)
-        gradient.colors = [
-            NSColor.clear.cgColor, NSColor.white.cgColor, NSColor.white.cgColor,
-        ]
-        let hidden: [NSNumber] = [-0.55, -0.22, 0.12]
-        let shown: [NSNumber] = [0.72, 0.92, 1.30]
-        gradient.locations = hidden
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        hosting.mask = gradient
-        CATransaction.commit()
-
-        let animation = CABasicAnimation(keyPath: "locations")
-        animation.fromValue = hidden
-        animation.toValue = shown
-        animation.duration = duration
-        animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.3, 0.0, 0.2, 1)
-        gradient.locations = shown
-        gradient.add(animation, forKey: "catkinSweep")
-        revealMaskLayer = gradient
-
-        // 柳絮：从右上角外一批批撒下来，横穿整块面板。
-        let emitter = CAEmitterLayer()
-        emitter.frame = CGRect(origin: .zero, size: size)
-        emitter.emitterPosition = CGPoint(x: size.width * 0.94, y: size.height * 0.06)
-        emitter.emitterShape = .line
-        emitter.emitterSize = CGSize(width: size.height * 0.55, height: 1)
-        emitter.renderMode = .additive
-
-        let cell = CAEmitterCell()
-        cell.contents = Self.catkinFilamentImage().cgImage(
-            forProposedRect: nil, context: nil, hints: nil
-        )
-        cell.birthRate = 110
-        cell.lifetime = 2.6
-        cell.lifetimeRange = 0.7
-        cell.velocity = 92
-        cell.velocityRange = 40
-        // 朝左下方飘（CAEmitter 的角度以弧度计，0 指向 +x，y 轴向下）。
-        cell.emissionLongitude = .pi * 0.82
-        cell.emissionRange = .pi * 0.28
-        cell.scale = 0.30
-        cell.scaleRange = 0.16
-        cell.alphaSpeed = -0.42
-        cell.spin = 0.5
-        cell.spinRange = 1.1
-        emitter.emitterCells = [cell]
-
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        hosting.addSublayer(emitter)
-        CATransaction.commit()
-        catkinEmitterLayer = emitter
-
-        // 撒完就收：发射器留着会一直烧 GPU。0.9 秒后停发，等剩下的飘完再摘掉。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9 * duration) { [weak self, weak emitter] in
-            emitter?.birthRate = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { [weak self, weak emitter] in
-                emitter?.removeFromSuperlayer()
-                if self?.catkinEmitterLayer === emitter { self?.catkinEmitterLayer = nil }
-            }
-        }
-    }
-
-    /// 一根柳絮的贴图 —— **程序画的**：一条微微弯曲的细线，两侧各有几根短绒毛，两端渐隐。
-    /// 尺寸小（44×44），靠 `CAEmitterCell` 的 scale 放大，所以一张图够用。
-    private static func catkinFilamentImage() -> NSImage {
-        if let cached = cachedCatkinFilamentImage { return cached }
-        let side = 44
-        // **`NSBitmapImageRep` 而不是 `lockFocus`**：`lockFocus` 依赖当前是否有可用的
-        // 绘图上下文，在后台或非绘制时机上会静默画出一张空图 —— 那样柳絮就只是些
-        // 看不见的点。`NSBitmapImageRep` 自带位图上下文，任何时机都能画。
-        guard let rep = NSBitmapImageRep(
-            bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side,
-            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
-        ), let ctx = NSGraphicsContext(bitmapImageRep: rep) else {
-            return NSImage(size: NSSize(width: side, height: side))
-        }
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = ctx
-        let cg = ctx.cgContext
-        cg.setLineCap(.round)
-        let stroke = NSColor(srgbRed: 0.93, green: 0.94, blue: 0.97, alpha: 1)
-        cg.setStrokeColor(stroke.withAlphaComponent(0.85).cgColor)
-        cg.setLineWidth(1.1)
-        let spine = CGMutablePath()
-        spine.move(to: CGPoint(x: 6, y: 30))
-        spine.addQuadCurve(to: CGPoint(x: 38, y: 16), control: CGPoint(x: 22, y: 30))
-        cg.addPath(spine)
-        cg.strokePath()
-        for index in 1...6 {
-            let t = CGFloat(index) / 7
-            let px = 6 + (38 - 6) * t
-            let py = 30 + (16 - 30) * (t * (2 - t))
-            let barb = 9 * (1 - t * 0.45)
-            cg.setStrokeColor(stroke.withAlphaComponent(0.75 * (1 - t * 0.5)).cgColor)
-            cg.setLineWidth(0.8)
-            let up = CGMutablePath()
-            up.move(to: CGPoint(x: px, y: py))
-            up.addLine(to: CGPoint(x: px - barb * 0.45, y: py - barb))
-            cg.addPath(up)
-            let down = CGMutablePath()
-            down.move(to: CGPoint(x: px, y: py))
-            down.addLine(to: CGPoint(x: px + barb * 0.25, y: py + barb * 0.85))
-            cg.addPath(down)
-            cg.strokePath()
-        }
-        NSGraphicsContext.restoreGraphicsState()
-        let image = NSImage(size: NSSize(width: side, height: side))
-        image.addRepresentation(rep)
-        cachedCatkinFilamentImage = image
-        return image
     }
 
     /// Hides the content before the final frame is committed, so the
@@ -1274,13 +1150,9 @@ final class NotchWindowController {
     private func removeReveal(on presence: ScreenPresence) {
         revealSurfaceLayer?.removeFromSuperlayer()
         revealSurfaceLayer = nil
-        // 柳絮那层不留着：它是唯一一个会持续烧 GPU 的东西。
-        catkinEmitterLayer?.removeFromSuperlayer()
-        catkinEmitterLayer = nil
         // 渐变遮罩的动画要**先按 key 摘掉再丢层**（与中心缩放同一个道理：动画还挂在
         // 层上时会继续驱动 presentation，只把层 nil 掉并不保证它当帧就停）。
         revealMaskLayer?.removeAnimation(forKey: "fogBloomReveal")
-        revealMaskLayer?.removeAnimation(forKey: "catkinSweep")
         revealMaskLayer = nil
 
         guard let hostingLayer = presence.contentHostingView.layer else { return }

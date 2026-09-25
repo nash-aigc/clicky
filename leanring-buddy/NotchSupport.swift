@@ -135,7 +135,7 @@ nonisolated enum NotchSupport {
     /// 遮罩自己的时长。两处都跟着用户设的「弹出速度」倍率走，所以面板和遮罩永远同一
     /// 节奏，不会一个走完另一个还在动。
     ///
-    /// 实测（演示页与真机）：雾里浮现与柳絮扫过在 2× 下都是 0.31 秒左右时观感最好 ——
+    /// 实测（演示页与真机）：雾里浮现（现存的唯一一条）在 2× 下 0.31 秒左右观感最好 ——
     /// 再短就只剩"闪一下"，再长会让人觉得面板卡住了。
     static func revealDuration(
         for animation: WindowRevealAnimation,
@@ -144,7 +144,6 @@ nonisolated enum NotchSupport {
         let base: TimeInterval
         switch animation {
         case .fogBloom: base = 0.62
-        case .catkinDrift: base = 0.66
         case .none: base = 0.0
         }
         return base / max(1.0, speedMultiplier)

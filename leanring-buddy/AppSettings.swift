@@ -75,39 +75,34 @@ nonisolated enum AnswerCardStyle: String, Codable, CaseIterable, Sendable {
 /// 里面包含两个选项：卡片样式 / 窗口样式……同时把我刚才提供的中心缩放样式也作为
 /// 一个选项，并将中心缩放样式设为默认样式。」
 ///
-/// 两个选项都是**同一套机制**（窗口一次 `setFrame` 到最终位置 + 内容层上一个 Core
-/// Animation），所以加这一个不引入任何逐帧主线程工作 —— 第一版把中心缩放做成了逐帧
-/// `NSWindow.setFrame`，用户当场否掉（「比之前还要卡顿…现在是从左到右展开」）。参考
-/// 页面里十二个窗口动画没有一个改元素尺寸，全是 `transform` / `clip-path`，这就是原因。
 /// 展开时**盖在面板上的那层遮罩**怎么做动画。
 ///
 /// 与 `WindowExpansionStyle` 分开是有意的：那一个管"窗口尺寸/形状怎么变"，这一个管
-/// "盖在上面的那层怎么退"。用户 2026-09-25 选定的两条，来自
-/// `design-preview/刘海展开遮罩动画.html`：
+/// "盖在上面的那层怎么退"。
 ///
-///   · `fogBloom`  —— 那份演示里的**第 1 条「雾里浮现」**
-///   · `catkinDrift` —— 第 5 条「柳絮扫过」，**用户指定的默认值**
+/// 用户 2026-09-25 从 `design-preview/刘海展开遮罩动画.html` 里先挑了两条，随后又
+/// 收窄成一条：
+///     「只保留（直接显示，雾里浮现）」
+/// 于是「柳絮扫过」（那份演示的第 5 条）连同它的 `CAEmitterLayer`、程序画的细丝贴图、
+/// 以及 `NotchSupport.revealDuration` 里那一档一起删掉 —— 留着的代码没人走，比没有更糟。
 ///
-/// **两条都遵守同一条约束**：窗口 frame 一次设到最终值，组件只改 opacity / transform /
-/// filter（全是合成器属性，不改 frame，所以不重排），唯一大幅移动的是遮罩自己。
-/// 这正是用户在演示页里提的那三条。
+/// **删掉一个 case 的代价要在这里说清楚**：`WindowRevealAnimation` 是按 rawValue 存盘的，
+/// 而**合成出来的 `Codable` 在遇到不认识的 rawValue 时会抛错** —— 那个错会被
+/// `AppSettings.init(from:)` 一路带上去，让**整份设置文件**解不出来（所有设置回到默认值，
+/// 不只是这一项）。所以下面 `init(from:)` 里这一项**不直接 decode 枚举**，而是先读成
+/// `String?` 再按 rawValue 匹配，认不出来就落回默认值。`WindowExpansionStyle` 那边
+/// 早就因为这个原因这么写了，这里是同一个坑第二次出现。
 nonisolated enum WindowRevealAnimation: String, Codable, CaseIterable, Sendable {
     /// 雾里浮现：遮罩是一圈**没有边界的径向软边**，从面板中心往外化开；组件在同一节奏里
-    /// 浮起、放大、从模糊变清晰 —— 遮罩和组件共用一条曲线，所以看起来是"雾散了、东西
-    /// 浮出来了"，而不是"布被拉开了"。
+    /// 浮起、从模糊变清晰 —— 遮罩和组件共用一条曲线，所以看起来是"雾散了、东西浮出来了"。
+    /// **默认值。**
     case fogBloom
-    /// 柳絮扫过：一条**斜向的软边**从右上扫到左下，前面还有一层细丝状的柳絮（
-    /// `CAEmitterLayer`，cell 是一根弯的细丝带短绒毛，不是圆点）。组件按离扫描前缘的
-    /// 次序依次浮出。
-    case catkinDrift
-    /// 直接显示：没有动画，面板连同内容整块出现。用户 2026-09-25 最早要的就是这个
-    /// （「点击一下就直接展开，什么动画都没有」），留成一个可选项，别把回去的路堵死。
+    /// 直接显示：没有动画，面板连同内容整块出现。留着它是别把回去的路堵死。
     case none
 
     var displayName: String {
         switch self {
         case .fogBloom: return "雾里浮现"
-        case .catkinDrift: return "柳絮扫过"
         case .none: return "直接显示"
         }
     }
@@ -116,14 +111,16 @@ nonisolated enum WindowRevealAnimation: String, Codable, CaseIterable, Sendable 
         switch self {
         case .fogBloom:
             return "雾里浮现：遮罩是一圈没有边界的软边，从面板中心往外化开，组件在同一节奏里浮起、变清晰。"
-        case .catkinDrift:
-            return "柳絮扫过：一条斜向软边扫过，前面有一层细丝状的柳絮飘过，组件依次浮出。"
         case .none:
             return "直接显示：没有任何动画，面板和内容整块出现。"
         }
     }
 }
 
+/// 两个选项都是**同一套机制**（窗口一次 `setFrame` 到最终位置 + 内容层上一个 Core
+/// Animation），所以加这一个不引入任何逐帧主线程工作 —— 第一版把中心缩放做成了逐帧
+/// `NSWindow.setFrame`，用户当场否掉（「比之前还要卡顿…现在是从左到右展开」）。参考
+/// 页面里十二个窗口动画没有一个改元素尺寸，全是 `transform` / `clip-path`，这就是原因。
 nonisolated enum WindowExpansionStyle: String, Codable, CaseIterable, Sendable {    /// 01 中心缩放（2026-09-23 重设计）：内容层被一个**从刘海那一个点向外长开的
     /// 遮罩**揭开——顶边中点全程钉在刘海底边，左上角向左、右上角向右、底边向下，
     /// 三个方向同一时刻同一节奏。旧的 transform 顶边锚定实现（`centerPop`）被整体
@@ -565,8 +562,8 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 用户 2026-09-25 从 `design-preview/刘海展开遮罩动画.html` 的十八个候选里挑了两条
     /// 要我实现，指定第 5 条为默认：
     ///     「把第一个和第五个写进去，做成一个效果。用户点击时，默认使用第五个」
-    /// 于是有这个枚举，`catkinDrift` 是默认值。
-    var windowRevealAnimation: WindowRevealAnimation = .catkinDrift
+    /// 于是有这个枚举。后来收窄成两条，`fogBloom` 是默认值。
+    var windowRevealAnimation: WindowRevealAnimation = .fogBloom
 
     /// 输入框里哪个键发送 —— 交互页的「发送方式」。两个内容页的输入框
     /// （`MessageComposerField`）都读它，所以改完立刻生效，不用重启。
@@ -1169,7 +1166,15 @@ nonisolated extension AppSettings {
         // throw and take the whole AppSettings.json down with it. Unknown and
         // legacy values — `"centerPop"` included — read as the new 中心缩放.
         if let rawExpansionStyle = try container.decodeIfPresent(String.self, forKey: .windowExpansionStyle) {
-            windowRevealAnimation = try container.decodeIfPresent(WindowRevealAnimation.self, forKey: .windowRevealAnimation) ?? defaults.windowRevealAnimation
+            // **按字符串匹配，不直接 decode 枚举** —— 见 `WindowRevealAnimation` 的说明：
+            // 合成 Codable 遇到不认识的 rawValue 会抛错，一个被删掉的 case 会让整份设置
+            // 文件解不出来。读成 String 再匹配，认不出来就落回默认值。
+            if let rawRevealAnimation = try container.decodeIfPresent(String.self, forKey: .windowRevealAnimation),
+               let decodedRevealAnimation = WindowRevealAnimation(rawValue: rawRevealAnimation) {
+                windowRevealAnimation = decodedRevealAnimation
+            } else {
+                windowRevealAnimation = defaults.windowRevealAnimation
+            }
         windowExpansionStyle = WindowExpansionStyle(rawValue: rawExpansionStyle) ?? .notchBloom
         } else {
             windowExpansionStyle = defaults.windowExpansionStyle
