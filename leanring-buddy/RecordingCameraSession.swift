@@ -34,6 +34,10 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
     private var arrivedFrameCount = 0
     private var isRunning = false
 
+    /// **提到成员上，不要每帧新建。** `CIContext()` 每次构造都会分配 GPU/Metal 资源，
+    /// 一秒一个虽然不算致命，但那是白扔的开销 —— 它是无状态的，建一次就够。
+    private let ciContext = CIContext()
+
     private static let settleSeconds: TimeInterval = 0.35
     private static let minimumFramesToDiscard = 5
 
@@ -91,7 +95,7 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
         lastCapturedAt = now
 
         let ciImage = CIImage(cvPixelBuffer: buffer)
-        guard let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent),
+        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent),
               let jpeg = Self.downscaledJPEG(from: cgImage, maximumDimension: 768) else { return }
         onFrame?(jpeg)
     }

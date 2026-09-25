@@ -813,6 +813,18 @@ final class LongFormRecorderController: ObservableObject {
         lastErrorMessage = nil
         connectionRotationCount = 0
         isEditorOpenAtStopTime = false
+
+        // **摄像头状态每一轮都必须重置。** 少了这一段，「用户退出抓帧」那个标志会
+        // 一直挂着，之后**每一轮**录音都再也不抓 —— 用户实测：「关闭录音，开启全新的
+        // 录音之后再触发关键词，没有效果」。
+        //
+        // 而且不能只重置标志：`AVCaptureSession` 重复 `addInput` 会被静默拒绝
+        // （`canAddInput` 返回 false，不报错），所以每一轮要换一个**全新**的采集会话。
+        hasUserStoppedCameraThisSession = false
+        isCameraCapturing = false
+        cameraFrames = []
+        latestCameraFrameData = nil
+        cameraSession = RecordingCameraSession()
         if !isResuming {
             committedTranscriptTail = ""
             liveTranscriptLine = ""
