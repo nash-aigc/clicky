@@ -764,8 +764,23 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 第一句话说什么。留空就是用内置的那句。
     var voiceChatGreetingText: String = ""
 
-    /// 内置打招呼语。写得短，因为它是「能不能听见」的探针，不是内容。
-    static let defaultVoiceChatGreetingText = "你好，我在，能听到你说话。"
+    /// 内置打招呼语。
+    ///
+    /// **2026-09-25 改成一句"指令"而不是一句问候**（用户的原话：「你需要通过发一些
+    /// 内容让 AI 说话，提示词应该是：请说你好，请不要回复其他内容，请只说你好。
+    /// 就是让它第一句话只说"你好"这两个字，不要说其他内容，这样我能知道它回复我了、
+    /// 连接上了、能正常回复了。你只需要修改提示词，其他的不需要安排」）。
+    ///
+    /// 关键在于**这句话本来就是当用户消息发给模型的**，不是读出来的问候：
+    ///   · 全双工 —— `DuplexVoiceEngine.speakGreeting` 发
+    ///     `conversation.item.create`（role=user）+ `response.create`；
+    ///   · 三段式 —— `startTurn(utterance: greeting, announcesUserBubble: false)`。
+    /// 所以写一句指令，模型就会照着回。**换掉的只是文本，接线一个字没动。**
+    ///
+    /// 附带的好处：回复只有两个字，首段合成的成本降到最低（合成 ≈ 固定 ~590ms +
+    /// 每字 ~19–25ms，实测见 `开发经验/09-实测数据.md`），所以这一声"你好"来得
+    /// 比原来那句 12 字的问候更早 —— 而它要回答的正是"连上了没有"。
+    static let defaultVoiceChatGreetingText = "请说你好，请不要回复其他内容，请只说你好。"
 
     /// 「刘海屏入口」: whether the notch-area pill is built at all on MacBooks
     /// with a hardware notch. The menu-bar panel is the permanent backup entry,
