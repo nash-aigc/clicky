@@ -469,6 +469,35 @@ final class CompanionManager: ObservableObject {
     /// which is what keeps the setting to one gate, in the pipeline that fills this.
     @Published private(set) var streamingAnswerText: String = ""
 
+    /// **任务完成的对号 + 一句摘要**，光标旁停 2–3 秒（方案第 4 步）。
+    ///
+    /// 它刻意是**独立的一个显示位**，不是复用 `streamingAnswerText`：那个属性是
+    /// 「正在流式到达的答案」，它自己的收尾（`scheduleAnswerBubbleClear` 等 TTS 播完
+    /// 再走 linger）刚刚才调稳。往里塞一段完成通知，就等于让两条生命周期共用一个槽 ——
+    /// 而它们的结束条件不同：答案等播完，通知是定时。
+    ///
+    /// 优先级最高：它非空时光标旁显示它，把下面那些都压住。一段 2–3 秒的通知本来
+    /// 就该盖住别的东西，否则它出现的那一刻正好是答案清空的那一刻，屏幕上会闪。
+    @Published private(set) var taskCompletionNotice: String?
+
+    /// 定时收掉通知的令牌。**代次计数**：一段还没走完又来了新的一段，
+    /// 旧的那个定时不许把新的收掉（和标注、图形板用的是同一个写法）。
+    private var taskCompletionNoticeGeneration = 0
+
+    /// 显示「✓ 一句话」，`holdSeconds` 秒后自动收掉。
+    func showTaskCompletionNotice(_ summary: String, holdSeconds: Double = 2.5) {
+        let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        taskCompletionNoticeGeneration += 1
+        let generation = taskCompletionNoticeGeneration
+        taskCompletionNotice = "✓ " + trimmed
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(holdSeconds * 1_000_000_000))
+            guard self.taskCompletionNoticeGeneration == generation else { return }
+            self.taskCompletionNotice = nil
+        }
+    }
+
     /// Whether the reply is still streaming in right now. False the moment the
     /// vision call returns, and stays false through the TTS swap to
     /// `finalSpokenText` and the linger.
@@ -2509,6 +2538,10 @@ final class CompanionManager: ObservableObject {
                 // How many tags the previous step's reply carried beyond the one that
                 // executed. Zero on step 1; read by the continuation prompt so the
                 // model knows its dropped tags were not executed.
+                // 这一轮派过哪个 sub agent。**声明在循环外**：循环结束后要用它决定
+                // 要不要给「任务完成」的对号（方案第 4 步），而循环内的变量那时候已经
+                // 出作用域了。和上面几个累加器同一个理由。
+                var dispatchedRole: SubAgentRole?
                 var unexecutedActionCountFromPreviousStep = 0
 
                 var stepCount = 0
@@ -2697,6 +2730,7 @@ final class CompanionManager: ObservableObject {
                     // 在这里先做一遍等于把那一节写两处。气泡最终照样会显示这段话 ——
                     // 收尾时 `parseResult.spokenText` 是从 `fullResponseText` 算出来的。
                     if let role = ActionTagParser.parse(from: fullResponseText).subAgentRequest {
+                        dispatchedRole = role
                         let subAgentSystemPrompt = Self.subAgentSystemPrompt(for: role, settings: appSettings)
                         SoundEffectPlayer.appendToDiagnosticLog("主 agent 派活 → \(role.displayName) agent"
                             + "（它的提示词 \(subAgentSystemPrompt.count) 字符 = 基础 + 技能 "
@@ -2936,6 +2970,25 @@ final class CompanionManager: ObservableObject {
                         break
                     }
                 } // while true — the agent loop
+
+                // **任务完成的对号 + 一句摘要**（方案第 4 步「回传与通知」）。
+                //
+                // 只在「这算一件事」的时候出现：派过活，或者跑了不止一步。
+                // 一问一答不走这里 —— 那种回答本身就在卡片上，再盖一个对号只是噪音，
+                // 而方案 §07 要的是「多步任务完成后」。
+                //
+                // 摘要用**这一轮真正产出的那句话**（剥掉标签的），不是固定文案 ——
+                // 方案 §07 的验收明写「摘要文字是按任务内容生成的，不是固定文案」。
+                //
+                // 失败时明说做不成，而不是让对号照常出现：方案 §六 第 3 级兜底那条
+                // 「明确告诉用户这件事我没做成，不许死循环」在界面上的落点就是这里。
+                if dispatchedRole != nil || stepCount > 1 {
+                    if let failure = lastErrorMessage {
+                        showTaskCompletionNotice("这件事我没做成：" + failure, holdSeconds: 3.5)
+                    } else {
+                        showTaskCompletionNotice(lastStreamedDisplayText)
+                    }
+                }
 
                 // Record the whole job as ONE conversation turn against the user's
                 // original words: every step's raw reply, tags and all, joined, plus

@@ -191,6 +191,11 @@ struct BlueCursorView: View {
     /// transcript ever arrives after the answer started, showing the answer is
     /// the only reading that is not stale.
     private var conversationBubbleText: String {
+        // 完成通知优先级最高：一段 2–3 秒的「✓ 一句话」本来就该盖住别的东西 ——
+        // 它出现的时刻正好是答案清空、下一句转录可能刚到的时候，不压住就会闪。
+        if let notice = companionManager.taskCompletionNotice {
+            return notice
+        }
         if !companionManager.streamingAnswerText.isEmpty {
             return companionManager.streamingAnswerText
         }
