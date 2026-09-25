@@ -831,10 +831,19 @@ final class LongFormRecorderController: ObservableObject {
         polishScreenshotJPEG = AppSettingsStore.snapshot().recordingPolishCapturesScreenshot
             ? Self.captureMainDisplayJPEG() : nil
 
-        // 音效**在点下去的这一帧就响**，不等后台收尾。
-        // 用户的要求：「用户点击停止按钮时，有一个音效」。原来它是放在
-        // `completeStop` 里的，而那要等末包定稿（最多 4 秒）—— 听起来就是慢半拍。
-        SoundEffectPlayer.shared.play(.sessionHungUp)
+        // 停止的音效。
+        //
+        // **要润色时不在这里响** —— 那一声让给「润色完成」。用户 2026-09-25 的规则：
+        // 「如果用户勾选了润色（默认是勾选的），那么在转写完成的时候就不要发出这个
+        // 声效了，要不然就重了。因为润色成功之后是有音效的……如果没有润色的话，
+        // 转写完成是有一个音效的」。
+        //
+        // 实测（诊断日志）：这一声和末尾那一声只隔 **1 秒** —— 因为整条链现在很快
+        // （关掉模型思考之后润色只要 1 秒）。1 秒内两声听起来就是「一个动作响了两次」，
+        // 而不是两个独立事件。所以开了润色时这里保持安静，一次录音从头到尾只响一声。
+        if !shouldRunPolishStep() {
+            SoundEffectPlayer.shared.play(.sessionHungUp)
+        }
 
         // 停止之后刘海**不立刻消失**：左侧变「转写中」，右侧走倒计时，等末包定稿
         // 回来再收。用户的要求就是这个（「这个时候应该在左侧显示'转写中'三个字，

@@ -97,14 +97,31 @@ final class SoundEffectPlayer {
         }
     }
 
+    /// 往录音诊断日志追加一行。和 `LongFormRecorderController` 写的是同一个文件 ——
+    /// 音效和录音的时间线必须**在同一张纸上**才能对照，分两个文件就又要靠对齐时间戳。
+    nonisolated static func appendToDiagnosticLog(_ line: String) {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory,
+                                               in: .userDomainMask).first!
+        let url = support.appendingPathComponent("Clicky/录音诊断.log")
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        guard let data = "[\(stamp)] \(line)\n".data(using: .utf8) else { return }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile(); handle.write(data); try? handle.close()
+        } else {
+            try? data.write(to: url)
+        }
+    }
+
     /// Plays one chime from the start. Silent no-op when the settings gate is
     /// off or the resource is missing — callers never need to check either.
     func play(_ effect: SoundEffect) {
         guard AppSettingsStore.snapshot().playsNotchSoundEffects else { return }
-        // TEMPORARY PROBE (2026-09-25)：用户报「点击按钮之后……有两个声音，应该只有
-        // 一个声音才对」。音效本身没有日志，所以"响了几次"只能靠猜 —— 这一行让它可数：
-        // 点一次刘海，日志里应该**只有一条**。
-        print(String(format: "🔊 [sfx] t=%.3f %@", Date().timeIntervalSince1970, effect.rawValue))
+        // 每一次音效播放都落进那份诊断日志。
+        //
+        // **它之前是 `print`，而 `print` 走 stdout —— App 用 `open` 启动时 stdout 是
+        // `/dev/null`，所以这条探针一行都没落下来过。** 用户报「一次停止有两声、
+        // 到底是哪两声」时，日志里什么都没有，只能靠猜。写文件之后一录一读就清楚了。
+        Self.appendToDiagnosticLog("🔊 音效 \(effect.rawValue)")
         warmUpIfNeeded()
         guard let player = playersByEffect[effect] else { return }
         player.currentTime = 0
