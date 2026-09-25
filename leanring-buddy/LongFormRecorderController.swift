@@ -448,9 +448,20 @@ final class LongFormRecorderController: ObservableObject {
     }
 
     private func writePlainTextFile(_ text: String) {
-        guard let session = currentSession else { return }
+        guard let session = currentSession else {
+            publishDiagnostic("写回失败：currentSession 已经是 nil")
+            return
+        }
         let url = session.transcriptFileURL(inFolder: folderURL)
-        try? text.write(to: url, atomically: true, encoding: .utf8)
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            let written = (try? String(contentsOf: url, encoding: .utf8))?.count ?? -1
+            // **写回之后立刻读回来核对。** 只看「写了没有」不够 —— 用户报的
+            // 「润色没生效」正是「日志说写成功、文件里还是原文」这一种。
+            publishDiagnostic("写回 \(url.lastPathComponent)：送入 \(text.count) 字，读回 \(written) 字")
+        } catch {
+            publishDiagnostic("写回失败：\(error)")
+        }
     }
 
     /// 结束这一场：让面板消失，下次录音从头开始。
@@ -861,9 +872,21 @@ final class LongFormRecorderController: ObservableObject {
         // 停止之后去往哪一条分支，由「停止的那一刻编辑窗开没开」决定。
         // 没开 = 纯快捷键/按钮停止：粘贴，然后把刘海整个收掉（用户要的「必须退出」）。
         // 开着 = 面板留着、音波转绿，等用户看完再关。
+        // **最终内容 = 润色结果**（没勾选风格时就是原文）。
+        //
+        // 这一步原来是有的，我在重构 `completeStop` 时把它删掉了 —— 于是
+        // `pasteIntoFrontmostApplication()` 读到的永远是剪贴板里的**旧内容**，
+        // 而润色结果既没进剪贴板也没被粘出去。用户看到「转写没生效」就是这个：
+        // 日志写着「重写完成，121 字」，粘出来的却还是 143 字的原文。
+        let finalText = polished
+        if settings.recordingCopiesToClipboard || settings.recordingPastesAfterStop {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(finalText, forType: .string)
+        }
+
         let shouldKeepPanel = isEditorOpenAtStopTime
         if !shouldKeepPanel {
-            if settings.recordingPastesAfterStop { pasteIntoFrontmostApplication() }
+            if settings.recordingPastesAfterStop { pasteIntoFrontmostApplication(finalText) }
             finishCurrentSession()
         }
 
@@ -894,7 +917,7 @@ final class LongFormRecorderController: ObservableObject {
     /// 刘海面板是**非激活**窗口，所以录音全程用户的那个 App 一直是前台 ——
     /// 但保险起见还是显式取一次并激活：用户可能在录音期间手动切过窗口，那他想
     /// 粘到的就是切过去的那个。
-    private func pasteIntoFrontmostApplication() {
+    private func pasteIntoFrontmostApplication(_ textToPaste: String) {
         let frontmost = NSWorkspace.shared.frontmostApplication
         let ownBundleID = Bundle.main.bundleIdentifier
         if let frontmost, frontmost.bundleIdentifier != ownBundleID {
@@ -903,8 +926,9 @@ final class LongFormRecorderController: ObservableObject {
         // 给目标 App 一点时间接受激活，否则按键会发给还在前台的我们。
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 300_000_000)
-            let didSend = MacosUseController.pasteKeepingClipboard(
-                NSPasteboard.general.string(forType: .string) ?? "")
+            // **直接把最终文本传进去**，不再回读剪贴板 —— 回读的那一版在剪贴板没被
+            // 写过时会粘出上一次的东西，而那正是这个 bug 藏了这么久的原因。
+            let didSend = MacosUseController.pasteKeepingClipboard(textToPaste)
             publishDiagnostic(didSend ? "已执行粘贴" : "粘贴未送出（可能缺辅助功能权限）")
         }
     }
