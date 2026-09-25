@@ -32,6 +32,7 @@ extension GeneralSettingsView {
             recordingShortcutSection
             recordingServiceSection
             recordingStorageSection
+            recordingPolishSection
         }
     }
 
@@ -243,6 +244,46 @@ extension GeneralSettingsView {
     }
 
     @ViewBuilder
+    private var recordingPolishSection: some View {
+        SettingsGroupLabel("自定义风格")
+        SettingsCard {
+            SettingsRow(
+                label: "自定义转写",
+                description: "开启后，转写完成时把下面的风格提示词和转写原文一起发给模型，让模型按你的要求重写一遍，重写结果才是最终进剪贴板的内容。关掉则和以前完全一样：原文直接就是最终内容。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingPolishEnabled))
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "屏幕截图",
+                description: "每次停止录音的那一刻自动抓一张屏幕，和转写内容一起发给模型参考。适合「我刚才指着屏幕说的那段话」这类场景。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingPolishCapturesScreenshot))
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "模型 ID",
+                description: "默认 deepseek-flash。留空则用「模型」页里 🧠 那个角色的配置。"
+            ) {
+                TextField("deepseek-flash", text: generalSettingsViewModel.binding(\.recordingPolishModelID))
+                    .textFieldStyle(.roundedBorder).frame(width: 200)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(label: "服务地址", description: "留空则用「模型」页里 🧠 那个服务商。填根地址即可，会自动补 /chat/completions。") {
+                TextField("留空则用 🧠 的配置", text: generalSettingsViewModel.binding(\.recordingPolishBaseURL))
+                    .textFieldStyle(.roundedBorder).frame(width: 260)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(label: "API Key", description: "留空则用「模型」页里 🧠 那个服务商的 Key。只写进本机设置文件，仓库之外。") {
+                SecureField("留空则用 🧠 的 Key", text: generalSettingsViewModel.binding(\.recordingPolishAPIKey))
+                    .textFieldStyle(.roundedBorder).frame(width: 260)
+            }
+        }
+
+        RecordingPolishStylesEditor()
+    }
+
+    @ViewBuilder
     private var recordingHistorySection: some View {
         SettingsGroupLabel("录音历史")
         SettingsCard {
@@ -410,5 +451,118 @@ private struct RecordingHistoryCard: View {
         }
         .buttonStyle(.plain)
         .help(title)
+    }
+}
+
+/// 「自定义风格」的列表：可以有很多条，每条自己一个开关，能改名、改提示词、删除。
+///
+/// 做成独立 `View` 的理由和 `RecordingHistoryCard` 一样：需要 `@State`，而
+/// `extension` 里不能声明存储属性。
+private struct RecordingPolishStylesEditor: View {
+    @State private var styles: [RecordingPolishStyle] = RecordingPolishStyleStore.shared.allStyles()
+    @State private var expandedStyleID: String?
+
+    var body: some View {
+        SettingsCard {
+            SettingsRow(
+                label: "风格清单",
+                description: "勾上的才会生效（而且总开关也要开着）。可以有多条 —— 按场景各写一条，比如「会议纪要」和「随手笔记」。"
+            ) {
+                Button("新增一条") {
+                    let new = RecordingPolishStyle(id: UUID().uuidString, name: "新风格",
+                                                   prompt: "", isEnabled: true, isBuiltIn: false)
+                    RecordingPolishStyleStore.shared.upsert(new)
+                    reload()
+                    expandedStyleID = new.id
+                }
+                .buttonStyle(.bordered)
+            }
+
+            ForEach(styles) { style in
+                SettingsCardRowDivider()
+                styleRow(style)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: RecordingPolishStyleStore.didChangeNotification)) { _ in
+            reload()
+        }
+    }
+
+    @ViewBuilder
+    private func styleRow(_ style: RecordingPolishStyle) -> some View {
+        let index = styles.firstIndex(where: { $0.id == style.id }) ?? 0
+        let isExpanded = expandedStyleID == style.id
+
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                // 开关写回存储：`binding(for:)` 拿到的 index 是**每次渲染现算的**，
+                // 不在闭包里捕获 `index` —— 删掉一条之后捕获的那个下标就会指错行。
+                SettingsSwitch(isOn: Binding(
+                    get: { styles[safe: index]?.isEnabled ?? false },
+                    set: { newValue in update(id: style.id) { $0.isEnabled = newValue } }))
+
+                TextField("风格名称", text: Binding(
+                    get: { styles[safe: index]?.name ?? "" },
+                    set: { newValue in update(id: style.id) { $0.name = newValue } }))
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .frame(maxWidth: 200, alignment: .leading)
+
+                if style.isBuiltIn {
+                    Text("出厂").font(.system(size: 11))
+                        .foregroundColor(DS.Colors.textTertiary)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Capsule().fill(DS.Colors.surface4))
+                }
+
+                Spacer(minLength: 0)
+
+                Button(isExpanded ? "收起提示词" : "编辑提示词") {
+                    withAnimation(.easeInOut(duration: 0.16)) {
+                        expandedStyleID = isExpanded ? nil : style.id
+                    }
+                }
+                .buttonStyle(.bordered)
+
+                // 出厂那条**不给删** —— 恢复它意味着让用户重新贴一遍三千多字的提示词。
+                if !style.isBuiltIn {
+                    Button("删除") {
+                        RecordingPolishStyleStore.shared.delete(id: style.id)
+                        reload()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+
+            if isExpanded {
+                SettingsTextEditorRow(
+                    label: "提示词",
+                    description: "发给模型时拼在转写原文的前面。上面是要求，下面是内容。",
+                    text: Binding(
+                        get: { styles[safe: index]?.prompt ?? "" },
+                        set: { newValue in update(id: style.id) { $0.prompt = newValue } }),
+                    placeholder: "例如：把下面的语音转写整理成通顺的书面语，保留原意，去掉口头语。",
+                    minimumHeight: 200)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func update(id: String, _ change: (inout RecordingPolishStyle) -> Void) {
+        guard var style = styles.first(where: { $0.id == id }) else { return }
+        change(&style)
+        RecordingPolishStyleStore.shared.upsert(style)
+        reload()
+    }
+
+    private func reload() {
+        styles = RecordingPolishStyleStore.shared.allStyles()
+    }
+}
+
+private extension Array {
+    /// 下标越界返回 nil。列表在编辑中被删掉一条时，正在渲染的那一帧仍可能拿着旧下标。
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

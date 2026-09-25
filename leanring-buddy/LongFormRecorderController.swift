@@ -322,6 +322,48 @@ final class LongFormRecorderController: ObservableObject {
     @Published private(set) var finalizeSecondsRemaining = 0
     private var finalizeCountdownTask: Task<Void, Never>?
 
+    /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
+    private var polishScreenshotJPEG: Data?
+
+    /// 抓当前主屏，缩到 1600px 长边、JPEG 0.7 —— 和「看与截图」页那两个设置同一个
+    /// 量级，够模型看清内容又不会把请求撑大。
+    private static func captureMainDisplayJPEG() -> Data? {
+        guard let cgImage = CGDisplayCreateImage(CGMainDisplayID()) else { return nil }
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
+    }
+
+    /// 按「自定义风格」重写一遍转写原文。
+    ///
+    /// **没勾选任何风格、也没勾截图时原样返回** —— 用户明确要求这种情况下必须和以前
+    /// 完全一致，一步都不多走（不建请求、不动文本）。
+    private func polishIfConfigured(rawText: String) async -> String {
+        let settings = AppSettingsStore.snapshot()
+        guard settings.recordingPolishEnabled else { return rawText }
+        let styles = RecordingPolishStyleStore.shared.enabledStyles()
+        let screenshot = polishScreenshotJPEG
+        guard !styles.isEmpty || screenshot != nil else { return rawText }
+        let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return rawText }
+
+        let prompt = RecordingPolishClient.buildPrompt(
+            styles: styles, transcript: trimmed, hasScreenshot: screenshot != nil)
+        publishDiagnostic("自定义风格：\(styles.count) 条风格 + 截图\(screenshot != nil ? "有" : "无")，开始重写")
+        do {
+            let result = try await RecordingPolishClient.polish(
+                prompt: prompt, screenshotJPEG: screenshot, settings: settings)
+            publishDiagnostic("自定义风格：重写完成，\(result.count) 字（原文 \(trimmed.count) 字）")
+            return result
+        } catch {
+            // **失败就用原文。** 用户要的是「整理一下再给我」，整理失败时他最需要的
+            // 仍然是他说过的内容 —— 把原文丢掉换成一句报错，是把一次小失败变成一次
+            // 内容丢失。
+            publishDiagnostic("自定义风格失败，改用原文：\(error)")
+            lastErrorMessage = "自定义风格失败，已用原文：\(error.localizedDescription)"
+            return rawText
+        }
+    }
+
     /// 末包发出 → 最后一段定稿，大约要几秒。
     ///
     /// **实测值，不是估的。** 2026-09-25 的 24.5 秒真实录音里
@@ -672,6 +714,12 @@ final class LongFormRecorderController: ObservableObject {
         // 记下**此刻**编辑窗开没开 —— 停止之后去往哪条分支全看它。
         isEditorOpenAtStopTime = isTranscriptExpanded
 
+        // **抓屏必须在「停止」这一秒**，不能等收尾完再抓 —— 用户的原话是
+        // 「每一次录音结束、也就是停止录音的那一刻，用户按下按钮或快捷键的那一秒，
+        // 自动抓取当前屏幕的截图」。晚几百毫秒，屏幕上可能已经换了个样。
+        polishScreenshotJPEG = AppSettingsStore.snapshot().recordingPolishCapturesScreenshot
+            ? Self.captureMainDisplayJPEG() : nil
+
         // 音效**在点下去的这一帧就响**，不等后台收尾。
         // 用户的要求：「用户点击停止按钮时，有一个音效」。原来它是放在
         // `completeStop` 里的，而那要等末包定稿（最多 4 秒）—— 听起来就是慢半拍。
@@ -697,13 +745,13 @@ final class LongFormRecorderController: ObservableObject {
         // 等它回完再收尾，否则用户说的最后几个字进不了落盘的那一份。
         let client = asrClient
         client?.finishAndAwaitFinalResult(timeoutSeconds: 4.0) { [weak self] in
-            Task { @MainActor in self?.completeStop() }
+            Task { @MainActor in await self?.completeStop() }
         }
         // 兜底：万一回调因为任何原因没来，2 秒后也必须把界面放掉。
         Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 6_500_000_000)
             guard let self, self.phase == .stopping else { return }
-            self.completeStop()
+            await self.completeStop()
         }
     }
 
@@ -760,7 +808,7 @@ final class LongFormRecorderController: ObservableObject {
 
     /// 收尾：落盘、写元数据、剪贴板、粘贴。**必须幂等** —— 有个兜底定时器也会
     /// 走到这里。
-    private func completeStop() {
+    private func completeStop() async {
         guard phase == .stopping else { return }
         phase = .idle
         isFinalizingTranscript = false
@@ -798,6 +846,17 @@ final class LongFormRecorderController: ObservableObject {
         // 「转写完成」—— 用 `.answerFinished`（agent-done 那个），是一声「好了」。
         // 用户的要求：「用户点击停止撰写的音效和转写完成的音效不能是同一个」。
         SoundEffectPlayer.shared.play(.answerFinished)
+
+        // **自定义风格：转写成功后重写一遍。**
+        //
+        // 用户的规则：「整个流程都发生在转写成功之后……只要在设置页面勾选了该按钮，
+        // 都要走这样一个流程」。而「没勾选任何风格、也没勾截图」时必须**和以前完全
+        // 一样** —— 原文直接就是最终内容，一步都不多走。
+        let polished = await polishIfConfigured(rawText: text)
+        if polished != text {
+            transcriptPlainText = polished
+            writePlainTextFile(polished)
+        }
 
         // 停止之后去往哪一条分支，由「停止的那一刻编辑窗开没开」决定。
         // 没开 = 纯快捷键/按钮停止：粘贴，然后把刘海整个收掉（用户要的「必须退出」）。

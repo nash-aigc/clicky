@@ -1100,6 +1100,28 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 停止后把全文放进剪贴板。
     var recordingCopiesToClipboard: Bool = true
 
+    /// 「自定义风格」总开关。**默认开启**（用户要求）。
+    ///
+    /// 关掉它 = 不做任何后处理，转写原文直接就是最终内容 —— 也就是这一版之前的行为。
+    /// 它和每一条风格自己的开关是**与**的关系：总开关关掉，所有风格一律不生效。
+    var recordingPolishEnabled: Bool = true
+
+    /// 停止录音那一刻自动抓一张当前屏幕，作为提示词的一部分一起发给模型。
+    ///
+    /// **默认不勾选**（用户要求）。勾上之后，「停止」那一秒的屏幕会跟转写内容一起
+    /// 送给模型参考 —— 用于「我刚才指着屏幕说的那段话」这类场景。
+    var recordingPolishCapturesScreenshot: Bool = false
+
+    /// 润色用的模型。留空 = 用「模型」页里 🧠 那个角色配置的服务商。
+    ///
+    /// 用户的原话：「模型可以在录音设置页面由用户添加 URL、API key 和大模型 ID，
+    /// 默认使用当前的 DeepSeek Flash，直接填进去即可」。所以模型 ID 默认就是它，
+    /// 而 URL / Key 留空时**回落到 🧠 的服务商** —— 用户在「模型」页配过一次的
+    /// 东西，不该在这里再填一遍。
+    var recordingPolishBaseURL: String = ""
+    var recordingPolishAPIKey: String = ""
+    var recordingPolishModelID: String = "deepseek-flash"
+
     /// 停止后自动粘贴到当时最前面的那个 App 的光标处。
     ///
     /// 它需要辅助功能权限（和「操作」页要的是同一个），且会把焦点切回去 ——
@@ -1225,6 +1247,11 @@ nonisolated extension AppSettings {
         case recordingRotationMinutes
         case recordingCopiesToClipboard
         case recordingPastesAfterStop
+        case recordingPolishEnabled
+        case recordingPolishCapturesScreenshot
+        case recordingPolishBaseURL
+        case recordingPolishAPIKey
+        case recordingPolishModelID
     }
 
     init(from decoder: Decoder) throws {
@@ -1348,5 +1375,10 @@ nonisolated extension AppSettings {
         recordingRotationMinutes = try container.decodeIfPresent(Int.self, forKey: .recordingRotationMinutes) ?? defaults.recordingRotationMinutes
         recordingCopiesToClipboard = try container.decodeIfPresent(Bool.self, forKey: .recordingCopiesToClipboard) ?? defaults.recordingCopiesToClipboard
         recordingPastesAfterStop = try container.decodeIfPresent(Bool.self, forKey: .recordingPastesAfterStop) ?? defaults.recordingPastesAfterStop
+        recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
+        recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot
+        recordingPolishBaseURL = try container.decodeIfPresent(String.self, forKey: .recordingPolishBaseURL) ?? defaults.recordingPolishBaseURL
+        recordingPolishAPIKey = try container.decodeIfPresent(String.self, forKey: .recordingPolishAPIKey) ?? defaults.recordingPolishAPIKey
+        recordingPolishModelID = try container.decodeIfPresent(String.self, forKey: .recordingPolishModelID) ?? defaults.recordingPolishModelID
     }
 }

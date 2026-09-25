@@ -1,0 +1,190 @@
+import Foundation
+
+/// 「自定义风格」那一步的模型调用。
+///
+/// 转写结束之后，把**勾选中的风格提示词**和**转写原文**（以及可选的屏幕截图）拼成
+/// 一次请求发出去，拿回来的文本就是最终内容。
+///
+/// 走的是 OpenAI 兼容的 `chat/completions` —— DeepSeek 和百炼的兼容模式都吃这套，
+/// 所以用户填哪个地址都能用，不需要在这份代码里为服务商分叉。
+///
+/// 刻意**不复用** `BailianVisionChatAPI`：那个客户端读的是「模型」页里 🧠 角色的配置，
+/// 而这一步是用户在这个页面**单独指定的**模型（用户：「模型可以在录音设置页面由用户
+/// 添加 URL、API key 和大模型 ID」）。两者会在「用户在模型页换了模型」时互相牵连 ——
+/// 那是两个不同的决定，不该共用一份配置。留空时才回落到 🧠，见 `resolvedEndpoint`。
+nonisolated enum RecordingPolishClient {
+
+    enum PolishError: Error, CustomStringConvertible {
+        case noModelConfigured
+        case badURL(String)
+        case httpError(Int, String)
+        case emptyReply
+
+        var description: String {
+            switch self {
+            case .noModelConfigured: return "没有配置润色用的模型"
+            case .badURL(let raw): return "地址不对：\(raw)"
+            case .httpError(let code, let body): return "服务返回 \(code)：\(body.prefix(200))"
+            case .emptyReply: return "模型没有返回任何内容"
+            }
+        }
+    }
+
+    /// 拼出要发给模型的提示词。
+    ///
+    /// 形状是用户指定的：**标签在上、内容在下**，并明确说明目的是「按上面的要求
+    /// 重写下面这段转写」。用户的原话：「上面是标签内容，下面是用户提供的内容，
+    /// 备注清楚，让 AI 知道它的目的是转写用户的提示词，并使用上面的要求」。
+    static func buildPrompt(styles: [RecordingPolishStyle],
+                            transcript: String,
+                            hasScreenshot: Bool) -> String {
+        let ruleBlocks = styles.enumerated().map { index, style in
+            """
+            <style name="\(style.name)" order="\(index + 1)">
+            \(style.prompt)
+            </style>
+            """
+        }.joined(separator: "\n\n")
+
+        var sections: [String] = []
+        sections.append("""
+        <task>
+        下面 <rules> 里是你必须遵守的处理要求。请**严格按照这些要求**，把 <transcript> 里的
+        语音转写内容重新整理成最终文本。你的输出就是成品本身：不要解释、不要前言、不要后缀、
+        不要复述要求。
+        </task>
+
+        <rules>
+        \(ruleBlocks)
+        </rules>
+        """)
+
+        if hasScreenshot {
+            sections.append("""
+            <screenshot>
+            随本条消息附上了一张屏幕截图，拍摄于用户停止录音的那一刻。它可能包含用户当时
+            正在看的内容。**仅作为理解转写内容的参考**，不要描述这张图，也不要把它当成
+            需要处理的文本。
+            </screenshot>
+            """)
+        }
+
+        sections.append("""
+        <transcript>
+        \(transcript)
+        </transcript>
+        """)
+
+        return sections.joined(separator: "\n\n")
+    }
+
+    /// 发一次请求，返回整理好的文本。
+    static func polish(prompt: String,
+                       screenshotJPEG: Data?,
+                       settings: AppSettings) async throws -> String {
+        let endpoint = try resolvedEndpoint(settings: settings)
+
+        var messages: [[String: Any]] = []
+        messages.append(["role": "user", "content": contentParts(prompt: prompt,
+                                                                screenshotJPEG: screenshotJPEG)])
+
+        let body: [String: Any] = [
+            "model": endpoint.model,
+            "messages": messages,
+            "stream": false,
+            // 这一步是**改写**不是创作，温度压低让结果稳定、可预期。
+            "temperature": 0.2,
+        ]
+
+        var request = URLRequest(url: endpoint.url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(endpoint.apiKey)", forHTTPHeaderField: "Authorization")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        // 整篇转写可能几万字，读回来的成品也不会短，给足时间。
+        request.timeoutInterval = 120
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            throw PolishError.httpError(http.statusCode,
+                                        String(data: data, encoding: .utf8) ?? "")
+        }
+        return try parseReply(data)
+    }
+
+    // MARK: - 内部
+
+    /// 有图时 `content` 是一个「部件的数组」，没图时按纯文本发 —— 两种形状服务端都认，
+    /// 但纯文本那一种几乎所有服务商都收，所以只在真有图时才用数组。
+    private static func contentParts(prompt: String, screenshotJPEG: Data?) -> Any {
+        guard let screenshotJPEG else { return prompt }
+        return [
+            ["type": "text", "text": prompt],
+            ["type": "image_url",
+             "image_url": ["url": "data:image/jpeg;base64,\(screenshotJPEG.base64EncodedString())"]],
+        ]
+    }
+
+    /// 地址、密钥、模型名。
+    ///
+    /// 用户在这个页面填了就用他填的；**留空则回落到「模型」页里 🧠 那个服务商** ——
+    /// 用户已经在那边配过一次的东西，不该在这里再填一遍（用户的话：「默认使用当前的
+    /// DeepSeek Flash，直接填进去即可」）。
+    private static func resolvedEndpoint(settings: AppSettings)
+        throws -> (url: URL, apiKey: String, model: String) {
+
+        let model = settings.recordingPolishModelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let base = settings.recordingPolishBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = settings.recordingPolishAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !base.isEmpty {
+            return (try chatCompletionsURL(fromBase: base), key, model)
+        }
+
+        // 回落：🧠 那个角色（用户已经在「模型」页配过一次的东西）。
+        guard let resolved = BailianConfiguration.resolvedVision,
+              let url = resolved.requestURL else {
+            throw PolishError.noModelConfigured
+        }
+        return (url, resolved.apiKey, model.isEmpty ? resolved.modelID : model)
+    }
+
+    /// 把用户填的地址补成完整的 `chat/completions`。
+    ///
+    /// 用户可能填三种东西：根地址（`https://api.deepseek.com`）、带 `/v1` 的
+    /// （`https://api.deepseek.com/v1`）、或者干脆把完整路径也贴进来。三种都要能用 ——
+    /// 让人去记「该填到哪一层」是最容易出错的一种设计。
+    private static func chatCompletionsURL(fromBase rawBase: String) throws -> URL {
+        var base = rawBase
+        while base.hasSuffix("/") { base.removeLast() }
+        if base.hasSuffix("/chat/completions") {
+            guard let url = URL(string: base) else { throw PolishError.badURL(rawBase) }
+            return url
+        }
+        guard let url = URL(string: base + "/chat/completions") else {
+            throw PolishError.badURL(rawBase)
+        }
+        return url
+    }
+
+    private static func parseReply(_ data: Data) throws -> String {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = object["choices"] as? [[String: Any]],
+              let message = choices.first?["message"] as? [String: Any] else {
+            throw PolishError.emptyReply
+        }
+        // `content` 可能是字符串，也可能是部件数组（带图那一版服务端有时这么回）。
+        if let text = message["content"] as? String {
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { throw PolishError.emptyReply }
+            return trimmed
+        }
+        if let parts = message["content"] as? [[String: Any]] {
+            let joined = parts.compactMap { $0["text"] as? String }.joined()
+            let trimmed = joined.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { throw PolishError.emptyReply }
+            return trimmed
+        }
+        throw PolishError.emptyReply
+    }
+}
