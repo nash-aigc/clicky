@@ -77,6 +77,13 @@ final class DuplexVoiceEngine {
         /// 为什么不能只保留前者：增量那份是"还在改"的文本（官方事件里它带一个
         /// `stash` 暂存尾巴），而且与回答不是同一个推理产物；记录必须用最终稿。
         var onUserTranscriptUpdate: (String) -> Void
+        /// **用户说完了**（`input_audio_buffer.speech_stopped`），带上此刻那句的完整预览。
+        ///
+        /// 为什么需要它：Chatting 页要求"用户的提示词一次性展示、不要一个字一个字地显示"。
+        /// 但"一次性"**不等于"等一整轮答完"** —— 官方时序图里 `speech_stopped` 紧跟在
+        /// 增量之后、`response.created` 之前，所以在这一个点整段显示，既满足"一次性"，
+        /// 又是在用户说完的那一刻，而不是等 AI 答完。
+        var onUserSpeechStopped: (String) -> Void
         /// **第一段回答音频刚刚排进播放队列** —— 也就是「真的出声了」。
         ///
         /// 连接状态切换到「已连接」必须等它：在那之前对方是不是真的活着、
@@ -175,6 +182,37 @@ final class DuplexVoiceEngine {
     private var hasScheduledFirstAudio = false
     /// 这一轮助手文字的累计值。
     private var currentAssistantText = ""
+
+    /// 增量用户转写事件到达的计数（探针）—— 见诊断分支里的说明。
+    private var inputTranscriptionDeltaCount = 0
+
+    // MARK: 用户转写的累积（官方的 `text` 是按句的，跨句要自己攒）
+    //
+    // 三个量对应官方 `conversation.item.input_audio_transcription.delta` 的语义：
+    //   confirmedUserTranscript —— 前面几句已经定稿的（官方那里 `text` 会按句重置，
+    //                              重置前必须先并进来，否则前面说的话会消失）
+    //   currentUserSettledText  —— 当前这一句已确认的前缀（官方 `text`）
+    //   currentUserStashedText  —— 当前这一句还在改的尾巴（官方 `stash`）
+    // 显示 = 三者拼接。
+    private var confirmedUserTranscript = ""
+    private var currentUserSettledText = ""
+    private var currentUserStashedText = ""
+
+    /// 此刻用户那句话的完整预览（官方定义的 `text + stash`，加上我们自己攒的前几句）。
+    var currentUserTranscriptPreview: String {
+        (confirmedUserTranscript + currentUserSettledText + currentUserStashedText)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// 一次用户发言结束 —— 把三个量清空，下一句从零开始。
+    ///
+    /// 在 `speech_started` 里调（**不是** `speech_stopped`）：官方时序图里
+    /// `speech_started` 是"这一轮开口"的起点，而 `.delta` 紧跟着它开始下发。
+    private func resetUserTranscriptAccumulators() {
+        confirmedUserTranscript = ""
+        currentUserSettledText = ""
+        currentUserStashedText = ""
+    }
     private var isStopped = false
 
     init(playbackEngine: VoicePlaybackEngine, callbacks: Callbacks) {
@@ -518,6 +556,18 @@ final class DuplexVoiceEngine {
             let userText = event["transcript"] as? String ?? ""
             let itemID = event["item_id"] as? String ?? "-"
             print("🎧 [user-transcript] item=\(itemID.prefix(12)) 「\(userText)」")
+        case "conversation.item.input_audio_transcription.delta":
+            // 增量转写存在与否，只能靠日志回答：官方文档说服务端从 `speech_started`
+            // 起就增量下发，但**我们的 `session.update` 是否足以让它真的下发**、
+            // 以及用的是哪个转写模型（官方示例是 `fun-asr`），文档没有对照实验。
+            // 所以这里打一行 —— 有它，用户的话就能开口即现；没有它，就只能等
+            // `completed`（实测排在 `response.done` 之后）。
+            let settledText = event["text"] as? String ?? ""
+            let stashedText = event["stash"] as? String ?? ""
+            if inputTranscriptionDeltaCount == 0 {
+                print("🎧 [user-transcript-delta] 首个增量事件已到达 —— text「\(settledText.prefix(20))」 stash「\(stashedText.prefix(20))」")
+            }
+            inputTranscriptionDeltaCount += 1
         case "response.created":
             let responseID = (event["response"] as? [String: Any])?["id"] as? String ?? "-"
             print("🎧 [response.created] id=\(responseID.prefix(16))")
@@ -562,6 +612,14 @@ final class DuplexVoiceEngine {
             // 于是每条回答都被切成几截，屏幕上表现为一堆只装几个字的碎卡片
             // ——用户报的「全双工回复乱码／只显示一部分」正是这个。
             currentAssistantText = ""
+            resetUserTranscriptAccumulators()
+
+        case "input_audio_buffer.speech_stopped":
+            // **用户说完的那一刻。** 官方时序图：它紧跟在增量转写之后、`response.created`
+            // 之前。Chatting 页要的"一次性展示"就落在这里 —— 既不是一个字一个字地长，
+            // 也不用等 AI 答完。见 `Callbacks.onUserSpeechStopped`。
+            let preview = currentUserTranscriptPreview
+            if !preview.isEmpty { callbacks.onUserSpeechStopped(preview) }
 
         case "response.created":
             isResponseActive = true
@@ -610,10 +668,35 @@ final class DuplexVoiceEngine {
             // 这一条只补了"没接的那个事件"，没有第二条识别、没有第二个 websocket。
             let settledText = event["text"] as? String ?? ""
             let stashedText = event["stash"] as? String ?? ""
-            let partial = (settledText + stashedText).trimmingCharacters(in: .whitespacesAndNewlines)
-            if !partial.isEmpty { callbacks.onUserTranscriptUpdate(partial) }
+
+            // ## `text` 是**按句**的，跨句必须自己攒
+            //
+            // 这一条不看官方会写错：阿里云的姊妹页（Qwen-ASR-Realtime / Omni-Realtime
+            // 服务端事件）对这两个字段有完整定义，还配了 T1~T7 的对照表：
+            //
+            //   text  —— 已确认的文本前缀：当前句子中模型已确认不会再变更的部分
+            //   stash —— 预识别的文本后缀：仍在处理、可能会被修正的临时草稿
+            //   **实时预览句子 = text + stash**
+            //
+            // 而那张表同时暴露一个细节：**一句话内 `text` 只增不减，换句会重置**
+            // （T4 停顿后 `text` 是整句、`stash` 为空；下一句来时又从空开始）。
+            // 所以直接显示 `text + stash` 会**把前面说过的话丢掉** —— 用户说三句，
+            // 屏幕上只剩最后一句。
+            //
+            // 判据：新来的 `text` 不再是上一个 `text` 的延长（`hasPrefix` 不成立）
+            // = 换句了 → 把上一句并进已定稿的前缀。
+            if !settledText.hasPrefix(currentUserSettledText) {
+                confirmedUserTranscript += currentUserSettledText
+            }
+            currentUserSettledText = settledText
+            currentUserStashedText = stashedText
+            let preview = (confirmedUserTranscript + settledText + stashedText)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !preview.isEmpty { callbacks.onUserTranscriptUpdate(preview) }
 
         case "conversation.item.input_audio_transcription.completed":
+            // 整段的最终稿（官方：`transcript` 是「完整的转写文本」，并会写进 item）。
+            // 它才是落盘与配对的依据；增量那份只用于显示。
             guard let transcript = event["transcript"] as? String else { return }
             let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty { callbacks.onUserUtterance(trimmed) }

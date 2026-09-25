@@ -232,6 +232,10 @@ final class AskVoiceCallController: ObservableObject {
                 onUserTranscriptUpdate: { [weak self] partial in
                     self?.liveUserTranscript = partial
                 },
+                // Ask 页**已经**在逐字显示（上一行），所以这一条不需要做任何事：
+                // 它的职责是给 Chatting 那种"一次性展示"的页面用的。
+                // 留着显式的空实现，是为了说明"不是漏了"，见 `Callbacks` 的注释。
+                onUserSpeechStopped: { _ in },
                 onFirstAudioScheduled: { [weak self] in
                     // **接通判据 = AI 的第一段声音真的开始播**，与 Chatting 完全一致
                     // （用户 2026-09-25：「声音播放开始的那一秒，就把状态切换为已连接，

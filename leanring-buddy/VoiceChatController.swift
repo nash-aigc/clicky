@@ -576,10 +576,17 @@ final class VoiceChatController: ObservableObject {
                     self?.insertDuplexUserEntry(transcript)
                 },
                 // Chatting 页**不显示增量**：用户 2026-09-25 明确要求「用户的提示词
-                // 要一次性展示，不要一个字一个字地显示」，所以这里刻意什么都不做 ——
-                // 用户气泡仍由上面的 `onUserUtterance`（最终稿）建立。
-                // Ask 页那条路**相反**，它显示增量，见 `AskVoiceCallController`。
+                // 要一次性展示，不要一个字一个字地显示」，所以逐字的这一个刻意留空。
+                //
+                // **但"一次性"不等于"等一整轮答完"** —— 那是这次改正的地方：原先
+                // 用户气泡只能由下面的 `onUserUtterance`（`…transcription.completed`）
+                // 建立，而它在服务端时序里排在回答文字流完之后，于是用户说的话要等
+                // AI 答完才出现。改由 `onUserSpeechStopped` 在"你说完了"那一刻整段建立
+                // （见官方时序图：`speech_stopped` 紧跟在增量之后、`response.created` 之前）。
                 onUserTranscriptUpdate: { _ in },
+                onUserSpeechStopped: { [weak self] preview in
+                    self?.insertDuplexUserEntry(preview)
+                },
                 onFirstAudioScheduled: { [weak self] in
                     self?.markVoiceChatFullyConnected()
                 },
