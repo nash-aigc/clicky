@@ -25,7 +25,9 @@ struct NotchRecordingBandView: View {
 
     private static let restingButtonSize: CGFloat = 17
     private static let maximumButtonSize: CGFloat = 30
-    private static let ribbonHeight: CGFloat = 32
+    /// 跑马灯那一条的高度。**对外可见** —— 控制器算窗口高度时必须用同一个数，
+    /// 两处各写一遍就是 42 vs 32 那个差的来源（见 `panelFrame`）。
+    static let ribbonHeight: CGFloat = 32
 
     /// 每侧向刘海**里面**压进多少。
     ///
@@ -215,48 +217,19 @@ struct NotchRecordingBandView: View {
     /// 数据，所以「实时转写」在展开状态下照样成立。
     private var expandedTranscriptPanel: some View {
         VStack(spacing: 0) {
-            // 顶行 = **原来那一行实时转写留在原位**（顶部居中），左边加「转写内容」、
-            // 右边加「复制」。用户的原话：「还是显示在原来的位置上，只是增加了一个
-            // 弹出窗口……中间位置的左侧是撰写什么内容，右侧是复制按钮」。
+            // 顶行 = **原来那一行实时转写留在原位**，现在是**整整一行都给它**。
             //
-            // 这一行是**黑的** —— 它和上面的黑带连成一片，是刘海的延伸；
-            // 再往下的正文区才是浮雕色。用户：「弹出窗口的背景颜色，最上面那行是
-            // 黑色，下面按照我刚才说的那个颜色」。
-            HStack(spacing: 8) {
-                // 「转写内容」四个字删掉了 —— 用户：「转写的时候文字把左侧"转写内容"
-                // 这几个字盖掉了。转写内容这几个字没有意义，直接删掉。复制按钮保留」。
-                // 所以这一行现在只剩：中间那行实时转写 + 右边的复制。
-                Spacer(minLength: 16)
-
-                // 就是收起状态下那一行，一点没改 —— 位置、字号、左右渐隐都一样。
-                // `alwaysTrails: true` —— 展开面板里这一行**始终右对齐**，
-                // 右端顶到复制按钮的左边（用户：「它应该显示到复制按钮的左侧」）。
-                // 刘海下那条跑马灯不传这个参数，短句仍然从左排起 —— 那里没有右边的
-                // 按钮要顶，短句缩在右边才是上一轮报过的「只显示在右半部分」。
-                SmoothRevealedTranscriptText(text: recorder.liveTranscriptLine,
-                                             availableWidth: bandWidth * 2 - 160,
-                                             textColor: DS.Colors.success,
-                                             alwaysTrails: true)
-                    .frame(maxWidth: .infinity)
-
-                Spacer(minLength: 8)
-
-                // 风格 01 的 `.btn`：面板色、10pt 圆角、3/3/7 那对影子。
-                Button {
-                    recorder.copyTranscriptToClipboard()
-                } label: {
-                    Text(recorder.didJustCopyTranscript ? "已复制" : "复制")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(recorder.didJustCopyTranscript
-                                         ? EmbossMaterial.page : EmbossMaterial.textMuted)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 7)
-                        .modifier(EmbossedSurface(cornerRadius: 10, depth: 3,
-                                                  isPressed: recorder.didJustCopyTranscript))
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, 16)
-            }
+            // 复制按钮从这一行删掉了（用户：「把整个第一行右侧的复制按钮删掉，让第一行
+            // 全部显示转写的内容」）。复制还有两条路，不缺口：⌘+Enter 一键复制并结束；
+            // 而关窗本身就会把内容送进剪贴板（那是「任何一次录音都不会丢」的收口）。
+            //
+            // 这一行是**黑的** —— 它和上面的黑带连成一片，是刘海的延伸；再往下的正文区
+            // 才是浮雕色。
+            SmoothRevealedTranscriptText(text: recorder.liveTranscriptLine,
+                                         availableWidth: bandWidth * 2 - 32,
+                                         textColor: DS.Colors.success)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 46)
             .background(Color.black)
 
@@ -318,7 +291,8 @@ struct NotchRecordingBandView: View {
         .clipShape(RecordingRibbonShape(cornerRadius: 22, roundsTopCorners: true))
     }
 
-    private static let expandedPanelBodyHeight: CGFloat = 560
+    /// 展开面板的高度。同样对外可见，理由同上。
+    static let expandedPanelBodyHeight: CGFloat = 560
 
     /// 最下面那行：正在说的内容，实时更新。展开和收起时是同一条数据。
     private var liveRow: some View {
@@ -586,6 +560,8 @@ private struct SmoothRevealedTranscriptText: View {
     private static let windowCharacterCount = 64
     private static let charactersPerSecond: Double = 40
     private static let framesPerSecond: Double = 30
+    /// 落后超过这么多字就不再逐字爬、直接对齐。见 `advance()`。
+    private static let catchUpThresholdCharacterCount = 6
     private static let fontSize: CGFloat = 15
 
     @State private var shownText = ""
@@ -640,6 +616,21 @@ private struct SmoothRevealedTranscriptText: View {
             return
         }
         guard target.count > shownText.count else { return }
+        // **落后很多就直接对齐，不逐字爬。**
+        //
+        // 逐字推进（1 字/帧 = 30 字/秒）只跟得上服务端每秒 ~25 字的**增量**。但首次
+        // 展开时 `shownText` 从空开始，而那一刻积压的文本可能已经几十个字 —— 照 30
+        // 字/秒往回爬要好几秒，用户看到的就是「第一次展开只显示左边一点点」。第二次
+        // 展开时 SwiftUI 复用了视图、`shownText` 还留着上次爬完的结果，所以看起来
+        // 「第二、三次就正常了」。
+        //
+        // 逐字平滑的意义在于**接住新到达的字**；落后一大截时没有任何东西需要平滑，
+        // 直接显示才是对的。
+        let gap = target.count - shownText.count
+        if gap > Self.catchUpThresholdCharacterCount {
+            shownText = target
+            return
+        }
         let step = max(1, Int(Self.charactersPerSecond / Self.framesPerSecond))
         shownText = String(target.prefix(min(shownText.count + step, target.count)))
     }
@@ -707,10 +698,16 @@ final class NotchRecordingOverlayController {
     private var panels: [NSPanel] = []
     private var phaseCancellable: AnyCancellable?
     private var isPresented = false
+    /// 收起状态下两翼的屏幕矩形。窗口不动，所以它是常量，建面板时算一次。
+    private var collapsedWingHitRects: [CGRect] = []
+    /// 收起时接管两翼点击的全局监听（0 = 左翼，1 = 右翼）。
+    private var collapsedWingMonitor: Any?
     private var outsideClickMonitor: Any?
     private var escapeKeyMonitor: Any?
 
     private init() {}
+
+
 
     /// 由 `CompanionManager.start()` 调用一次。
     func startObservingRecorder() {
@@ -793,24 +790,60 @@ final class NotchRecordingOverlayController {
 
     /// 展开/收起时窗口要跟着长高变矮。**这是当初把这套做成独立面板而不是画进
     /// 刘海窗口的理由之一** —— 这块窗口的高度完全由我们自己说了算。
+    /// **不再改窗口尺寸。** 只切换命中测试。
+    ///
+    /// 收起时窗口仍是展开那么大，多出来的那块是透明的 —— 必须让它**不收点击**，
+    /// 否则用户在桌面那一片点什么都没反应。展开时才打开，编辑框和复制按钮要用。
+    /// 收起状态下两翼的点击由 `collapsedWingHitRects` + 全局监听接管。
     private func reframePanels() {
         guard isPresented else { return }
+        let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
+        for panel in panels { panel.ignoresMouseEvents = !isExpanded }
+        if isExpanded { installDismissMonitors() } else { removeDismissMonitors() }
+        updateCollapsedWingMonitor()
+    }
 
-        for panel in panels {
-            guard let screen = panel.screen ?? NSScreen.main,
-                  let frame = panelFrame(for: screen) else { continue }
+    /// 收起状态下，两翼在**屏幕坐标**里的矩形。
+    ///
+    /// 窗口不动，所以这两个矩形建好之后就是常量，算一次存着。
+    private func computeCollapsedWingRects(for panel: NSPanel, notch: CGRect) -> [CGRect] {
+        let bandWidth = NotchSupport.leadingWingWidth + notch.width + NotchSupport.trailingWingWidth
+        let bandLeft = panel.frame.midX - bandWidth / 2
+        let bandTop = panel.frame.maxY
+        let wingWidth = (NotchSupport.leadingWingWidth + NotchSupport.trailingWingWidth) / 2 + 14
+        let leading = CGRect(x: bandLeft, y: bandTop - notch.height,
+                             width: wingWidth, height: notch.height)
+        let trailing = CGRect(x: bandLeft + bandWidth - wingWidth, y: bandTop - notch.height,
+                              width: wingWidth, height: notch.height)
+        return [leading, trailing]
+    }
 
-            // **顺序不能换：先把内容排到新尺寸，再改窗口。**
-            // 反过来的话，中间有一瞬窗口已经变宽、内容还按旧尺寸摆着 —— 那一瞬多出来
-            // 的地方是透明的，用户看到的就是「闪了一下，背景像被穿透」。
-            if let contentView = panel.contentView {
-                contentView.frame = CGRect(origin: .zero, size: frame.size)
-                contentView.needsLayout = true
-                contentView.layoutSubtreeIfNeeded()
+    /// 收起时接管两翼点击的全局监听。0 = 左翼（展开编辑），1 = 右翼（停止/继续）。
+    private func updateCollapsedWingMonitor() {
+        let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
+        if isExpanded || collapsedWingHitRects.isEmpty {
+            if let m = collapsedWingMonitor { NSEvent.removeMonitor(m); collapsedWingMonitor = nil }
+            return
+        }
+        guard collapsedWingMonitor == nil else { return }
+        collapsedWingMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
+            guard let self else { return }
+            let point = NSEvent.mouseLocation
+            guard let index = self.collapsedWingHitRects.firstIndex(where: { $0.contains(point) }) else { return }
+            Task { @MainActor in
+                if index == 0 {
+                    SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                    LongFormRecorderController.shared.toggleTranscriptEditor()
+                } else {
+                    let recorder = LongFormRecorderController.shared
+                    if recorder.isFinalizingTranscript { recorder.cancelCurrentRecording() }
+                    else if recorder.isRecording { recorder.stopRecording() }
+                    else { recorder.startRecording(resumingCurrentSession: true) }
+                }
             }
-            panel.setFrame(frame, display: true)
         }
     }
+
 
     private func show() {
         guard !isPresented else { return }
@@ -822,30 +855,52 @@ final class NotchRecordingOverlayController {
         }
     }
 
+    /// 收起整块。
+    ///
+    /// **不是直接 `orderOut`，而是先淡出。** 面板是一块独立窗口，压在 App 自己的
+    /// 刘海 pill 上面；直接 `orderOut` 的话，它盖着的那块（黑带）在同一帧里从「面板
+    /// 画的」切换到「pill 画的」，两者的尺寸/圆角不完全一致，中间那一瞬就是用户报的
+    /// 「退出的时候整个刘海会闪一下」。淡出把这一帧的硬切换摊成 0.15 秒，切换点就看不
+    /// 见了。
     private func hide() {
         guard isPresented else { return }
         isPresented = false
-        for panel in panels { panel.orderOut(nil) }
+        let hiding = panels
+        for panel in hiding {
+            NSAnimationContext.beginGrouping()
+            NSAnimationContext.current.duration = 0.15
+            panel.animator().alphaValue = 0
+            NSAnimationContext.endGrouping()
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 180_000_000)
+            for panel in hiding {
+                panel.orderOut(nil)
+                panel.alphaValue = 1
+            }
+        }
         panels.removeAll()
+        collapsedWingHitRects.removeAll()
+        if let m = collapsedWingMonitor { NSEvent.removeMonitor(m); collapsedWingMonitor = nil }
     }
 
     /// 面板要多高：静止时是「刘海 + 跑马灯」，展开时再加上那一整块面板。
+    /// 面板的矩形。**它只在建面板时算一次，之后永不改变。**
+    ///
+    /// 这是「背景穿透」和抖动的根治办法。之前每次展开/收起都改窗口尺寸
+    /// （359×64 ⇄ 718×592），而窗口是**透明**的 —— 黑色全靠 SwiftUI 画，窗口几何却
+    /// 在 CA 提交**之前**就改了，SwiftUI 要到提交时才按新尺寸重画。中间那一瞬新露出来
+    /// 的区域是空的，桌面就透出来。
+    ///
+    /// 窗口一动不动之后，**没有「窗口期」这个东西，穿透和抖动在结构上都不可能发生**。
+    /// 收起时多出来的那块透明区域靠 `ignoresMouseEvents` 让开（见 `reframePanels`），
+    /// 两翼的点击改走全局监听（见 `collapsedWingHitRects`）—— 刘海面板的静止 pill
+    /// 用的就是这同一套办法。
     private func panelFrame(for screen: NSScreen) -> CGRect? {
         guard let notch = NotchSupport.notchRect(on: screen) else { return nil }
-        let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
-        // 和视图里 `bandWidth` 用**同一个公式**：两翼取对称宽度（大的那个），
-        // 中间是刘海。写两遍必然漂，所以这里的注释就是那处的注释。
         let bandWidth = NotchSupport.leadingWingWidth + notch.width + NotchSupport.trailingWingWidth
-        let ribbonHeight: CGFloat = 42
-        // 展开时下面那块的宽度**加倍**（用户要求），整块窗口跟着变宽、仍然以刘海居中。
-        let panelWidth = isExpanded
-            ? min(bandWidth * 2, screen.frame.width - 40)
-            : bandWidth
-        let expandedHeight: CGFloat = 560
-        let panelHeight = notch.height + ribbonHeight + (isExpanded ? expandedHeight : 0)
-        // 刘海矩形是**左上角显示坐标**（`auxiliaryTopLeftArea` 那套），AppKit
-        // 全局坐标是左下角 —— 顶边贴着屏幕顶边，所以 y = screen.maxY - 高度。
-        // x 要加上这块屏幕自己的原点（多显示器时不为 0）。
+        let panelWidth = min(bandWidth * 2, screen.frame.width - 40)
+        let panelHeight = notch.height + NotchRecordingBandView.expandedPanelBodyHeight
         let notchCenterX = screen.frame.minX + notch.minX + notch.width / 2
         return CGRect(x: notchCenterX - panelWidth / 2,
                       y: screen.frame.maxY - panelHeight,
@@ -903,6 +958,9 @@ final class NotchRecordingOverlayController {
         hostingView.sizingOptions = []
         hostingView.frame = CGRect(origin: .zero, size: frame.size)
         panel.contentView = hostingView
+        // 窗口不动，两翼矩形一次性算好；并且一建好就进入「收起」的命中状态。
+        collapsedWingHitRects.append(contentsOf: computeCollapsedWingRects(for: panel, notch: notch))
+        panel.ignoresMouseEvents = !LongFormRecorderController.shared.isTranscriptExpanded
         return panel
     }
 }
