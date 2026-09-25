@@ -237,6 +237,14 @@ extension GeneralSettingsView {
 
     // MARK: - 历史
 
+    /// 导入菜单上显示什么。已经导过就显示当前地址的主机名，让用户看得出填的是哪一家。
+    private var importMenuTitle: String {
+        let base = generalSettingsViewModel.draftSettings.recordingPolishBaseURL
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !base.isEmpty, let host = URL(string: base)?.host else { return "选择服务商" }
+        return host
+    }
+
     /// 历史卡片要用的保存目录。
     private var folderURLForHistory: URL {
         RecordingLibraryStore.resolvedFolderURL(
@@ -267,6 +275,27 @@ extension GeneralSettingsView {
             ) {
                 TextField("deepseek-flash", text: generalSettingsViewModel.binding(\.recordingPolishModelID))
                     .textFieldStyle(.roundedBorder).frame(width: 200)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "从「模型」页导入",
+                description: "列出「模型」页面里已经配好的所有服务商，选一个就把它的**地址、Key、模型 ID** 直接填进来 —— 那边配过的东西不用在这里手抄一遍。"
+            ) {
+                Menu(importMenuTitle) {
+                    ForEach(ModelConfigurationStore.snapshot().providers) { provider in
+                        Button(provider.displayName) {
+                            generalSettingsViewModel.draftSettings.recordingPolishBaseURL = provider.baseURL
+                            generalSettingsViewModel.draftSettings.recordingPolishAPIKey = provider.apiKey
+                            // 模型 ID 也跟着走 —— 一个服务商 + 它自己的模型名才是一次
+                            // 能用的组合，只填地址而留着别的服务商的模型名必然 404。
+                            if let model = provider.visionModelID, !model.isEmpty {
+                                generalSettingsViewModel.draftSettings.recordingPolishModelID = model
+                            }
+                        }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 220)
             }
             SettingsCardRowDivider()
             SettingsRow(label: "服务地址", description: "留空则用「模型」页里 🧠 那个服务商。填根地址即可，会自动补 /chat/completions。") {
