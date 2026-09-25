@@ -797,6 +797,13 @@ enum MacosUseController {
                 nearestTo: estimatedPoint
             )
             if let namedFrame {
+                // **这条路上唯一的判据。** 用户报「全都点歪了」时，可能是三件完全不同
+                // 的事：模型没写名字、名字查不到、或者查到了却点不中。三者的修法毫无
+                // 共同点，而在这之前这条路**一行日志都没有** —— 只能猜。
+                Self.noteClickResolution(label: elementLabel, estimate: estimatedPoint,
+                                         named: namedFrame,
+                                         final: CGPoint(x: namedFrame.midX, y: namedFrame.midY),
+                                         via: "按名字")
                 return CGPoint(x: namedFrame.midX, y: namedFrame.midY)
             }
         }
@@ -811,10 +818,39 @@ enum MacosUseController {
         guard let snappedFrame,
               snappedFrame.width <= maximumSnappableElementWidth,
               snappedFrame.height <= maximumSnappableElementHeight else {
+            Self.noteClickResolution(label: reportedCoordinate.elementLabel, estimate: estimatedPoint,
+                                     named: nil, final: estimatedPoint, via: "退回估算（没查到名字）")
             return estimatedPoint
         }
 
-        return CGPoint(x: snappedFrame.midX, y: snappedFrame.midY)
+        let snappedPoint = CGPoint(x: snappedFrame.midX, y: snappedFrame.midY)
+        Self.noteClickResolution(label: reportedCoordinate.elementLabel, estimate: estimatedPoint,
+                                 named: snappedFrame, final: snappedPoint, via: "退到估算点下面的元素")
+        return snappedPoint
+    }
+
+    /// 一次点击到底落在哪 —— **这条路上唯一的可核对记录**。
+    ///
+    /// 三个数字分开写，因为它们各自指向一个不同的原因：
+    /// - **标签为空** → 模型没写名字，那是提示词的事（估算必然歪，实测过 ±25% 屏宽）
+    /// - **标签有、按名字没查到** → 前台那个 App 不配合，或者名字和它自己的措辞对不上
+    /// - **按名字查到了，点还是歪** → 那才轮到坐标空间
+    ///
+    /// 混成一句「点击 (x,y)」等于什么都没说 —— 上面那三种情况的修法毫无共同点。
+    nonisolated private static func noteClickResolution(
+        label: String?,
+        estimate: CGPoint,
+        named: CGRect?,
+        final: CGPoint,
+        via: String
+    ) {
+        let labelText = (label?.isEmpty ?? true) ? "（模型没写）" : "「\(label!)」"
+        let namedText = named.map {
+            String(format: "(%.0f,%.0f %.0f×%.0f)", $0.minX, $0.minY, $0.width, $0.height)
+        } ?? "没查到"
+        SoundEffectPlayer.appendToDiagnosticLog(String(
+            format: "点击解析 %@ · %@ · 估算(%.0f,%.0f) · 查到%@ · 落在(%.0f,%.0f)",
+            labelText, via, estimate.x, estimate.y, namedText, final.x, final.y))
     }
 
     // MARK: - Aiming the pointer
