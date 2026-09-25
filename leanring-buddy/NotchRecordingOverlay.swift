@@ -519,18 +519,19 @@ private struct NotchCameraPreviewStrip: View {
 
     private var titleBar: some View {
         HStack(spacing: 8) {
-            // 左上角：退出抓帧。**只作用于本轮**，下一轮录音仍会按关键词激活。
+            // 左上角：**镜像开关**。默认开着（自拍视角），用户可以自己关掉。
             Button {
-                recorder.stopCameraCaptureForThisSession()
+                previewModel.isMirrored.toggle()
             } label: {
-                Image(systemName: "xmark")
+                Image(systemName: "arrow.left.and.right.righttriangle.left.righttriangle.right")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white.opacity(0.75))
+                    .foregroundColor(previewModel.isMirrored
+                                     ? DS.Colors.success : .white.opacity(0.6))
                     .frame(width: 18, height: 18)
                     .background(Circle().fill(Color.white.opacity(0.12)))
             }
             .buttonStyle(.plain)
-            .help("停止抓帧（本轮不再抓）")
+            .help(previewModel.isMirrored ? "取消镜像" : "左右镜像")
 
             // 抓一帧、这颗点亮一下并变大。
             //
@@ -543,39 +544,31 @@ private struct NotchCameraPreviewStrip: View {
                 CameraCapturePulseDot(pulse: previewModel.capturedFrameCount)
             }
 
-            Text("摄像头")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white.opacity(0.8))
-
-            // **已经抓了几帧，一直显示着。**
-            // 用户 2026-09-26：「你那个绿灯要闪，然后在旁边写上数字……同步地显示出来」。
-            // 绿点闪是「刚刚抓了一帧」的瞬时信号，而这个数字是累计量 —— 只有闪烁的话，
-            // 用户看不出已经攒了多少，也就判断不了「够不够模型看清一个来回」。
+            // **只留绿点 + 数字，「摄像头」三个字删掉了。**
+            // 用户 2026-09-26：「把"摄像头"这三个文字删掉，只保留一个绿色小灯加一个数字即可」。
             Text("\(previewModel.capturedFrameCount)")
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
                 .foregroundColor(DS.Colors.success.opacity(0.9))
-                // **固定宽度 + 居中**：1 位变 2 位、2 位变 3 位时它不会把后面的
-                // 东西推走，也不会自己左右挪。等宽数字保证每个字符同宽。
                 .frame(width: 26, alignment: .center)
 
             Spacer(minLength: 0)
 
-            // 右上角：展开 / 收回。
+            // 右上角：**关闭**。
+            //
+            // 原来是「展开」，但小窗现在已经是最大化（画面填满宽度），没有更大的空间
+            // 可占 —— 用户 2026-09-26：「小窗现在是最大化的，把右上角之前说的展开按钮
+            // 改成关闭按钮」。于是它变成和左上角一样的出口。
             Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    recorder.isCameraPreviewExpanded.toggle()
-                }
+                recorder.stopCameraCaptureForThisSession()
             } label: {
-                Image(systemName: recorder.isCameraPreviewExpanded
-                      ? "arrow.down.right.and.arrow.up.left"
-                      : "arrow.up.left.and.arrow.down.right")
+                Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.white.opacity(0.75))
                     .frame(width: 18, height: 18)
                     .background(Circle().fill(Color.white.opacity(0.12)))
             }
             .buttonStyle(.plain)
-            .help(recorder.isCameraPreviewExpanded ? "收回" : "展开画面")
+            .help("停止抓帧（本轮不再抓）")
         }
         .padding(.horizontal, 10)
         .frame(height: Self.titleBarHeight)
@@ -600,6 +593,9 @@ private struct NotchCameraPreviewStrip: View {
             // 内容」。`.fit` 才是「整张都看得见」。
             Image(decorative: cgImage, scale: 1)
                 .resizable()
+                // **只镜像预览。** 发出去的那一帧不镜像 —— 镜像过的图上文字是反的，
+                // 而用户会举着纸让模型读。
+                .scaleEffect(x: previewModel.isMirrored ? -1 : 1, y: 1)
                 .aspectRatio(contentMode: .fit)
                 // **填满宽度，高度按比例。** 这是「左右两侧的空白」的正面修复。
                 .frame(width: width, height: previewHeight(for: cgImage))
@@ -1211,7 +1207,7 @@ final class NotchRecordingOverlayController {
             guard let self else { return }
             let point = NSEvent.mouseLocation
 
-            // 摄像头小窗的标题栏：左端退出、右端展开、中间折叠。
+            // 摄像头小窗的标题栏：左端镜像、右端关闭、中间折叠。
             // 判据是**点到标题栏里的相对横向位置** —— 三个按钮都画在那一条上，
             // 而它们的实际矩形在 SwiftUI 里，这里镜像一份只会漂。
             if let bar = self.cameraStripTitleBarRect, bar.contains(point) {
@@ -1219,11 +1215,11 @@ final class NotchRecordingOverlayController {
                 Task { @MainActor in
                     let recorder = LongFormRecorderController.shared
                     if fraction < 0.25 {
-                        recorder.stopCameraCaptureForThisSession()
+                        // 左端 = 镜像开关
+                        recorder.cameraPreviewModel.isMirrored.toggle()
                     } else if fraction > 0.75 {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            recorder.isCameraPreviewExpanded.toggle()
-                        }
+                        // 右端 = 关闭（停止抓帧）
+                        recorder.stopCameraCaptureForThisSession()
                     } else {
                         withAnimation(.easeInOut(duration: 0.18)) {
                             recorder.isCameraPreviewCollapsed.toggle()

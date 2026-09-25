@@ -20,6 +20,17 @@ final class CameraPreviewModel: ObservableObject {
     /// 已经抓了多少帧（送模型的那个计数）。绿点旁边那个数字。
     @Published private(set) var capturedFrameCount = 0
 
+    /// 预览要不要左右镜像。**默认开**。
+    ///
+    /// 用户 2026-09-26：「先帮我把摄像头镜像一下，现在画面是反的，太丑了……
+    /// 允许用户自行镜像，但默认要调整为镜像」。没镜像时你抬手是往右，画面里却往左 ——
+    /// 自拍视角里那才叫「反的」。
+    ///
+    /// **只作用于预览，不作用于发给模型的帧。** 镜像会把文字翻过来，而用户会举着
+    /// 纸让模型读 —— 那样读出来的字是反的。所以屏幕上是他习惯的自拍视角，
+    /// 送出去的是文字可读的原始帧。
+    @Published var isMirrored = true
+
     func update(frame: CGImage) {
         self.frame = frame
     }

@@ -405,19 +405,25 @@ final class LongFormRecorderController: ObservableObject {
 
     /// 小窗收起来了没有。**收起来只是收成一条标题栏**，入口永远在 ——
     /// 早期版本把「缩起来」做成整条消失，用户点一下就再也叫不回来。
-    @Published var isCameraPreviewCollapsed = false
+    @Published var isCameraPreviewCollapsed = false {
+        didSet {
+            guard oldValue != isCameraPreviewCollapsed else { return }
+            // 收成一条时画面只有 86pt 高，720p 够用；显示画面时他是在细看，
+            // 那才值得花那份像素。
+            cameraSession.setHighResolution(!isCameraPreviewCollapsed)
+        }
+    }
 
     /// 小窗展开成大图了没有。
     ///
-    /// **展开时把采集切到 1080p。** 用户 2026-09-26：「720P 吧，可以低清，但是点击
-    /// 右上角展开之后，换成 1080」—— 收起时那一条只有 86pt 高，720p 够用；
-    /// 展开成 200pt 时他是在仔细看，那才值得花那份像素。
-    @Published var isCameraPreviewExpanded = false {
-        didSet {
-            guard oldValue != isCameraPreviewExpanded else { return }
-            cameraSession.setHighResolution(isCameraPreviewExpanded)
-        }
-    }
+    /// 采集用不用 1080p。
+    ///
+    /// 用户 2026-09-26：「720P 吧，可以低清，但是点击右上角展开之后，换成 1080」。
+    /// 但同一个请求里，右上角那个「展开」按钮已经**改成了关闭按钮** ——
+    /// 小窗现在恒为满宽，没有「展开」这个状态了。于是这条判据换成「画面有没有上屏」：
+    /// 收成一条 → 720p，显示画面 → 1080p。功能和用户当初要的一模一样，
+    /// 只是入口从按钮变成了小窗自己的开合。
+    var isCameraPreviewExpanded: Bool { !isCameraPreviewCollapsed }
 
     /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
     private let recentAudio = RecentAudioRing(
@@ -475,6 +481,11 @@ final class LongFormRecorderController: ObservableObject {
         cameraSession.onFailure = { [weak self] reason in
             Task { @MainActor in self?.publishDiagnostic("摄像头抓帧失败：\(reason)") }
         }
+        // **每一轮都是一个全新的采集会话**（见重置那一节：重复 addInput 会被静默
+        // 拒绝），它出生时是 720p，而 `isCameraPreviewCollapsed` 的 didSet 只在
+        // 值**变化**时才会补上分辨率 —— 用户没收起过小窗的话它一次都不会触发。
+        // 所以起采前按当前开合状态定一次，别指望 didSet。
+        cameraSession.setHighResolution(!isCameraPreviewCollapsed)
         cameraSession.start()
     }
 
