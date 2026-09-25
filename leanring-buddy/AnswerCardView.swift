@@ -733,8 +733,18 @@ struct AnswerCardView: View {
         if textColumnWidth > 0 {
             let lineWidth = max(0, textColumnWidth - Self.lineFitSafetyMargin)
             let lines = renderPlanCache.plan(for: text, lineWidth: lineWidth)
-            let settledParagraphs = renderPlanCache.paragraphs(settlingFinalLine: !isStreaming)
-            let hasLiveLine = isStreaming && !lines.isEmpty
+            // **最后一行永远交给下面的实时行画，流式与定稿都一样。**
+            //
+            // 原先 `settlingFinalLine: !isStreaming` 在回复结束的那一刻把最后一行也
+            // 折进段落里，同时实时行那条 `if isStreaming` 又被拆掉 —— 于是末尾那 5 个
+            // 还模糊着的字**换了一个视图**去画，模糊瞬间消失、没有任何过渡。用户
+            // 2026-09-25：「每一句回复内容的最后几个字，总是会卡一下」（三段式同样）。
+            //
+            // 两种状态用**同一个视图**画，`isFresh` 就是在同一个视图里翻转的，它自己
+            // 那个 `.animation(value: isFresh)` 会把模糊**淡出**（0.3 秒），不再有跳变；
+            // 而且断行、行数、行距三个量两边完全一致，所以切换时**版面一动不动**。
+            let settledParagraphs = renderPlanCache.paragraphs(settlingFinalLine: false)
+            let hasLiveLine = !lines.isEmpty
             let blocks = paragraphBlocks(
                 from: settledParagraphs,
                 hasLiveLine: hasLiveLine
@@ -764,7 +774,7 @@ struct AnswerCardView: View {
                         Color.clear.frame(height: block.spaceBelow)
                     }
                 }
-                if isStreaming, let liveLine = lines.last {
+                if let liveLine = lines.last {
                     liveLineView(
                         line: liveLine,
                         units: renderPlanCache.units,
