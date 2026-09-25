@@ -854,14 +854,39 @@ struct AnswerCardView: View {
     /// cannot blur part of a `Text`. This is the only place per-unit views
     /// survive, and it is one line (about 25 views) rather than every unit in
     /// the reply.
+    ///
+    /// **只有尾巴那几个 unit 需要各自的 `Text`，前面的合并成一个。**
+    ///
+    /// 原先这一行把**整行每个 unit** 都做成一个 `Text` 塞进 `HStack`（一行最多
+    /// 33 个，实测）。`HStack` 不会换行 —— 宽度不够时它**压缩**子视图，而每个
+    /// `Text` 被压窄之后会在自己内部换行，于是那一行渲染出来成了「一个 unit 一行」
+    /// 的碎片。用户 2026-09-25 报的「全双工回复乱码」正是这个形状（截图里
+    /// 「止 / 宣告 / 纪念 / 大 / ** / 八 / 代表性 / 防御」逐行排列）。
+    ///
+    /// 断行器本身是好的：实测一行 33 个 unit、首行填充 98%，没有任何一行只剩一个
+    /// unit —— 碎的只有渲染。而模糊只发生在末尾 `freshTailUnitCount` 个 unit 上，
+    /// 所以前面那一段完全可以是一个 `Text`：既保住了模糊尾巴，又把这一行从
+    /// 33 个子视图降到 6 个，压缩换行在结构上不可能再发生。
     private func liveLineView(
         line: CardTextPackedLine,
         units: [CardTextUnit],
         reduceMotion: Bool
     ) -> some View {
         let unitCount = units.count
+        // 末尾那几个（要保持模糊的）单独成视图；其余合并。
+        let firstFreshIndex = max(0, unitCount - Self.freshTailUnitCount)
+        let sharpUnitIndices = line.unitIndices.filter { $0 < firstFreshIndex }
+        let freshUnitIndices = line.unitIndices.filter { $0 >= firstFreshIndex }
+        let sharpText = sharpUnitIndices.map { units[$0].text }.joined()
+
         return HStack(alignment: .top, spacing: 0) {
-            ForEach(line.unitIndices, id: \.self) { unitIndex in
+            if !sharpText.isEmpty {
+                // 已经不再模糊的那一段：一个 `Text`，与上面段落同一套字体与字距。
+                Text(sharpText)
+                    .blur(radius: 0)
+                    .opacity(1)
+            }
+            ForEach(freshUnitIndices, id: \.self) { unitIndex in
                 // The reference's settle rule, applied to the end of the reply
                 // rather than the end of the line: a unit goes sharp once five
                 // more have arrived behind it. A unit is a whole line's worth of

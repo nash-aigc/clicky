@@ -1763,6 +1763,21 @@ struct VoiceChatSessionView: View {
             .onChange(of: controller.transcriptEntries.count) { _, _ in
                 scrollToBottom(proxy)
             }
+            // **流式期间必须跟着文字走**（用户 2026-09-25）：「卡片在渲染过程中，
+            // 永远都不可以显示到输入框的下面……就跟 ask 这个页面的卡片效果一样」。
+            //
+            // 上面那条只在**新增一条**时滚动，而全双工的回复是**往同一条里长**的
+            // （`updateDuplexAssistantEntry` 按 id 更新），条目数不变 —— 于是整段
+            // 流式期间一次都不滚，卡片一路往下长、长到输入框底下甚至屏幕外。
+            // 判据取「最后一条的长度」，因为那正是逐字长出来的那个量。
+            //
+            // 与另外两页同一处收敛：Ask 用 `entries.count`（动画）+ 流式文字（瞬时），
+            // Agent 用 `streamingText`（瞬时）。流式期间一律**瞬时**滚动 —— 带动画的
+            // 0.2s 长于 delta 间隔，动画会永远处在「被改目标」的状态，每帧都在重新
+            // 定位一个正在变大的内容。
+            .onChange(of: controller.transcriptEntries.last?.text.count) { _, _ in
+                scrollToBottomInstantly(proxy)
+            }
             .onChange(of: controller.selectedRoleID) { _, _ in
                 // One turn of the main loop later: the newly selected role's
                 // transcript is part of the same render pass, and scrolling
@@ -1782,6 +1797,16 @@ struct VoiceChatSessionView: View {
         withAnimation(.easeOut(duration: 0.2)) {
             proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
         }
+    }
+
+    /// 与上面同一个滚动，但**不带动画** —— 流式期间专用。
+    ///
+    /// 带动画的滚动时长（0.2s）长于 delta 的间隔，整个流式期间动画都处在「被改
+    /// 目标」的状态，每一帧都在带着一个正在变大的内容重新定位。瞬时滚动没有这个
+    /// 成本。Ask 与 Agent 两页早就分成这一对了（`NotchHomeView` /
+    /// `AgentSessionView` 里的同名方法），这里是第三处。
+    private func scrollToBottomInstantly(_ proxy: ScrollViewProxy) {
+        proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
     }
 
     private func scheduleScrollToBottom(_ proxy: ScrollViewProxy) {
