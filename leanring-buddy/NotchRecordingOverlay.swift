@@ -229,9 +229,14 @@ struct NotchRecordingBandView: View {
                 Spacer(minLength: 16)
 
                 // 就是收起状态下那一行，一点没改 —— 位置、字号、左右渐隐都一样。
+                // `alwaysTrails: true` —— 展开面板里这一行**始终右对齐**，
+                // 右端顶到复制按钮的左边（用户：「它应该显示到复制按钮的左侧」）。
+                // 刘海下那条跑马灯不传这个参数，短句仍然从左排起 —— 那里没有右边的
+                // 按钮要顶，短句缩在右边才是上一轮报过的「只显示在右半部分」。
                 SmoothRevealedTranscriptText(text: recorder.liveTranscriptLine,
                                              availableWidth: bandWidth * 2 - 160,
-                                             textColor: DS.Colors.success)
+                                             textColor: DS.Colors.success,
+                                             alwaysTrails: true)
                     .frame(maxWidth: .infinity)
 
                 Spacer(minLength: 8)
@@ -569,6 +574,12 @@ private struct SmoothRevealedTranscriptText: View {
     /// 文字颜色。展开面板里那一行用**绿色**（用户：「实时转写的这个文字，在最上面
     /// 那一行，应该要绿色」），刘海下那一行仍然是白的。
     var textColor: Color = .white
+    /// 短文本时是不是也要贴着右边。
+    ///
+    /// 展开面板里是 `true`：那一行右边有个复制按钮，文字要顶到它左边；
+    /// 刘海下那条是 `false`：短句从左排起（否则短句会缩在右边，看着像「只显示了
+    /// 后半句」）。
+    var alwaysTrails: Bool = false
 
     /// 屏幕上本来就只看得到最后几十个字。用窗口而不是全文，是为了让每帧的
     /// 布局开销与会话长度无关 —— 否则录得越久越卡。
@@ -590,7 +601,7 @@ private struct SmoothRevealedTranscriptText: View {
             // 右对齐，短句自然缩在右边）；一旦长过这一行，改成贴着右边 ——
             // 最新说的字必须留在可见处，左对齐会让新字从右边被裁掉。
             .frame(width: availableWidth,
-                   alignment: measuredWidth > availableWidth ? .trailing : .leading)
+                   alignment: (alwaysTrails || measuredWidth > availableWidth) ? .trailing : .leading)
             .onReceive(ticker) { _ in advance() }
             .onChange(of: text) { _, _ in advance() }
             // **首次出现直接对齐，不从空串逐字爬。**
@@ -777,16 +788,16 @@ final class NotchRecordingOverlayController {
         for panel in panels {
             guard let screen = panel.screen ?? NSScreen.main,
                   let frame = panelFrame(for: screen) else { continue }
-            panel.setFrame(frame, display: true)
-            // **必须显式重排宿主视图。** 只 `setFrame` 的话，窗口变宽了而 SwiftUI
-            // 的内容还按旧的尺寸摆着 —— 用户报的「第一次展开之后，最下面转写的内容
-            // 只在左边 1/3 显示，折叠再展开就正常了」就是这个：第二次展开时尺寸
-            // 恰好已经对上了，所以看起来像自愈。
+
+            // **顺序不能换：先把内容排到新尺寸，再改窗口。**
+            // 反过来的话，中间有一瞬窗口已经变宽、内容还按旧尺寸摆着 —— 那一瞬多出来
+            // 的地方是透明的，用户看到的就是「闪了一下，背景像被穿透」。
             if let contentView = panel.contentView {
                 contentView.frame = CGRect(origin: .zero, size: frame.size)
                 contentView.needsLayout = true
                 contentView.layoutSubtreeIfNeeded()
             }
+            panel.setFrame(frame, display: true)
         }
     }
 
@@ -851,6 +862,10 @@ final class NotchRecordingOverlayController {
         panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.statusWindow)) + 1)
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.isMovable = false
+        // **关掉 NSWindow 自带的 frame 动画。** 改 frame 时 AppKit 默认会插一段
+        // 短动画，表现出来就是「展开时窗口先向右上甩一下再回到正位」。展开/收起
+        // 每一次都要瞬间到位，不要这段系统动画。
+        panel.animationBehavior = .none
 
         let hostingView = NSHostingView(rootView: NotchRecordingBandView(
             recorder: .shared,
