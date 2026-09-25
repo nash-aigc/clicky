@@ -237,15 +237,13 @@ struct VoiceChatSessionView: View {
             composerRow
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // A click anywhere in the column puts the caret in the composer (the
-        // user's 2026-09-23 ask, same as the other two columns). Controls — the
-        // header's three, the copy buttons — still win their own taps.
+        // 点这一列任意位置只负责收起展开着的浮层。**不再聚焦输入框** —— 那一条
+        // 按用户的决定删除了（与另外两页同一处收敛，见 `NotchHomeView` 的注释）。
         .contentShape(Rectangle())
         .onTapGesture {
             activeVoiceRow = nil
             activePresetRow = nil
             isSpeedMenuOpen = false
-            composerFieldIsFocused = true
         }
         // 收藏写入后强制重画音色面板（星星状态不经过任何 @Published）。
         .onReceive(NotificationCenter.default.publisher(for: .clickyVoiceLibraryChanged)) { _ in
@@ -1756,10 +1754,11 @@ struct VoiceChatSessionView: View {
             // its draft while disconnected and the placeholder is what says so.
             .contentShape(Rectangle())
             .onTapGesture {
+                // 关掉展开着的浮层。**不再顺带聚焦输入框** —— 那一条按用户的
+                // 决定删除了（偶发抢焦点导致打不进字，见 `NotchHomeView` 的注释）。
                 activeVoiceRow = nil
                 activePresetRow = nil
                 isSpeedMenuOpen = false
-                composerFieldIsFocused = true
             }
             .onChange(of: controller.transcriptEntries.count) { _, _ in
                 scrollToBottom(proxy)

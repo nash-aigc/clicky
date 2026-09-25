@@ -50,8 +50,8 @@ struct AgentSessionView: View {
                 composerRow(agent)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .contentShape(Rectangle())
-            .onTapGesture { composerFieldIsFocused = true }
+            // 原先这里有一条「点右侧任意位置聚焦输入框」，已按用户的决定删除 ——
+            // 与 Ask 页同一处收敛（见 `NotchHomeView` 里那段注释）。
             .onReceive(NotificationCenter.default.publisher(for: .clickyAppSettingsChanged)) { _ in
                 answerCardStyle = AppSettingsStore.snapshot().answerCardStyle
             }
@@ -290,12 +290,7 @@ struct AgentSessionView: View {
             // a message or drag across one, and this covers every Text below —
             // including the gray tool-activity lines.
             .textSelection(.enabled)
-            // …and a plain click anywhere in the flow puts the caret in the
-            // composer. A drag is not a tap, so drag-to-select is untouched, and
-            // a control still wins its own tap — this catches bubbles, tool
-            // lines, the empty hint and the gaps between rows.
-            .contentShape(Rectangle())
-            .onTapGesture { composerFieldIsFocused = true }
+            // …点流里任意位置聚焦输入框那一条已删除（同 Ask 页）。
             .onChange(of: agent.transcript.count) { _, _ in
                 scrollToBottom(proxy)
             }

@@ -152,13 +152,16 @@ struct NotchHomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // A click anywhere in the column puts the caret in the composer — the
-        // user's ask (2026-09-23): 「用户点击右侧任意位置时，光标自动定位到输入框，
-        // 这样用户点击右侧任何位置都可以直接输入，不需要再把鼠标定位到输入框里」.
-        // Controls win their own taps, and the 对话 page's only ones here are the
-        // error line and the copy buttons; everything else — bubbles, gaps, the
-        // empty hero — is what this catches.
-        .contentShape(Rectangle())
-        .onTapGesture { composerFieldIsFocused = true }
+        // **点击右侧任意位置不再自动聚焦输入框**（用户 2026-09-25 放弃这条逻辑）。
+        //
+        // 它原先是个功能（2026-09-23 的「点右侧任意位置就能直接输入」），但反复
+        // 引发同一个偶发故障：焦点被这条路径抢走之后打不进字、或刚打好的字被清掉，
+        // 切到别的分区再回来点一下又会把字吸走。修了近十次都没真正解决，用户的判断
+        // 是「放弃这个逻辑」——点内容区就是点内容区，要点输入框就点输入框。
+        //
+        // 注意这与「点输入框本身要能聚焦」是两条不同的路径：后者由
+        // `MessageComposerField` 的 responder 桥负责（`becomeFirstResponder` /
+        // `resignFirstResponder`），不要跟着一起删。
         .background(
             // Measures the column the composer expands against. Taken off the
             // column's own frame (which the parent bounds) rather than off a
@@ -368,11 +371,8 @@ struct NotchHomeView: View {
             // the environment modifier covers every Text beneath it, the
             // reply card's per-character units included.
             .textSelection(.enabled)
-            // A plain click in the flow — on a bubble, on the gap between two —
-            // puts the caret in the composer. Drag-to-select is a drag, not a
-            // tap, so it is untouched.
-            .contentShape(Rectangle())
-            .onTapGesture { composerFieldIsFocused = true }
+            // 同上：这里原先也有一条「点流里任意位置聚焦输入框」，同样已按用户的
+            // 决定删除。拖选不受影响（拖拽不是点击）。
             .onChange(of: entries.count) { _ in
                 scrollToBottom(proxy)
             }
