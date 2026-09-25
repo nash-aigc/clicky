@@ -458,6 +458,19 @@ final class CompanionManager: ObservableObject {
     /// appear in the conversation until then.
     @Published private(set) var pendingQuestionText: String?
 
+    /// 本轮回复第一个字节到达的时刻 —— 卡片底部那一行的时间就是它。
+    ///
+    /// **它存在的唯一理由是不让卡片跳。** 底部那行（时间 + 复制）原先只在回合结束
+    /// 时才画（值来自条目上的 `turnFinishedAt`），于是流式期间内容里少一行，回合一
+    /// 结束内容突然变高、被钉在底部的内容整体上移，用户看到的就是「卡片突然向上抖动
+    /// 一下」。用户 2026-09-25 给的方案是把这个值提前到**第一秒**：「只需要记录收到
+    /// 回复的那一秒，而不是完全回复完成的时间……这样卡片出现的第一秒，下面的时间
+    /// 就确定了」——底部那一行从第一帧就在，高度不再变化。
+    ///
+    /// 它与条目上的 `replyReceivedAt` 是同一个值：流式期间用它画，回合结束时写进
+    /// 条目，所以「正在回复」和「回复完了」画出来的是同一行字，交接时不跳。
+    @Published private(set) var currentReplyReceivedAt: Date?
+
     /// The interface the companion read on the previous turn, waiting to be handed
     /// to the model on its next one.
     ///
@@ -2471,6 +2484,12 @@ final class CompanionManager: ObservableObject {
                                 // The stream is live — the cursor-side answer card
                                 // may show its blurred writing tail from here on.
                                 self?.isAnswerStreamLive = true
+                                // 底部那行时间的取值点（用户 2026-09-25）：「只需要记录
+                                // 收到回复的那一秒，而不是完全回复完成的时间……这样卡片
+                                // 出现的第一秒，下面的时间就确定了」。它在这里取，而不是
+                                // 在回合结束时取 —— 回合结束才取值就意味着底部那一行要等
+                                // 整轮跑完才出现，卡片于是在那一刻被顶一下。
+                                self?.currentReplyReceivedAt = Date()
                             }
 
                             // 逐句快答: hand the tag-stripped cumulative text to the
@@ -2751,6 +2770,7 @@ final class CompanionManager: ObservableObject {
                         progressSteps: liveJobProgressSteps.isEmpty ? nil : liveJobProgressSteps,
                         turnDurationSeconds: Int(Date().timeIntervalSince(jobStartedAt).rounded()),
                         turnFinishedAt: Date(),
+                        replyReceivedAt: currentReplyReceivedAt,
                         wasInterrupted: nil
                     )
                     conversationHistory.append(newEntry)
@@ -2915,6 +2935,7 @@ final class CompanionManager: ObservableObject {
                         progressSteps: liveJobProgressSteps.isEmpty ? nil : liveJobProgressSteps,
                         turnDurationSeconds: Int(Date().timeIntervalSince(jobStartedAt).rounded()),
                         turnFinishedAt: Date(),
+                        replyReceivedAt: currentReplyReceivedAt,
                         wasInterrupted: true
                     )
                     conversationHistory.append(interruptedEntry)
@@ -3003,6 +3024,9 @@ final class CompanionManager: ObservableObject {
         answerBubbleClearTask = nil
         streamingAnswerText = ""
         isAnswerStreamLive = false
+        // 底部那行的时间跟着气泡一起清：留着一个上一轮的时刻，下一轮回复的
+        // 第一帧就会先画出**上一条**的时间，那一行会跳一下 —— 正是这次要消除的东西。
+        currentReplyReceivedAt = nil
         // The next question must not be judged against the previous answer:
         // a real question that happens to quote it would be filtered as echo.
         spokenAnswerTextForEchoFilter = ""

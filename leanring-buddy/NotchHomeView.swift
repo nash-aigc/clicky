@@ -296,6 +296,14 @@ struct NotchHomeView: View {
                        !companionManager.streamingAnswerText.isEmpty {
                         assistantBubble(companionManager.streamingAnswerText, isStreaming: true)
                             .id("streaming")
+                        // **底部那一行从第一秒就在这里**（用户 2026-09-25）。
+                        //
+                        // 它原先只在回合结束时画（由 `turnFooter(entry)` 承担），
+                        // 于是流式期间这条流少一行；回合一旦落成条目，内容突然变高，
+                        // 而这里是钉在底部的 —— 多余的高度把上面所有内容整体顶上去，
+                        // 用户看到的就是「回复完成之后卡片会突然向上抖动一下／向上顶
+                        // 一下」。把同一行提前画出来，高度从第一帧起就不再变化。
+                        liveTurnFooter
                     }
 
                     // **语音电话正在进行**：用户正在说的那句 + AI 正在说的回复，
@@ -445,6 +453,32 @@ struct NotchHomeView: View {
         }
     }
 
+    /// 流式期间画的那一行底部信息 —— 与 `turnFooter(_:)` 同一套几何，所以
+    /// 回合落成条目、这一行换成正式那条时，位置与高度都不变。
+    ///
+    /// **只画复制与时间**（用户 2026-09-25：「同时出现的时候，只显示复制按钮和时间」）。
+    /// 耗时此刻还算不出来 —— 那要等回合结束 —— 所以这里不画它；它出现时是加在
+    /// 同一行里，行高不变，因此不会把卡片顶上去。
+    ///
+    /// 时间取 `currentReplyReceivedAt`（回复第一个字节到达的那一秒），不是完成时刻。
+    @ViewBuilder
+    private var liveTurnFooter: some View {
+        if let replyReceivedAt = companionManager.currentReplyReceivedAt {
+            HStack(spacing: 8) {
+                Text(Self.cachedTimeFormatter.string(from: replyReceivedAt))
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.35))
+
+                MessageCopyButton(
+                    text: companionManager.streamingAnswerText,
+                    helpText: "复制这条回答"
+                )
+
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
     /// HeyClicky's progress messages: the executed steps of a multi-step job,
     /// folded behind a 「N 条进度」 toggle. Visual-only data — these are the
     /// same descriptions the panel's 上一次动手 row shows.
@@ -564,7 +598,13 @@ struct NotchHomeView: View {
                         Capsule().fill(Color(red: 1.0, green: 0.72, blue: 0.42).opacity(0.14))
                     )
             } else if let durationSeconds = entry.turnDurationSeconds {
-                Text(Self.footerDurationText(durationSeconds: durationSeconds, finishedAt: entry.turnFinishedAt))
+                // 时钟取**收到回复的那一秒**，与流式期间 `liveTurnFooter` 画的
+                // 同一个值 —— 否则回合落成条目的一瞬间，这一行的时间会从「10:30」
+                // 跳成「10:31」，等于把刚消除的抖动换了个地方出现。
+                Text(Self.footerDurationText(
+                    durationSeconds: durationSeconds,
+                    finishedAt: entry.replyReceivedAt ?? entry.turnFinishedAt
+                ))
                     .font(.system(size: 11))
                     .foregroundColor(.white.opacity(0.35))
             }

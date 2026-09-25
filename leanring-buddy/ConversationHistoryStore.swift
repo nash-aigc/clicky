@@ -59,6 +59,16 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     var turnDurationSeconds: Int?
     var turnFinishedAt: Date?
 
+    /// **回复的第一个字节到达的时刻** —— 用户在 2026-09-25 定的那条：
+    /// 「只需要记录收到回复的那一秒，而不是完全回复完成的时间……这样卡片出现的
+    /// 第一秒，下面的时间就确定了」。
+    ///
+    /// 它与 `turnFinishedAt` 是两个不同的时刻，用途也不同：`turnFinishedAt` 属于
+    /// 「这一轮花了多久」这条统计，只有回合结束才知道；而这个在流式开始的第一秒
+    /// 就有值，所以底部那一行**从卡片出现的第一秒就能画出来**，卡片底边不再等回合
+    /// 结束才让位 —— 那一下正是用户报的「回复完成之后卡片会突然向上抖动／顶一下」。
+    var replyReceivedAt: Date?
+
     /// True when the user stopped this turn mid-job. The conversation view
     /// renders an 「已被用户打断」 chip instead of a duration (HeyClicky's
     /// `CoworkInterruptedChip` / "INTERRUPTED BY USER").
@@ -75,6 +85,7 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
         case progressSteps
         case turnDurationSeconds
         case turnFinishedAt
+        case replyReceivedAt
         case wasInterrupted
     }
 }
