@@ -1,4 +1,7 @@
 import Foundation
+// 工程开着 `MemberImportVisibility`，`@Published` 的 `init(wrappedValue:)` 定义在
+// Combine 里，不显式 import 会被判成「成员不可见」而不是「少了个 import」。
+import Combine
 
 /// 复盘跑一次：读历史 → 挑轮次 → 归类 → 统计 → 出一张表 + 候选。
 ///
