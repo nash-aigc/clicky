@@ -62,14 +62,43 @@ final class AskVoiceCallController: ObservableObject {
     /// 界面上已经吐到第几个字（`latestAssistantText` 的前缀长度）。
     private var displayedCharacterCount = 0
 
-    /// 逐字吐字的时钟。33ms ≈ 30fps。
+    /// 本轮第一段文字到达的时刻 —— 短回复兜底要用它（见 `advanceDisplayedText`）。
+    private var assistantTextBeganAt: Date?
+
+    /// 本轮是否已经开始吐字。没开始之前，缓冲不攒够就什么都不显示 —— 这是
+    /// 「前面两行一定是正常速度」的实现方式。见 `advanceDisplayedText`。
+    private var hasStartedRevealing = false
+
+    /// 不足一帧的推进量攒在这里，凑够一个字再吐。没有它，`max(1, …)` 会让实际
+    /// 最低速度被抬到 30 字/秒（一帧一个字），"低速"就名不副实了。
+    private var displayAdvanceAccumulator = 0.0
+
+    // MARK: 吐字的四个数（全部由实测推出，见 `advanceDisplayedText` 的推导）
+
+    /// 一帧的时长。33ms ≈ 30fps。
     private static let displayPacerTickMilliseconds = 33
-    /// 积压要在这段时间内平滑追平 —— 一整句突然到齐时，用户看到的是一次约 0.4 秒的
-    /// 快速书写，而不是一次粘贴。
-    private static let displayCatchUpSeconds = 0.4
-    /// 一帧最多推进几个字。没有这个上限，积压很大时一帧能吐几十个字 ——
-    /// 「粘贴感」就又回来了。
-    private static let displayMaximumCharactersPerTick = 3
+    /// **正常速度：83 字/秒。**
+    ///
+    /// 这是**实测**出来的，不是拍的：Ask 页 DeepSeek 那条路 106 个字用 1.28 秒
+    /// 出完（70 个 delta），也就是用户明确说过「我能接受」的那个速度。
+    private static let displayNormalCharactersPerSecond = 83.0
+    /// **全速所需的在手缓冲：60 字。**
+    ///
+    /// 一行约 27~33 字（实测：断行器在 459pt 宽下每行装 33 个 unit），所以 60 字
+    /// 约等于两行 —— 正好是用户划的那条线：「前面这三行或者两行的时候，一定要
+    /// 正常速度」。它同时是**启动阈值**：攒够两行才开始吐，于是开头那两行必然
+    /// 是全速的。
+    private static let displayFullSpeedBufferCharacters = 60
+    /// **最低速度：10 字/秒。**
+    ///
+    /// 缓冲见底时用它兜着。它不是"停住"——只是慢；再低就会被读成卡住了。
+    private static let displayMinimumCharactersPerSecond = 10.0
+    /// 短回复兜底：首字到达这么久还没攒够两行，就先吐起来。
+    ///
+    /// 没有它，开场白那种二十来字的短句永远达不到 60 字的阈值，就一个字都不显示。
+    /// 1.2 秒取得比 DeepSeek 那条路的首字延迟（实测约 0.8 秒）略长一点。
+    private static let displayStartFallbackSeconds = 1.2
+
     private var displayPacerTask: Task<Void, Never>?
 
     /// 音色（跨启动保留）。nil = 兜底音色。
@@ -371,6 +400,9 @@ final class AskVoiceCallController: ObservableObject {
     /// 两次是同一个原因的两面：**显示被绑在了到达节奏上**。到达是「一大阵 + 一段
     /// 静默」，而人想看到的是**匀速**。所以这里把两者彻底分开。
     private func acceptAssistantText(_ cumulativeText: String) {
+        if latestAssistantText.isEmpty, !cumulativeText.isEmpty {
+            assistantTextBeganAt = Date()
+        }
         latestAssistantText = cumulativeText
         startDisplayPacerIfNeeded()
     }
@@ -387,6 +419,35 @@ final class AskVoiceCallController: ObservableObject {
     ///
     /// > 「前端渲染的时候一定要检测时间，让它能够很平滑地过渡这个效果……一定是渲染
     /// > 出来的，而不是突然间把这个东西粘贴在这个位置上」。
+    /// 把已经收到的文字，按算出来的速率一帧一帧吐到界面上。
+    ///
+    /// ## 四个数是怎么算出来的
+    ///
+    /// 两个**实测**输入：
+    /// - 用户能接受的速度 = Ask 页 DeepSeek 那条路：**106 字 / 1.28 秒 ≈ 83 字/秒**；
+    /// - 全双工的交付：**约 4~10 字/秒**，而且是**成串**的 —— 一整句几乎同时生成完，
+    ///   然后音频慢慢播，中间是静默。
+    ///
+    /// 由此可以定死两件事：
+    ///
+    /// 1. **平均吐字速度不可能超过交付速度。** 缓冲只能重新分配时间，不能造字。
+    ///    所以任何"全程 83 字/秒"的打算都是空的 —— 能做的只是**把开头做快、
+    ///    把降速做平滑**。
+    /// 2. 要让开头那几行真的跑到 83 字/秒，就得**先攒够那几行**。一行约 27~33 字
+    ///    （实测：断行器在 459pt 宽下每行 33 个 unit），用户要的是「前面两行一定
+    ///    正常速度」→ **阈值 60 字**，它同时就是"全速所需的在手缓冲"：一开口就在
+    ///    全速，然后随着缓冲变薄而**按比例**降速。
+    ///
+    /// 速率式（连续，所以不会有"突然减速"）：
+    ///
+    ///     速率 = 83 × clamp(缓冲 / 60, 10/83, 1)     字/秒
+    ///
+    /// - 缓冲 ≥ 60 → 83 字/秒（与 DeepSeek 观感一致）
+    /// - 缓冲 = 30 → 41 字/秒
+    /// - 缓冲 → 0  → 10 字/秒兜底（仍在前移，不是停住）
+    ///
+    /// 兜底那 1.2 秒是给短回复的：开场白只有二十来字，永远攒不到 60，
+    /// 没有它就会一个字都不显示。
     private func startDisplayPacerIfNeeded() {
         guard displayPacerTask == nil else { return }
         displayPacerTask = Task { @MainActor [weak self] in
@@ -406,21 +467,35 @@ final class AskVoiceCallController: ObservableObject {
         if targetCount < displayedCharacterCount {
             displayedCharacterCount = targetCount
         }
+        guard targetCount > 0 else { return }
 
-        let backlog = targetCount - displayedCharacterCount
-        guard backlog > 0 else {
-            // 追平了：台上没词可吐。表继续走（下一句到达时立刻接上），但不再写
-            // `liveAssistantText` —— 没有新内容却反复赋值，只会白白触发重渲染。
-            return
+        // ① 开场闸：攒够两行才开始，于是开头那两行必然是**全速**的。
+        //    短回复由 1.2 秒兜底放行。
+        if !hasStartedRevealing {
+            let waitedLongEnough = assistantTextBeganAt
+                .map { Date().timeIntervalSince($0) >= Self.displayStartFallbackSeconds } ?? false
+            guard targetCount >= Self.displayFullSpeedBufferCharacters || waitedLongEnough else { return }
+            hasStartedRevealing = true
         }
 
+        let backlog = targetCount - displayedCharacterCount
+        guard backlog > 0 else { return }
+
+        // ② 速率 = 正常速度 × 缓冲比例，两端各有一道夹。
+        let bufferFraction = Double(backlog) / Double(Self.displayFullSpeedBufferCharacters)
+        let charactersPerSecond = min(
+            Self.displayNormalCharactersPerSecond,
+            max(Self.displayMinimumCharactersPerSecond,
+                Self.displayNormalCharactersPerSecond * bufferFraction)
+        )
+
+        // ③ 不足一帧的量攒起来，凑够整字再吐 —— 否则最低速度会被 `max(1,…)`
+        //    抬到 30 字/秒（一帧一个字），"低速"就名不副实了。
         let tickSeconds = Double(Self.displayPacerTickMilliseconds) / 1000
-        let proportionalAdvance = Double(backlog) * tickSeconds / Self.displayCatchUpSeconds
-        // 至少一个：小积压时退化成匀速（≈30 字/秒）。
-        // 最多 `displayMaximumCharactersPerTick`：大积压时也不会一帧糊上去 ——
-        // 一帧几十个字就又把「粘贴感」请回来了。
-        let advanceCount = max(1, min(Self.displayMaximumCharactersPerTick,
-                                      Int(proportionalAdvance.rounded(.up))))
+        displayAdvanceAccumulator += charactersPerSecond * tickSeconds
+        let advanceCount = Int(displayAdvanceAccumulator)
+        guard advanceCount > 0 else { return }
+        displayAdvanceAccumulator -= Double(advanceCount)
         displayedCharacterCount = min(targetCount, displayedCharacterCount + advanceCount)
 
         let shownText = String(targetText.prefix(displayedCharacterCount))
@@ -429,16 +504,20 @@ final class AskVoiceCallController: ObservableObject {
         }
     }
 
-    /// 把两份文本与挂起的发布任务一起归零。
+    /// 把两份文本、吐字进度与挂起的任务一起归零。
     ///
-    /// 三处调用（起会话 / 挂断 / 回合落盘）都必须三样一起清：只清界面那份而留着
-    /// 挂起的任务，它醒过来会把**上一轮**的文本重新贴到屏幕上。
+    /// 三处调用（起会话 / 挂断 / 回合落盘）都必须一起清：只清界面那份而留着
+    /// 挂起的任务，它醒过来会把**上一轮**的文本重新贴到屏幕上；只清文本而不清
+    /// `hasStartedRevealing`，下一轮就会跳过开场闸、第一行直接不是全速。
     private func resetAssistantTextBuffers() {
         displayPacerTask?.cancel()
         displayPacerTask = nil
         liveAssistantText = ""
         latestAssistantText = ""
         displayedCharacterCount = 0
+        displayAdvanceAccumulator = 0
+        hasStartedRevealing = false
+        assistantTextBeganAt = nil
     }
 
     private func commitAssistantTurn() {
