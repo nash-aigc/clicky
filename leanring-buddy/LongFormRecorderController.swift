@@ -399,6 +399,20 @@ final class LongFormRecorderController: ObservableObject {
     /// 抓帧的绿点闪动计数。小窗用它「抓一帧大一下」。
     @Published private(set) var cameraFramePulse = 0
 
+    /// 最近抓到的那一帧，给小窗做预览用。
+    ///
+    /// 单开一个字段而不是让小窗去读 `cameraFrames.last`：那个数组是**要发给模型的
+    /// 那一批**（有上限、会丢最早的），而预览要的是「此刻镜头里是什么」—— 两件事，
+    /// 共用一份只会让「预览显示的那张没发出去」这种状态出现。
+    @Published private(set) var latestCameraFrameData: Data?
+
+    /// 小窗收起来了没有。**收起来只是收成一条标题栏**，入口永远在 ——
+    /// 早期版本把「缩起来」做成整条消失，用户点一下就再也叫不回来。
+    @Published var isCameraPreviewCollapsed = false
+
+    /// 小窗展开成大图了没有。
+    @Published var isCameraPreviewExpanded = false
+
     /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
     private let recentAudio = RecentAudioRing(
         maximumSeconds: 8,
@@ -441,7 +455,8 @@ final class LongFormRecorderController: ObservableObject {
                 if self.cameraFrames.count > RecordingCameraSession.maximumRetainedFrames {
                     self.cameraFrames.removeFirst()
                 }
-                // 抓一帧、绿点闪一下。
+                // 抓一帧、绿点闪一下、预览换一张。
+                self.latestCameraFrameData = jpeg
                 self.cameraFramePulse &+= 1
             }
         }

@@ -42,11 +42,22 @@ struct NotchRecordingBandView: View {
             if recorder.isTranscriptExpanded {
                 expandedTranscriptPanel
             } else {
-                transcriptRibbon
-                    // 点这一行就展开（用户的要求：「点击下面这行文字，自动展开」）。
-                    .contentShape(Rectangle())
-                    .onTapGesture { recorder.toggleTranscriptEditor() }
-                    .help("点一下展开，看之前的转写内容")
+                VStack(spacing: 0) {
+                    transcriptRibbon
+                        // 点这一行就展开（用户的要求：「点击下面这行文字，自动展开」）。
+                        .contentShape(Rectangle())
+                        .onTapGesture { recorder.toggleTranscriptEditor() }
+                        .help("点一下展开，看之前的转写内容")
+
+                    // **摄像头小窗挂在字幕条下面。** 用户：「刘海下面现在是一个实时的
+                    // 转写字幕条，在这个条的下面显示一个摄像头的小窗」。
+                    //
+                    // 只在**收起态**显示：展开时那块面板正好占满窗口高度，没地方放了
+                    // （而展开态本来就在看文字，不需要这个窗）。
+                    if recorder.isCameraCapturing {
+                        NotchCameraPreviewStrip(recorder: recorder, width: bandWidth)
+                    }
+                }
             }
         }
         // 外层不锁宽度：展开时下面那块比黑带宽一倍，锁定的话会被裁掉。
@@ -436,6 +447,134 @@ private struct EmbossedSurface: ViewModifier {
 private struct SilentButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+    }
+}
+
+/// 刘海下面的**摄像头小窗**。
+///
+/// 用户 2026-09-26 的设计：
+/// - 上面一条**标题栏**，下面一块**实时画面**
+/// - **左上角退出** —— 停止抓帧，本轮到此为止
+/// - **右上角展开** —— 画面放大
+/// - **点标题栏折叠** —— 收成一条，入口还在，随时能叫回来
+/// - **抓一帧，标题栏那颗绿点就亮一下、大一下** —— 让用户知道此刻正在抓
+///
+/// 画面刻意**压低分辨率和刷新率**：用户要的是「让用户能够看到就可以了，不需要渲染
+/// 太高的像素或清晰度」。所以这里直接显示抓帧时那张 JPEG（768 长边），一秒换一张 ——
+/// 既不额外开一路预览流，也让「你看到的这一张，就是正在被看的那一张」这句话成立。
+private struct NotchCameraPreviewStrip: View {
+    @ObservedObject var recorder: LongFormRecorderController
+    let width: CGFloat
+
+    private static let collapsedPreviewHeight: CGFloat = 86
+    private static let expandedPreviewHeight: CGFloat = 200
+    private static let titleBarHeight: CGFloat = 26
+
+    var body: some View {
+        VStack(spacing: 0) {
+            titleBar
+            if !recorder.isCameraPreviewCollapsed {
+                preview
+            }
+        }
+        .frame(width: width)
+        .background(Color.black)
+        .clipShape(RecordingRibbonShape(cornerRadius: 18))
+    }
+
+    private var titleBar: some View {
+        HStack(spacing: 8) {
+            // 左上角：退出抓帧。**只作用于本轮**，下一轮录音仍会按关键词激活。
+            Button {
+                recorder.stopCameraCaptureForThisSession()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.75))
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(Color.white.opacity(0.12)))
+            }
+            .buttonStyle(.plain)
+            .help("停止抓帧（本轮不再抓）")
+
+            // 抓一帧、这颗点亮一下并变大。「让用户知道现在正在抓帧」。
+            CameraCapturePulseDot(pulse: recorder.cameraFramePulse)
+
+            Text("摄像头")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white.opacity(0.8))
+
+            Spacer(minLength: 0)
+
+            // 右上角：展开 / 收回。
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    recorder.isCameraPreviewExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: recorder.isCameraPreviewExpanded
+                      ? "arrow.down.right.and.arrow.up.left"
+                      : "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.75))
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(Color.white.opacity(0.12)))
+            }
+            .buttonStyle(.plain)
+            .help(recorder.isCameraPreviewExpanded ? "收回" : "展开画面")
+        }
+        .padding(.horizontal, 10)
+        .frame(height: Self.titleBarHeight)
+        // **点这一条折叠小窗** —— 连 `contentShape` 一起，整条都可点，
+        // 而不是只有文字那几像素。
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                recorder.isCameraPreviewCollapsed.toggle()
+            }
+        }
+        .help(recorder.isCameraPreviewCollapsed ? "点一下展开小窗" : "点一下收起小窗")
+    }
+
+    @ViewBuilder
+    private var preview: some View {
+        if let data = recorder.latestCameraFrameData, let image = NSImage(data: data) {
+            Image(nsImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(height: recorder.isCameraPreviewExpanded
+                       ? Self.expandedPreviewHeight : Self.collapsedPreviewHeight)
+                .clipped()
+                // 换帧不带动画：一秒一张，加淡入反而糊。
+                .id(data.count)
+        } else {
+            // 还没抓到第一帧 —— 预热要 0.35 秒，这一小段是正常的，要说出来而不是留一块空白。
+            Text("正在启动摄像头…")
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.45))
+                .frame(height: Self.collapsedPreviewHeight)
+        }
+    }
+}
+
+/// 抓帧指示点：每抓一帧亮一下、大一下。
+private struct CameraCapturePulseDot: View {
+    let pulse: Int
+    @State private var isBright = false
+
+    var body: some View {
+        Circle()
+            .fill(DS.Colors.success)
+            .frame(width: isBright ? 11 : 7, height: isBright ? 11 : 7)
+            .opacity(isBright ? 1 : 0.55)
+            .animation(.easeOut(duration: 0.32), value: isBright)
+            .onChange(of: pulse) { _, _ in
+                isBright = true
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 130_000_000)
+                    isBright = false
+                }
+            }
     }
 }
 
