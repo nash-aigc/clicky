@@ -573,7 +573,10 @@ final class VoiceChatController: ObservableObject {
             playbackEngine: speechSynthesizer.voicePlaybackEngine,
             callbacks: DuplexVoiceEngine.Callbacks(
                 onUserUtterance: { [weak self] transcript in
-                    self?.insertDuplexUserEntry(transcript)
+                    // **权威最终稿**（`…transcription.completed`）。它到达时，
+                    // `speech_stopped` 那条预览气泡通常已经在屏上了 —— 所以这里走
+                    // "改写那一条"，**不是再建一条**。见 `finishDuplexUserEntry`。
+                    self?.finishDuplexUserEntry(transcript)
                 },
                 // Chatting 页**不显示增量**：用户 2026-09-25 明确要求「用户的提示词
                 // 要一次性展示，不要一个字一个字地显示」，所以逐字的这一个刻意留空。
@@ -585,7 +588,7 @@ final class VoiceChatController: ObservableObject {
                 // （见官方时序图：`speech_stopped` 紧跟在增量之后、`response.created` 之前）。
                 onUserTranscriptUpdate: { _ in },
                 onUserSpeechStopped: { [weak self] preview in
-                    self?.insertDuplexUserEntry(preview)
+                    self?.showDuplexUserEntryOnce(preview)
                 },
                 onFirstAudioScheduled: { [weak self] in
                     self?.markVoiceChatFullyConnected()
@@ -876,6 +879,7 @@ final class VoiceChatController: ObservableObject {
             isDuplexSessionLive = false
         }
         duplexAssistantEntryID = nil
+        duplexUserEntryID = nil
         streamingAnswerEntryID = nil
         dictationManager.endContinuousListening()
 
@@ -989,6 +993,45 @@ final class VoiceChatController: ObservableObject {
     /// **它只被全双工的回调调用**，三段式那条路一行都不经过这里 —— 上一轮那次
     /// 改动之所以让人以为「拖坏了三段式」，真凶是另外两处跨模式的副作用
     /// （lazy 引擎被凭空构造 + 拆掉三段式自己的麦克风 tap），已经单独修掉了。
+    /// 全双工这一轮**用户气泡**的 id：`speech_stopped` 时建的那一条。
+    ///
+    /// 存在的唯一理由是**防止同一条消息出现两次**：用户说完话时先按预览建一条，
+    /// 服务端的权威最终稿随后到达 —— 没有这个 id，后者会再建一条，屏幕上就是
+    /// `[用户][用户][回答]`。这个缺陷本项目**修过一次**（见下面 `insertDuplexUserEntry`
+    /// 上方那段注记：用户截图里的「Can you speak some English to me?」×2）。
+    private var duplexUserEntryID: UUID?
+
+    /// 用户说完话的那一刻建气泡（一次性，不逐字），并记住它。
+    private func showDuplexUserEntryOnce(_ preview: String) {
+        let entryID = UUID()
+        if let assistantEntryID = duplexAssistantEntryID,
+           let assistantIndex = transcriptEntries.firstIndex(where: { $0.id == assistantEntryID }) {
+            transcriptEntries.insert(
+                VoiceChatTranscriptEntry(id: entryID, isUser: true, text: preview),
+                at: assistantIndex
+            )
+        } else {
+            transcriptEntries.append(VoiceChatTranscriptEntry(id: entryID, isUser: true, text: preview))
+        }
+        duplexUserEntryID = entryID
+    }
+
+    /// 权威最终稿到达：**改写**预览那条，而不是另建一条；没有预览那条（增量没来）
+    /// 时才按老路建。
+    private func finishDuplexUserEntry(_ finalTranscript: String) {
+        if let userEntryID = duplexUserEntryID,
+           let entryIndex = transcriptEntries.firstIndex(where: { $0.id == userEntryID }) {
+            transcriptEntries[entryIndex] = VoiceChatTranscriptEntry(
+                id: userEntryID,
+                isUser: true,
+                text: finalTranscript
+            )
+            duplexUserEntryID = nil
+            return
+        }
+        insertDuplexUserEntry(finalTranscript)
+    }
+
     private func insertDuplexUserEntry(_ transcript: String) {
         if let assistantEntryID = duplexAssistantEntryID,
            let assistantIndex = transcriptEntries.firstIndex(where: { $0.id == assistantEntryID }) {

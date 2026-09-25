@@ -265,6 +265,10 @@ final class DuplexVoiceEngine {
         // 清它的地方就该是开始的地方 —— 补 stop 的调用点是在追着症状跑。
         isResponseActive = false
         hasScheduledFirstAudio = false
+        // **会话的状态属于会话**：这个引擎实例在 Chatting 页是 lazy 复用、跨会话
+        // 不重建的，所以用户转写的三个累加器必须在这里清 —— 只靠 `speech_started`
+        // 清，会让一条说到一半就断掉的会话把文字留在下一次通话里。
+        resetUserTranscriptAccumulators()
         currentAssistantText = ""
         isDiscardingAssistantAudio = false
         didRequestLocalBargeIn = false
@@ -662,9 +666,13 @@ final class DuplexVoiceEngine {
             // `text` 是已确定的部分，`stash` 是还没定稿的暂存尾巴 —— 两个拼起来才是
             // 此刻完整的一句话。
             //
-            // **原先这里只有 `completed` 一个分支**，所以界面要等一整轮结束才知道用户
-            // 说了什么（`completed` 实测排在 `response.done` 之后）——用户 2026-09-25 报的
-            // 「用户的提示词在 AI 回复完成之后才突然出现」就是这个，而不是协议做不到。
+            // **原先这里只有 `completed` 一个分支**，所以界面要等很久才知道用户说了
+            // 什么 ——复核用项目自己的日志定的实：`speech_started → speech_stopped →
+            // committed → response.created → 十条 ai-text → [user-transcript] → …
+            // → response.done`，也就是 `completed` 排在**回答的文字全部流完之后**。
+            // （这里原先写的是"排在 response.done 之后"，与文件头 `:19` 记录的实测
+            // 序列互相矛盾，已按日志改正。）用户 2026-09-25 报的「用户的提示词在 AI
+            // 回复完成之后才突然出现」就是这个，而不是协议做不到。
             // 这一条只补了"没接的那个事件"，没有第二条识别、没有第二个 websocket。
             let settledText = event["text"] as? String ?? ""
             let stashedText = event["stash"] as? String ?? ""
@@ -685,10 +693,31 @@ final class DuplexVoiceEngine {
             //
             // 判据：新来的 `text` 不再是上一个 `text` 的延长（`hasPrefix` 不成立）
             // = 换句了 → 把上一句并进已定稿的前缀。
-            if !settledText.hasPrefix(currentUserSettledText) {
+            // 判据分三种，**不能用一条 `hasPrefix` 了事** —— 复核指出那样分不清
+            // "换句"和"服务端回改"，后者会把同一句显示两遍（「今天天气」被改成
+            // 「天气」时会变成「今天天气天气」）。
+            if settledText.hasPrefix(currentUserSettledText) {
+                // ① 变长（或没变）：正常推进。
+                currentUserSettledText = settledText
+            } else if currentUserSettledText.hasPrefix(settledText) {
+                // ② **变短 = 服务端回改。** 官方说 `text` 是「已确认、不会再变更」的，
+                //    那是**意图描述，不是协议约束**。保留更长的那份：已经给用户看过
+                //    的字不该凭空消失。
+                //    （什么都不做。）
+            } else {
+                // ③ 既不是延长也不是回改 → 真的换句了：把上一句并进已定稿前缀。
+                //
+                //    注意这里**是推断，不是实测**：官方 T1~T7 那张表只演示了一句话，
+                //    中间那次停顿（T4）`text` 并没有重置，所以"按句重置"官方**没有写**。
+                //    留这个分支是因为姊妹页把 `text` 定义成"当前句子中"的已确认部分 ——
+                //    若真有重置，不攒就会丢掉前面说的话。
                 confirmedUserTranscript += currentUserSettledText
+                // 句间补一个分隔：不补的话英文会连成 "Helloworld"（Ask 页有英文对话）。
+                if let lastCharacter = currentUserSettledText.last, lastCharacter.isLetter || lastCharacter.isNumber {
+                    confirmedUserTranscript += " "
+                }
+                currentUserSettledText = settledText
             }
-            currentUserSettledText = settledText
             currentUserStashedText = stashedText
             let preview = (confirmedUserTranscript + settledText + stashedText)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
