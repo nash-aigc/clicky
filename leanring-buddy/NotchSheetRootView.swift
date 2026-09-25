@@ -293,9 +293,16 @@ struct NotchSheetRootView: View {
     /// 「全双工语音」按钮：把这页当前会话的聊天内容拼成带标签的提示词，
     /// 起一通**属于这个会话**的全双工语音电话（不截屏、只用上下文）。
     /// 尺寸与 Chatting 页的页头按钮一致（`headerControlHeight` / 12pt / 同样的圆角）。
+    ///
+    /// **空会话也能按**（用户 2026-09-25）：「如果当前用户在左侧边栏新建了一个对话，
+    /// 在没有内容的情况下，没有办法点击全双工语音……没有内容、没有上下文的情况下，
+    /// 也要让他能够使用全双工语音，开始全新的对话」。
+    ///
+    /// 原先这里有一条 `.disabled(!hasContext)` —— 那条闸门是多余的：动作本身对空
+    /// 会话完全安全（`AskVoiceCallContext.prompt(entries: [])` 只是一段空的上下文，
+    /// 会话照样起得来），而它把「开一通全新对话」这条最正常的用法堵死了。
     private var askVoiceCallButton: some View {
-        let hasContext = !(sessionsModel.activeSession?.entries.isEmpty ?? true)
-        return Button {
+        Button {
             guard let session = sessionsModel.activeSession else { return }
             companionManager.interruptActiveResponse()
             askVoiceCallController.start(
@@ -326,7 +333,6 @@ struct NotchSheetRootView: View {
         }
         .buttonStyle(.plain)
         .pointerCursor()
-        .disabled(!hasContext)
         .help("用这个会话的聊天内容作参考，改用全双工语音继续深聊（不截屏，只看上下文）")
     }
 

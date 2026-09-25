@@ -410,13 +410,27 @@ private struct ComposerTextView: NSViewRepresentable {
 
         guard let textView = scrollView.documentView as? NSTextView else { return }
 
-        // Only ever written when it differs, and `textDidChange` keeps the
-        // binding in step while typing — so this cannot fight the user's cursor.
-        if textView.string != text {
+        let isEditing = textView.window?.firstResponder === textView
+
+        // **用户正在编辑时绝不回写字符串。**
+        //
+        // 用户 2026-09-25 报的「打好的字会被自动退回／按住回车或空格之后这些字就
+        // 被删掉」就是这一行造成的：`text` 是 SwiftUI 侧的绑定，而 `updateNSView`
+        // 完全可能带着**还没跟上的旧值**跑一次 —— 此时视图里已经是用户新打的字，
+        // 比较必然不等，于是把旧串写回去，用户刚敲的字符被抹掉。
+        //
+        // 为什么偏偏在对话里明显：回复流式期间父视图每个 delta 都重渲染，
+        // `updateNSView` 跟着跑一次，每次都有一次抹掉的机会；按住键（键盘连发）
+        // 会把这件事的命中率放大成「几乎必然」。
+        //
+        // 打字期间**用户输入的才是权威**：`textDidChange` 会把视图的真实内容同步给
+        // 绑定，所以这里什么都不用做就是对的。程序性改动（提交后清空）走的是另外的
+        // 顺序 —— 清除时同时把 `isFocused` 置假，视图先退出第一响应者，下一次更新
+        // 就走下面这条分支把新值写进来了。
+        if !isEditing, textView.string != text {
             textView.string = text
         }
 
-        let isEditing = textView.window?.firstResponder === textView
         // Deferred by one run-loop turn: `makeFirstResponder` during a SwiftUI
         // update re-enters AppKit's responder chain in the middle of a layout
         // pass, and the window may not exist yet on the first update.
