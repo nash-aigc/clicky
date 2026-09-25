@@ -23,6 +23,18 @@ import AppKit
 import CoreGraphics
 
 nonisolated enum NotchSupport {
+
+    /// TEMPORARY PROBE (2026-09-25)：这次展开**动画开始**的那一刻。
+    ///
+    /// 用户报「点击刘海屏展开时，一开始什么字都看不见……相当于一个白板盖住了窗口里的
+    /// 内容」——而代码注释里写着这个空白是有来历的：展开动画启动时 SwiftUI 的内容**还没
+    /// 画出来**（内容构建被故意延后一个 tick，见 `beginExpansion`），所以先铺一层面板色
+    /// 的「空面板皮」。仓库早先实测过那次构建：**空面板 44ms、有内容的对话 317ms**。
+    ///
+    /// 但那是个旧数字，而这套面板之后改了很多。这一对打点就是把它重新量准：
+    /// `beginExpansion` 记起点，`NotchPanelRootSwitchingView` 的展开分支在 `onAppear`
+    /// 里打差值 —— 那个差值就是"屏幕上只有那块白板"的时长。
+    nonisolated(unsafe) static var expansionStartedAt: TimeInterval = 0
     // MARK: - 幕布垂落展开（参考：刘海屏弹出窗口_12种动画对比.html 02 幕布垂落）
     //
     // 展开和收起用的是两套完全不同的机制，各自有各自的常量，别混：
@@ -54,7 +66,27 @@ nonisolated enum NotchSupport {
     static let curtainRevealTimingControlPoints: (Float, Float, Float, Float) = (0.0, 0.0, 0.58, 1.0)
     /// 内容入场比幕布晚多少起步。参考页把 02 幕布垂落和 `.unit.line` 配在一起
     /// 时给的 delay 就是 140ms（01 中心缩放配的是 230ms）。
-    static let curtainContentEntranceDelay: TimeInterval = 0.14
+    /// 内容入场比窗口动画晚多少起步。
+    ///
+    /// **2026-09-25 两个值都归零 —— 用户要求「点击窗口之后马上就能看到窗口里的内容」。**
+    ///
+    /// 参考页里确实各配各的延迟（02 幕布垂落 140ms、01 中心缩放 230ms），理由写在
+    /// 这里的老注释里：「配错的后果是内容在窗口还没长到能盖住它的时候就画出来」。
+    /// **但那个理由在这里不成立** —— 因为这套面板的展开**本来就是一个遮罩在渐进揭示**
+    /// （见 `NotchWindowController` 的三种揭示），内容是被遮罩一层层露出来的，不是
+    /// 靠"晚一点画"来避免提前出现。延迟在这里只买到一件事：**用户在这段时间里看不到
+    /// 任何内容。**
+    ///
+    /// 实测（`⏱️ [expand]` 那对打点，`clicky-展开空白测量-163853.log`）：展开动画
+    /// 0.43 秒，而内容就位要 **161ms**（Screen 页、恢复了 10 轮对话）—— 这段时间屏幕上
+    /// 只有 `installRevealCover` 铺的那块面板色「空面板皮」（因为内容构建被故意延后一个
+    /// tick，见 `beginExpansion`）。再叠上这里的 230ms 延迟，**内容要接近四百毫秒才落到
+    /// 屏幕上，几乎整段动画都在看那块白板**。用户的原话是「相当于一个白板盖住了窗口里的
+    /// 内容，我根本看不到里面内容是什么」。
+    ///
+    /// 归零之后内容在它**存在的那一刻**就画出来（161ms），动画时长、曲线、遮罩
+    /// 全部不动。
+    static let curtainContentEntranceDelay: TimeInterval = 0
 
     // MARK: - 中心缩放展开（参考：同一份 HTML 的 01 中心缩放）
     //
@@ -89,7 +121,7 @@ nonisolated enum NotchSupport {
     static let centerPopTimingControlPoints: (Float, Float, Float, Float) = (0.22, 0.9, 0.3, 1.0)
     /// 内容入场比缩放晚多少起步。参考页 01 配的是 230ms（02 幕布垂落配 140ms），
     /// 两个数各自跟自己的窗口动画成对，不能混用。
-    static let centerPopContentEntranceDelay: TimeInterval = 0.23
+    static let centerPopContentEntranceDelay: TimeInterval = 0
 
     /// 收起 = 参考页的 winClose：scale(.92) + 整窗淡出，160ms ease-in。
     static let centerScaleCollapseDuration: TimeInterval = 0.16

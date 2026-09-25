@@ -855,6 +855,15 @@ struct NotchPanelRootSwitchingView: View {
                 revealSheetAction: revealSheetAction,
                 companionManager: companionManager
             )
+            // TEMPORARY PROBE (2026-09-25)：展开态的内容树在这里第一次出现 —— 从这个
+            // `onAppear` 到 `beginExpansion` 记下的起点之间的差，就是"屏幕上只有那块
+            // 面板色的白板、看不到任何内容"的时长。见 `NotchSupport.expansionStartedAt`。
+            .onAppear {
+                let elapsed = Date().timeIntervalSince1970 - NotchSupport.expansionStartedAt
+                if NotchSupport.expansionStartedAt > 0 {
+                    print(String(format: "⏱️ [expand] 内容就位 +%.0fms（此前屏幕上只有那块白板）", elapsed * 1000))
+                }
+            }
             // 状态带压在整块面板**之上**（用户 2026-09-24：「在整个对话界面顶部，
             // 刘海屏左右两侧应该持续显示 chatting 和挂断按钮，并覆盖在窗口上方」）。
             // 收起态那条带子是 `NotchPillRootView` 画的，展开态这里补上同一条，

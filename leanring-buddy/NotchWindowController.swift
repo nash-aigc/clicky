@@ -603,6 +603,12 @@ final class NotchWindowController {
         expandedScreen = presence.screen
         isExpansionCommitPending = true
 
+        // TEMPORARY PROBE (2026-09-25)：这次展开的起点。见
+        // `NotchSupport.expansionStartedAt` 的说明 —— 它量的是"屏幕上只有那块白板"的时长。
+        let expansionStartedAt = Date().timeIntervalSince1970
+        NotchSupport.expansionStartedAt = expansionStartedAt
+        print(String(format: "⏱️ [expand] 展开开始 t=%.3f", expansionStartedAt))
+
         // Order matters. The cover (plus the temporary surface) goes on FIRST,
         // hiding the content entirely: `setFrame(display: true)` below forces a
         // synchronous draw, so installing it afterwards would paint the
