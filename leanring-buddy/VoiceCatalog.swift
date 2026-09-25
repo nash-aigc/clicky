@@ -387,18 +387,35 @@ nonisolated enum VoiceCatalog {
 
     // MARK: - 全双工全模态
 
-    /// 全模态的 10 个内置音色 —— 官方 omni 音色列表逐字确认。
+    /// 全模态的内置音色 —— 官方 omni 音色列表逐字确认，**按代际分**。
+    ///
+    /// `modelFamily` 是**空格分隔的家族列表**（空 = 所有代都有），与全双工那两张表
+    /// 同一个设计：`v3` = qwen3-omni、`v35` = qwen3.5-omni、`v38` = qwen3.8-omni。
+    ///
+    /// **2026-09-25 补上 `v38`，因为同一类缺陷在这一支复发了。** 默认全模态模型是
+    /// `qwen3.8-omni-flash-realtime`（见 `defaultOmniModel`），而原先
+    /// `omniModelFamily` 只认 `qwen3.5` 前缀、其余一律归 `v3` —— 于是 `Ethan`
+    /// （3.5 的音色，家族为空 = 共有）被当成本代合法音色发了出去。服务端原文：
+    ///
+    ///   ❌ <400> InternalError.Algo.InvalidParameter: Voice 'Ethan' is not supported.
+    ///
+    /// 而 `onFailure` 的动作是**挂断整场会话**（见 `VoiceChatController`），用户看到的
+    /// 是「连接之后会自动断开」，原因看起来与音色毫无关系。官方 3.8 那一节的默认
+    /// 音色是 **`Tina`**，`Ethan`/`Cherry`/`Kai` 三个 3.8 已经没有。
+    ///
+    /// 只列两代都在的、加 3.5 独有的三个。3.8 独有的另外 40 多个没有进内置表 ——
+    /// 那是可选增量，不是修正，等有需要再按同一张官方表补。
     static let omniVoices: [VoiceOption] = [
-        VoiceOption(id: "Ethan", displayName: "Ethan", note: "阳光男声"),
-        VoiceOption(id: "Cherry", displayName: "Cherry", note: "阳光女声", modelFamily: "v3"),
-        VoiceOption(id: "Tina", displayName: "Tina", note: "甜美女声"),
+        VoiceOption(id: "Ethan", displayName: "Ethan", note: "阳光男声 · 3.8 已无", modelFamily: "v3 v35"),
+        VoiceOption(id: "Cherry", displayName: "Cherry", note: "阳光女声 · 3.8 已无", modelFamily: "v3 v35"),
+        VoiceOption(id: "Kai", displayName: "Kai", note: "活力男声 · 3.8 已无", modelFamily: "v3 v35"),
+        VoiceOption(id: "Tina", displayName: "Tina", note: "甜美女声 · 3.8 默认"),
         VoiceOption(id: "Dylan", displayName: "Dylan", note: "沉稳男声"),
         VoiceOption(id: "Jennifer", displayName: "Jennifer", note: "知性女声"),
-        VoiceOption(id: "Kai", displayName: "Kai", note: "活力男声", modelFamily: "v3"),
         VoiceOption(id: "Momo", displayName: "Momo", note: "活泼女声"),
         VoiceOption(id: "Ryan", displayName: "Ryan", note: "磁性男声"),
-        VoiceOption(id: "Serena", displayName: "Serena", note: "qwen3.5 新增", modelFamily: "v35"),
-        VoiceOption(id: "Aiden", displayName: "Aiden", note: "qwen3.5 新增", modelFamily: "v35"),
+        VoiceOption(id: "Serena", displayName: "Serena"),
+        VoiceOption(id: "Aiden", displayName: "Aiden"),
     ]
 
     // MARK: - 全双工语音（按模型版本）
@@ -625,7 +642,9 @@ nonisolated enum VoiceCatalog {
             return threeStageVoices
         case .omni:
             let family = omniModelFamily(for: model)
-            return omniVoices.filter { $0.modelFamily.isEmpty || $0.modelFamily == family }
+            return omniVoices.filter {
+                $0.modelFamily.isEmpty || voiceFamilyList($0).contains(family)
+            }
         case .duplexVoice:
             return duplexSharedVoices + (is31PlusDuplex(model) ? duplex31OnlyVoices : [])
         }
@@ -640,8 +659,16 @@ nonisolated enum VoiceCatalog {
         case .threeStage:
             return threeStageVoices.first?.id ?? ""
         case .omni:
-            // 官方把 Ethan 定为全模态的默认音色。
-            return "Ethan"
+            // 官方每一节的「默认音色」：**3.8 = `Tina`，3.5 = `Ethan`**。
+            //
+            // 兜底值必须先**在本模型可用表里**再返回 —— 直接写死 `"Ethan"` 就是
+            // 2026-09-25 那次「连接之后自动断开」的成因（默认模型是 3.8，而它没有
+            // Ethan）。表里没有那个官方默认值（换了代、表还没跟上）时退到表的第一项，
+            // 保证**永远返回一个这个模型真的接受的音色**。
+            let available = systemVoices(for: .omni, model: model)
+            let documentedDefault = omniModelFamily(for: model) == "v38" ? "Tina" : "Ethan"
+            if available.contains(where: { $0.id == documentedDefault }) { return documentedDefault }
+            return available.first?.id ?? ""
         case .duplexVoice:
             // 官方：3.1 Plus 默认 `longanqian_v3.1`，3.0 Plus/Flash 默认 `longanqian`。
             return is31PlusDuplex(model) ? "longanqian_v3.1" : "longanqian"
@@ -715,7 +742,17 @@ nonisolated enum VoiceCatalog {
 
     /// 全模态的模型族：`qwen3.5` 开头是 v35，其余是 v3。
     static func omniModelFamily(for model: String) -> String {
-        model.hasPrefix("qwen3.5") ? "v35" : "v3"
+        if model.hasPrefix("qwen3.8") { return "v38" }
+        return model.hasPrefix("qwen3.5") ? "v35" : "v3"
+    }
+
+    /// 这个音色在这一个家族里有没有。
+    ///
+    /// `modelFamily` 是空格分隔的**多个**家族（空 = 所有代都有）：`Ethan` 是
+    /// `"v3 v35"`，两代都在、3.8 不在。把它当单个字符串比较会让"多代共有"表达不出来
+    /// —— 而正是那个表达不出来，让 `Ethan` 混进了 3.8 的可用表。
+    private static func voiceFamilyList(_ voice: VoiceOption) -> [String] {
+        voice.modelFamily.split(separator: " ").map(String.init)
     }
 
     /// 这个全双工模型是不是 3.1 Plus 系（决定 `_v3.1` 那 8 个音色能不能选）。

@@ -134,10 +134,27 @@ extension VoiceChatPreset {
         if let preferredVoiceID, !preferredVoiceID.isEmpty {
             switch engine {
             case .duplexVoice:
-                if VoiceCatalog.isOmniRealtimeModel(duplexModelID ?? "") {
-                    updated.omniVoice = preferredVoiceID
-                } else {
+                let effectiveModel = duplexModelID ?? VoiceCatalog.defaultDuplexModel
+                if VoiceCatalog.isOmniRealtimeModel(effectiveModel) {
+                    // **预设自带音色时也要校验，这一格是唯一的拦截点。**
+                    //
+                    // 2026-09-25：`video.duplex.omni38` 这一条预设写的是 `Ethan`，
+                    // 而 3.8 那一代已经没有它 —— 原先这里是**无条件赋值**，于是
+                    // `Ethan` 进了角色、进了 `session.update`，服务端回
+                    // `<400> Voice 'Ethan' is not supported.`，`onFailure` 随即
+                    // **挂断整场会话**，用户看到的是「连接之后会自动断开」。
+                    updated.omniVoice = VoiceCatalog.isSelectable(
+                        preferredVoiceID, for: .omni, model: effectiveModel
+                    ) ? preferredVoiceID
+                      : VoiceCatalog.fallbackVoice(for: .omni, model: effectiveModel)
+                } else if VoiceCatalog.isSelectable(
+                    preferredVoiceID, for: .duplexVoice, model: effectiveModel
+                ) {
                     updated.duplexVoice = preferredVoiceID
+                } else {
+                    updated.duplexVoice = VoiceCatalog.fallbackVoice(
+                        for: .duplexVoice, model: effectiveModel
+                    )
                 }
             case .threeStage, .omni:
                 updated.ttsVoice = preferredVoiceID
@@ -153,9 +170,21 @@ extension VoiceChatPreset {
             //
             // 能力层现在会在握手时兜住（`isSelectable` 判到异代就换兜底 + 记说明），
             // 但那是**事后纠正**：这里把不该活下来的值直接换掉，那一格从一开始就是对的。
-            let effectiveDuplexModel = duplexModelID ?? VoiceCatalog.defaultDuplexModel
-            if !VoiceCatalog.isSelectable(updated.duplexVoice, for: .duplexVoice, model: effectiveDuplexModel) {
-                updated.duplexVoice = VoiceCatalog.fallbackVoice(for: .duplexVoice, model: effectiveDuplexModel)
+            //
+            // **校验的是"这个模型真正在用的那一格"。** 全模态模型用的是 `omniVoice`、
+            // 全双工语音用的是 `duplexVoice` —— 原先这里只查后者，于是全模态那一路
+            // 实际上没有校验（默认模型 3.8 用的就是 `omniVoice`）。
+            let effectiveModel = duplexModelID ?? VoiceCatalog.defaultDuplexModel
+            if VoiceCatalog.isOmniRealtimeModel(effectiveModel) {
+                if !VoiceCatalog.isSelectable(updated.omniVoice, for: .omni, model: effectiveModel) {
+                    updated.omniVoice = VoiceCatalog.fallbackVoice(for: .omni, model: effectiveModel)
+                }
+            } else if !VoiceCatalog.isSelectable(
+                updated.duplexVoice, for: .duplexVoice, model: effectiveModel
+            ) {
+                updated.duplexVoice = VoiceCatalog.fallbackVoice(
+                    for: .duplexVoice, model: effectiveModel
+                )
             }
         }
 
@@ -198,7 +227,11 @@ extension VoiceChatPreset {
             understandingModelID: nil,
             expressionModelID: nil,
             duplexModelID: "qwen3.8-omni-flash-realtime",
-            preferredVoiceID: "Ethan",
+            // **官方 3.8 那一节的默认音色是 `Tina`，不是 `Ethan`** —— `Ethan` 属于
+            // 3.5 那一代，服务端对 3.8 的回复原文是
+            // `<400> InternalError.Algo.InvalidParameter: Voice 'Ethan' is not supported.`，
+            // 而 `onFailure` 会**挂断整场会话**，用户看到的是「连接之后会自动断开」。
+            preferredVoiceID: "Tina",
             opensScreenByDefault: true,
             opensCameraByDefault: true,
             isReady: true

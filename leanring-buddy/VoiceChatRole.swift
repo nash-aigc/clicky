@@ -51,7 +51,8 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
     /// 当前选中的**预设** id（`VoiceChatPreset.id`）。nil = 该 (chatChannel, chatEngine)
     /// 下的默认预设。预设是唯一的真相：模型组合、音色、要不要开画面都从它来。
     var presetID: String?
-    /// 全模态的内置音色（Ethan 系）。
+    /// 全模态的内置音色（默认 `Tina`，见 `VoiceCatalog.omniVoices`）。
+    /// **与全双工语音那套龙安音色是两张表，不能混填。**
     var omniVoice: String
     /// 全双工语音的内置音色（龙安系）。**与全模态是两套表，不能混填** ——
     /// 写错家族会让服务端把整条 `session.update` 拒掉。
@@ -92,7 +93,11 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
             // 预设回落也跟着这条走（见控制器 currentPreset 的回落链）。
             chatEngine: VoiceChatEngine.duplexVoice.rawValue,
             ttsVoice: "",
-            omniVoice: "Ethan",
+            // 新角色的默认全模态音色取 **`Tina`**：默认全模态模型是
+            // `qwen3.8-omni-flash-realtime`，而它没有 `Ethan`（那是 3.5 的代际）。
+            // 填 `Ethan` 不会崩（能力层会换成兜底并说明），但会平白多一次"你选的
+            // 音色不可用"的提示 —— 默认值本来就该是这个模型真的接受的那个。
+            omniVoice: "Tina",
             duplexVoice: "longanqian",
             chatMode: "continue",
             autoMicEnabled: true,
