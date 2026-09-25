@@ -405,25 +405,15 @@ final class LongFormRecorderController: ObservableObject {
 
     /// 小窗收起来了没有。**收起来只是收成一条标题栏**，入口永远在 ——
     /// 早期版本把「缩起来」做成整条消失，用户点一下就再也叫不回来。
-    @Published var isCameraPreviewCollapsed = false {
-        didSet {
-            guard oldValue != isCameraPreviewCollapsed else { return }
-            // 收成一条时画面只有 86pt 高，720p 够用；显示画面时他是在细看，
-            // 那才值得花那份像素。
-            cameraSession.setHighResolution(!isCameraPreviewCollapsed)
-        }
-    }
+    @Published var isCameraPreviewCollapsed = false
 
     /// 小窗展开成大图了没有。
     ///
-    /// 采集用不用 1080p。
-    ///
-    /// 用户 2026-09-26：「720P 吧，可以低清，但是点击右上角展开之后，换成 1080」。
-    /// 但同一个请求里，右上角那个「展开」按钮已经**改成了关闭按钮** ——
-    /// 小窗现在恒为满宽，没有「展开」这个状态了。于是这条判据换成「画面有没有上屏」：
-    /// 收成一条 → 720p，显示画面 → 1080p。功能和用户当初要的一模一样，
-    /// 只是入口从按钮变成了小窗自己的开合。
-    var isCameraPreviewExpanded: Bool { !isCameraPreviewCollapsed }
+    // 清晰度不再是这里的一个属性：它是用户在「录音」设置页选的
+    //（`recordingCameraUsesHighResolution`），`considerStartingCameraCapture`
+    // 起采时直接读设置写进 `cameraSession`。这里曾经有一个
+    // `isCameraPreviewExpanded` 派生量，它随小窗开合走 —— 用户 2026-09-26 明确要求
+    // 把清晰度做成**用户可选的参数**，两个真相源必然漂，所以那个属性删掉了。
 
     /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
     private let recentAudio = RecentAudioRing(
@@ -452,25 +442,40 @@ final class LongFormRecorderController: ObservableObject {
     /// 反复检查，不是只看某一个瞬间。
     private func considerStartingCameraCapture() {
         guard phase == .recording else { return }
-        guard AppSettingsStore.snapshot().recordingPolishCapturesCamera else { return }
+        let settings = AppSettingsStore.snapshot()
+        guard settings.recordingPolishCapturesCamera else { return }
         guard !hasUserStoppedCameraThisSession else { return }
         guard !isCameraCapturing else { return }
         let spoken = transcriptPlainText + livePartialText
-        guard Self.transcriptMentionsCamera(spoken) else { return }
+        let triggerKeywords = settings.recordingCameraTriggerKeywordList
+        guard Self.transcriptMentionsCamera(spoken, keywords: triggerKeywords) else { return }
+
+        // **这一段的参数全部来自「录音」设置页，一个都不写死。**
+        //
+        // 帧率、清晰度、留几帧都是用户在设置里选的，所以只能在这里读 —— 而且必须
+        // 在读完之后**立刻**写进 `cameraSession`，因为它从 `queue` 上读这些值，
+        // 而下面那句 `start()` 里的 `queue.async` 就是那道屏障（见
+        // `RecordingCameraSession` 里那条「起采之前写好，起采之后只读」的约定）。
+        cameraSession.previewFramesPerSecond = settings.recordingCameraPreviewFramesPerSecond
+        cameraSession.modelFramesPerSecond = settings.recordingCameraModelFramesPerSecond
+        cameraSession.setHighResolution(settings.recordingCameraUsesHighResolution)
+        let maximumRetainedFrameCount = settings.recordingCameraMaximumFrameCount
 
         isCameraCapturing = true
-        publishDiagnostic("转写里出现「摄像头」→ 开始一秒一帧抓帧")
-        // **预览：12 帧/秒，只更新那个独立的小模型。**
-        // 不经 `@Published` 走控制器 —— 走了的话整条刘海每秒重建 12 次。
+        publishDiagnostic("转写里出现触发词（\(triggerKeywords.joined(separator: " / "))）"
+                          + "→ 开始抓帧：画面 \(settings.recordingCameraPreviewFramesPerSecond) 帧/秒，"
+                          + "送模型 \(settings.recordingCameraModelFramesPerSecond) 帧/秒，"
+                          + "留 \(maximumRetainedFrameCount) 帧")
+        // **预览帧只更新那个独立的小模型。**
+        // 不经 `@Published` 走控制器 —— 走了的话整条刘海每秒重建几十次。
         cameraSession.onPreviewFrame = { [weak self] image in
             Task { @MainActor in self?.cameraPreviewModel.update(frame: image) }
         }
-        // **送模型：4 帧/秒。**
         cameraSession.onModelFrame = { [weak self] jpeg in
             Task { @MainActor in
                 guard let self else { return }
                 self.cameraFrames.append(jpeg)
-                if self.cameraFrames.count > RecordingCameraSession.maximumRetainedFrames {
+                if self.cameraFrames.count > maximumRetainedFrameCount {
                     self.cameraFrames.removeFirst()
                 }
                 // 抓一帧、绿点闪一下、数字加一 —— 这三个都挂在预览模型上，
@@ -481,11 +486,6 @@ final class LongFormRecorderController: ObservableObject {
         cameraSession.onFailure = { [weak self] reason in
             Task { @MainActor in self?.publishDiagnostic("摄像头抓帧失败：\(reason)") }
         }
-        // **每一轮都是一个全新的采集会话**（见重置那一节：重复 addInput 会被静默
-        // 拒绝），它出生时是 720p，而 `isCameraPreviewCollapsed` 的 didSet 只在
-        // 值**变化**时才会补上分辨率 —— 用户没收起过小窗的话它一次都不会触发。
-        // 所以起采前按当前开合状态定一次，别指望 didSet。
-        cameraSession.setHighResolution(!isCameraPreviewCollapsed)
         cameraSession.start()
     }
 
@@ -516,9 +516,19 @@ final class LongFormRecorderController: ObservableObject {
     /// 这也解释了它为什么必须是「整词包含」而不是「关键词 + 上下文判断」——
     /// 判断要花一次模型调用，而触发与否决定的是**要不要开摄像头**，那件事必须在
     /// 本地、在毫秒内定下来。
-    private static func transcriptMentionsCamera(_ text: String) -> Bool {
+    /// 转写里有没有出现用户自己配的触发词。
+    ///
+    /// **关键词来自设置，不写死。** 用户在「录音」设置页里可以改成任何词 ——
+    /// 判据仍然是**精确子串**（两个方向都小写化），不是「摄像头」这三个字：
+    /// 光说「摄像头」不抓帧，日常对话里太容易带出来，而抓帧是有成本的。
+    ///
+    /// 传进来而不是自己去读设置，是为了让**同一段转写只读一次设置** ——
+    /// `considerStartingCameraCapture` 里那几个参数必须来自同一次快照，
+    /// 否则用户正好在判定的那一瞬改了设置，就会出现「按旧词触发、按新参数抓帧」。
+    private static func transcriptMentionsCamera(_ text: String, keywords: [String]) -> Bool {
+        guard !keywords.isEmpty else { return false }
         let lowered = text.lowercased()
-        return ["123摄像头", "打开摄像头"].contains { lowered.contains($0) }
+        return keywords.contains { lowered.contains($0) }
     }
 
     /// 这一步到底会不会真的走模型。界面用它决定要不要进入「AI 润色中」相位 ——

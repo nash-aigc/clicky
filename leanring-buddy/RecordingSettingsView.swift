@@ -33,6 +33,7 @@ extension GeneralSettingsView {
             recordingServiceSection
             recordingStorageSection
             recordingPolishSection
+            recordingCameraSection
         }
     }
 
@@ -303,13 +304,6 @@ extension GeneralSettingsView {
             }
             SettingsCardRowDivider()
             SettingsRow(
-                label: "摄像头画面",
-                description: "每次停止录音的那一刻，从摄像头抓**一帧**（不是录像）和转写内容一起发给模型参考。适合「你看一下我手上这个东西」这类场景。实测一帧约 33KB，几乎没有成本。"
-            ) {
-                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingPolishCapturesCamera))
-            }
-            SettingsCardRowDivider()
-            SettingsRow(
                 label: "模型 ID",
                 description: "默认 deepseek-flash。留空则用「模型」页里 🧠 那个角色的配置。"
             ) {
@@ -350,6 +344,81 @@ extension GeneralSettingsView {
         }
 
         RecordingPolishStylesEditor()
+    }
+
+    /// 摄像头抓帧的全部参数。
+    ///
+    /// 用户 2026-09-26：「把这些参数（……显示的帧率、发送的帧率、分辨率、触发的关键词）
+    /// 放在录音页面里，作为一个参数让用户可以选择，包括这个功能需不需要开启。」
+    ///
+    /// **判据在代码里，不靠模型猜。** 这一段全是本地参数和本地判定 —— 转写里没说触发词，
+    /// 摄像头一次都不会启动，也不会为它花掉任何 token。
+    @ViewBuilder
+    private var recordingCameraSection: some View {
+        SettingsGroupLabel("摄像头抓帧")
+        SettingsCard {
+            SettingsRow(
+                label: "启用",
+                description: "总开关。打开后，转写里出现下面的触发词才会开始抓帧 —— 判定是代码做的，不是让模型猜；一句都没提到触发词时，摄像头根本不会启动。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingPolishCapturesCamera))
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "触发词",
+                description: "说什么才抓帧。逗号分隔，中英文逗号、顿号、换行都算。判定是精确匹配这几个字，不是「摄像头」三个字 —— 光说「摄像头」不抓，日常对话里太容易带出来。"
+            ) {
+                TextField("123摄像头，打开摄像头",
+                          text: generalSettingsViewModel.binding(\.recordingCameraTriggerKeywords))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 240)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "画面帧率",
+                description: "小窗里显示的帧率。这是眼睛在看的东西，低了就知道卡。它同时也是摄像头的采集帧率 —— 这里要 30，硬件就得按 30 帧给，给不了的话这一项等于没设。"
+            ) {
+                SettingsSegmentedPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingCameraPreviewFramesPerSecond),
+                    options: [10, 15, 24, 30].map {
+                        SettingsPickerOption(label: "\($0)", value: Double($0))
+                    }
+                )
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "送模型帧率",
+                description: "真正发给模型的帧率。比画面低一个数量级是故意的：模型要的是「这段时间镜头对着什么」，一秒一张就够，而每多一帧就多一份 token。"
+            ) {
+                SettingsSegmentedPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingCameraModelFramesPerSecond),
+                    options: [1, 2, 3, 4].map {
+                        SettingsPickerOption(label: "\($0)", value: Double($0))
+                    }
+                )
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "清晰度",
+                description: "采集分辨率。1080p 更清楚、更费电；720p 够看清人，也够看清一张纸上的大字。"
+            ) {
+                SettingsSegmentedPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingCameraUsesHighResolution),
+                    options: [
+                        SettingsPickerOption(label: "720p", value: false),
+                        SettingsPickerOption(label: "1080p", value: true),
+                    ]
+                )
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "最多送几帧",
+                description: "一次最多带几帧去问模型，超过就丢最早的。说得久了，前面那些帧跟最后的提问已经没关系了。覆盖时长按送模型帧率算 —— 1 帧/秒 × 24 帧 = 最近 24 秒。"
+            ) {
+                SettingsStepper(value: generalSettingsViewModel.binding(\.recordingCameraMaximumFrameCount),
+                                range: 1...120)
+            }
+        }
     }
 
     @ViewBuilder

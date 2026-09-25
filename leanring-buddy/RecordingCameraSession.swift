@@ -24,28 +24,23 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
     /// 体验没法忍」，同时又说「是不是你采集的时候是一秒一张，但是显示的时候你可以很同步？」
     /// —— 他两次都指向同一件事：**看的要跟得上手，发出去的不用那么多**。
     ///
-    /// - **预览 12 帧/秒**：只做 `CVPixelBuffer → CGImage → NSImage`，**不编码 JPEG**。
+    /// - **预览**：只做 `CVPixelBuffer → CGImage → NSImage`，**不编码 JPEG**。
     ///   编码再解码是这条路上最贵的一段，而预览根本不需要它。
-    /// - **送模型 4 帧/秒**：才做 JPEG 编码、才进那个 24 帧的缓冲。
+    /// - **送模型**：才做 JPEG 编码、才进那个帧缓冲。
     ///
-    /// 12 帧/秒对「转动摄像头看房间」是够跟手的，而 4 帧/秒 × 24 帧 = 覆盖 6 秒，
-    /// token 也还在合理范围。
-    /// 用户 2026-09-26 又调了一次，而且理由比数字本身重要：
-    /// 「送给模型的是每秒 1 帧。不需要那么快，**因为人类的动作不会那么快，摄像头拍的就是人**」
-    /// —— 模型那边要的是「这一段时间里镜头对着什么」，一秒一张足够；
-    /// 而预览是**眼睛在看**，「要加就直接加 30 帧」，少了就知道卡。
-    static let previewFramesPerSecond: Double = 30
-    static let modelFramesPerSecond: Double = 1
-    /// 最多留几帧。超过就丢最早的 —— 一段话说了几分钟时，前面那些帧跟最后的提问
-    /// 已经没关系了，而每多一帧就多一份 token。
+    /// 2026-09-26 起这两个数**不再是常量**：用户在「录音」设置页里自己选
+    /// （`recordingCameraPreviewFramesPerSecond` / `recordingCameraModelFramesPerSecond`），
+    /// 由 `LongFormRecorderController` 在起采前写进来。
     ///
-    /// 4 帧/秒 × 24 = **覆盖最近 6 秒**。之前 12 帧在 1 帧/秒时也是 12 秒，但换成
-    /// 4 帧/秒之后不跟着放大就等于只覆盖 3 秒 —— 用户把镜头转一圈都录不全。
-    static let maximumRetainedFrames = 24
+    /// **写入时机是一个约定：起采之前写好，起采之后只读。**
+    /// 它们从主线程写、从 `queue` 上读，而 `start()` 里的 `queue.async` 正好是那道
+    /// 屏障 —— 只要不在一段会话跑着的时候改，就不存在竞争。
+    var previewFramesPerSecond: Double = 30
+    var modelFramesPerSecond: Double = 1
 
-    /// 预览帧（**不编码**，直接给 CGImage）。12 帧/秒。
+    /// 预览帧（**不编码**，直接给 CGImage）。
     var onPreviewFrame: ((CGImage) -> Void)?
-    /// 送模型的帧（JPEG）。4 帧/秒。
+    /// 送模型的帧（JPEG）。
     var onModelFrame: ((Data) -> Void)?
     /// 已经抓了多少帧。界面上的数字用它。
     private(set) var capturedFrameCount = 0
@@ -157,8 +152,12 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
             session.sessionPreset = .hd1280x720
             currentPreset = .hd1280x720
         }
-        // 把摄像头本身的帧率也压到 10 —— 我们 4 帧/秒够用，剩下的留给「某一帧迟到时
-        // 还有后备」，再多就是白烧电和白占管线。
+        // 把摄像头本身的帧率压到**预览那个数**，不能再低。
+        //
+        // 原来是写死的 10（那是「送模型 4 帧/秒」时代的余量），而预览早就改成 30 了
+        // —— 设备设了 `min/maxFrameDuration = 1/10` 之后硬件就只给 10 帧，上面那道
+        // 30 帧的门限永远拿不到第 11 帧。**用户看到的「30 帧」其实一直是 10 帧。**
+        // 所以这个上限必须跟着预览走：预览是眼睛在看的东西，它要多少就得给多少。
         //
         // **判据必须把区间夹住，不能只看上界。**
         // 原来写的是 `$0.maxFrameRate >= 10`，于是当某个格式的范围是 15–30 时它会
@@ -168,7 +167,7 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
         //
         // 所以判据写成「区间包含目标帧率」，夹不住就**老老实实不设** ——
         // 帧率是优化，不是功能，为它崩一次不值。
-        Self.applyFrameRateLimit(to: device, targetFramesPerSecond: 10)
+        Self.applyFrameRateLimit(to: device, targetFramesPerSecond: previewFramesPerSecond)
 
         startedAt = Date()
         arrivedFrameCount = 0
@@ -190,8 +189,8 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
 
         let now = Date()
 
-        // **预览：12 帧/秒，不编码。** 这一步只做像素搬运，是「跟手」的来源。
-        guard now.timeIntervalSince(lastPreviewAt) >= 1.0 / Self.previewFramesPerSecond else { return }
+        // **预览：不编码。** 这一步只做像素搬运，是「跟手」的来源。
+        guard now.timeIntervalSince(lastPreviewAt) >= 1.0 / previewFramesPerSecond else { return }
         lastPreviewAt = now
 
         let ciImage = CIImage(cvPixelBuffer: buffer)
@@ -202,8 +201,8 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
             onPreviewFrame?(previewImage)
         }
 
-        // **送模型：4 帧/秒，才做 JPEG。** 这一段贵，所以按自己的节奏走。
-        guard now.timeIntervalSince(lastModelFrameAt) >= 1.0 / Self.modelFramesPerSecond else { return }
+        // **送模型：才做 JPEG。** 这一段贵，所以按自己的节奏走。
+        guard now.timeIntervalSince(lastModelFrameAt) >= 1.0 / modelFramesPerSecond else { return }
         lastModelFrameAt = now
         guard let jpeg = Self.downscaledJPEG(from: fullImage, maximumDimension: 768) else { return }
         capturedFrameCount += 1
@@ -211,7 +210,7 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
     }
 
     /// 小窗要的是「看得见」，模型要的是「看得清」—— 768 长边是两者的折中：
-    /// 一帧约 40–60KB，12 帧也就 600KB 上下，比一张全屏截图还小。
+    /// 一帧约 40–60KB，24 帧也就 1MB 上下，比一张全屏截图还小。
     private static func downscaledJPEG(from image: CGImage, maximumDimension: CGFloat) -> Data? {
         let longestSide = CGFloat(max(image.width, image.height))
         let scale = min(1, maximumDimension / max(longestSide, 1))

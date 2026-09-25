@@ -1123,12 +1123,62 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 送给模型参考 —— 用于「我刚才指着屏幕说的那段话」这类场景。
     var recordingPolishCapturesScreenshot: Bool = false
 
-    /// 停止录音那一刻，从摄像头抓**一帧**，作为提示词的一部分一起发给模型。
+    /// 摄像头抓帧的**总开关**。
     ///
-    /// **默认不勾选。** 和「屏幕截图」同一个形状，只是取的是摄像头那一帧 ——
-    /// 用户：「录制摄像头，瞬间截屏一个摄像头屏幕……揪一帧就可以」。抓的是**当下**
-    /// 那一帧（`alwaysDiscardsLateVideoFrames`），不是缓冲里最旧的。
+    /// **默认关闭。** 打开之后，转写文本里出现 `recordingCameraTriggerKeywords` 里
+    /// 任意一个词，才会开始抓帧 —— 判据在**代码**里，不靠模型猜；一句话都没提到
+    /// 摄像头时，摄像头根本不会启动（用户 2026-09-26 的备注）。
+    ///
+    /// 名字里的 `Polish` 是历史：这个开关最早的意思是「润色时捎带一帧」，后来长成
+    /// 了一整条按关键词触发的抓帧链路。没改名是因为改名要同时动设置文件的键和界面，
+    /// 而收益只是一个更好听的名字 —— 抓来的帧最终仍然是给润色那一步用的，这一点没变。
     var recordingPolishCapturesCamera: Bool = false
+
+    /// 摄像头小窗上**显示**的帧率。这是眼睛在看的东西，低了就知道卡。
+    ///
+    /// 用户 2026-09-26：「送模型的一秒 1 帧不需要那么快，**因为人类的动作不会那么快，
+    /// 摄像头拍的就是人**」；而预览「要加就直接加 30 帧」。
+    ///
+    /// **这个值要真的能到。** 它同时是采集设备的帧率上限（见
+    /// `RecordingCameraSession`）：设备被压到 10 帧时，这里填 30 也拿不到第 11 帧。
+    var recordingCameraPreviewFramesPerSecond: Double = 30
+
+    /// 真正**送进模型**的帧率。
+    ///
+    /// 比预览低一个数量级是故意的：模型要的是「这一段时间里镜头对着什么」，
+    /// 一秒一张就够；而每多一帧就多一份 token。
+    var recordingCameraModelFramesPerSecond: Double = 1
+
+    /// 采集用不用 1080p。关掉是 720p。
+    ///
+    /// 用户 2026-09-26：「720P 吧，可以低清，但是……换成 1080」—— 小窗收成一条时
+    /// 720p 够用，画面铺满宽度、人在仔细看的时候才值得花那份像素。小窗现在是常驻
+    /// 满宽的，所以默认 1080p。
+    var recordingCameraUsesHighResolution: Bool = true
+
+    /// 一次最多带几帧去问模型。超过就丢最早的。
+    ///
+    /// 一段话说了几分钟时，前面那些帧跟最后的提问已经没关系了，而每多一帧就多一份
+    /// token。1 帧/秒 × 24 = **覆盖最近 24 秒**。
+    var recordingCameraMaximumFrameCount: Int = 24
+
+    /// 说什么话才触发抓帧。**逗号分隔**，中英文逗号、顿号、分号、换行都算分隔符。
+    ///
+    /// 用户 2026-09-26：「必须把这个词变成'123摄像头'或者'打开摄像头'，必须是非常
+    /// 精准的这几个字」—— 所以判据是**精确子串**，不是「摄像头」这三个字。
+    /// 光说「摄像头」不抓：日常对话里太容易带出来，而抓帧是有成本的。
+    var recordingCameraTriggerKeywords: String = "123摄像头，打开摄像头"
+
+    /// `recordingCameraTriggerKeywords` 的解析结果：小写、去空白、去掉空项。
+    ///
+    /// 放在 `AppSettings` 上而不是散在调用处，是因为**界面回显和引擎判定必须读同一份**
+    /// —— 用户在设置里看到的那几个词，就是真正会触发抓帧的那几个词。
+    var recordingCameraTriggerKeywordList: [String] {
+        recordingCameraTriggerKeywords
+            .components(separatedBy: CharacterSet(charactersIn: ",，、;；\n"))
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { !$0.isEmpty }
+    }
 
     /// 润色用的模型。留空 = 用「模型」页里 🧠 那个角色配置的服务商。
     ///
@@ -1169,6 +1219,9 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.notchExpansionSpeedMultiplier = min(max(settings.notchExpansionSpeedMultiplier, 1.0), 4.0)
         settings.recordingRotationMinutes = min(max(settings.recordingRotationMinutes, 0), 120)
         settings.recordingAudioRetentionDays = min(max(settings.recordingAudioRetentionDays, 0), 365)
+        settings.recordingCameraPreviewFramesPerSecond = min(max(settings.recordingCameraPreviewFramesPerSecond, 5), 60)
+        settings.recordingCameraModelFramesPerSecond = min(max(settings.recordingCameraModelFramesPerSecond, 0.2), 10)
+        settings.recordingCameraMaximumFrameCount = min(max(settings.recordingCameraMaximumFrameCount, 1), 120)
         settings.recordingTextRetentionDays = min(max(settings.recordingTextRetentionDays, 0), 3650)
         return settings
     }
@@ -1272,6 +1325,11 @@ nonisolated extension AppSettings {
         case recordingPolishEnabled
         case recordingPolishCapturesScreenshot
         case recordingPolishCapturesCamera
+        case recordingCameraPreviewFramesPerSecond
+        case recordingCameraModelFramesPerSecond
+        case recordingCameraUsesHighResolution
+        case recordingCameraMaximumFrameCount
+        case recordingCameraTriggerKeywords
         case recordingPolishBaseURL
         case recordingPolishAPIKey
         case recordingPolishModelID
@@ -1403,6 +1461,11 @@ nonisolated extension AppSettings {
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
         recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot
         recordingPolishCapturesCamera = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesCamera) ?? defaults.recordingPolishCapturesCamera
+        recordingCameraPreviewFramesPerSecond = try container.decodeIfPresent(Double.self, forKey: .recordingCameraPreviewFramesPerSecond) ?? defaults.recordingCameraPreviewFramesPerSecond
+        recordingCameraModelFramesPerSecond = try container.decodeIfPresent(Double.self, forKey: .recordingCameraModelFramesPerSecond) ?? defaults.recordingCameraModelFramesPerSecond
+        recordingCameraUsesHighResolution = try container.decodeIfPresent(Bool.self, forKey: .recordingCameraUsesHighResolution) ?? defaults.recordingCameraUsesHighResolution
+        recordingCameraMaximumFrameCount = try container.decodeIfPresent(Int.self, forKey: .recordingCameraMaximumFrameCount) ?? defaults.recordingCameraMaximumFrameCount
+        recordingCameraTriggerKeywords = try container.decodeIfPresent(String.self, forKey: .recordingCameraTriggerKeywords) ?? defaults.recordingCameraTriggerKeywords
         recordingPolishBaseURL = try container.decodeIfPresent(String.self, forKey: .recordingPolishBaseURL) ?? defaults.recordingPolishBaseURL
         recordingPolishAPIKey = try container.decodeIfPresent(String.self, forKey: .recordingPolishAPIKey) ?? defaults.recordingPolishAPIKey
         recordingPolishModelID = try container.decodeIfPresent(String.self, forKey: .recordingPolishModelID) ?? defaults.recordingPolishModelID
