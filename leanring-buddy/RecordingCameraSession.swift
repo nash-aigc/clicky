@@ -34,6 +34,39 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
     var onFrame: ((Data) -> Void)?
     /// 已经抓了多少帧。界面上的数字用它。
     private(set) var capturedFrameCount = 0
+    /// 当前用的采集分辨率。展开小窗时切成 1080p。
+    private var currentPreset: AVCaptureSession.Preset = .hd1280x720
+
+    /// 展开小窗时把分辨率换成 1080p；收起换回 720p。
+    ///
+    /// 用户 2026-09-26：「720P 吧，可以低清，但是点击右上角展开之后，换成 1080」——
+    /// 收起时那一条只有 86pt 高，720p 完全够；展开成 200pt 时他是在**仔细看**，
+    /// 那才值得花那份像素。
+    func setHighResolution(_ wantsHighResolution: Bool) {
+        let target: AVCaptureSession.Preset = wantsHighResolution ? .hd1920x1080 : .hd1280x720
+        queue.async { [weak self] in
+            guard let self, self.isRunning, self.currentPreset != target,
+                  self.session.canSetSessionPreset(target) else { return }
+            self.session.beginConfiguration()
+            self.session.sessionPreset = target
+            self.session.commitConfiguration()
+            self.currentPreset = target
+        }
+    }
+
+    /// 把设备的帧率限制到目标值。**夹不住就不设** —— 见调用处的注释。
+    private static func applyFrameRateLimit(to device: AVCaptureDevice,
+                                            targetFramesPerSecond: Double) {
+        let supported = device.activeFormat.videoSupportedFrameRateRanges.contains {
+            $0.minFrameRate <= targetFramesPerSecond && targetFramesPerSecond <= $0.maxFrameRate
+        }
+        guard supported else { return }
+        guard (try? device.lockForConfiguration()) != nil else { return }
+        defer { device.unlockForConfiguration() }
+        let duration = CMTime(value: 1, timescale: CMTimeScale(targetFramesPerSecond))
+        device.activeVideoMinFrameDuration = duration
+        device.activeVideoMaxFrameDuration = duration
+    }
     var onFailure: ((String) -> Void)?
 
     private let session = AVCaptureSession()
@@ -91,18 +124,20 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
         // 再高也白给。
         if session.canSetSessionPreset(.hd1280x720) {
             session.sessionPreset = .hd1280x720
+            currentPreset = .hd1280x720
         }
-        // 把摄像头本身的帧率也压到 10 —— 我们 4 帧/秒够用，剩下的 6 帧留给
-        // 「某一帧迟到时还有后备」，再多就是白烧电和白占管线。
-        if let format = device.activeFormat as AVCaptureDevice.Format? {
-            let minimumDuration = CMTime(value: 1, timescale: 10)
-            if format.videoSupportedFrameRateRanges.contains(where: { $0.maxFrameRate >= 10 }) {
-                try? device.lockForConfiguration()
-                device.activeVideoMinFrameDuration = minimumDuration
-                device.activeVideoMaxFrameDuration = minimumDuration
-                device.unlockForConfiguration()
-            }
-        }
+        // 把摄像头本身的帧率也压到 10 —— 我们 4 帧/秒够用，剩下的留给「某一帧迟到时
+        // 还有后备」，再多就是白烧电和白占管线。
+        //
+        // **判据必须把区间夹住，不能只看上界。**
+        // 原来写的是 `$0.maxFrameRate >= 10`，于是当某个格式的范围是 15–30 时它会
+        // 放行，而设 10 越界 —— `setActiveVideoMinFrameDuration` 抛 **ObjC 异常**，
+        // 而 `try?` 只接 Swift 错误，**接不住 ObjC 异常**，于是进程直接 SIGABRT。
+        // 崩栈：[AVCaptureDALDevice setActiveVideoMinFrameDuration:] ← startOnQueue。
+        //
+        // 所以判据写成「区间包含目标帧率」，夹不住就**老老实实不设** ——
+        // 帧率是优化，不是功能，为它崩一次不值。
+        Self.applyFrameRateLimit(to: device, targetFramesPerSecond: 10)
 
         startedAt = Date()
         arrivedFrameCount = 0

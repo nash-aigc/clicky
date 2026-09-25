@@ -419,7 +419,16 @@ final class LongFormRecorderController: ObservableObject {
     @Published var isCameraPreviewCollapsed = false
 
     /// 小窗展开成大图了没有。
-    @Published var isCameraPreviewExpanded = false
+    ///
+    /// **展开时把采集切到 1080p。** 用户 2026-09-26：「720P 吧，可以低清，但是点击
+    /// 右上角展开之后，换成 1080」—— 收起时那一条只有 86pt 高，720p 够用；
+    /// 展开成 200pt 时他是在仔细看，那才值得花那份像素。
+    @Published var isCameraPreviewExpanded = false {
+        didSet {
+            guard oldValue != isCameraPreviewExpanded else { return }
+            cameraSession.setHighResolution(isCameraPreviewExpanded)
+        }
+    }
 
     /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
     private let recentAudio = RecentAudioRing(
