@@ -541,6 +541,14 @@ final class DuplexVoiceEngine {
             // 用户开口 = 打断。服务端自己会处理回合，客户端要做的只是**别再出声**。
             cancelCurrentResponse()
             callbacks.onBargeIn()
+            // **一次用户发言 = 一次回答的边界**，助手文字的累加器在这里清零。
+            //
+            // 原先它在 `response.created` 里清零，那是个**错误的边界**：实测
+            // （2026-09-25，日志 `🧾 [ai-text …]` 的 resp id）服务端把**一条**回答
+            // 拆成多次 `response.created`/`response.done`（一次实测拿到 3 段），
+            // 于是每条回答都被切成几截，屏幕上表现为一堆只装几个字的碎卡片
+            // ——用户报的「全双工回复乱码／只显示一部分」正是这个。
+            currentAssistantText = ""
 
         case "response.created":
             isResponseActive = true
@@ -549,7 +557,9 @@ final class DuplexVoiceEngine {
             isDiscardingAssistantAudio = false
             didRequestLocalBargeIn = false
             speechAccumulatorSeconds = 0
-            currentAssistantText = ""
+            // **这里不清 `currentAssistantText`** —— 服务端会在同一条回答中途再发
+            // `response.created`，那只是一个"继续生成"的分段信号，不是新回答。
+            // 边界见上面的 `speech_started`。
 
         case "response.audio.delta":
             // **打断之后到达的音频要丢掉**：`stopStreamingPlayback()` 只清空一次队列，

@@ -594,7 +594,15 @@ final class VoiceChatController: ObservableObject {
                     self?.updateDuplexAssistantEntry(cumulativeText)
                 },
                 onAssistantTurnFinished: { [weak self] in
-                    self?.duplexAssistantEntryID = nil
+                    // **不在这里解绑全双工的气泡。**
+                    //
+                    // 实测（2026-09-25）：服务端把**一条**回答拆成多次
+                    // `response.done`（一次实测 3 段），在这里解绑会让每一段各开
+                    // 一条新气泡、每段只装几个字 —— 屏幕上就是「一条回答被切成
+                    // 好几张碎卡片」，即用户报的「乱码／只显示一部分」。
+                    //
+                    // 全双工的气泡边界是**用户开口**（新回合），见
+                    // `insertDuplexUserEntry`。三段式那条路仍然在这里解绑。
                     self?.streamingAnswerEntryID = nil
                 },
                 onSessionConfigured: {
@@ -979,6 +987,15 @@ final class VoiceChatController: ObservableObject {
         } else {
             appendTranscriptEntry(isUser: true, text: transcript)
         }
+        // **用户开口 = 一对问答的边界**：从这里起解绑，下一条回答会开新气泡。
+        //
+        // 解绑必须放在**插入之后** —— 上面那段要靠这个 id 找到"本轮回答的气泡"，
+        // 把用户这句插到它前面，恢复时间顺序。
+        //
+        // 为什么边界在这里而不是 `response.done`：服务端会把**一条**回答拆成多次
+        // `response.created`/`response.done`（实测 3 段），按 done 解绑就会把一条
+        // 回答切成几张碎卡片（用户报的乱码）。见 `onAssistantTurnFinished` 的注释。
+        duplexAssistantEntryID = nil
     }
 
     // MARK: - 页头四栏（识别 / 理解 / 表达 / 音色）
