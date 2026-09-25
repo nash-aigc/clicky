@@ -403,6 +403,10 @@ final class LongFormRecorderController: ObservableObject {
     /// 抓帧的绿点闪动计数。小窗用它「抓一帧大一下」。
     @Published private(set) var cameraFramePulse = 0
 
+    /// 已经抓了多少帧。小窗在绿点旁边把这个数字显示出来 —— 用户要「已经抓了几张」
+    /// 这件事一直看得见，而不是只能靠绿点闪去猜。
+    @Published private(set) var capturedCameraFrameCount = 0
+
     /// 最近抓到的那一帧，给小窗做预览用。
     ///
     /// 单开一个字段而不是让小窗去读 `cameraFrames.last`：那个数组是**要发给模型的
@@ -459,9 +463,10 @@ final class LongFormRecorderController: ObservableObject {
                 if self.cameraFrames.count > RecordingCameraSession.maximumRetainedFrames {
                     self.cameraFrames.removeFirst()
                 }
-                // 抓一帧、绿点闪一下、预览换一张。
+                // 抓一帧、绿点闪一下、预览换一张、计数加一。
                 self.latestCameraFrameData = jpeg
                 self.cameraFramePulse &+= 1
+                self.capturedCameraFrameCount = self.cameraSession.capturedFrameCount
             }
         }
         cameraSession.onFailure = { [weak self] reason in
@@ -824,6 +829,7 @@ final class LongFormRecorderController: ObservableObject {
         isCameraCapturing = false
         cameraFrames = []
         latestCameraFrameData = nil
+        capturedCameraFrameCount = 0
         cameraSession = RecordingCameraSession()
         if !isResuming {
             committedTranscriptTail = ""

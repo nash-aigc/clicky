@@ -521,6 +521,16 @@ private struct NotchCameraPreviewStrip: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.white.opacity(0.8))
 
+            // **已经抓了几帧，一直显示着。**
+            // 用户 2026-09-26：「你那个绿灯要闪，然后在旁边写上数字……同步地显示出来」。
+            // 绿点闪是「刚刚抓了一帧」的瞬时信号，而这个数字是累计量 —— 只有闪烁的话，
+            // 用户看不出已经攒了多少，也就判断不了「够不够模型看清一个来回」。
+            Text("\(recorder.capturedCameraFrameCount)")
+                .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                .foregroundColor(DS.Colors.success.opacity(0.9))
+                // 数字变宽不会把后面的东西推走（等宽数字 + 固定宽度）。
+                .frame(minWidth: 18, alignment: .leading)
+
             Spacer(minLength: 0)
 
             // 右上角：展开 / 收回。

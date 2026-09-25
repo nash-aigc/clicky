@@ -18,13 +18,22 @@ import AppKit
 /// 曝光稳定的。
 nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
 
-    /// 每秒抓几帧。用户：「正常情况下按照一秒一帧」。
-    static let framesPerSecond: Double = 1
+    /// 每秒抓几帧。
+    ///
+    /// 用户 2026-09-26 调整过这道题：一开始说「一秒一帧」，用过之后改口
+    /// 「一秒一张太慢了……0.25 秒一张的话可能会好一点」。**预览要跟得上手的动作** ——
+    /// 他移动摄像头看房间的时候，一秒才换一次画面是看不清自己转到哪了。
+    static let framesPerSecond: Double = 4
     /// 最多留几帧。超过就丢最早的 —— 一段话说了几分钟时，前面那些帧跟最后的提问
     /// 已经没关系了，而每多一帧就多一份 token。
-    static let maximumRetainedFrames = 12
+    ///
+    /// 4 帧/秒 × 24 = **覆盖最近 6 秒**。之前 12 帧在 1 帧/秒时也是 12 秒，但换成
+    /// 4 帧/秒之后不跟着放大就等于只覆盖 3 秒 —— 用户把镜头转一圈都录不全。
+    static let maximumRetainedFrames = 24
 
     var onFrame: ((Data) -> Void)?
+    /// 已经抓了多少帧。界面上的数字用它。
+    private(set) var capturedFrameCount = 0
     var onFailure: ((String) -> Void)?
 
     private let session = AVCaptureSession()
@@ -72,6 +81,29 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
         guard session.canAddOutput(output) else { onFailure?("加不了输出"); return }
         session.addOutput(output)
 
+        // **这两行是「卡顿」的正面修复。**
+        //
+        // 从来没有人设过它们，所以摄像头一直按默认跑 —— 那是 **1080p30**，一条
+        // **持续**占 CPU/GPU 的取景管线，和我们一秒要几帧毫无关系。用户报「非常卡顿」
+        // 的时候，卡的就是这 30 帧里我们用不到的那 29 帧。
+        //
+        // `.hd1280x720`：像素量是 1080p 的 44%，而送模型的帧本来就是缩到 768 的，
+        // 再高也白给。
+        if session.canSetSessionPreset(.hd1280x720) {
+            session.sessionPreset = .hd1280x720
+        }
+        // 把摄像头本身的帧率也压到 10 —— 我们 4 帧/秒够用，剩下的 6 帧留给
+        // 「某一帧迟到时还有后备」，再多就是白烧电和白占管线。
+        if let format = device.activeFormat as AVCaptureDevice.Format? {
+            let minimumDuration = CMTime(value: 1, timescale: 10)
+            if format.videoSupportedFrameRateRanges.contains(where: { $0.maxFrameRate >= 10 }) {
+                try? device.lockForConfiguration()
+                device.activeVideoMinFrameDuration = minimumDuration
+                device.activeVideoMaxFrameDuration = minimumDuration
+                device.unlockForConfiguration()
+            }
+        }
+
         startedAt = Date()
         arrivedFrameCount = 0
         lastCapturedAt = .distantPast
@@ -97,6 +129,7 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
         let ciImage = CIImage(cvPixelBuffer: buffer)
         guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent),
               let jpeg = Self.downscaledJPEG(from: cgImage, maximumDimension: 768) else { return }
+        capturedFrameCount += 1
         onFrame?(jpeg)
     }
 
