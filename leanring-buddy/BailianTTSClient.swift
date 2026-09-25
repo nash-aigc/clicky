@@ -697,14 +697,37 @@ final class BailianTTSClient {
         private let unpunctuatedCutCharacters = 60
         /// The FIRST segment's no-punctuation backstop. Deliberately smaller
         /// than the later one: nothing has sounded yet, so a run-on first
-        /// stretch must not be allowed to hold the first sound past 40
+        /// stretch must not be allowed to hold the first sound past this many
         /// characters.
-        private let firstSegmentUnpunctuatedCutCharacters = 40
+        ///
+        /// **2026-09-25 从 40 降到 20，跟着首段上限一起降。** 两个数管的是同一件
+        /// 事（第一声最晚能拖多久），而 12 的上限配 40 的后备是自相矛盾的：一句
+        /// 没有任何标点的话会一直被放到 40 字才切 —— 那正是延迟最大的情形，正好
+        /// 绕开了刚降下来的那个上限。20 = 12 的上限 + 一点余量，两条规则才在同一个
+        /// 量级上。
+        private let firstSegmentUnpunctuatedCutCharacters = 20
         /// How long a first sentence may be and still play whole rather than
-        /// being comma-cut for speed. The system prompt asks the model for ~15
-        /// characters; 22 gives that promise slack so a 17–20 character
-        /// sentence is not needlessly split at its first comma.
-        private let firstSegmentPreferredCeiling = 22
+        /// being comma-cut for speed.
+        ///
+        /// **2026-09-25 从 22 降到 12** —— 用户要求「把第一句话压到12个字」。
+        ///
+        /// 依据是实测：合成成本是 **19ms/字 + 450ms 固定**（仓库早先量过），而首段
+        /// 是唯一挡在第一声之前的东西。同一条链量出来（`⏱️ [cascade]` 那把尺子，
+        /// 语音聊天 + 三段式）：首字 +318ms、首段入队 +318ms、**出声 +1375ms** ——
+        /// 全部延迟都在"入队→出声"这一段，而它的大小直接由首段字数决定：
+        ///
+        /// | 首段字数 | 合成耗时 |
+        /// |---|---|
+        /// | 3（更早的一次实测） | ~507ms |
+        /// | 10（这次实测） | ~640ms |
+        /// | 22（旧上限） | ~868ms |
+        ///
+        /// 12 字把最坏情况从 ~868ms 压到 ~678ms（**快约 190ms**）。
+        ///
+        /// **代价说清楚**：更多句子会被从第一个逗号切开，每多切一次就多一次合成
+        /// 请求、多一次起播 —— 后段的合并规则（≥30 字）没有动，所以只在**首段**
+        /// 上多切。这是一个明确的取舍：用一点点拼接换第一声早 190ms。
+        private let firstSegmentPreferredCeiling = 12
         /// Lookahead depth. Two in-flight syntheses cover ~10 s of playback
         /// against ~1 s of synthesis each at the 30-character merge — deep
         /// enough that the queue never runs dry at real speaking speeds.
