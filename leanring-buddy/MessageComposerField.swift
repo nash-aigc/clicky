@@ -441,6 +441,21 @@ private struct ComposerTextView: NSViewRepresentable {
         } else if !isFocused, isEditing {
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(nil)
+                // **退出第一响应者之后，把外部那份值补写进去。**
+                //
+                // 用户 2026-09-25：「发送之后，提示词还卡在输入框里，过了几秒钟才消失」。
+                //
+                // 顺序是这样的：发送时调用方把草稿置空、把 `isFocused` 置假 → 这一次
+                // `updateNSView` 带着空串跑，但**此时输入框还是第一响应者**，于是上面那条
+                // 回写被 `isEditing` 挡掉 → 这里排的这个延迟块确实让它退了第一响应者，
+                // 可是 `reportFocusChange` 发现 `isFocused` **本来就是 false**，状态没变，
+                // **不会触发新的渲染** —— 于是"下一次更新"永远不来，那笔回写没人补，
+                // 文字就一直留在框里，直到焦点因为别的原因变化（用户点别处）才消失。
+                //
+                // 所以补写在**这里**做：它是同一件事的后半段，而不是等一次不会发生的渲染。
+                if textView.string != text {
+                    textView.string = text
+                }
             }
         }
     }
