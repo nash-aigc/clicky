@@ -538,6 +538,17 @@ final class AskVoiceCallController: ObservableObject {
         // 最后一个 delta 与它被画出来之间隔着一帧；读界面那份就会把最后一两个字
         // 丢在条目外 —— 「最后一句不完整」正是最容易被注意到的缺陷。
         let spoken = latestAssistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 时间与耗时必须在复位之前取 —— `resetAssistantTextBuffers` 会把起算点清掉。
+        //
+        // 这两条以前**一个都没写**：通话产生的条目既没有 `replyReceivedAt` 也没有
+        // `turnFinishedAt`，于是底部那一行只画得出复制按钮。用户 2026-09-25 报的
+        // 「缺少时间参数和速度参数……应该显示在界面上。我记得使用 DeepSeek Flash
+        // 的时候，它是有这个参数的」，差的就是这两个值 —— 打字那条路一直有。
+        let replyReceivedAt = assistantTextBeganAt
+        let turnFinishedAt = Date()
+        let turnDurationSeconds = replyReceivedAt.map {
+            max(1, Int(turnFinishedAt.timeIntervalSince($0).rounded()))
+        }
         resetAssistantTextBuffers()
         guard !spoken.isEmpty, let sessionID = targetSessionID else { return }
 
@@ -548,7 +559,10 @@ final class AskVoiceCallController: ObservableObject {
                 ConversationHistoryEntry(
                     userTranscript: userText,
                     assistantResponse: spoken,
-                    recordedWithActionTags: true
+                    recordedWithActionTags: true,
+                    turnDurationSeconds: turnDurationSeconds,
+                    turnFinishedAt: turnFinishedAt,
+                    replyReceivedAt: replyReceivedAt
                 ),
                 targetSessionID: sessionID
             )
@@ -564,7 +578,10 @@ final class AskVoiceCallController: ObservableObject {
                 ConversationHistoryEntry(
                     userTranscript: "",
                     assistantResponse: spoken,
-                    recordedWithActionTags: true
+                    recordedWithActionTags: true,
+                    turnDurationSeconds: turnDurationSeconds,
+                    turnFinishedAt: turnFinishedAt,
+                    replyReceivedAt: replyReceivedAt
                 ),
                 targetSessionID: sessionID
             )
@@ -587,7 +604,10 @@ final class AskVoiceCallController: ObservableObject {
             ConversationHistoryEntry(
                 userTranscript: "",
                 assistantResponse: spoken,
-                recordedWithActionTags: true
+                recordedWithActionTags: true,
+                turnDurationSeconds: turnDurationSeconds,
+                turnFinishedAt: turnFinishedAt,
+                replyReceivedAt: replyReceivedAt
             ),
             targetSessionID: sessionID
         )
