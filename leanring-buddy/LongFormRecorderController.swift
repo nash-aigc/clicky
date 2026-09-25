@@ -288,6 +288,19 @@ final class LongFormRecorderController: ObservableObject {
     /// 面板现在也读它，两边同源。
     @Published private(set) var livePartialText: String = ""
 
+    /// 跑马灯那一行用的文本。**只增不减** —— 这一条是硬要求，不是风格。
+    ///
+    /// 位移公式是 `可用宽度 − 文字宽度`，所以**文字一旦变短，屏幕上就会向右跳**。
+    /// 而 `liveTranscriptLine`（已落盘尾巴 `suffix(90)` + 当前段）在**每次定稿**时
+    /// 都会变短 —— 最多短掉整整一句。视窗是 64 字时这件事数学上不可见
+    /// （64 ≤ 90，定稿前后逐字相同）；而视窗放大到 160 字之后它就露出来了：
+    /// 每定稿一句，文字向右跳一下。用户报的「偶尔突然向右、文字从左跳到右」
+    /// 就是它，出现次数正好等于定稿次数。
+    ///
+    /// `transcriptPlainText` 与 `livePartialText` 都**只追加**（定稿时前者接上本段、
+    /// 后者清空，净增量仍是正），所以这个拼接不会变短。
+    var marqueeText: String { transcriptPlainText + livePartialText }
+
     /// 面板里应该显示的全部文字：**（用户改过的正文 或 已落盘正文）+ 当前这句**。
     ///
     /// 两层都要在：
@@ -328,6 +341,14 @@ final class LongFormRecorderController: ObservableObject {
     /// 一个随机动画」。
     @Published private(set) var isPolishingTranscript = false
     private var finalizeCountdownTask: Task<Void, Never>?
+
+    /// 「取消」的代次。`completeStop` 在**每一个 await 之后**核对它是否变过 ——
+    /// 变过就说明用户按了取消，整条链立刻放弃（不粘贴、不收尾）。
+    ///
+    /// 为什么要代次而不是 `Task.isCancelled`：润色那一步是 `await` 一个网络请求，
+    /// 而取消是用户在另一个入口按下来的，两者不在同一条任务链上。代次是唯一能
+    /// 跨入口说的「这件事已经作废了」。
+    private var cancellationGeneration = 0
 
     /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
     private var polishScreenshotJPEG: Data?
@@ -799,7 +820,10 @@ final class LongFormRecorderController: ObservableObject {
     func cancelCurrentRecording() {
         guard phase != .idle || isSessionActive else { return }
 
-        publishDiagnostic("用户取消了这一场，不进剪贴板")
+        // 先作废正在跑的那条收尾链 —— 它可能正卡在润色的网络请求里。
+        cancellationGeneration += 1
+        isPolishingTranscript = false
+        publishDiagnostic("用户取消了这一场：录音和已转写的部分都保留，不进剪贴板")
         finalizeCountdownTask?.cancel()
         finalizeCountdownTask = nil
         isFinalizingTranscript = false
@@ -884,8 +908,15 @@ final class LongFormRecorderController: ObservableObject {
         // 风格、也没勾截图时一步都不走，那种情况下不该闪一下「AI 润色中」。
         let willPolish = shouldRunPolishStep()
         if willPolish { isPolishingTranscript = true }
+        let generationBeforePolish = cancellationGeneration
         let polished = await polishIfConfigured(rawText: text)
         isPolishingTranscript = false
+        // 用户在润色期间按了取消 → 这条路到此为止。录音文件和已转写的文本**照常保留**
+        // （它们早就落盘了），只是不再往下走：不粘贴、不进剪贴板、不收尾。
+        guard generationBeforePolish == cancellationGeneration else {
+            publishDiagnostic("润色期间被取消，已保留录音与已转写内容")
+            return
+        }
         if polished != text {
             transcriptPlainText = polished
             writePlainTextFile(polished)

@@ -248,7 +248,7 @@ struct NotchRecordingBandView: View {
             //
             // 这一行是**黑的** —— 它和上面的黑带连成一片，是刘海的延伸；再往下的正文区
             // 才是浮雕色。
-            SmoothRevealedTranscriptText(text: recorder.liveTranscriptLine,
+            SmoothRevealedTranscriptText(text: recorder.marqueeText,
                                          availableWidth: bandWidth * 2 - 32,
                                          textColor: DS.Colors.success)
                 .padding(.horizontal, 16)
@@ -362,7 +362,7 @@ struct NotchRecordingBandView: View {
     private var marquee: some View {
         // 服务端每 300–400ms 才吐一次、一次好几个字，直接铺上去就是一跳一跳。
         // 平滑揭示把「数据的粒度」和「显示的平滑度」拆开 —— 见那个视图的注释。
-        SmoothRevealedTranscriptText(text: recorder.liveTranscriptLine,
+        SmoothRevealedTranscriptText(text: recorder.marqueeText,
                                      availableWidth: ribbonWidth - 24)
     }
 }
@@ -754,6 +754,8 @@ final class NotchRecordingOverlayController {
     private var collapsedWingMonitor: Any?
     private var outsideClickMonitor: Any?
     private var escapeKeyMonitor: Any?
+    /// 录音/润色期间的 ESC 取消监听 —— 和展开态无关，见 `updateCancellationMonitor`。
+    private var cancellationMonitor: Any?
 
     private init() {}
 
@@ -790,6 +792,8 @@ final class NotchRecordingOverlayController {
                 // 折叠的两个入口只在**展开时**才装监听 —— 平时不该有全局鼠标/键盘
                 // 监听在跑，那会白白吃掉用户的每一个 ESC。
                 if isExpanded { self.installDismissMonitors() } else { self.removeDismissMonitors() }
+                // ESC 取消这条路和展开态**无关**：收起状态下录音时也要能按 ESC 叫停。
+                self.updateCancellationMonitor()
                 // 展开时立刻把面板变成 key，编辑框马上就能打字/粘贴。
                 //
                 // 用户的要求：「里面的内容可以用户输入，不一定非要转写之后才能输入，
@@ -823,11 +827,44 @@ final class NotchRecordingOverlayController {
         }
 
         escapeKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            // 53 = ESC。用户的要求：「用户点击 ESC 也自动折叠」。
+            // 53 = ESC。
             guard event.keyCode == 53 else { return }
-            Task { @MainActor in
-                LongFormRecorderController.shared.collapseTranscriptEditor()
+            Task { @MainActor in Self.handleEscapeKey() }
+        }
+    }
+
+    /// ESC 按下去之后干什么。
+    ///
+    /// **分两档，先取消后折叠**：录音 / 转写 / 润色还在跑的时候，ESC 是「别做了」——
+    /// 用户的要求是「无论它现在处于正在撰写、还是发送给 AI 模型，直接打断整个过程」；
+    /// 都停了的时候，ESC 才是「收起这个窗口」（用户之前要的那条）。
+    ///
+    /// 顺序不能反：运行中按 ESC 却只把窗口收起来，用户会以为没生效，然后再按一次 ——
+    /// 而那时任务已经跑完了。
+    @MainActor
+    static func handleEscapeKey() {
+        let recorder = LongFormRecorderController.shared
+        if recorder.phase != .idle || recorder.isPolishingTranscript {
+            recorder.cancelCurrentRecording()
+        } else {
+            recorder.collapseTranscriptEditor()
+        }
+    }
+
+    /// 录音 / 转写 / 润色期间的 ESC 监听。**它和展开态无关** —— 收起状态下录音时
+    /// 也要能按 ESC 取消，所以单独一条，跟着「有没有活在跑」装卸。
+    private func updateCancellationMonitor() {
+        let isBusy = LongFormRecorderController.shared.phase != .idle
+            || LongFormRecorderController.shared.isPolishingTranscript
+        if isBusy {
+            guard cancellationMonitor == nil else { return }
+            cancellationMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+                guard event.keyCode == 53 else { return }
+                Task { @MainActor in Self.handleEscapeKey() }
             }
+        } else if let monitor = cancellationMonitor {
+            NSEvent.removeMonitor(monitor)
+            cancellationMonitor = nil
         }
     }
 
