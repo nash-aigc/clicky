@@ -88,12 +88,28 @@ nonisolated enum RecordingPolishClient {
         messages.append(["role": "user", "content": contentParts(prompt: prompt,
                                                                 screenshotJPEG: screenshotJPEG)])
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": endpoint.model,
             "messages": messages,
             "stream": false,
             // 这一步是**改写**不是创作，温度压低让结果稳定、可预期。
             "temperature": 0.2,
+            // 输出不会比原文长多少，给一点余量就够 —— 不封顶时模型可能长篇发挥。
+            "max_tokens": 8192,
+            // **关掉推理。这就是那 8 秒的来源。**
+            //
+            // `deepseek-flash` 是推理模型：它会在给出答案**之前**先吐几百上千个推理
+            // token。这个仓库自己量过 —— 视觉那条路上 4.5 秒的请求里有 **3.4 秒是思考**
+            // （2026-09-21，见 CLAUDE.md 的「推理」一节），当时也是靠这个字段把首字从
+            // 4298ms 压到 817ms 的。
+            //
+            // 润色这一步前面还压着用户那 3556 字的规则，模型要在这么长的规则上推理
+            // 一遍 —— 实测一次 23 秒、一次 8 秒。而这是**改写**任务：要的只是「按规则
+            // 把这段话整理一遍」，中间那段思考用户一个字都看不到，全是白等。
+            //
+            // 无条件发：百炼收到这个字段是**忽略**（实测 HTTP 200、输出不变），所以
+            // 一个开关能同时覆盖两家的服务商，不用按 flavor 分叉。
+            "thinking": ["type": "disabled"],
         ]
 
         var request = URLRequest(url: endpoint.url)

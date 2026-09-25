@@ -113,7 +113,18 @@ struct NotchRecordingBandView: View {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
             HStack(spacing: 8) {
-                if recorder.isFinalizingTranscript {
+                if recorder.isPolishingTranscript {
+                    // **AI 润色中** —— 绿色、字体一直忽大忽小。
+                    // 用户：「左侧刘海屏的左侧显示"AI 润色中"，字体一直忽大忽小，
+                    // 然后变成绿色。这个文字是绿色的」。
+                    //
+                    // 用 `scaleEffect` 而不是改字号：SwiftUI 的 `Font` 不是可动画的，
+                    // 而缩放出来的视觉效果和字号变化完全一样。
+                    Text("AI 润色中")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(DS.Colors.success)
+                        .modifier(PulsingScaleModifier())
+                } else if recorder.isFinalizingTranscript {
                     Circle()
                         .fill(Color(red: 1.0, green: 0.27, blue: 0.23))
                         .frame(width: 10, height: 10)
@@ -174,7 +185,18 @@ struct NotchRecordingBandView: View {
                 // 倒计时期间点它 = **放弃这一场**（用户：「如果在显示数字的过程中，
                 // 用户点击这个数字……就自动取消转写，包括弹窗等全都自动取消，
                 // 也不需要粘贴到剪贴板，直接放弃这次任务」）。
-                if recorder.isFinalizingTranscript {
+                if recorder.isPolishingTranscript {
+                    // **AI 润色中** —— 绿色、字体一直忽大忽小。
+                    // 用户：「左侧刘海屏的左侧显示"AI 润色中"，字体一直忽大忽小，
+                    // 然后变成绿色。这个文字是绿色的」。
+                    //
+                    // 用 `scaleEffect` 而不是改字号：SwiftUI 的 `Font` 不是可动画的，
+                    // 而缩放出来的视觉效果和字号变化完全一样。
+                    Text("AI 润色中")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(DS.Colors.success)
+                        .modifier(PulsingScaleModifier())
+                } else if recorder.isFinalizingTranscript {
                     LongFormRecorderController.shared.cancelCurrentRecording()
                     return
                 }
@@ -188,7 +210,8 @@ struct NotchRecordingBandView: View {
                     level: recorder.isSpeechDetected ? recorder.audioLevel : heldLevel,
                     isRecording: recorder.isRecording,
                     finalizeSecondsRemaining: recorder.isFinalizingTranscript
-                        ? recorder.finalizeSecondsRemaining : nil)
+                        ? recorder.finalizeSecondsRemaining : nil,
+                    isPolishing: recorder.isPolishingTranscript)
             }
             // **双击 = 放弃。** 单击一次是「停止录音、进入转写」，所以「单击两次」
             // 正好等价于双击 —— 用户要的就是这个（「单击一次再单击一次，都是停止
@@ -416,6 +439,35 @@ private struct SilentButtonStyle: ButtonStyle {
     }
 }
 
+/// 「AI 润色中」的字体忽大忽小。
+private struct PulsingScaleModifier: ViewModifier {
+    @State private var isLarge = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isLarge ? 1.13 : 0.94)
+            .animation(.easeInOut(duration: 0.62).repeatForever(autoreverses: true), value: isLarge)
+            .onAppear { isLarge = true }
+    }
+}
+
+/// 润色期间右侧那个转圈。一段绿色圆弧绕中心转。
+private struct PolishingSpinner: View {
+    var body: some View {
+        TimelineView(.animation) { context in
+            let seconds = context.date.timeIntervalSinceReferenceDate
+            Circle()
+                .trim(from: 0, to: 0.3)
+                .stroke(DS.Colors.success,
+                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                .frame(width: 18, height: 18)
+                .rotationEffect(.degrees(seconds * 330))
+                .frame(width: 32, height: 26)
+                .contentShape(Rectangle())
+        }
+    }
+}
+
 /// 文字的呼吸：**只动透明度，不动缩放**（文字缩放会糊）。
 /// 用户：「转写中时，'转写中'这三个字增加一个呼吸效果」。
 private struct BreathingTextModifier: ViewModifier {
@@ -464,11 +516,17 @@ private struct RecordingWaveformLabel: View {
     let isRecording: Bool
     /// 非 nil 时右侧不画音波，改画倒计时数字。
     var finalizeSecondsRemaining: Int? = nil
+    /// 润色中：右侧改画转圈。
+    var isPolishing: Bool = false
 
     private static let barCount = 5
 
     var body: some View {
-        if let seconds = finalizeSecondsRemaining {
+        if isPolishing {
+            // 润色期间右侧换个动画 —— 用户：「右侧是一个随机动画，随便设计一个
+            // 动画就好」。转一段绿色圆弧。
+            PolishingSpinner()
+        } else if let seconds = finalizeSecondsRemaining {
             // 收尾期间：右侧显示倒计时（用户要求「右侧显示倒计时多少秒」）。
             // **绿色** —— 用户：「点击停止之后，倒计时的数字换成绿色」。
             Text("\(max(seconds, 0))s")
@@ -828,7 +886,18 @@ final class NotchRecordingOverlayController {
                     LongFormRecorderController.shared.toggleTranscriptEditor()
                 } else {
                     let recorder = LongFormRecorderController.shared
-                    if recorder.isFinalizingTranscript { recorder.cancelCurrentRecording() }
+                    if recorder.isPolishingTranscript {
+                    // **AI 润色中** —— 绿色、字体一直忽大忽小。
+                    // 用户：「左侧刘海屏的左侧显示"AI 润色中"，字体一直忽大忽小，
+                    // 然后变成绿色。这个文字是绿色的」。
+                    //
+                    // 用 `scaleEffect` 而不是改字号：SwiftUI 的 `Font` 不是可动画的，
+                    // 而缩放出来的视觉效果和字号变化完全一样。
+                    Text("AI 润色中")
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(DS.Colors.success)
+                        .modifier(PulsingScaleModifier())
+                } else if recorder.isFinalizingTranscript { recorder.cancelCurrentRecording() }
                     else if recorder.isRecording { recorder.stopRecording() }
                     else { recorder.startRecording(resumingCurrentSession: true) }
                 }

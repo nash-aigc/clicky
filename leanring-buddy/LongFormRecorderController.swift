@@ -320,6 +320,13 @@ final class LongFormRecorderController: ObservableObject {
     @Published private(set) var isFinalizingTranscript = false
     /// 倒计时剩余秒数。
     @Published private(set) var finalizeSecondsRemaining = 0
+
+    /// 正在走「自定义风格」那一步（转写已完成、模型正在重写）。
+    ///
+    /// 用户的要求：「如果用户勾选了自定义风格……那么在转写完成之后，要进入另外一个
+    /// 动画界面，叫做 AI 润色。左侧……显示"AI 润色中"……这个文字是绿色的。右侧是
+    /// 一个随机动画」。
+    @Published private(set) var isPolishingTranscript = false
     private var finalizeCountdownTask: Task<Void, Never>?
 
     /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
@@ -331,6 +338,16 @@ final class LongFormRecorderController: ObservableObject {
         guard let cgImage = CGDisplayCreateImage(CGMainDisplayID()) else { return nil }
         let bitmap = NSBitmapImageRep(cgImage: cgImage)
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
+    }
+
+    /// 这一步到底会不会真的走模型。界面用它决定要不要进入「AI 润色中」相位 ——
+    /// 判据必须和 `polishIfConfigured` 里的 guard **完全一致**，否则会出现
+    /// 「闪了一下 AI 润色中但其实什么都没做」。
+    private func shouldRunPolishStep() -> Bool {
+        let settings = AppSettingsStore.snapshot()
+        guard settings.recordingPolishEnabled else { return false }
+        let styles = RecordingPolishStyleStore.shared.enabledStyles()
+        return !styles.isEmpty || polishScreenshotJPEG != nil
     }
 
     /// 按「自定义风格」重写一遍转写原文。
@@ -863,7 +880,12 @@ final class LongFormRecorderController: ObservableObject {
         // 用户的规则：「整个流程都发生在转写成功之后……只要在设置页面勾选了该按钮，
         // 都要走这样一个流程」。而「没勾选任何风格、也没勾截图」时必须**和以前完全
         // 一样** —— 原文直接就是最终内容，一步都不多走。
+        // 只有**真的要走模型**时才进入这个相位 —— `polishIfConfigured` 在没勾选任何
+        // 风格、也没勾截图时一步都不走，那种情况下不该闪一下「AI 润色中」。
+        let willPolish = shouldRunPolishStep()
+        if willPolish { isPolishingTranscript = true }
         let polished = await polishIfConfigured(rawText: text)
+        isPolishingTranscript = false
         if polished != text {
             transcriptPlainText = polished
             writePlainTextFile(polished)
