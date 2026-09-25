@@ -378,6 +378,23 @@ struct GeneralSettingsView: View {
                 }
                 SettingsCardRowDivider()
                 SettingsRow(
+                    label: "窗口动画",
+                    description: WindowRevealAnimation.catkinDrift.explanation
+                        + "（默认）\n"
+                        + WindowRevealAnimation.fogBloom.explanation
+                        + "\n"
+                        + WindowRevealAnimation.none.explanation
+                        + "\n两种动画都只动盖在面板上的一层遮罩，组件只改透明度与缩放 —— 全是合成器属性，不改版面，所以不会卡。"
+                ) {
+                    SettingsSegmentedPicker(
+                        selection: generalSettingsViewModel.binding(\.windowRevealAnimation),
+                        options: WindowRevealAnimation.allCases.map {
+                            SettingsPickerOption(label: $0.displayName, value: $0)
+                        }
+                    )
+                }
+                SettingsCardRowDivider()
+                SettingsRow(
                     label: "弹出速度",
                     description: "面板展开动画的快慢，倍数越大越快。1× 是参考设计的原始速度；默认 2×，因为原始速度偏慢。三种展开方式和收起都跟着这个倍率走。"
                 ) {

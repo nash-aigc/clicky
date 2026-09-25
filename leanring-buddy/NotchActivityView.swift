@@ -1056,6 +1056,20 @@ struct NotchExpandedSheetView: View {
     /// 每次展开时重新插入（root 切换分支），所以 @State 每次都从入场态
     /// 重新走一遍；折叠期间不驻留，不会中途触发。
     @State private var hasContentSettledIn = false
+
+    /// 组件浮起的两个量：「直接显示」时恒为 0（硬出现），两条窗口动画开着时才从
+    /// 14pt / 5px 回到 0 —— 与遮罩共用同一个 `windowRevealAnimation`，所以两处
+    /// 不可能分家。
+    private var contentRiseOffset: CGFloat {
+        guard !shouldReduceMotion, AppSettingsStore.snapshot().windowRevealAnimation != .none
+        else { return 0 }
+        return hasContentSettledIn ? 0 : 14
+    }
+    private var contentRiseBlur: CGFloat {
+        guard !shouldReduceMotion, AppSettingsStore.snapshot().windowRevealAnimation != .none
+        else { return 0 }
+        return hasContentSettledIn ? 0 : 5
+    }
     @Environment(\.accessibilityReduceMotion) private var shouldReduceMotion
 
     var body: some View {
@@ -1093,44 +1107,34 @@ struct NotchExpandedSheetView: View {
             // （侧栏没有滚动，它看到的抖动只能来自这个偏移）。淡入 + 模糊
             // 仍然是参考页的入场语言；丢掉的只有那 8pt。
             .opacity(hasContentSettledIn ? 1 : 0)
-            // **不再加位移 —— 一个字都不许动。**
+            // **组件这一侧：窗口动画开着时才浮起。**
             //
-            // 这里原先还有一行 `.offset(y: hasContentSettledIn ? 0 : 8)`，而它上面的
-            // 注释当时就写着「**故意不移植**……丢掉的只有那 8pt」—— **注释说删了，
-            // 代码没删**，于是那 8pt 一直活着。
+            // 用户 2026-09-25 在演示页里挑的那两条，都是"遮罩 × 组件一起走"：
+            // 雾从中心化开的同时，组件浮起、从模糊变清晰。所以位移和模糊只有在选了两条
+            // 动画之一时才存在；选「直接显示」时它们恒为 0，面板就是硬出现。
             //
-            // 它以前看不出来，是因为展开动画（遮罩揭示）把它盖住了：用户先看见面板
-            // 长出来，内容那 8pt 的上滑混在里面。2026-09-25 展开动画被去掉之后，
-            // **它成了屏幕上唯一在动的东西**，用户立刻拍到并报回来：「动画一开始的时候
-            // 整体偏低，然后就整体向上移动了一下，我希望完全不动」。
-            //
-            // 这不是新问题 —— 2026-09-24 他报过同一条：「所有消息整体向上抖动一下，
-            // 然后又下来」。当时的结论就是删掉这 8pt，只是没执行到位。
-            //
-            // **不再加模糊**（用户 2026-09-25：「Ask 页面展开时有一个蒙版/模糊特效，
-            // 删掉，因为在 Agent 和 Chatting 两个页面都没有，体验很好」）。
-            //
-            // 它来自参考实现入场动画的 'line' 模式（+8pt / 8px blur / 透明→清晰）。
-            // 参考页那 8px 是在一个静态演示面板上播的，没有滚动、没有实时列表；
-            // 这里是活的对话列，任何位移都会被读成"抖一下"。
-            // 留下的只有**淡入** —— 它不改变任何东西的位置。
+            // 只碰 opacity / offset / blur 三个 —— 都是合成器属性，不改 frame，不重排。
+            .offset(y: contentRiseOffset)
+            .blur(radius: contentRiseBlur)
             .onAppear {
                 guard !shouldReduceMotion else {
                     hasContentSettledIn = true
                     return
                 }
-                // 延迟跟着用户选的窗口样式走（见
-                // `NotchSupport.expansionContentEntranceDelay`）。
                 let appSettingsSnapshot = AppSettingsStore.snapshot()
                 let entranceDelay = appSettingsSnapshot.expansionContentEntranceDelayInForce(
                     appSettingsSnapshot.notchExpansionSpeedMultiplier
                 )(appSettingsSnapshot.windowExpansionStyle)
-                // **淡入 0.15 秒**（用户 2026-09-25：「要有动画效果，要快」）。
-                //
-                // 原先 0.45 秒是配着"窗口长出来"那个动画的；展开动画已经没有了，这
-                // 个时长就只是"面板亮起来"要多久 —— 0.15 秒够看见是一次出现，又不至于
-                // 让人等。它和**收起**那条路是对称的：收起本来就是淡出。
-                withAnimation(.easeOut(duration: 0.15).delay(entranceDelay)) {
+                let revealAnimation = appSettingsSnapshot.windowRevealAnimation
+                // 时长与遮罩共用同一个来源（`NotchSupport.revealDuration`），所以两条线
+                // 不会一个走完另一个还在动。「直接显示」沿用 0.15 秒的纯淡入。
+                let duration = revealAnimation == .none
+                    ? 0.15
+                    : NotchSupport.revealDuration(
+                        for: revealAnimation,
+                        speedMultiplier: appSettingsSnapshot.notchExpansionSpeedMultiplier
+                      )
+                withAnimation(.easeOut(duration: duration).delay(entranceDelay)) {
                     hasContentSettledIn = true
                 }
             }

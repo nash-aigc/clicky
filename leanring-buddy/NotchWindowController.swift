@@ -118,6 +118,13 @@ final class NotchWindowController {
 
     /// 展开驻留期的混合圆角表面层（顶 36 / 底 24）。`removeReveal` 摘掉。
     private var revealSurfaceLayer: CAShapeLayer?
+
+    /// 窗口动画那两条用的遮罩层（径向 / 线性渐变），只在展开期间存在。
+    private var revealMaskLayer: CAGradientLayer?
+    /// 柳絮那一层。撒完就摘，不留着烧 GPU。
+    private var catkinEmitterLayer: CAEmitterLayer?
+    /// 柳絮的 cell 贴图 —— 程序画的，只画一次，之后复用。
+    private static var cachedCatkinFilamentImage: NSImage?
     private let audioHistoryProvider: () -> [CGFloat]
 
     private var screenPresences: [ScreenPresence] = []
@@ -604,12 +611,13 @@ final class NotchWindowController {
         // Read the style ONCE here and carry it through the whole expansion:
         // saving in the settings window mid-animation must not turn one reveal
         // into two.
-        //
-        // **目前不再拿它开动画**（用户 2026-09-25 要求点击即出现、不要展开动画），
-        // 但样式仍然读出来记在日志里 —— 三个展开样式的代码都还在，这条路只是不调用
-        // 它们；想知道当下生效的是哪个设置，看这一行比翻设置页快。
         let expansionStyle = AppSettingsStore.snapshot().windowExpansionStyle
-        print("⏱️ [expand] 直接显示（不做展开动画）；设置里选的样式=\(expansionStyle.rawValue)（当前不生效）")
+        // **窗口动画**：盖在面板上那层怎么做动画。与 `expansionStyle` 是两件事 ——
+        // 那一个管窗口尺寸，这一个管遮罩。见 `WindowRevealAnimation`。
+        let revealAnimation = AppSettingsStore.snapshot().windowRevealAnimation
+        let speedMultiplier = AppSettingsStore.snapshot().notchExpansionSpeedMultiplier
+        let revealDuration = NotchSupport.revealDuration(for: revealAnimation, speedMultiplier: speedMultiplier)
+        print("⏱️ [expand] 窗口动画=\(revealAnimation.rawValue)（展开方式 \(expansionStyle.rawValue)）")
 
         expansionGeneration += 1
         let expansionGenerationAtStart = expansionGeneration
@@ -622,32 +630,28 @@ final class NotchWindowController {
         NotchSupport.expansionStartedAt = expansionStartedAt
         print(String(format: "⏱️ [expand] 展开开始 t=%.3f", expansionStartedAt))
 
-        // **不做展开动画 —— 点击即整块出现。**
+        // **顺序：先盖住 → 尺寸一次到位（不画）→ 在遮罩后面建内容 → 再揭。**
         //
-        // 用户 2026-09-25：「有没有一种方法，不使用弹出的效果？我觉得这个弹出动画体验
-        // 不是很好，它总是抖动，尤其是在左上角和右上角的位置……我能不能点击按钮之后
-        // 直接展开这个面板？点击一下就直接展开，什么动画都没有」。
-        //
-        // 顺序（每一步都有理由）：
+        // 每一步都有理由：
         //  ① **先盖上遮罩**，而且是零高度的那种 —— 整个宿主层什么都画不出来，所以下面
         //     这些步骤进行时屏幕上**没有白板**，只是"还没反应"。
-        //  ② 把窗口尺寸一次设到最终值，但 **`display: false` 不触发同步绘制**。原先是
+        //  ② 窗口尺寸一次设到最终值，但 **`display: false` 不触发同步绘制**。原先是
         //     `display: true`，那会强制一次整面板的同步绘制 —— 冷的时候要 300~600ms，
-        //     而那正是用户看到的那块白板的时长（实测见 `clicky-卡片冷启动-164349.log`：
-        //     冷 +146ms 白板 / 291ms 主线程，热 +44ms / 53ms）。
-        //  ③ 一个 tick 之后翻 `isExpanded` —— 面板那棵树开始构建，全部在遮罩后面，
-        //     用户看不见。
-        //  ④ **再一个 tick 之后掀开遮罩**。这一块排在构建与绘制**后面**：主线程是串行
-        //     的，构建那 300ms（冷）或 50ms（热）会先把主线程占住，定时器到点也插不进去，
-        //     于是"掀开"必然发生在内容真的画完之后 —— 面板带着完整内容**整块出现**。
+        //     而那正是那块白板的时长（见 `clicky-卡片冷启动-164349.log`）。
+        //  ③ 一个 tick 之后翻 `isExpanded` —— 面板那棵树开始在遮罩后面构建。
+        //  ④ **再一个 tick 之后开始揭**。这一块排在构建与绘制**后面**：主线程是串行的，
+        //     构建那 300ms（冷）或 50ms（热）会先把主线程占住，定时器插不进去，于是
+        //     "揭"必然发生在内容真的画完之后。
         //
-        // 三个展开样式（中心缩放 / 边缘缩放 / 幕布垂落）的代码都还在，只是这条路不再
-        // 调用它们 —— 设置里那一行现在不产生任何效果。
+        // 揭的方式由 `windowRevealAnimation` 决定：两条动画都只改**遮罩的渐变**，
+        // 窗口 frame 与组件 frame 都不动。
         installRevealCover(on: presence)
 
         presence.panel.setFrame(expandedFrame, display: false)
 
         presence.panel.ignoresMouseEvents = false
+
+        let catkinRevealDurationAtStart = revealDuration
 
         // The content flip is DEFERRED one run-loop tick. Measured 2026-09-23
         // (「点击刘海之后没有马上开始展开，而是等了一段时间」): with the flip
@@ -664,34 +668,204 @@ final class NotchWindowController {
             guard self.expansionGeneration == expansionGenerationAtStart,
                   !self.panelModel.isExpanded else { return }
             self.panelModel.isExpanded = true
-            // 掀开：排在构建与绘制之后（见上面第 ④ 条）。
+            // 揭：排在构建与绘制之后（见上面第 ④ 条）。
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
                 guard let self,
                       self.expansionGeneration == expansionGenerationAtStart,
                       self.panelModel.isExpanded else { return }
-                self.removeReveal(on: presence)
+                switch revealAnimation {
+                case .none:
+                    self.removeReveal(on: presence)
+                case .fogBloom:
+                    self.startFogBloomReveal(on: presence, expandedFrame: expandedFrame,
+                                             duration: catkinRevealDurationAtStart)
+                case .catkinDrift:
+                    self.startCatkinDriftReveal(on: presence, expandedFrame: expandedFrame,
+                                                duration: catkinRevealDurationAtStart)
+                }
                 self.finishExpansionCommit(on: presence)
             }
         }
 
-        // Watchdog: the removal above is the only thing that can make the panel
-        // visible now that there is no reveal animation, so a dropped block
-        // would leave an invisible, unclickable sheet.
-        //
-        // **它只补"可见性"，不再走一遍 `finishExpansionCommit`。** 那个方法里带着
-        // `SoundEffectPlayer.play(.notchRevealed)` 和 `NSApp.activate` —— 两处都该
-        // **一次展开只发生一次**。我上一版让兜底也调它，于是点一下刘海听见**两个
-        // "展开"音**（实测：间隔正好一秒，就是这条兜底的 1.0s），用户报的是
-        // 「点击按钮之后……有两个声音，应该只有一个声音才对」。
-        //
-        // 兜底与正常路径用同一个代次守卫，所以两者要么都跑、要么都不跑；正常路径既然
-        // 一定跑过，这里就只剩"遮罩没被摘掉"这一种补救。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        // Watchdog: with no reveal, removal is the only thing that makes the
+        // panel visible; with a reveal, a dropped animation would leave the
+        // mask at its starting state. Either way, past the deadline the panel
+        // must be fully open. It only repairs visibility — it does NOT run
+        // `finishExpansionCommit` again, which would play the reveal chime a
+        // second time (that was a real bug: two chimes, a second apart).
+        DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.45) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
             self.removeReveal(on: presence)
         }
+    }
+
+    // MARK: - 窗口动画（盖在面板上那层怎么化开）
+
+    /// **雾里浮现**（`WindowRevealAnimation.fogBloom`）。
+    ///
+    /// 把遮罩换成一层**径向渐变**：白色是不透明（看得见），透明是还盖着。渐变的
+    /// `locations` 从"四个 stop 全在负侧"（整块都盖着）扫到"都跑到正侧"（整块都露出来），
+    /// 于是可见区域是一圈**没有边界的软边**从面板中心往外长 —— 没有一条硬边，所以读起来
+    /// 是"雾散了"而不是"框打开了"。
+    ///
+    /// 组件那一侧由 `NotchExpandedSheetView` 的入场承担（浮起 + 去模糊），两条线共用
+    /// 同一个 `duration`，所以它们是一件事。
+    private func startFogBloomReveal(on presence: ScreenPresence, expandedFrame: CGRect, duration: TimeInterval) {
+        guard let hosting = presence.contentHostingView.layer else { return }
+        let gradient = CAGradientLayer()
+        gradient.type = .radial
+        gradient.frame = CGRect(origin: .zero, size: expandedFrame.size)
+        // 圆心略高于正中：观感上"雾的源"落在面板上部，和刘海的关系更近。
+        gradient.startPoint = CGPoint(x: 0.5, y: 0.40)
+        gradient.endPoint = CGPoint(x: 1.35, y: 1.35)
+        let hidden: [NSNumber] = [-1.75, -1.35, -1.20, -0.70]
+        let shown: [NSNumber] = [0.10, 0.50, 0.68, 1.30]
+        gradient.colors = [
+            NSColor.white.cgColor, NSColor.white.cgColor,
+            NSColor.clear.cgColor, NSColor.clear.cgColor,
+        ]
+        gradient.locations = hidden
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hosting.mask = gradient
+        CATransaction.commit()
+
+        let animation = CABasicAnimation(keyPath: "locations")
+        animation.fromValue = hidden
+        animation.toValue = shown
+        animation.duration = duration
+        animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.22, 0.9, 0.3, 1)
+        gradient.locations = shown
+        gradient.add(animation, forKey: "fogBloomReveal")
+        revealMaskLayer = gradient
+    }
+
+    /// **柳絮扫过**（`WindowRevealAnimation.catkinDrift`，用户指定的默认值）。
+    ///
+    /// 两层：一条**斜向的线性渐变遮罩**从右上扫到左下（边缘是软的，所以看不到一条线），
+    /// 加上一层 `CAEmitterLayer` 撒细丝状的柳絮。柳絮的 cell 是**程序画出来的一根弯丝
+    /// 带短绒毛**，不是圆点 —— 圆点会读成泡泡，而柳絮的辨识度全在"细、弯、有绒毛"上。
+    private func startCatkinDriftReveal(on presence: ScreenPresence, expandedFrame: CGRect, duration: TimeInterval) {
+        guard let hosting = presence.contentHostingView.layer else { return }
+        let size = expandedFrame.size
+        let gradient = CAGradientLayer()
+        gradient.frame = CGRect(origin: .zero, size: size)
+        gradient.startPoint = CGPoint(x: 0.12, y: 0.0)
+        gradient.endPoint = CGPoint(x: 0.92, y: 1.0)
+        gradient.colors = [
+            NSColor.clear.cgColor, NSColor.white.cgColor, NSColor.white.cgColor,
+        ]
+        let hidden: [NSNumber] = [-0.55, -0.22, 0.12]
+        let shown: [NSNumber] = [0.72, 0.92, 1.30]
+        gradient.locations = hidden
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hosting.mask = gradient
+        CATransaction.commit()
+
+        let animation = CABasicAnimation(keyPath: "locations")
+        animation.fromValue = hidden
+        animation.toValue = shown
+        animation.duration = duration
+        animation.timingFunction = CAMediaTimingFunction(controlPoints: 0.3, 0.0, 0.2, 1)
+        gradient.locations = shown
+        gradient.add(animation, forKey: "catkinSweep")
+        revealMaskLayer = gradient
+
+        // 柳絮：从右上角外一批批撒下来，横穿整块面板。
+        let emitter = CAEmitterLayer()
+        emitter.frame = CGRect(origin: .zero, size: size)
+        emitter.emitterPosition = CGPoint(x: size.width * 0.94, y: size.height * 0.06)
+        emitter.emitterShape = .line
+        emitter.emitterSize = CGSize(width: size.height * 0.55, height: 1)
+        emitter.renderMode = .additive
+
+        let cell = CAEmitterCell()
+        cell.contents = Self.catkinFilamentImage().cgImage(
+            forProposedRect: nil, context: nil, hints: nil
+        )
+        cell.birthRate = 110
+        cell.lifetime = 2.6
+        cell.lifetimeRange = 0.7
+        cell.velocity = 92
+        cell.velocityRange = 40
+        // 朝左下方飘（CAEmitter 的角度以弧度计，0 指向 +x，y 轴向下）。
+        cell.emissionLongitude = .pi * 0.82
+        cell.emissionRange = .pi * 0.28
+        cell.scale = 0.30
+        cell.scaleRange = 0.16
+        cell.alphaSpeed = -0.42
+        cell.spin = 0.5
+        cell.spinRange = 1.1
+        emitter.emitterCells = [cell]
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        hosting.addSublayer(emitter)
+        CATransaction.commit()
+        catkinEmitterLayer = emitter
+
+        // 撒完就收：发射器留着会一直烧 GPU。0.9 秒后停发，等剩下的飘完再摘掉。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9 * duration) { [weak self, weak emitter] in
+            emitter?.birthRate = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.2) { [weak self, weak emitter] in
+                emitter?.removeFromSuperlayer()
+                if self?.catkinEmitterLayer === emitter { self?.catkinEmitterLayer = nil }
+            }
+        }
+    }
+
+    /// 一根柳絮的贴图 —— **程序画的**：一条微微弯曲的细线，两侧各有几根短绒毛，两端渐隐。
+    /// 尺寸小（44×44），靠 `CAEmitterCell` 的 scale 放大，所以一张图够用。
+    private static func catkinFilamentImage() -> NSImage {
+        if let cached = cachedCatkinFilamentImage { return cached }
+        let side = 44
+        // **`NSBitmapImageRep` 而不是 `lockFocus`**：`lockFocus` 依赖当前是否有可用的
+        // 绘图上下文，在后台或非绘制时机上会静默画出一张空图 —— 那样柳絮就只是些
+        // 看不见的点。`NSBitmapImageRep` 自带位图上下文，任何时机都能画。
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ), let ctx = NSGraphicsContext(bitmapImageRep: rep) else {
+            return NSImage(size: NSSize(width: side, height: side))
+        }
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
+        let cg = ctx.cgContext
+        cg.setLineCap(.round)
+        let stroke = NSColor(srgbRed: 0.93, green: 0.94, blue: 0.97, alpha: 1)
+        cg.setStrokeColor(stroke.withAlphaComponent(0.85).cgColor)
+        cg.setLineWidth(1.1)
+        let spine = CGMutablePath()
+        spine.move(to: CGPoint(x: 6, y: 30))
+        spine.addQuadCurve(to: CGPoint(x: 38, y: 16), control: CGPoint(x: 22, y: 30))
+        cg.addPath(spine)
+        cg.strokePath()
+        for index in 1...6 {
+            let t = CGFloat(index) / 7
+            let px = 6 + (38 - 6) * t
+            let py = 30 + (16 - 30) * (t * (2 - t))
+            let barb = 9 * (1 - t * 0.45)
+            cg.setStrokeColor(stroke.withAlphaComponent(0.75 * (1 - t * 0.5)).cgColor)
+            cg.setLineWidth(0.8)
+            let up = CGMutablePath()
+            up.move(to: CGPoint(x: px, y: py))
+            up.addLine(to: CGPoint(x: px - barb * 0.45, y: py - barb))
+            cg.addPath(up)
+            let down = CGMutablePath()
+            down.move(to: CGPoint(x: px, y: py))
+            down.addLine(to: CGPoint(x: px + barb * 0.25, y: py + barb * 0.85))
+            cg.addPath(down)
+            cg.strokePath()
+        }
+        NSGraphicsContext.restoreGraphicsState()
+        let image = NSImage(size: NSSize(width: side, height: side))
+        image.addRepresentation(rep)
+        cachedCatkinFilamentImage = image
+        return image
     }
 
     /// Hides the content before the final frame is committed, so the
@@ -1100,6 +1274,14 @@ final class NotchWindowController {
     private func removeReveal(on presence: ScreenPresence) {
         revealSurfaceLayer?.removeFromSuperlayer()
         revealSurfaceLayer = nil
+        // 柳絮那层不留着：它是唯一一个会持续烧 GPU 的东西。
+        catkinEmitterLayer?.removeFromSuperlayer()
+        catkinEmitterLayer = nil
+        // 渐变遮罩的动画要**先按 key 摘掉再丢层**（与中心缩放同一个道理：动画还挂在
+        // 层上时会继续驱动 presentation，只把层 nil 掉并不保证它当帧就停）。
+        revealMaskLayer?.removeAnimation(forKey: "fogBloomReveal")
+        revealMaskLayer?.removeAnimation(forKey: "catkinSweep")
+        revealMaskLayer = nil
 
         guard let hostingLayer = presence.contentHostingView.layer else { return }
         CATransaction.begin()

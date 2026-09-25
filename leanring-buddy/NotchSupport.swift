@@ -66,8 +66,7 @@ nonisolated enum NotchSupport {
     static let curtainRevealTimingControlPoints: (Float, Float, Float, Float) = (0.0, 0.0, 0.58, 1.0)
     /// 内容入场比幕布晚多少起步。参考页把 02 幕布垂落和 `.unit.line` 配在一起
     /// 时给的 delay 就是 140ms（01 中心缩放配的是 230ms）。
-    /// 内容入场比窗口动画晚多少起步。
-    ///
+    /// 内容入场比窗口动画晚多少起步。    ///
     /// **2026-09-25 两个值都归零 —— 用户要求「点击窗口之后马上就能看到窗口里的内容」。**
     ///
     /// 参考页里确实各配各的延迟（02 幕布垂落 140ms、01 中心缩放 230ms），理由写在
@@ -129,13 +128,33 @@ nonisolated enum NotchSupport {
     /// CSS ease-in（0.42, 0, 1, 1）——参考页 winClose 的 animation-timing-function。
     static let centerScaleCollapseTimingControlPoints: (Float, Float, Float, Float) = (0.42, 0.0, 1.0, 1.0)
 
-    /// 展开动画要多长，按用户选的窗口样式取。
+    /// **窗口动画**（盖在面板上那层遮罩）要走多久。
     ///
+    /// 与 `expansionRevealDuration(for:)`（窗口尺寸动画）分开：那两个数已经在没有
+    /// 窗口尺寸动画的时候只剩一个用途 —— 排控制器里那两处截止点和看门狗；这两个是
+    /// 遮罩自己的时长。两处都跟着用户设的「弹出速度」倍率走，所以面板和遮罩永远同一
+    /// 节奏，不会一个走完另一个还在动。
+    ///
+    /// 实测（演示页与真机）：雾里浮现与柳絮扫过在 2× 下都是 0.31 秒左右时观感最好 ——
+    /// 再短就只剩"闪一下"，再长会让人觉得面板卡住了。
+    static func revealDuration(
+        for animation: WindowRevealAnimation,
+        speedMultiplier: Double
+    ) -> TimeInterval {
+        let base: TimeInterval
+        switch animation {
+        case .fogBloom: base = 0.62
+        case .catkinDrift: base = 0.66
+        case .none: base = 0.0
+        }
+        return base / max(1.0, speedMultiplier)
+    }
+
+    /// 展开动画要多长，按用户选的窗口样式取。    ///
     /// `NotchWindowController` 用它排那两个截止点（撤掉揭示的遮罩 / 收敛到展开态）
     /// 和看门狗。**两套时长必须从这一个函数出**：控制器里再写一个 switch，等于把
     /// 「动画多久」这件事说两遍，改一处就会留下一处永远等不到的定时器。
-    static func expansionRevealDuration(for style: WindowExpansionStyle) -> TimeInterval {
-        switch style {
+    static func expansionRevealDuration(for style: WindowExpansionStyle) -> TimeInterval {        switch style {
         // 中心缩放（notchBloom）是遮罩扩张，和幕布垂落同族（同一个 0.43s ease-out），
         // 时长同源；边缘缩放是参考页 winScale 的 0.34s。
         case .notchBloom, .curtain: return curtainRevealDuration
