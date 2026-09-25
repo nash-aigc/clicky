@@ -753,7 +753,17 @@ final class VoicePlaybackEngine {
             throw BailianTTSClientError(message: "播放引擎没有可用的输出格式。")
         }
 
-        let chunkBuffer = try decodedPCMBuffer(fromWAVData: audioData, targetFormat: canonicalPlaybackFormat)
+        // **解码在后台线程做，主线程只做节点调度。**
+        //
+        // `decodedPCMBuffer` 的三步（WAV 写盘 → AVAudioFile 全量读取 → 整段格式转换）
+        // 原先全在主线程上跑，每个 TTS 分句一遍 —— 三段式流式回答时，文字渲染到一半
+        // 正好撞上它，主线程被卡 300~400ms（日志里的 `[hitch] main thread busy`），
+    // 看到的就是「文字渲染一半、冻结半秒、再跳出后半段」。
+    // 全双工顺滑正是因为它没有这条解码路（小块 PCM 转换很便宜）。
+        let chunkBuffer = try await Self.decodedPCMBufferOffMain(
+            fromWAVData: audioData,
+            targetFormat: canonicalPlaybackFormat
+        )
 
         // `rate` only — `pitch` stays at its default 0 cents, which is what
         // keeps the cloned voice sounding like itself at every 语速.
@@ -1414,7 +1424,26 @@ final class VoicePlaybackEngine {
     /// written to a scratch file that is deleted on return; the file's own
     /// format is then converted to the engine's with `AVAudioConverter`, so
     /// any sample-rate/channel-count the provider returns just works.
-    private func decodedPCMBuffer(
+    /// **后台解码**：磁盘写、AVAudioFile 读取、格式转换全在后台线程。
+    ///
+    /// `AVAudioPCMBuffer` 不标注 Sendable，但这里它的生命周期是"后台创建 →
+    /// 交给主线程排进 playerNode"，期间没有并发访问，用盒子搬运是安全的。
+    private struct DecodedBufferBox: @unchecked Sendable {
+        let buffer: AVAudioPCMBuffer
+    }
+
+    private static func decodedPCMBufferOffMain(
+        fromWAVData audioData: Data,
+        targetFormat: AVAudioFormat
+    ) async throws -> AVAudioPCMBuffer {
+        let box: DecodedBufferBox = try await Task.detached(priority: .userInitiated) {
+            let buffer = try Self.decodedPCMBuffer(fromWAVData: audioData, targetFormat: targetFormat)
+            return DecodedBufferBox(buffer: buffer)
+        }.value
+        return box.buffer
+    }
+
+    private nonisolated static func decodedPCMBuffer(
         fromWAVData audioData: Data,
         targetFormat: AVAudioFormat
     ) throws -> AVAudioPCMBuffer {
