@@ -28,6 +28,20 @@ nonisolated final class RecordingCameraGrabber: NSObject, AVCaptureVideoDataOutp
     private let session = AVCaptureSession()
     private var continuation: CheckedContinuation<Data?, Never>?
     private var hasResumed = false
+    /// 已经收到几帧。**前几帧要丢掉** —— 见 `captureOutput`。
+    private var arrivedFrameCount = 0
+    private var startedAt = Date.distantPast
+
+    /// 丢掉前几帧再取，以及至少要等这么久。
+    ///
+    /// **摄像头冷启动时自动曝光还没稳定，第一帧往往是全黑的。** 实测：一次可行性探针
+    /// 拿到 33KB 的纯黑 JPEG，我以为是镜头被挡着；后来诊断日志显示「摄像头有」而模型
+    /// 回「画面是黑的」，两个数据点合起来才看清是**开机预热**，不是遮挡。
+    ///
+    /// 0.35 秒 + 至少 5 帧，两个条件都满足才接受 —— 只用帧数的话，摄像头本身帧率低时
+    /// 5 帧可能只有 0.1 秒，曝光照样没落定。
+    private static let settleSeconds: TimeInterval = 0.35
+    private static let minimumFramesToDiscard = 5
 
     private func run(device: AVCaptureDevice, timeoutSeconds: Double) async -> Data? {
         guard let input = try? AVCaptureDeviceInput(device: device),
@@ -45,6 +59,7 @@ nonisolated final class RecordingCameraGrabber: NSObject, AVCaptureVideoDataOutp
 
         let frame: Data? = await withCheckedContinuation { continuation in
             self.continuation = continuation
+            self.startedAt = Date()
             session.startRunning()
             // 超时兜底。
             DispatchQueue.global().asyncAfter(deadline: .now() + timeoutSeconds) { [weak self] in
@@ -68,6 +83,10 @@ nonisolated final class RecordingCameraGrabber: NSObject, AVCaptureVideoDataOutp
                        didOutput sampleBuffer: CMSampleBuffer,
                        from connection: AVCaptureConnection) {
         guard !hasResumed, let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        arrivedFrameCount += 1
+        // 预热没走完就丢掉这一帧，等下一帧。超时那条路会兜底，所以这里可以放心等。
+        guard arrivedFrameCount > Self.minimumFramesToDiscard,
+              Date().timeIntervalSince(startedAt) >= Self.settleSeconds else { return }
         let ciImage = CIImage(cvPixelBuffer: buffer)
         guard let cgImage = CIContext().createCGImage(ciImage, from: ciImage.extent) else {
             finish(with: nil); return
