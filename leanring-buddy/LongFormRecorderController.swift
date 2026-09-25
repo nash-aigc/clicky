@@ -410,11 +410,13 @@ final class LongFormRecorderController: ObservableObject {
 
     /// 转写里有没有提到摄像头。
     ///
-    /// 只在这一个地方判断，而判断结果同时决定**抓不抓**和**附不附** —— 两处各判一次
-    /// 必然漂，而漂的结果是「绿灯亮了但图没发出去」这种最难查的状态。
+    /// 词表放宽到口语里真会出现的说法：ASR 把「摄像头」转成「摄象头」「摄像头儿」都
+    /// 有可能，而漏判的代价是「用户明明在问镜头，模型却看不到」—— 那正是它存在的意义。
+    /// 宁可有几个错判（多附一张 33KB 的图），不可漏判。
     private static func transcriptMentionsCamera(_ text: String) -> Bool {
         let lowered = text.lowercased()
-        return ["摄像头", "镜头", "相机", "webcam", "camera"].contains { lowered.contains($0) }
+        let keywords = ["摄像头", "摄象头", "镜头", "相机", "摄像", "webcam", "camera", "cam"]
+        return keywords.contains { lowered.contains($0) }
     }
 
     /// 这一步到底会不会真的走模型。界面用它决定要不要进入「AI 润色中」相位 ——
@@ -849,21 +851,21 @@ final class LongFormRecorderController: ObservableObject {
             ? Self.captureMainDisplayJPEG() : nil
         // 摄像头抓帧是**异步**的（要等一帧到），所以在停止这一秒启动、稍后再 await。
         // 同步等会把点击冻住最多 1.5 秒 —— 而用户按下停止时最不该有的就是卡顿。
-        // **摄像头是关键词触发的标记，不是「开了就一直参与」。**
+        // **抓帧不再看转写。** 开关开着就抓。
         //
-        // 用户 2026-09-26：「把摄像头也做成类似……的标记：用户提到摄像头相关关键词时，
-        // 作为一个标记，正常情况下不参与」。
+        // 原来这里用「停止那一刻攒下的转写文本」判关键词、判中才抓。那是个**竞态**：
+        // 判据用的是 `transcriptPlainText + livePartialText`，而最后一句那时可能还没
+        // 定稿 —— 用户把「摄像头」说在最后一句里，检查就漏了。实测就漏过一次：
+        // 日志里写着「摄像头无」，而用户明明是在问纸上的内容。
         //
-        // 而且这里**不是「抓了但不附上去」，是「根本不抓」** —— 摄像头一开，
-        // 那颗绿灯就会亮。那是用户看得见的东西，不能因为「反正不用」就每次都去开一下。
-        // 判据用停止那一刻已经攒下的转写文本：那一刻它已经包含了用户说过的全部内容。
-        let spokenSoFar = transcriptPlainText + livePartialText
-        cameraFrameTask = (stopMomentSettings.recordingPolishCapturesCamera
-                           && Self.transcriptMentionsCamera(spokenSoFar))
+        // 现在分两步：**抓是抓、附是附**。抓在这里无条件下发（一帧 33KB，成本可忽略），
+        // 附不附由 `completeStop` 里**定稿之后的完整文本**决定 —— 那时文本是全的，
+        // 没有竞态。
+        //
+        // 代价：开关开着时，每次停止摄像头都会开一下，绿灯会闪一下。这一点必须让用户
+        // 知道 —— 见下面 `transcriptMentionsCamera` 的注释。
+        cameraFrameTask = stopMomentSettings.recordingPolishCapturesCamera
             ? Task { await RecordingCameraGrabber.grabOneFrameJPEG() } : nil
-        if cameraFrameTask != nil {
-            publishDiagnostic("转写里提到摄像头 → 抓一帧")
-        }
 
         // 停止的音效。
         //
@@ -1018,7 +1020,15 @@ final class LongFormRecorderController: ObservableObject {
         let willPolish = shouldRunPolishStep()
         if willPolish { isPolishingTranscript = true }
         let generationBeforePolish = cancellationGeneration
-        let cameraFrame = await cameraFrameTask?.value
+        // **附不附，看定稿之后的完整文本。** 这里 `text` 是全的（末包定稿已到）。
+        let capturedCameraFrame = await cameraFrameTask?.value
+        let fullTranscript = text + transcriptPlainText
+        let cameraFrame = Self.transcriptMentionsCamera(fullTranscript) ? capturedCameraFrame : nil
+        if capturedCameraFrame != nil {
+            publishDiagnostic(cameraFrame != nil
+                ? "转写里提到摄像头 → 附上那一帧"
+                : "抓到了摄像头那一帧，但转写里没提摄像头 → 不附")
+        }
         let polished = await polishIfConfigured(rawText: text, cameraFrame: cameraFrame)
         isPolishingTranscript = false
         // 用户在润色期间按了取消 → 这条路到此为止。录音文件和已转写的文本**照常保留**
