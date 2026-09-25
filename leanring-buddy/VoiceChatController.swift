@@ -580,6 +580,7 @@ final class VoiceChatController: ObservableObject {
                 },
                 onBargeIn: { [weak self] in
                     self?.duplexAssistantEntryID = nil
+                    self?.streamingAnswerEntryID = nil
                 },
                 onUserSpeechStarted: {
                     // 见 Callbacks.onUserSpeechStarted 的说明。Chatting 的气泡顺序
@@ -594,6 +595,7 @@ final class VoiceChatController: ObservableObject {
                 },
                 onAssistantTurnFinished: { [weak self] in
                     self?.duplexAssistantEntryID = nil
+                    self?.streamingAnswerEntryID = nil
                 },
                 onSessionConfigured: {
                     // Chatting 的「已连接」仍等第一段音频（那边连上就打招呼，
@@ -615,6 +617,9 @@ final class VoiceChatController: ObservableObject {
         )
     }()
 
+    /// **正在流式输出**的那条回答的条目 id（nil = 没有正在流式的回答）。
+    /// Chatting 页据此给这条渲染卡片式渲染动画（blur 渐显），历史条目渲染为定稿。
+    @Published private(set) var streamingAnswerEntryID: UUID?
     /// 全双工那一轮回答的气泡 id。服务端的回答是流式推来的、没有「回合开始」这个
     /// 明确信号（`response.created` 才是），所以气泡在第一个 delta 到达时建、
     /// 在 `response.done` 时解绑 —— 和打字那条路同一个「一个回合一个气泡」的形状。
@@ -851,6 +856,7 @@ final class VoiceChatController: ObservableObject {
             isDuplexSessionLive = false
         }
         duplexAssistantEntryID = nil
+        streamingAnswerEntryID = nil
         dictationManager.endContinuousListening()
 
         // 两个采集都停掉：摄像头会把系统的绿灯一直点着，屏幕流一直在编码 ——
@@ -1189,6 +1195,7 @@ final class VoiceChatController: ObservableObject {
         //    认领不到气泡，会被追加到列表末尾 —— 同一个顺序错乱。
         let answerEntryID = UUID()
         transcriptEntries.append(VoiceChatTranscriptEntry(id: answerEntryID, isUser: false, text: ""))
+        streamingAnswerEntryID = answerEntryID
 
         cascadeEngine.runTurn(
             utterance: utterance,
@@ -1252,6 +1259,7 @@ final class VoiceChatController: ObservableObject {
 
     /// 一轮结束：定稿那一行，并把回答交给光标旁的气泡。
     private func finishTurn(_ answerEntryID: UUID, finalReplyText: String, spokenText: String) {
+        streamingAnswerEntryID = nil
         let displayText = spokenText.isEmpty
             ? ActionTagParser.speakableTextFromStreamedReply(finalReplyText)
             : spokenText

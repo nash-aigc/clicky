@@ -35,6 +35,9 @@ struct VoiceChatSessionView: View {
 
     @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
+    /// 卡片主题（设置 → 交互）。快照进 @State，保存设置时靠
+    /// `.clickyAppSettingsChanged` 重读，界面立刻换主题，不用重启。
+    @State private var answerCardStyle: AnswerCardStyle = AppSettingsStore.snapshot().answerCardStyle
 
     /// The composer's 展开 button (user's request): the field grows to 30% of
     /// the content column and collapses back to three lines.
@@ -247,6 +250,9 @@ struct VoiceChatSessionView: View {
         // 收藏写入后强制重画音色面板（星星状态不经过任何 @Published）。
         .onReceive(NotificationCenter.default.publisher(for: .clickyVoiceLibraryChanged)) { _ in
             favouriteRevision += 1
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .clickyAppSettingsChanged)) { _ in
+            answerCardStyle = AppSettingsStore.snapshot().answerCardStyle
         }
         .background(
             GeometryReader { geometryProxy in
@@ -1718,8 +1724,11 @@ struct VoiceChatSessionView: View {
                             outgoingBubble(entry.text)
                                 .id(entry.id)
                         } else {
-                            assistantBubble(entry.text)
-                                .id(entry.id)
+                            assistantBubble(
+                                entry.text,
+                                isStreaming: controller.streamingAnswerEntryID == entry.id
+                            )
+                            .id(entry.id)
                         }
                     }
 
@@ -1948,23 +1957,19 @@ struct VoiceChatSessionView: View {
         }
     }
 
-    private func assistantBubble(_ text: String) -> some View {
+    /// 助手回答用 Ask 页同一张卡（`AnswerCardView`， blur-focus 逐字动画），
+    /// 而不是原来的纯色气泡 —— 用户 2026-09-25：「这个卡片的样式才是我真正
+    /// 需要的渲染效果」，并要求把它应用到 Agent 和 Chatting 两页。
+    /// 正在流式的那一条（`streamingAnswerEntryID`）拿 `isStreaming: true`，
+    /// 其余历史条目直接整段显示。
+    private func assistantBubble(_ text: String, isStreaming: Bool) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .top) {
-                Text(text)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.92))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 9)
-                    .background(
-                        bubbleShape(isOutgoing: false)
-                            .fill(DS.Colors.assistantBubbleFill)
-                    )
-                    .overlay(
-                        bubbleShape(isOutgoing: false)
-                            .strokeBorder(DS.Colors.assistantBubbleBorder, lineWidth: 0.5)
-                    )
+                AnswerCardView(
+                    text: text,
+                    isStreaming: isStreaming,
+                    style: answerCardStyle
+                )
                 Spacer(minLength: 56)
             }
 

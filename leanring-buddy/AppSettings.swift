@@ -755,6 +755,12 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// **第一段音频真的开始播**的时刻，而不是连接调用返回的时刻。
     var voiceChatGreetsOnConnect: Bool = true
 
+    /// **静音回复**（用户 2026-09-25）：Ask 页右上角的静音开关 —— 开（默认）
+    /// 时回复照常朗读；关时回复只显示文字、不合成不播放。它只作用于
+    /// CompanionManager 的回复管线（按住说话 / Ask 打字）；Chatting 的会话
+    /// 与它无关（那边有自己的音频流）。
+    var voiceReplyMuted: Bool = false
+
     /// 第一句话说什么。留空就是用内置的那句。
     var voiceChatGreetingText: String = ""
 
@@ -1036,6 +1042,7 @@ nonisolated extension AppSettings {
         case allowsCircleToAsk
         case playsNotchSoundEffects
         case voiceChatGreetsOnConnect
+        case voiceReplyMuted
         case voiceChatGreetingText
         case enablesNotchPresence
         case allowsComputerControl
@@ -1133,6 +1140,7 @@ nonisolated extension AppSettings {
         allowsCircleToAsk = try container.decodeIfPresent(Bool.self, forKey: .allowsCircleToAsk) ?? defaults.allowsCircleToAsk
         playsNotchSoundEffects = try container.decodeIfPresent(Bool.self, forKey: .playsNotchSoundEffects) ?? defaults.playsNotchSoundEffects
         voiceChatGreetsOnConnect = try container.decodeIfPresent(Bool.self, forKey: .voiceChatGreetsOnConnect) ?? defaults.voiceChatGreetsOnConnect
+        voiceReplyMuted = try container.decodeIfPresent(Bool.self, forKey: .voiceReplyMuted) ?? defaults.voiceReplyMuted
         voiceChatGreetingText = try container.decodeIfPresent(String.self, forKey: .voiceChatGreetingText) ?? defaults.voiceChatGreetingText
         enablesNotchPresence = try container.decodeIfPresent(Bool.self, forKey: .enablesNotchPresence) ?? defaults.enablesNotchPresence
         // `decodeIfPresent` is not optional politeness here: a synthesized `Codable`

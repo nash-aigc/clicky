@@ -37,6 +37,10 @@ struct AgentSessionView: View {
     /// figure has to be measured rather than assumed.
     @State private var contentColumnHeight: CGFloat = 0
 
+    /// 卡片主题（设置 → 交互）。与 Ask / Chatting 两页同一做法：快照进
+    /// @State，保存设置时靠 `.clickyAppSettingsChanged` 重读。
+    @State private var answerCardStyle: AnswerCardStyle = AppSettingsStore.snapshot().answerCardStyle
+
     var body: some View {
         if let agent = agentSessionManager.selectedAgent {
             VStack(spacing: 0) {
@@ -48,6 +52,9 @@ struct AgentSessionView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
             .onTapGesture { composerFieldIsFocused = true }
+            .onReceive(NotificationCenter.default.publisher(for: .clickyAppSettingsChanged)) { _ in
+                answerCardStyle = AppSettingsStore.snapshot().answerCardStyle
+            }
             .background(
                 GeometryReader { geometryProxy in
                     Color.clear
@@ -260,7 +267,7 @@ struct AgentSessionView: View {
 
                     if agent.status == .running {
                         if !streamingText.isEmpty {
-                            assistantBubble(streamingText)
+                            assistantBubble(streamingText, isStreaming: true)
                                 .id("agent-streaming")
                         } else {
                             workingIndicator
@@ -571,23 +578,19 @@ struct AgentSessionView: View {
         }
     }
 
-    private func assistantBubble(_ text: String) -> some View {
+    /// Agent 回复用 Ask 页同一张卡（`AnswerCardView`，blur-focus 逐字动画）
+    /// —— 用户 2026-09-25：「这个卡片的样式才是我真正需要的渲染效果」，要求
+    /// 应用到 Agent 和 Chatting 两页。正在流式的那条拿 `isStreaming: true`，
+    /// 历史条目整段显示。Agent 的文字来自 CLI、不带 `[POINT:]` 一类执行标签，
+    /// 所以这里不需要 Ask 页那层 strip。
+    private func assistantBubble(_ text: String, isStreaming: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .top) {
-                Text(text)
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.92))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 13)
-                    .padding(.vertical, 9)
-                    .background(
-                        bubbleShape(isOutgoing: false)
-                            .fill(DS.Colors.assistantBubbleFill)
-                    )
-                    .overlay(
-                        bubbleShape(isOutgoing: false)
-                            .strokeBorder(DS.Colors.assistantBubbleBorder, lineWidth: 0.5)
-                    )
+                AnswerCardView(
+                    text: text,
+                    isStreaming: isStreaming,
+                    style: answerCardStyle
+                )
                 Spacer(minLength: 56)
             }
 

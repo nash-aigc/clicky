@@ -61,6 +61,48 @@ struct NotchHomeView: View {
                 conversationFlow
             }
 
+            // **静音开关**（用户 2026-09-25：「放在输入框和停止按钮的上面、右上方，
+            // 宽度可以比停止按钮大」）：开 = 回复照常朗读；关 = 只显示文字。
+            // 默认是播放（开）。它只控制 CompanionManager 回复管线的朗读，
+            // 不影响 Chatting 会话自己的音频。
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Button {
+                    companionManager.voiceReplyMuted.toggle()
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: companionManager.voiceReplyMuted
+                              ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.system(size: 11, weight: .medium))
+                        Text(companionManager.voiceReplyMuted ? "已静音" : "声音")
+                            .font(.system(size: 11.5, weight: .medium))
+                    }
+                    .foregroundColor(companionManager.voiceReplyMuted
+                                     ? Color.red.opacity(0.8) : .white.opacity(0.75))
+                    .padding(.horizontal, 12)
+                    .frame(height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(
+                                companionManager.voiceReplyMuted
+                                ? Color.red.opacity(0.4) : Color.clear,
+                                lineWidth: 1)
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help(companionManager.voiceReplyMuted
+                      ? "已静音：回复只显示文字（点击恢复朗读）"
+                      : "正在朗读回复（点击静音，只显示文字）")
+            }
+            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+            .padding(.bottom, 4)
+
             composerRow
 
             // The last error's verbatim API text. The deleted menu bar panel
@@ -89,16 +131,9 @@ struct NotchHomeView: View {
                 .help("点击隐藏")
             }
 
-            // 「松开发送」 — the original's caption while the talk key is held.
-            // Recognition has not returned this press's final transcript yet,
-            // so the only honest message is about the key, not the words.
-            if companionManager.voiceState == .listening {
-                Text("松开发送")
-                    .font(.system(size: 11.5))
-                    .foregroundColor(.white.opacity(0.45))
-                    .frame(maxWidth: .infinity)
-                    .padding(.bottom, 10)
-            }
+            // 「松开发送」提示行已删（用户 2026-09-25：「右侧底部输入框下面总是
+            // 多出一行文字，把输入框往上顶了一下」）。 listening 相位在刘海带子
+            // 上本来就有动画，这里不需要重复一份还会顶布局的说明文字。
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // A click anywhere in the column puts the caret in the composer — the

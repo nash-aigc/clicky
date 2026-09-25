@@ -255,6 +255,17 @@ final class CompanionManager: ObservableObject {
     /// `bailianTTSClient`），这不是偷懒而是本方案的地基：采集与播放在同一条
     /// `AVAudioEngine` 上，系统 AEC 才有参考信号，用户听到的「瞬间打断」正是这么来的。
     /// 代价是会话期间麦克风被会话占着，所以按住说话的快捷键在会话中要让位。
+    /// **静音开关**（Ask 页的按钮读写它）：开 = 回复只显示文字、不合成不播放。
+    /// 持久化在 `AppSettings.voiceReplyMuted`，跨启动保留。
+    var voiceReplyMuted: Bool {
+        get { AppSettingsStore.snapshot().voiceReplyMuted }
+        set {
+            var settings = AppSettingsStore.snapshot()
+            settings.voiceReplyMuted = newValue
+            try? AppSettingsStore.save(settings)
+        }
+    }
+
     /// **挂断当前任何一通语音会话** —— 刘海右翼、展开态顶部那条带子上的红色挂断、
     /// 以及快捷键，全都走这一个入口。
     ///
@@ -2234,7 +2245,9 @@ final class CompanionManager: ObservableObject {
             // below re-throws the identical error, so the existing error
             // reporting covers both modes.
             var streamingSpeechSession: BailianTTSClient.StreamingSpeechSession?
-            if appSettings.speechSpeakMode == .sentenceFastReply {
+            // **静音开关**（Ask 页的静音按钮 → AppSettings.voiceReplyMuted）：关时回复
+            // 只显示文字、不合成不播放；文字照旧经 streamingAnswerText 上屏。
+            if appSettings.speechSpeakMode == .sentenceFastReply, !appSettings.voiceReplyMuted {
                 do {
                     // NOTE 2026-09-24: a `prepareForPlayback()` call stood here
                     // and was WORSE than useless — `beginStreamingSpeech()`
@@ -2795,7 +2808,7 @@ final class CompanionManager: ObservableObject {
                         // above — so the whole-reply path's post-`speakText` flip
                         // has no equivalent here.
                         streamingSpeechSession.finishStreaming()
-                    } else {
+                    } else if !appSettings.voiceReplyMuted {
                         do {
                             // The echo filter's reference signal for the
                             // whole-reply path (逐句快答 records its text at the
