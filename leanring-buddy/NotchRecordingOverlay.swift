@@ -114,16 +114,16 @@ struct NotchRecordingBandView: View {
             Spacer(minLength: 0)
             HStack(spacing: 8) {
                 if recorder.isPolishingTranscript {
-                    // **AI 润色中** —— 绿色、字体一直忽大忽小。
-                    // 用户：「左侧刘海屏的左侧显示"AI 润色中"，字体一直忽大忽小，
-                    // 然后变成绿色。这个文字是绿色的」。
+                    // **AI 润色中** —— 一道光扫过文字。
                     //
-                    // 用 `scaleEffect` 而不是改字号：SwiftUI 的 `Font` 不是可动画的，
-                    // 而缩放出来的视觉效果和字号变化完全一样。
-                    Text("AI 润色中")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(DS.Colors.success)
-                        .modifier(PulsingScaleModifier())
+                    // 用户 2026-09-25 改的要求：「改为蓝白或蓝绿色彩光效果，光波在文字上
+                    // 移动，移动时文字略微凸起或变化，**字号保持不变**」（原来那版是
+                    // 字号忽大忽小，已经不是他要的了）。
+                    //
+                    // 字距：`AI` 和 `润色` 之间用一个 **thin space**（U+2009），
+                    // 比普通空格窄、又不至于挨在一起 —— 用户：「缩小"AI"与"润色"之间的
+                    // 字间距，保留一点空隙，不要完全挨着」。
+                    ShimmeringPolishText(text: "AI\u{2009}润色中")
                 } else if recorder.isFinalizingTranscript {
                     Circle()
                         .fill(Color(red: 1.0, green: 0.27, blue: 0.23))
@@ -186,16 +186,16 @@ struct NotchRecordingBandView: View {
                 // 用户点击这个数字……就自动取消转写，包括弹窗等全都自动取消，
                 // 也不需要粘贴到剪贴板，直接放弃这次任务」）。
                 if recorder.isPolishingTranscript {
-                    // **AI 润色中** —— 绿色、字体一直忽大忽小。
-                    // 用户：「左侧刘海屏的左侧显示"AI 润色中"，字体一直忽大忽小，
-                    // 然后变成绿色。这个文字是绿色的」。
+                    // **AI 润色中** —— 一道光扫过文字。
                     //
-                    // 用 `scaleEffect` 而不是改字号：SwiftUI 的 `Font` 不是可动画的，
-                    // 而缩放出来的视觉效果和字号变化完全一样。
-                    Text("AI 润色中")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(DS.Colors.success)
-                        .modifier(PulsingScaleModifier())
+                    // 用户 2026-09-25 改的要求：「改为蓝白或蓝绿色彩光效果，光波在文字上
+                    // 移动，移动时文字略微凸起或变化，**字号保持不变**」（原来那版是
+                    // 字号忽大忽小，已经不是他要的了）。
+                    //
+                    // 字距：`AI` 和 `润色` 之间用一个 **thin space**（U+2009），
+                    // 比普通空格窄、又不至于挨在一起 —— 用户：「缩小"AI"与"润色"之间的
+                    // 字间距，保留一点空隙，不要完全挨着」。
+                    ShimmeringPolishText(text: "AI\u{2009}润色中")
                 } else if recorder.isFinalizingTranscript {
                     LongFormRecorderController.shared.cancelCurrentRecording()
                     return
@@ -439,31 +439,89 @@ private struct SilentButtonStyle: ButtonStyle {
     }
 }
 
-/// 「AI 润色中」的字体忽大忽小。
-private struct PulsingScaleModifier: ViewModifier {
-    @State private var isLarge = false
+/// 润色那几个字：一道光从左边扫到右边，扫过的地方变白。
+///
+/// 做法是**两层文字叠在一起** —— 底下那层是蓝绿底色，上面那层是白色，只有一条
+/// 46pt 宽的渐变带能透出来，那条带子左右扫。比「改 `foregroundStyle` 的渐变停靠点」
+/// 稳：那一种要求停靠点严格递增，而扫动的相位一定会越过端点。
+///
+/// **字号不变**（用户明确要求），「凸起」由白光本身表达 —— 扫过的地方更亮，读起来
+/// 就是那一段浮起来了。
+private struct ShimmeringPolishText: View {
+    let text: String
 
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(isLarge ? 1.13 : 0.94)
-            .animation(.easeInOut(duration: 0.62).repeatForever(autoreverses: true), value: isLarge)
-            .onAppear { isLarge = true }
-    }
-}
+    /// 蓝绿。用户给的是「蓝白或蓝绿」，取蓝绿 —— 它和「转写中」那个绿是同一个色系，
+    /// 但更偏青，所以两个相位一眼能分清。
+    private static let baseColor = Color(hex: "#2DD4BF")
 
-/// 润色期间右侧那个转圈。一段绿色圆弧绕中心转。
-private struct PolishingSpinner: View {
     var body: some View {
         TimelineView(.animation) { context in
             let seconds = context.date.timeIntervalSinceReferenceDate
-            Circle()
-                .trim(from: 0, to: 0.3)
-                .stroke(DS.Colors.success,
-                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-                .frame(width: 18, height: 18)
-                .rotationEffect(.degrees(seconds * 330))
-                .frame(width: 32, height: 26)
-                .contentShape(Rectangle())
+            // 一趟约 1.6 秒，来回扫。
+            let phase = (seconds / 1.6).truncatingRemainder(dividingBy: 1)
+            let travel: CGFloat = 84
+
+            ZStack {
+                Text(text)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(Self.baseColor)
+                Text(text)
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundColor(.white)
+                    .mask(
+                        LinearGradient(colors: [.clear, .white, .clear],
+                                       startPoint: .leading, endPoint: .trailing)
+                            .frame(width: 46)
+                            .offset(x: -travel / 2 + travel * CGFloat(phase))
+                    )
+            }
+            .fixedSize()
+            // 扫过时那一段稍微发光 —— 「略微凸起」的观感来源。
+            .shadow(color: Self.baseColor.opacity(0.55), radius: 5)
+        }
+    }
+}
+
+/// 润色期间右侧那个图标：外圈慢速转，中心不断向外发射圆环。
+///
+/// 用户的设计：「空心圆环，慢速持续旋转。圆环内部为中心圆点，通过向外扩散多个
+/// 大小不一的圆环实现呼吸效果，圆环随机扩散、逐渐变亮，最内侧圆环不断向外发射
+/// 圆环，最外侧圆环持续转圈」。
+///
+/// 三个相位错开的扩散环 + 一个带缺口的旋转外环。外环**留一个缺口**是必要的：
+/// 一个完整圆环转起来和静止长得一样，看不出在动。
+private struct PolishingRings: View {
+    private static let ringColor = Color(hex: "#2DD4BF")
+
+    var body: some View {
+        TimelineView(.animation) { context in
+            let seconds = context.date.timeIntervalSinceReferenceDate
+            ZStack {
+                // 中心圆点。
+                Circle()
+                    .fill(Self.ringColor)
+                    .frame(width: 5, height: 5)
+
+                // 三个向外扩散的环，相位错开 —— 看起来像连续发射而不是同时跳。
+                ForEach(0..<3, id: \.self) { index in
+                    let phase = ((seconds / 2.1) + Double(index) / 3)
+                        .truncatingRemainder(dividingBy: 1)
+                    Circle()
+                        .stroke(Self.ringColor.opacity(1 - phase), lineWidth: 1.1)
+                        .frame(width: 5 + 20 * CGFloat(phase),
+                               height: 5 + 20 * CGFloat(phase))
+                }
+
+                // 最外圈：带缺口的空心环，慢速转。约 4 秒一圈。
+                Circle()
+                    .trim(from: 0, to: 0.78)
+                    .stroke(Self.ringColor.opacity(0.85),
+                            style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+                    .frame(width: 24, height: 24)
+                    .rotationEffect(.degrees(seconds * 90))
+            }
+            .frame(width: 32, height: 26)
+            .contentShape(Rectangle())
         }
     }
 }
@@ -523,9 +581,11 @@ private struct RecordingWaveformLabel: View {
 
     var body: some View {
         if isPolishing {
-            // 润色期间右侧换个动画 —— 用户：「右侧是一个随机动画，随便设计一个
-            // 动画就好」。转一段绿色圆弧。
-            PolishingSpinner()
+            // 润色期间右侧：外圈慢速旋转 + 中心圆点不断向外发射圆环。
+            // 用户：「在刘海右侧添加一个旋转图标：空心圆环，慢速持续旋转。圆环内部为
+            // 中心圆点，通过向外扩散多个大小不一的圆环实现呼吸效果，圆环随机扩散、
+            // 逐渐变亮，最内侧圆环不断向外发射圆环，最外侧圆环持续转圈」。
+            PolishingRings()
         } else if let seconds = finalizeSecondsRemaining {
             // 收尾期间：右侧显示倒计时（用户要求「右侧显示倒计时多少秒」）。
             // **绿色** —— 用户：「点击停止之后，倒计时的数字换成绿色」。
@@ -937,16 +997,16 @@ final class NotchRecordingOverlayController {
                 } else {
                     let recorder = LongFormRecorderController.shared
                     if recorder.isPolishingTranscript {
-                    // **AI 润色中** —— 绿色、字体一直忽大忽小。
-                    // 用户：「左侧刘海屏的左侧显示"AI 润色中"，字体一直忽大忽小，
-                    // 然后变成绿色。这个文字是绿色的」。
+                    // **AI 润色中** —— 一道光扫过文字。
                     //
-                    // 用 `scaleEffect` 而不是改字号：SwiftUI 的 `Font` 不是可动画的，
-                    // 而缩放出来的视觉效果和字号变化完全一样。
-                    Text("AI 润色中")
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(DS.Colors.success)
-                        .modifier(PulsingScaleModifier())
+                    // 用户 2026-09-25 改的要求：「改为蓝白或蓝绿色彩光效果，光波在文字上
+                    // 移动，移动时文字略微凸起或变化，**字号保持不变**」（原来那版是
+                    // 字号忽大忽小，已经不是他要的了）。
+                    //
+                    // 字距：`AI` 和 `润色` 之间用一个 **thin space**（U+2009），
+                    // 比普通空格窄、又不至于挨在一起 —— 用户：「缩小"AI"与"润色"之间的
+                    // 字间距，保留一点空隙，不要完全挨着」。
+                    ShimmeringPolishText(text: "AI\u{2009}润色中")
                 } else if recorder.isFinalizingTranscript { recorder.cancelCurrentRecording() }
                     else if recorder.isRecording { recorder.stopRecording() }
                     else { recorder.startRecording(resumingCurrentSession: true) }
