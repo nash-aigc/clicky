@@ -1,0 +1,436 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 2 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 263ms
+⏱️ [hitch] main thread busy for 142ms
+🔊 [aecprobe] t=1790321039.513 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 93ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790321041.138 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790321041.383 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 71ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790321043.758] id=resp_G769WgLE5JK
+🧾 [ai-text +2字] resp=resp_G769W 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_G769W 累计3字：「！」
+🧾 [ai-text +1字] resp=resp_G769W 累计4字：「请」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +3字] resp=resp_G769W 累计7字：「告诉我」
+🧾 [ai-text +2字] resp=resp_G769W 累计9字：「你想」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_G769W 累计11字：「练习」
+🧾 [ai-text +2字] resp=resp_G769W 累计13字：「哪种」
+⏱️ [hitch] main thread busy for 153ms
+🧾 [ai-text +2字] resp=resp_G769W 累计15字：「语言」
+🧾 [ai-text +1字] resp=resp_G769W 累计16字：「，」
+🧾 [ai-text +2字] resp=resp_G769W 累计18字：「或者」
+🧾 [ai-text +2字] resp=resp_G769W 累计20字：「需要」
+🧾 [ai-text +1字] resp=resp_G769W 累计21字：「哪」
+🧾 [ai-text +3字] resp=resp_G769W 累计24字：「方面的」
+🧾 [ai-text +2字] resp=resp_G769W 累计26字：「帮助」
+🧾 [ai-text +1字] resp=resp_G769W 累计27字：「？」
+🔊 [ai-audio首块 t=1790321044.720] resp=resp_G769W
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ 上行块 #50（64B）已发出
+🧾 [ai-text-done] resp=resp_G769W 官方全文 27 字（累积值 27 字）
+🎧 [response.done] id=resp_G769WgLE5JK
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #100（3200B）已发出
+🎙️ 上行块 #150（64B）已发出
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 上行块 #250（64B）已发出
+🎙️ 上行块 #300（64B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 上行块 #500（64B）已发出
+🎙️ 上行块 #550（2730B）已发出
+🎙️ 上行块 #600（3200B）已发出
+🎙️ 上行块 #650（64B）已发出
+🎙️ 上行块 #700（3200B）已发出
+🎙️ 上行块 #750（64B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #800（2730B）已发出
+🎙️ 上行块 #850（3200B）已发出
+🎙️ 上行块 #900（64B）已发出
+🎙️ 上行块 #950（3200B）已发出
+🎙️ 上行块 #1000（64B）已发出
+🎙️ 上行块 #1050（3200B）已发出
+🎙️ 上行块 #1100（3200B）已发出
+🎙️ 上行块 #1150（64B）已发出
+🎙️ 上行块 #1200（3200B）已发出
+🎙️ 上行块 #1250（64B）已发出
+🎙️ 上行块 #1300（3200B）已发出
+🎙️ 上行块 #1350（3200B）已发出
+🎙️ 上行块 #1400（64B）已发出
+🎙️ 上行块 #1450（3200B）已发出
+🎙️ 上行块 #1500（64B）已发出
+🎙️ 上行块 #1550（3200B）已发出
+🎙️ 上行块 #1600（64B）已发出
+🎙️ 上行块 #1650（64B）已发出
+🎙️ 上行块 #1700（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #1750（64B）已发出
+🎙️ 上行块 #1800（3200B）已发出
+🎙️ 上行块 #1850（64B）已发出
+🎙️ 上行块 #1900（64B）已发出
+🎙️ 上行块 #1950（3200B）已发出
+🎙️ 上行块 #2000（64B）已发出
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 172ms
+⏱️ [hitch] main thread busy for 68ms
+💬 语音聊天：会话已结束
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790321153.241] id=resp_QrQmVMw266Y
+🧾 [ai-text +2字] resp=resp_QrQmV 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_QrQmV 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_QrQmV 累计6字：「很高兴」
+🧾 [ai-text +1字] resp=resp_QrQmV 累计7字：「能」
+🧾 [ai-text +2字] resp=resp_QrQmV 累计9字：「听到」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +2字] resp=resp_QrQmV 累计11字：「你的」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_QrQmV 累计13字：「声音」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +1字] resp=resp_QrQmV 累计14字：「。」
+🧾 [ai-text +3字] resp=resp_QrQmV 累计17字：「有什么」
+🧾 [ai-text +2字] resp=resp_QrQmV 累计19字：「需要」
+🧾 [ai-text +1字] resp=resp_QrQmV 累计20字：「我」
+🧾 [ai-text +2字] resp=resp_QrQmV 累计22字：「协助」
+🧾 [ai-text +2字] resp=resp_QrQmV 累计24字：「的吗」
+⏱️ [hitch] main thread busy for 42ms
+🧾 [ai-text +1字] resp=resp_QrQmV 累计25字：「？」
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_QrQmV 官方全文 25 字（累积值 25 字）
+🎧 [response.done] id=resp_QrQmVMw266Y
+🎙️ 上行块 #50（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790321157.785] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「对」
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790321160.499] id=resp_QrQmHU8lbPu
+🧾 [ai-text +2字] resp=resp_QrQmH 累计2字：「北京」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计9字：「，」
+⏱️ [hitch] main thread busy for 42ms
+🧾 [ai-text +2字] resp=resp_QrQmH 累计11字：「一座」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计13字：「融合」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计15字：「千年」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计17字：「历史」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计20字：「与现代」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计23字：「活力的」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计26字：「国际化」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计29字：「大都市」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计30字：「。」
+⏱️ [hitch] main thread busy for 58ms
+🧾 [ai-text +2字] resp=resp_QrQmH 累计32字：「这里」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计34字：「拥有」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计36字：「故宫」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计37字：「、」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计38字：「天」
+🧾 [ai-text +28字] resp=resp_QrQmH 累计66字：「坛、长城等世界文化遗产，见证着中华文明的辉煌。同」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计67字：「、」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计68字：「水」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计70字：「立方」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计71字：「等」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计73字：「现代」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计75字：「建筑」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计78字：「展现了」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计80字：「蓬勃」
+⏱️ [hitch] main thread busy for 124ms
+🧾 [ai-text +3字] resp=resp_QrQmH 累计83字：「的创新」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计85字：「精神」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计86字：「。」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计88字：「作为」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计90字：「政治」
+🎙️ 上行块 #150（64B）已发出
+🧾 [ai-text +1字] resp=resp_QrQmH 累计91字：「、」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计93字：「文化」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计94字：「、」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计96字：「科技」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计98字：「中心」
+⏱️ [hitch] main thread busy for 61ms
+🧾 [ai-text +1字] resp=resp_QrQmH 累计99字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计101字：「北京」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计103字：「汇聚」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计104字：「了」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计106字：「众多」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计108字：「高校」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计109字：「与」
+🧾 [ai-text +4字] resp=resp_QrQmH 累计113字：「科研机构」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计114字：「，」
+⏱️ [hitch] main thread busy for 57ms
+🧾 [ai-text +2字] resp=resp_QrQmH 累计116字：「也是」
+🎧 [user-transcript] item=item_QrQmQW4 「提供一下200字的提供一个北京的200字介绍。」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计118字：「全球」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计121字：「重要的」
+🧾 [ai-text +4字] resp=resp_QrQmH 累计125字：「交通枢纽」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计126字：「。」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计128字：「胡同」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计130字：「里的」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计132字：「烟火」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计133字：「气」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计134字：「与」
+⏱️ [hitch] main thread busy for 61ms
+🧾 [ai-text +3字] resp=resp_QrQmH 累计137字：「CBD」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计138字：「的」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计140字：「摩天」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计141字：「楼」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计142字：「交」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计143字：「相」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计145字：「辉映」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计146字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计148字：「四季」
+⏱️ [hitch] main thread busy for 66ms
+🧾 [ai-text +1字] resp=resp_QrQmH 累计149字：「分」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计151字：「明的」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计153字：「景色」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计155字：「各具」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计157字：「特色」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计158字：「。」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计161字：「无论是」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计163字：「品尝」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +3字] resp=resp_QrQmH 累计166字：「地道的」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计168字：「北京」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计170字：「烤鸭」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计171字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计173字：「还是」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计175字：「漫步」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计177字：「颐和」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计178字：「园」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计179字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计181字：「都能」
+⏱️ [hitch] main thread busy for 65ms
+🧾 [ai-text +3字] resp=resp_QrQmH 累计184字：「感受到」
+🧾 [ai-text +4字] resp=resp_QrQmH 累计188字：「这座城市」
+🧾 [ai-text +3字] resp=resp_QrQmH 累计191字：「独特的」
+🧾 [ai-text +2字] resp=resp_QrQmH 累计193字：「魅力」
+🧾 [ai-text +1字] resp=resp_QrQmH 累计194字：「。」
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #250（64B）已发出
+🧾 [ai-text-done] resp=resp_QrQmH 官方全文 194 字（累积值 194 字）
+🎧 [response.done] id=resp_QrQmHU8lbPu
+🎧 [event t=1790321167.480] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790321168.891] id=resp_QrQmCQjkE72
+🧾 [ai-text +7字] resp=resp_QrQmC 累计7字：「美国位于北美洲」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计8字：「，」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计11字：「是世界」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计13字：「第三」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计14字：「大」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计16字：「国家」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计17字：「，」
+⏱️ [hitch] main thread busy for 126ms
+🧾 [ai-text +2字] resp=resp_QrQmC 累计19字：「也是」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计21字：「全球」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计23字：「最具」
+🧾 [ai-text +4字] resp=resp_QrQmC 累计27字：「影响力的」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计29字：「国家」
+🎙️ 上行块 #300（64B）已发出
+🧾 [ai-text +2字] resp=resp_QrQmC 累计31字：「之一」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计32字：「。」
+🎧 [user-transcript] item=item_QrQmZmT 「关于美国的信息。」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计33字：「它」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计35字：「拥有」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计37字：「高度」
+⏱️ [hitch] main thread busy for 107ms
+🧾 [ai-text +2字] resp=resp_QrQmC 累计39字：「发达」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计42字：「的经济」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计43字：「、」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计45字：「顶尖」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计48字：「的科技」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计49字：「和」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计51字：「多元」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计53字：「文化」
+⏱️ [hitch] main thread busy for 198ms
+🧾 [ai-text +1字] resp=resp_QrQmC 累计54字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计56字：「首都」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计57字：「为」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计60字：「华盛顿」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计62字：「特区」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计63字：「，」
+⏱️ [hitch] main thread busy for 140ms
+🧾 [ai-text +2字] resp=resp_QrQmC 累计65字：「最大」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计67字：「城市」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计68字：「是」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计70字：「纽约」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计71字：「。」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计73字：「美国」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计74字：「由」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计75字：「5」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计76字：「0」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计77字：「个」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计78字：「州」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计80字：「组成」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计81字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计83字：「地形」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计85字：「地貌」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计87字：「丰富」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计88字：「，」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计89字：「从」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计90字：「落」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计91字：「基」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计93字：「山脉」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计94字：「到」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计95字：「密」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计97字：「西西」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计98字：「比」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计99字：「河」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计101字：「平原」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计102字：「，」
+🧾 [ai-text +4字] resp=resp_QrQmC 累计106字：「自然景观」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计108字：「壮丽」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计109字：「。」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计111字：「这里」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计114字：「不仅是」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计117字：「好莱坞」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计119字：「电影」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计120字：「和」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计122字：「流行」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计125字：「音乐的」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计127字：「全球」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计129字：「中心」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计130字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计132字：「也是」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计134字：「众多」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计136字：「世界」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计138字：「名校」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计139字：「和」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计141字：「科研」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计144字：「机构的」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计147字：「所在地」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计148字：「。」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计150字：「同时」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计151字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计153字：「美国」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计156字：「是一个」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计158字：「移民」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计160字：「国家」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计161字：「，」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计163字：「文化」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计165字：「包容」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计166字：「性」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计168字：「极强」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计169字：「，」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计172字：「融合了」
+🧾 [ai-text +5字] resp=resp_QrQmC 累计177字：「世界各地的」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计179字：「风俗」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计181字：「习惯」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计182字：「，」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计185字：「形成了」
+🧾 [ai-text +3字] resp=resp_QrQmC 累计188字：「独特的」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计189字：「“」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计190字：「熔」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计191字：「炉」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计192字：「”」
+🧾 [ai-text +2字] resp=resp_QrQmC 累计194字：「社会」
+🧾 [ai-text +1字] resp=resp_QrQmC 累计195字：「。」
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 上行块 #400（64B）已发出
+⏱️ [hitch] main thread busy for 46ms
+🎙️ 上行块 #450（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 251ms
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms

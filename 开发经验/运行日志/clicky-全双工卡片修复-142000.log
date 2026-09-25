@@ -1,0 +1,809 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 1 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 179ms
+⏱️ [hitch] main thread busy for 136ms
+🔊 [aecprobe] t=1790317206.508 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_1plus（全双工 3.1 Plus）
+   识别=qwen-audio-3.1-realtime-plus 理解=qwen-audio-3.1-realtime-plus 表达=qwen-audio-3.1-realtime-plus
+   音色=longanqian_v3.1（族=全双工）画面=不允许
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.1-realtime-plus voice=longanqian_v3.1
+🔊 [aecprobe] t=1790317208.115 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎧 [event] session.updated（配置被接受）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790317208.375 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian_v3.1）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790317208.375 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790317208.376 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_CIqMFsFtgRM
+🧾 [ai-text +2字] resp=resp_CIqMF 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计3字：「！」
+⏱️ [hitch] main thread busy for 47ms
+🎙️ 上行块 #2（2720B）已发出
+🧾 [ai-text +3字] resp=resp_CIqMF 累计6字：「很高兴」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计7字：「能」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计9字：「和你」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计11字：「交流」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计12字：「。」
+🎙️ 上行块 #3（2720B）已发出
+🧾 [ai-text +2字] resp=resp_CIqMF 累计14字：「我是」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计15字：「多」
+⏱️ [hitch] main thread busy for 57ms
+🧾 [ai-text +2字] resp=resp_CIqMF 累计17字：「语种」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计19字：「教练」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计20字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计22字：「精通」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计24字：「日语」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计25字：「、」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计27字：「韩语」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计28字：「、」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计30字：「英语」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计31字：「、」
+🧾 [ai-text +4字] resp=resp_CIqMF 累计35字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计36字：「、」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计38字：「德语」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计39字：「和」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计41字：「法语」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计42字：「。」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计44字：「请问」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计46字：「你想」
+⏱️ [hitch] main thread busy for 104ms
+🧾 [ai-text +2字] resp=resp_CIqMF 累计48字：「练习」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计50字：「哪种」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计52字：「语言」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计53字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计55字：「或者」
+🔊 [ai-audio块] resp=resp_CIqMF
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text +3字] resp=resp_CIqMF 累计58字：「有什么」
+🧾 [ai-text +3字] resp=resp_CIqMF 累计61字：「具体的」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计63字：「问题」
+⏱️ [hitch] main thread busy for 94ms
+🧾 [ai-text +2字] resp=resp_CIqMF 累计65字：「需要」
+🧾 [ai-text +2字] resp=resp_CIqMF 累计67字：「帮助」
+🧾 [ai-text +1字] resp=resp_CIqMF 累计68字：「吗」
+🔊 [ai-audio块] resp=resp_CIqMF
+🧾 [ai-text +1字] resp=resp_CIqMF 累计69字：「？」
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🔊 [ai-audio块] resp=resp_CIqMF
+🎧 [response.done] id=resp_CIqMFsFtgRM
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #50（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「什么」
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_CIqMJYCsX3K
+🧾 [ai-text +2字] resp=resp_CIqMJ 累计2字：「好的」
+🧾 [ai-text +1字] resp=resp_CIqMJ 累计3字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMJ 累计5字：「请问」
+🧾 [ai-text +2字] resp=resp_CIqMJ 累计7字：「你想」
+🧾 [ai-text +2字] resp=resp_CIqMJ 累计9字：「练习」
+🧾 [ai-text +2字] resp=resp_CIqMJ 累计11字：「哪种」
+🧾 [ai-text +2字] resp=resp_CIqMJ 累计13字：「语言」
+⏱️ [hitch] main thread busy for 125ms
+🧾 [ai-text +1字] resp=resp_CIqMJ 累计14字：「？」
+🔊 [ai-audio块] resp=resp_CIqMJ
+🔊 [ai-audio块] resp=resp_CIqMJ
+🔊 [ai-audio块] resp=resp_CIqMJ
+🔊 [ai-audio块] resp=resp_CIqMJ
+🔊 [ai-audio块] resp=resp_CIqMJ
+🔊 [ai-audio块] resp=resp_CIqMJ
+🔊 [ai-audio块] resp=resp_CIqMJ
+🎧 [response.done] id=resp_CIqMJYCsX3K
+🎧 [user-transcript] item=item_CIqMT6R 「300个字。」
+🎙️ 上行块 #100（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #150（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_CIqMY13jsjf
+🧾 [ai-text +2字] resp=resp_CIqMY 累计2字：「上海」
+🎙️ 上行块 #200（2720B）已发出
+🧾 [ai-text +2字] resp=resp_CIqMY 累计4字：「近日」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计6字：「宣布」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计8字：「启动」
+🧾 [ai-text +3字] resp=resp_CIqMY 累计11字：「新一轮」
+🧾 [ai-text +4字] resp=resp_CIqMY 累计15字：「城市更新」
+⏱️ [hitch] main thread busy for 55ms
+🧾 [ai-text +2字] resp=resp_CIqMY 累计17字：「计划」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计18字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计20字：「重点」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计22字：「聚焦」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计23字：「黄」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计25字：「浦江」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计27字：「两岸」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计28字：「的」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计30字：「公共」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计32字：「空间」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计34字：「优化」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计35字：「。」
+🧾 [ai-text +3字] resp=resp_CIqMY 累计38字：「该项目」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计39字：「将」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计41字：「整合」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计43字：「历史」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计45字：「建筑」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计47字：「保护」
+⏱️ [hitch] main thread busy for 139ms
+🧾 [ai-text +3字] resp=resp_CIqMY 累计50字：「与现代」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计52字：「商业」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计54字：「功能」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计55字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计57字：「预计」
+🧾 [ai-text +3字] resp=resp_CIqMY 累计60字：「三年内」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计62字：「完成」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计64字：「核心」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计66字：「区域」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计68字：「改造」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计69字：「。」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计71字：「同时」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计72字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计74字：「上海」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计75字：「还」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +3字] resp=resp_CIqMY 累计78字：「发布了」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +2字] resp=resp_CIqMY 累计80字：「绿色」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计82字：「交通」
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +2字] resp=resp_CIqMY 累计84字：「发展」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +3字] resp=resp_CIqMY 累计87字：「白皮书」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计88字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计90字：「提出」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计91字：「到」
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计92字：「2」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计93字：「0」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计94字：「3」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计95字：「0」
+🎧 [user-transcript] item=item_CIqMBlW 「问一下关于上海的新闻，300个字。」
+🧾 [ai-text +3字] resp=resp_CIqMY 累计98字：「年实现」
+🧾 [ai-text +4字] resp=resp_CIqMY 累计102字：「公共交通」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计104字：「出行」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +2字] resp=resp_CIqMY 累计106字：「比例」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计107字：「达」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计108字：「7」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计109字：「5」
+🔊 [ai-audio块] resp=resp_CIqMY
+⏱️ [hitch] main thread busy for 51ms
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计110字：「%」
+🧾 [ai-text +3字] resp=resp_CIqMY 累计113字：「的目标」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计114字：「。」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +2字] resp=resp_CIqMY 累计116字：「此外」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计117字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计119字：「国际」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计121字：「进口」
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +3字] resp=resp_CIqMY 累计124字：「博览会」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计126字：「筹备」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计128字：「工作」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +3字] resp=resp_CIqMY 累计131字：「已进入」
+⏱️ [hitch] main thread busy for 57ms
+🧾 [ai-text +2字] resp=resp_CIqMY 累计133字：「冲刺」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计135字：「阶段」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计136字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计138字：「多家」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计140字：「跨国」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计142字：「企业」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计144字：「确认」
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +2字] resp=resp_CIqMY 累计146字：「参展」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计147字：「。」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计149字：「这些」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +2字] resp=resp_CIqMY 累计151字：「举措」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计153字：「旨在」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计155字：「提升」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计157字：「城市」
+🧾 [ai-text +3字] resp=resp_CIqMY 累计160字：「竞争力」
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +1字] resp=resp_CIqMY 累计161字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计163字：「推动」
+🧾 [ai-text +2字] resp=resp_CIqMY 累计165字：「经济」
+🔊 [ai-audio块] resp=resp_CIqMY
+🧾 [ai-text +5字] resp=resp_CIqMY 累计170字：「高质量发展」
+🧾 [ai-text +1字] resp=resp_CIqMY 累计171字：「。」
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🔊 [ai-audio块] resp=resp_CIqMY
+🎧 [response.done] id=resp_CIqMY13jsjf
+🎙️ 上行块 #250（3200B）已发出
+🎙️ 上行块 #300（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #350（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_CIqMSzRXbXm
+🧾 [ai-text +2字] resp=resp_CIqMS 累计2字：「北京」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计4字：「近日」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计6字：「发布」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计8字：「最新」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计12字：「科技创新」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计16字：「发展规划」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计17字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计19字：「明确」
+⏱️ [hitch] main thread busy for 129ms
+🧾 [ai-text +1字] resp=resp_CIqMS 累计20字：「将」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计24字：「人工智能」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计25字：「、」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计27字：「量子」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计29字：「计算」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计30字：「和」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计34字：「生物医药」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计36字：「作为」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计38字：「重点」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计40字：「突破」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计42字：「领域」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计43字：「。」
+⏱️ [hitch] main thread busy for 48ms
+🧾 [ai-text +2字] resp=resp_CIqMS 累计45字：「根据」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计47字：「规划」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计48字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计50字：「北京」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计52字：「将在」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计54字：「未来」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计56字：「五年」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计57字：「内」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计59字：「建设」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计61字：「三个」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计63字：「国际」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计64字：「级」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计67字：「实验室」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计68字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计70字：「吸引」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计72字：「全球」
+🔊 [ai-audio块] resp=resp_CIqMS
+⏱️ [hitch] main thread busy for 55ms
+🧾 [ai-text +2字] resp=resp_CIqMS 累计74字：「顶尖」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计76字：「科研」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计78字：「人才」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计79字：「。」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计81字：「同时」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计82字：「，」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +3字] resp=resp_CIqMS 累计85字：「北京市」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计87字：「政府」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计89字：「宣布」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计91字：「启动」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计92字：「“」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计94字：「绿色」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计96字：「北京」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计97字：「”」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计99字：「行动」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计100字：「，」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计103字：「计划在」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计104字：「2」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计105字：「0」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计106字：「3」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计107字：「0」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计109字：「年前」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计111字：「实现」
+⏱️ [hitch] main thread busy for 50ms
+🧾 [ai-text +3字] resp=resp_CIqMS 累计114字：「碳中和」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计116字：「目标」
+🎧 [user-transcript] item=item_CIqMFpy 「说一下关于这个北京的新闻，500个字。」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计117字：「。」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计118字：「该」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计120字：「行动」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计122字：「包括」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计124字：「推广」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +5字] resp=resp_CIqMS 累计129字：「新能源汽车」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计130字：「、」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计132字：「建设」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计134字：「智能」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计136字：「电网」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计138字：「以及」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计140字：「扩大」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计142字：「城市」
+⏱️ [hitch] main thread busy for 71ms
+🧾 [ai-text +2字] resp=resp_CIqMS 累计144字：「绿化」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计146字：「面积」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计149字：「等措施」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计150字：「。」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计152字：「此外」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计153字：「，」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计155字：「北京」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计158字：「冬奥会」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计160字：「场馆」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计161字：「的」
+⏱️ [hitch] main thread busy for 67ms
+🧾 [ai-text +2字] resp=resp_CIqMS 累计163字：「后续」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计165字：「利用」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计167字：「方案」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计169字：「也已」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计171字：「公布」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计172字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计174字：「这些」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计176字：「场馆」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计177字：「将」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计179字：「转型」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+⏱️ [hitch] main thread busy for 56ms
+🧾 [ai-text +1字] resp=resp_CIqMS 累计180字：「为」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计184字：「全民健身」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计187字：「中心和」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计189字：「冰雪」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计191字：「运动」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +4字] resp=resp_CIqMS 累计195字：「培训基地」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计196字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计198字：「促进」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计200字：「体育」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +4字] resp=resp_CIqMS 累计204字：「产业发展」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计205字：「。」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计206字：「在」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计208字：「文化」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计210字：「方面」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计211字：「，」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计213字：「北京」
+⏱️ [hitch] main thread busy for 71ms
+🧾 [ai-text +2字] resp=resp_CIqMS 累计215字：「故宫」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计218字：「博物院」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计220字：「推出」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +3字] resp=resp_CIqMS 累计223字：「数字化」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计225字：「展览」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计227字：「项目」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计228字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计230字：「通过」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计234字：「虚拟现实」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计236字：「技术」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计239字：「让观众」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +3字] resp=resp_CIqMS 累计242字：「沉浸式」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计244字：「体验」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计246字：「文物」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计248字：「魅力」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计249字：「。」
+⏱️ [hitch] main thread busy for 48ms
+🧾 [ai-text +2字] resp=resp_CIqMS 累计251字：「教育」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计253字：「领域」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计254字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计256字：「北京」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计257字：「多」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计260字：「所高校」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +3字] resp=resp_CIqMS 累计263字：「与国际」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计265字：「知名」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计267字：「学府」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计269字：「建立」
+🧾 [ai-text +4字] resp=resp_CIqMS 累计273字：「合作关系」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计274字：「，」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计276字：「共同」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计278字：「开展」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计280字：「联合」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计282字：「研究」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计284字：「项目」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计285字：「。」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计287字：「这些」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计289字：「举措」
+⏱️ [hitch] main thread busy for 47ms
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计291字：「不仅」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计294字：「提升了」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计296字：「北京」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计299字：「的国际」
+🔊 [ai-audio块] resp=resp_CIqMS
+🎙️ 上行块 #400（2720B）已发出
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +3字] resp=resp_CIqMS 累计302字：「影响力」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计303字：「，」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +2字] resp=resp_CIqMS 累计305字：「也为」
+🧾 [ai-text +2字] resp=resp_CIqMS 累计307字：「市民」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计310字：「创造了」
+⏱️ [hitch] main thread busy for 51ms
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +1字] resp=resp_CIqMS 累计311字：「更」
+🧾 [ai-text +3字] resp=resp_CIqMS 累计314字：「美好的」
+🔊 [ai-audio块] resp=resp_CIqMS
+🧾 [ai-text +4字] resp=resp_CIqMS 累计318字：「生活环境」
+🧾 [ai-text +1字] resp=resp_CIqMS 累计319字：「。」
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🎙️ 上行块 #450（64B）已发出
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🔊 [ai-audio块] resp=resp_CIqMS
+🎧 [response.done] id=resp_CIqMSzRXbXm
+🎙️ 上行块 #500（64B）已发出
+🎙️ 上行块 #550（3200B）已发出
+💬 语音聊天：会话已结束
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian_v3.1（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian_v3.1
+❌ 全双工会话服务端报错：message=Unsupported voice: 'longanqian_v3.1'. Supported voices: longanqian, longanlingxin, longanlufeng, longanlingxi, longanxiaoxin, longanfengyue, longanyuanfei, longanhuan_v3.6, longjielidou_v3.6, longpaopao_v3.6, longhuohuo_v3.6, longchuanshu_v3.6, loongmary, loongeva_v3.6, loongjohn, daniel, echo, hannah, sherry. code=invalid_value type=invalid_request_error param=session.update
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian_v3.1（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian_v3.1
+❌ 全双工会话服务端报错：message=Unsupported voice: 'longanqian_v3.1'. Supported voices: longanqian, longanlingxin, longanlufeng, longanlingxi, longanxiaoxin, longanfengyue, longanyuanfei, longanhuan_v3.6, longjielidou_v3.6, longpaopao_v3.6, longhuohuo_v3.6, longchuanshu_v3.6, loongmary, loongeva_v3.6, loongjohn, daniel, echo, hannah, sherry. code=invalid_value type=invalid_request_error param=session.update
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 436ms
+⏱️ [hitch] main thread busy for 218ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms

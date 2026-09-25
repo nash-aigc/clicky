@@ -1,0 +1,224 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [expand] 展开开始 t=1790325593.557
+⏱️ [expand] 内容就位 +160ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 231ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [expand] 展开开始 t=1790325595.360
+⏱️ [expand] 内容就位 +80ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 199ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 展开开始 t=1790325596.682
+⏱️ [expand] 内容就位 +88ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 253ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 120ms
+⏱️ [hitch] main thread busy for 114ms
+🔊 [aecprobe] t=1790325598.626 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 111ms
+⏱️ [expand] 展开开始 t=1790325599.202
+⏱️ [expand] 内容就位 +51ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 182ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790325600.277 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325600.576 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325600.576 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 333ms
+⏱️ [hitch] main thread busy for 216ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [expand] 展开开始 t=1790325601.344
+⏱️ [expand] 内容就位 +80ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 258ms
+⏱️ [hitch] main thread busy for 89ms
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [expand] 展开开始 t=1790325603.650
+⏱️ [expand] 内容就位 +61ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 350ms
+⏱️ [expand] 展开开始 t=1790325626.927
+⏱️ [expand] 内容就位 +83ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 350ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [expand] 展开开始 t=1790325628.123
+⏱️ [expand] 内容就位 +93ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 333ms
+⏱️ [hitch] main thread busy for 119ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [expand] 展开开始 t=1790325629.952
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 55ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 281ms
+⏱️ [expand] 展开开始 t=1790325632.032
+⏱️ [expand] 内容就位 +83ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 348ms
+⏱️ [hitch] main thread busy for 131ms
+⏱️ [expand] 展开开始 t=1790325633.898
+⏱️ [expand] 内容就位 +86ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 316ms
+⏱️ [hitch] main thread busy for 48ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 91ms
+⏱️ [expand] 展开开始 t=1790325637.645
+⏱️ [expand] 内容就位 +69ms（此前屏幕上只有那块白板）
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 148ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 120ms
+⏱️ [expand] 展开开始 t=1790325639.369
+⏱️ [expand] 内容就位 +39ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [expand] 展开开始 t=1790325640.385
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 展开开始 t=1790325683.652
+⏱️ [expand] 内容就位 +62ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 219ms
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [expand] 展开开始 t=1790325685.335
+⏱️ [expand] 内容就位 +62ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 175ms
+⏱️ [hitch] main thread busy for 226ms
+⏱️ [expand] 展开开始 t=1790325686.723
+⏱️ [expand] 内容就位 +48ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 展开开始 t=1790325687.723
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [expand] 展开开始 t=1790325688.656
+⏱️ [expand] 内容就位 +55ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 71ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [expand] 展开开始 t=1790325690.827
+⏱️ [expand] 内容就位 +43ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 52ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [expand] 展开开始 t=1790325691.768
+⏱️ [expand] 内容就位 +47ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 58ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 134ms
+⏱️ [expand] 展开开始 t=1790325693.093
+⏱️ [expand] 内容就位 +37ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 46ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [expand] 展开开始 t=1790325694.443
+⏱️ [expand] 内容就位 +44ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 52ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 92ms
+⏱️ [expand] 展开开始 t=1790325695.389
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 55ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [expand] 展开开始 t=1790325697.653
+⏱️ [expand] 内容就位 +63ms（此前屏幕上只有那块白板）
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 115ms
+⏱️ [hitch] main thread busy for 79ms
+⏱️ [hitch] main thread busy for 111ms
+⏱️ [expand] 展开开始 t=1790325699.669
+⏱️ [expand] 内容就位 +62ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 93ms
+⏱️ [hitch] main thread busy for 308ms
+⏱️ [expand] 展开开始 t=1790325701.435
+⏱️ [expand] 内容就位 +74ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 309ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 124ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [expand] 展开开始 t=1790325712.527
+⏱️ [expand] 内容就位 +51ms（此前屏幕上只有那块白板）
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 124ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 104ms
+⏱️ [expand] 展开开始 t=1790325714.724
+⏱️ [expand] 内容就位 +58ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 283ms
+⏱️ [expand] 展开开始 t=1790325717.206
+⏱️ [expand] 内容就位 +72ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 299ms
+⏱️ [expand] 展开开始 t=1790325718.739
+⏱️ [expand] 内容就位 +83ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 306ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [expand] 展开开始 t=1790325720.840
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 54ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 100ms
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [expand] 展开开始 t=1790325723.035
+⏱️ [expand] 内容就位 +53ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [expand] 展开开始 t=1790325724.010
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 282ms
+⏱️ [expand] 展开开始 t=1790325725.877
+⏱️ [expand] 内容就位 +76ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 292ms
+⏱️ [expand] 展开开始 t=1790325727.077
+⏱️ [expand] 内容就位 +80ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 315ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [expand] 展开开始 t=1790325728.127
+⏱️ [expand] 内容就位 +74ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 308ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [expand] 展开开始 t=1790325743.411
+⏱️ [expand] 内容就位 +103ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 396ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms

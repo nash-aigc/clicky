@@ -1,0 +1,177 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [expand] 展开开始 t=1790325833.477
+⏱️ [expand] 内容就位 +146ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 291ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [expand] 展开开始 t=1790325841.763
+⏱️ [expand] 内容就位 +108ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.9ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.4ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 395ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：40 字 → 33 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：33 字 → 33 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：31 字 → 14 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 151ms
+⏱️ [expand] 展开开始 t=1790325857.285
+⏱️ [expand] 内容就位 +44ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：40 字 → 33 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：33 字 → 33 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：31 字 → 14 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [expand] 展开开始 t=1790325858.472
+⏱️ [expand] 内容就位 +50ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：40 字 → 33 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：33 字 → 33 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：31 字 → 14 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 130ms
+🔊 [aecprobe] t=1790325859.632 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [expand] 展开开始 t=1790325860.381
+⏱️ [expand] 内容就位 +559ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 599ms
+⏱️ [hitch] main thread busy for 131ms
+🔊 [aecprobe] t=1790325861.225 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325861.474 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325861.475 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [expand] 展开开始 t=1790325861.939
+⏱️ [expand] 内容就位 +45ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 53ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [expand] 展开开始 t=1790325862.981
+⏱️ [expand] 内容就位 +46ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 55ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 108ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.6ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+⏱️ [hitch] main thread busy for 284ms
+⏱️ [expand] 展开开始 t=1790325865.689
+⏱️ [expand] 内容就位 +70ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.7ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+⏱️ [hitch] main thread busy for 292ms
+⏱️ [expand] 展开开始 t=1790325866.789
+⏱️ [expand] 内容就位 +89ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.6ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 349ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [expand] 展开开始 t=1790326012.189
+⏱️ [expand] 内容就位 +84ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.6ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+⏱️ [hitch] main thread busy for 374ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 510ms
+⏱️ [hitch] main thread busy for 213ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [expand] 展开开始 t=1790326049.057
+⏱️ [expand] 内容就位 +113ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.1ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.7ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 375ms
+⏱️ [hitch] main thread busy for 126ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms

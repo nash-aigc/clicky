@@ -1,0 +1,94 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 17 exchanges from session 「」
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 482ms
+⏱️ [hitch] main thread busy for 95ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 87ms
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔎 [speed] t=0.00s 累计 2 字
+🔎 [speed] t=0.06s 累计 3 字
+🔎 [speed] t=0.08s 累计 6 字
+🔎 [speed] t=0.14s 累计 7 字
+🔎 [speed] t=0.15s 累计 8 字
+⏱️ [hitch] main thread busy for 117ms
+🔎 [speed] t=0.16s 累计 10 字
+🔎 [speed] t=0.17s 累计 11 字
+🔎 [speed] t=0.19s 累计 13 字
+🔎 [speed] t=0.20s 累计 15 字
+🔎 [speed] t=0.23s 累计 16 字
+🔎 [speed] t=0.24s 累计 18 字
+🔎 [speed] t=0.26s 累计 19 字
+🔎 [speed] t=0.27s 累计 22 字
+🔎 [speed] t=0.29s 累计 24 字
+🔎 [speed] t=0.31s 累计 25 字
+🔎 [speed] t=0.32s 累计 26 字
+🔎 [speed] t=0.35s 累计 27 字
+🔎 [speed] t=0.37s 累计 28 字
+⏱️ [hitch] main thread busy for 47ms
+🔎 [speed] t=0.39s 累计 29 字
+🔎 [speed] t=0.42s 累计 30 字
+🔎 [speed] t=0.43s 累计 31 字
+🔎 [speed] t=0.45s 累计 32 字
+🔎 [speed] t=0.48s 累计 33 字
+🔎 [speed] t=0.50s 累计 34 字
+🔎 [speed] t=0.53s 累计 36 字
+🔎 [speed] t=0.54s 累计 37 字
+⏱️ [hitch] main thread busy for 106ms
+🔎 [speed] t=0.54s 累计 39 字
+🔎 [speed] t=0.55s 累计 41 字
+🔎 [speed] t=0.58s 累计 43 字
+🔎 [speed] t=0.59s 累计 44 字
+🔎 [speed] t=0.60s 累计 45 字
+🔎 [speed] t=0.63s 累计 46 字
+🔎 [speed] t=0.65s 累计 47 字
+🔎 [speed] t=0.66s 累计 49 字
+🔎 [speed] t=0.68s 累计 50 字
+🔎 [speed] t=0.69s 累计 52 字
+🔎 [speed] t=0.70s 累计 56 字
+🔎 [speed] t=0.73s 累计 57 字
+🔎 [speed] t=0.75s 累计 58 字
+🔎 [speed] t=0.77s 累计 59 字
+⏱️ [hitch] main thread busy for 72ms
+🔎 [speed] t=0.80s 累计 60 字
+🔎 [speed] t=0.80s 累计 64 字
+🔎 [speed] t=0.82s 累计 65 字
+🔎 [speed] t=0.84s 累计 67 字
+🔎 [speed] t=0.85s 累计 68 字
+🔎 [speed] t=0.86s 累计 71 字
+🔎 [speed] t=0.88s 累计 73 字
+🔎 [speed] t=0.89s 累计 75 字
+🔎 [speed] t=0.90s 累计 76 字
+🔎 [speed] t=0.93s 累计 77 字
+🔎 [speed] t=0.94s 累计 78 字
+🔎 [speed] t=0.95s 累计 79 字
+🔎 [speed] t=0.97s 累计 80 字
+🔎 [speed] t=0.98s 累计 82 字
+🔎 [speed] t=1.00s 累计 83 字
+🔎 [speed] t=1.01s 累计 84 字
+🔎 [speed] t=1.04s 累计 85 字
+🔎 [speed] t=1.05s 累计 87 字
+🔎 [speed] t=1.06s 累计 88 字
+🔎 [speed] t=1.08s 累计 89 字
+🔎 [speed] t=1.10s 累计 90 字
+🔎 [speed] t=1.11s 累计 92 字
+⏱️ [hitch] main thread busy for 58ms
+🔎 [speed] t=1.14s 累计 94 字
+🔎 [speed] t=1.16s 累计 96 字
+🔎 [speed] t=1.19s 累计 98 字
+🔎 [speed] t=1.21s 累计 100 字
+🔎 [speed] t=1.24s 累计 101 字
+🔎 [speed] t=1.24s 累计 103 字
+🔎 [speed] t=1.25s 累计 105 字
+🔎 [speed] t=1.28s 累计 106 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+⏱️ [hitch] main thread busy for 98ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 Clicky: compressed 8 aged-out exchanges into the conversation summary

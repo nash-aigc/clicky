@@ -1,0 +1,43 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [expand] 展开开始 t=1790325543.190
+⏱️ [expand] 内容就位 +161ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 463ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [expand] 展开开始 t=1790325548.252
+⏱️ [expand] 内容就位 +85ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 316ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [expand] 展开开始 t=1790325549.539
+⏱️ [expand] 内容就位 +76ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 292ms
+⏱️ [hitch] main thread busy for 140ms
+🔊 [aecprobe] t=1790325550.866 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [expand] 展开开始 t=1790325551.377
+⏱️ [expand] 内容就位 +42ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 70ms
+🔊 [aecprobe] t=1790325552.461 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325552.715 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325552.715 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [expand] 展开开始 t=1790325553.010
+⏱️ [expand] 内容就位 +42ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 50ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 122ms
+⏱️ [expand] 展开开始 t=1790325554.885
+⏱️ [expand] 内容就位 +49ms（此前屏幕上只有那块白板）
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 99ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms

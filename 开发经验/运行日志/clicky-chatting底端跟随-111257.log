@@ -1,0 +1,192 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 631ms
+⏱️ [hitch] main thread busy for 128ms
+⏱️ [hitch] main thread busy for 155ms
+🔊 [aecprobe] t=1790305995.178 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 152ms
+🔊 [aecprobe] t=1790305996.884 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790305996.978 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 52ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎧 [response.created] id=resp_KqOXZLXN9dp
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计3字：「！」
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计5字：「我是」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计6字：「多」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计8字：「语种」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计10字：「教练」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计11字：「，」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计13字：「随时」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计15字：「准备」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计16字：「用」
+⏱️ [hitch] main thread busy for 56ms
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计18字：「日语」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计19字：「、」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计21字：「韩语」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计22字：「、」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计24字：「英语」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计25字：「、」
+🧾 [ai-text +4字] resp=resp_KqOXZ 累计29字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计30字：「、」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计32字：「德语」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计33字：「或」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计35字：「法语」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计37字：「与您」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计39字：「交流」
+⏱️ [hitch] main thread busy for 40ms
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计40字：「。」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计41字：「您」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计42字：「想」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计44字：「练习」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计46字：「哪种」
+🧾 [ai-text +2字] resp=resp_KqOXZ 累计48字：「语言」
+🧾 [ai-text +1字] resp=resp_KqOXZ 累计49字：「？」
+🔊 [ai-audio块] resp=resp_KqOXZ
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🎙️ 上行块 #50（64B）已发出
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+⏱️ [hitch] main thread busy for 44ms
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+⏱️ [hitch] main thread busy for 109ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+⏱️ [hitch] main thread busy for 68ms
+🎙️ 上行块 #100（2720B）已发出
+🔊 [ai-audio块] resp=resp_KqOXZ
+🔊 [ai-audio块] resp=resp_KqOXZ
+🎧 [response.done] id=resp_KqOXZLXN9dp
+⏱️ [hitch] main thread busy for 61ms
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 10 字
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 2 (38 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 38 字
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"0ffd23b4-a229-9162-93be-491d2d9e0a56","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790306005.123 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 2 unplayed segment(s) dropped, first audio never started
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 3 (40 chars)
+⏱️ [hitch] main thread busy for 55ms
+🗣️ Streaming speech: queued segment 4 (36 chars)
+⏱️ [hitch] main thread busy for 61ms
+🗣️ Streaming speech: queued segment 5 (35 chars)
+⏱️ [hitch] main thread busy for 47ms
+🗣️ Streaming speech: queued segment 6 (35 chars)
+🗣️ Streaming speech: queued segment 7 (35 chars)
+⏱️ [hitch] main thread busy for 75ms
+🗣️ Streaming speech: queued segment 8 (37 chars)
+🗣️ Streaming speech: queued segment 9 (37 chars)
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 10 (33 chars)
+⏱️ [hitch] main thread busy for 85ms
+🗣️ Streaming speech: queued segment 11 (45 chars)
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 上行块 #150（3200B）已发出
+🗣️ Streaming speech: queued segment 12 (34 chars)
+🗣️ Streaming speech: queued segment 13 (32 chars)
+⏱️ [hitch] main thread busy for 52ms
+🗣️ Streaming speech: queued segment 14 (35 chars)
+🗣️ Streaming speech: queued segment 15 (33 chars)
+⏱️ [hitch] main thread busy for 128ms
+⏱️ [hitch] main thread busy for 71ms
+🗣️ Streaming speech: queued segment 16 (42 chars)
+⏱️ [hitch] main thread busy for 74ms
+🗣️ Streaming speech: queued segment 17 (33 chars)
+⏱️ [hitch] main thread busy for 62ms
+🗣️ Streaming speech: queued segment 18 (48 chars)
+⏱️ [hitch] main thread busy for 76ms
+🗣️ Streaming speech: queued segment 19 (32 chars)
+⏱️ [hitch] main thread busy for 52ms
+🗣️ Streaming speech: queued segment 20 (36 chars)
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 21 (42 chars)
+⏱️ [hitch] main thread busy for 54ms
+🗣️ Streaming speech: queued segment 22 (31 chars)
+⏱️ [hitch] main thread busy for 85ms
+🎙️ 上行块 #200（64B）已发出
+⏱️ [hitch] main thread busy for 101ms
+🗣️ Streaming speech: queued segment 23 (38 chars)
+🗣️ Streaming speech: queued segment 24 (30 chars)
+⏱️ [hitch] main thread busy for 43ms
+🗣️ Streaming speech: queued segment 25 (38 chars)
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 26 (33 chars)
+⏱️ [hitch] main thread busy for 45ms
+🗣️ Streaming speech: queued segment 27 (36 chars)
+🗣️ Streaming speech: queued segment 28 (33 chars)
+⏱️ [hitch] main thread busy for 53ms
+🗣️ Streaming speech: queued segment 29 (37 chars)
+⏱️ [hitch] main thread busy for 42ms
+🗣️ Streaming speech: queued segment 30 (32 chars)
+🗣️ Streaming speech: queued segment 31 (30 chars)
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 55ms
+🗣️ Streaming speech: queued segment 32 (38 chars)
+⏱️ [hitch] main thread busy for 76ms
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #250（3200B）已发出
+🗣️ Streaming speech: queued segment 33 (48 chars)
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 34 (39 chars)
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 35 (30 chars)
+⏱️ [hitch] main thread busy for 99ms
+🗣️ Streaming speech: queued segment 36 (38 chars)
+🗣️ Streaming speech: queued segment 37 (33 chars)
+⏱️ [hitch] main thread busy for 59ms
+🗣️ Streaming speech: queued segment 38 (37 chars)
+⏱️ [hitch] main thread busy for 91ms
+🗣️ Streaming speech: queued segment 39 (34 chars)
+⏱️ [hitch] main thread busy for 54ms
+🗣️ Streaming speech: queued segment 40 (19 chars)
+🎙️ 上行块 #300（64B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 上行块 #450（64B）已发出
+🎙️ 上行块 #500（3200B）已发出
+🎙️ 上行块 #550（64B）已发出
+🎙️ 上行块 #600（3200B）已发出
+🎙️ 上行块 #650（64B）已发出
+🎙️ 上行块 #700（2730B）已发出
+🎙️ 上行块 #750（3200B）已发出
+🎙️ 上行块 #800（64B）已发出
+🎙️ 上行块 #850（3200B）已发出

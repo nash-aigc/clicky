@@ -1,0 +1,171 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 1 (3 chars) t=1790325006.855
+🔊 TTS 请求 t=1790325006.857 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 3 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: continuous listening requested
+🔊 [aecprobe] t=1790325007.613 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+⏱️ [hitch] main thread busy for 66ms
+🔊 [aecprobe] t=1790325009.245 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325009.496 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790325009.497 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 [aecprobe] t=1790325009.504 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (45KB)
+🔊 [aecprobe] t=1790325010.428 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 472ms
+⏱️ [hitch] main thread busy for 47ms
+🎙️ BuddyDictationManager: continuous listening window closing (listening window expired); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 399ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+2026-09-25 16:30:48.645 Clicky[2813:13777910] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-25 16:30:48.658 Clicky[2813:13777910] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [hitch] main thread busy for 75ms
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (3 chars) t=1790325049.979
+⏱️ [hitch] main thread busy for 65ms
+🔊 TTS 请求 t=1790325049.989 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 3 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 153ms
+🔊 [aecprobe] t=1790325050.560 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (45KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🎙️ [aecprobe] t=1790325051.184 event=level botSpeaking=true level=0.210 peak0.5s=0.210 utteranceActive=no
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🎙️ [aecprobe] t=1790325051.237 event=level botSpeaking=true level=0.210 peak0.5s=0.210 utteranceActive=no
+🎙️ [aecprobe] t=1790325051.291 event=level botSpeaking=true level=0.151 peak0.5s=0.210 utteranceActive=no
+🎙️ [aecprobe] t=1790325051.345 event=level botSpeaking=true level=0.151 peak0.5s=0.210 utteranceActive=no
+🎙️ [aecprobe] t=1790325051.399 event=level botSpeaking=true level=0.109 peak0.5s=0.210 utteranceActive=no
+🎙️ [aecprobe] t=1790325051.450 event=level botSpeaking=true level=0.109 peak0.5s=0.210 utteranceActive=no
+🔊 [aecprobe] t=1790325051.457 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 61ms
+🎙️ [aecprobe] t=1790325056.111 event=level botSpeaking=true level=0.120 peak0.5s=0.159 utteranceActive=no
+⏱️ [hitch] main thread busy for 56ms
+🎙️ [aecprobe] t=1790325056.162 event=level botSpeaking=true level=0.120 peak0.5s=0.159 utteranceActive=no
+🎙️ [aecprobe] t=1790325056.214 event=level botSpeaking=true level=0.087 peak0.5s=0.159 utteranceActive=no
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790325056.266 event=level botSpeaking=true level=0.087 peak0.5s=0.159 utteranceActive=no
+🎙️ [aecprobe] t=1790325056.320 event=level botSpeaking=true level=0.062 peak0.5s=0.159 utteranceActive=no
+🎙️ [aecprobe] t=1790325056.371 event=level botSpeaking=true level=0.062 peak0.5s=0.159 utteranceActive=no
+🎙️ [aecprobe] t=1790325056.424 event=level botSpeaking=true level=0.045 peak0.5s=0.159 utteranceActive=no
+⏱️ [hitch] main thread busy for 54ms
+🗣️ Streaming speech: queued segment 1 (11 chars) t=1790325057.100
+🔊 TTS 请求 t=1790325057.127 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 11 字
+⏱️ [hitch] main thread busy for 215ms
+⏱️ [hitch] main thread busy for 67ms
+🗣️ Streaming speech: queued segment 2 (39 chars) t=1790325057.563
+⏱️ [hitch] main thread busy for 60ms
+🔊 TTS 请求 t=1790325057.588 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 39 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 3 (10 chars) t=1790325057.745
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 181ms
+🔊 [aecprobe] t=1790325058.005 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (123KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 TTS 请求 t=1790325060.279 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 10 字
+🔊 [aecprobe] t=1790325060.283 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (442KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790325061.538 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 143ms
+🎙️ [aecprobe] t=1790325070.533 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.371, transcript: "你好。")
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790325070.612 event=speakersMuted
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 125ms
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+⏱️ [hitch] main thread busy for 291ms
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790325071.651 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 你好。这个不需要说你好。
+📸 Companion: using the pre-captured screen for this question
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 1 (5 chars) t=1790325072.883
+🔊 TTS 请求 t=1790325072.901 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 5 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+⏱️ [hitch] main thread busy for 97ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790325073.270 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (60KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 [aecprobe] t=1790325074.434 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 106ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 72ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 243ms（屏幕=0 摄像头=0）
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [cascade] 回合开始 t=1790325088.742
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [cascade] 首字 +556ms
+⏱️ [cascade] 首段入队 +556ms
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790325089.320
+🔊 TTS 请求 t=1790325089.324 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 2 字
+🔊 [aecprobe] t=1790325090.017 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (52KB)
+🔊 [aecprobe] t=1790325091.066 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 281ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 375ms
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 383ms
+⏱️ [hitch] main thread busy for 364ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 459ms
+⏱️ [hitch] main thread busy for 46ms

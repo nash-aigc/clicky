@@ -1,0 +1,47 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.1ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [expand] 展开开始 t=1790326163.021
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [expand] 展开开始 t=1790326163.824
+⏱️ [expand] 展开开始 t=1790326165.388
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [expand] 展开开始 t=1790326166.746
+⏱️ [hitch] main thread busy for 84ms
+⏱️ [hitch] main thread busy for 131ms
+🔊 [aecprobe] t=1790326168.319 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 76ms
+⏱️ [expand] 展开开始 t=1790326168.862
+⏱️ [expand] 展开开始 t=1790326169.747
+🔊 [aecprobe] t=1790326169.939 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790326170.201 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 488ms
+⏱️ [expand] 展开开始 t=1790326170.837
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [expand] 展开开始 t=1790326171.845
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms

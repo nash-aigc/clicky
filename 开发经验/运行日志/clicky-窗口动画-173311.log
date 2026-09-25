@@ -1,0 +1,496 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+🔊 [sfx] t=1790328794.373 reveal-boot
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328799.241
+⏱️ [expand] 内容就位 +131ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.3ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328799.512 ui-navigation-push
+⏱️ [hitch] main thread busy for 375ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328800.804
+⏱️ [expand] 内容就位 +70ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328801.035 ui-navigation-push
+⏱️ [hitch] main thread busy for 282ms
+⏱️ [hitch] main thread busy for 111ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328803.549
+⏱️ [expand] 内容就位 +66ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 8.3ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.7ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328803.776 ui-navigation-push
+⏱️ [hitch] main thread busy for 266ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 85ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328805.882
+⏱️ [expand] 内容就位 +63ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.9ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.3ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328806.082 ui-navigation-push
+⏱️ [hitch] main thread busy for 216ms
+⏱️ [hitch] main thread busy for 101ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328815.862
+⏱️ [expand] 内容就位 +68ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.7ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328816.188 ui-navigation-push
+⏱️ [hitch] main thread busy for 408ms
+⏱️ [hitch] main thread busy for 133ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328820.820
+⏱️ [expand] 内容就位 +75ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 7.4ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.7ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.5ms
+🔊 [sfx] t=1790328821.160 ui-navigation-push
+⏱️ [hitch] main thread busy for 521ms
+⏱️ [hitch] main thread busy for 40ms
+🔊 [sfx] t=1790328826.462 ui-focus-change
+⏱️ [hitch] main thread busy for 270ms
+⏱️ [hitch] main thread busy for 49ms
+🔊 [sfx] t=1790328834.062 ui-focus-change
+🔬 [card] 冷启动完整排版：34 字 → 34 unit / 2 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 119ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.6ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+⏱️ [hitch] main thread busy for 283ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328842.057
+⏱️ [expand] 内容就位 +59ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.6ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328842.324 ui-navigation-push
+⏱️ [hitch] main thread busy for 316ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328844.074
+⏱️ [expand] 内容就位 +57ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328844.347 ui-navigation-push
+⏱️ [hitch] main thread busy for 299ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 150ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328846.503
+⏱️ [expand] 内容就位 +67ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.8ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328846.778 ui-navigation-push
+⏱️ [hitch] main thread busy for 293ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328856.762
+⏱️ [expand] 内容就位 +81ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 3.4ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 7.4ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.1ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328857.080 ui-navigation-push
+⏱️ [hitch] main thread busy for 357ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328857.737
+⏱️ [expand] 内容就位 +67ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 3.4ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.8ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.7ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+⏱️ [hitch] main thread busy for 135ms
+🔊 [sfx] t=1790328857.894 ui-navigation-push
+⏱️ [hitch] main thread busy for 256ms
+⏱️ [hitch] main thread busy for 102ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328864.591
+⏱️ [expand] 内容就位 +85ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 9.4ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 15.3ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 5.5ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.5ms
+🔊 [sfx] t=1790328864.975 ui-navigation-push
+⏱️ [hitch] main thread busy for 493ms
+⏱️ [hitch] main thread busy for 86ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328882.974
+⏱️ [expand] 内容就位 +55ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 3.1ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.4ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328883.258 ui-navigation-push
+⏱️ [hitch] main thread busy for 553ms
+🔊 [sfx] t=1790328884.582 ui-focus-change
+⏱️ [hitch] main thread busy for 235ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [expand] 窗口动画=catkinDrift（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328893.315
+⏱️ [expand] 内容就位 +57ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328893.603 ui-navigation-push
+⏱️ [hitch] main thread busy for 366ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [sfx] t=1790328895.262 ui-focus-change
+⏱️ [hitch] main thread busy for 215ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [sfx] t=1790328896.266 ui-focus-change
+🔬 [card] 冷启动完整排版：34 字 → 34 unit / 2 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 97ms
+⏱️ [hitch] main thread busy for 47ms
+🔬 [frame] 展开中窗口被改：h=863.0（比最终矮 -0.7）y=254.0（比最终低 0.7）
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328901.674
+⏱️ [expand] 内容就位 +71ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.8ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328901.951 ui-navigation-push
+⏱️ [hitch] main thread busy for 325ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328903.591
+⏱️ [expand] 内容就位 +58ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.2ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328903.853 ui-navigation-push
+⏱️ [hitch] main thread busy for 332ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328905.445
+⏱️ [expand] 内容就位 +66ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.3ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328905.713 ui-navigation-push
+⏱️ [hitch] main thread busy for 306ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328907.233
+⏱️ [expand] 内容就位 +61ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.7ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔊 [sfx] t=1790328907.502 ui-navigation-push
+⏱️ [hitch] main thread busy for 307ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328909.250
+⏱️ [expand] 内容就位 +66ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 7.0ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.3ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+⏱️ [hitch] main thread busy for 133ms
+🔊 [sfx] t=1790328909.402 ui-navigation-push
+⏱️ [hitch] main thread busy for 262ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328936.529
+⏱️ [expand] 内容就位 +68ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 7.0ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328936.833 ui-navigation-push
+⏱️ [hitch] main thread busy for 445ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328938.425
+⏱️ [expand] 内容就位 +59ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 7.0ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.5ms
+🔊 [sfx] t=1790328938.695 ui-navigation-push
+⏱️ [hitch] main thread busy for 299ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328940.558
+⏱️ [expand] 内容就位 +64ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.8ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328940.846 ui-navigation-push
+⏱️ [hitch] main thread busy for 301ms
+⏱️ [hitch] main thread busy for 157ms
+⏱️ [hitch] main thread busy for 79ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328957.883
+⏱️ [expand] 内容就位 +66ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.3ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790328958.170 ui-navigation-push
+⏱️ [hitch] main thread busy for 372ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [expand] 窗口动画=fogBloom（展开方式 notchBloom）
+⏱️ [expand] 展开开始 t=1790328960.649
+⏱️ [expand] 内容就位 +60ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.2ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790328960.938 ui-navigation-push
+⏱️ [hitch] main thread busy for 332ms
+⏱️ [hitch] main thread busy for 74ms
+🔊 [sfx] t=1790328962.026 ui-focus-change
+⏱️ [hitch] main thread busy for 212ms
+🔊 [sfx] t=1790328964.762 ui-focus-change
+🔬 [card] 冷启动完整排版：34 字 → 34 unit / 2 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms

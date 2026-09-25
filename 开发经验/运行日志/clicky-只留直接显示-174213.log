@@ -1,0 +1,314 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+🔊 [sfx] t=1790329336.023 reveal-boot
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790329336.873
+⏱️ [expand] 内容就位 +116ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 3.1ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.2ms
+🔊 [sfx] t=1790329337.139 ui-navigation-push
+⏱️ [hitch] main thread busy for 284ms
+🔊 [sfx] t=1790329338.202 ui-focus-change
+⏱️ [hitch] main thread busy for 124ms
+🔊 [aecprobe] t=1790329338.415 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 63ms
+🔊 [aecprobe] t=1790329340.038 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790329340.285 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=三段式 预设=video.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc（族=三段式）画面=允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 46ms
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 581ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 824ms（总 1366ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1406ms（屏幕=1 摄像头=1）
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [cascade] 回合开始 t=1790329341.730
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [cascade] 首字 +1115ms
+⏱️ [cascade] 首段入队 +1116ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790329342.932
+🔊 TTS 请求 t=1790329342.938 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 2 字
+🎙️ [aecprobe] t=1790329343.550 event=level botSpeaking=true level=0.418 peak0.5s=0.418 utteranceActive=no
+🎙️ [aecprobe] t=1790329343.604 event=level botSpeaking=true level=0.418 peak0.5s=0.418 utteranceActive=no
+🎙️ [aecprobe] t=1790329343.655 event=level botSpeaking=true level=0.379 peak0.5s=0.418 utteranceActive=no
+🎙️ [aecprobe] t=1790329343.708 event=level botSpeaking=true level=0.379 peak0.5s=0.418 utteranceActive=no
+🎙️ [aecprobe] t=1790329343.709 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.418, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790329343.950 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [cascade] 回合开始 t=1790329346.831
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790329346.980 event=speakersRestored
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [cascade] 首字 +924ms
+⏱️ [cascade] 首段入队 +924ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 59ms
+🗣️ Streaming speech: queued segment 1 (4 chars) t=1790329347.888
+🔊 TTS 请求 t=1790329347.903 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 4 字
+🗣️ Streaming speech: queued segment 2 (12 chars) t=1790329347.930
+🔊 TTS 请求 t=1790329347.935 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 12 字
+🔊 [aecprobe] t=1790329348.816 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (97KB)
+🔊 [aecprobe] t=1790329350.628 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (157KB)
+🔊 [aecprobe] t=1790329353.434 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+🔊 [sfx] t=1790329353.953 session-hangup
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 43ms
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=全双工 预设=video.duplex.omni38（全模态 3.8 Flash）
+   识别=qwen3.8-omni-flash-realtime 理解=qwen3.8-omni-flash-realtime 表达=qwen3.8-omni-flash-realtime
+   音色=Tina（族=全模态）画面=允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+⏱️ [hitch] main thread busy for 64ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+📷 [camera] startRunning 257ms（总 284ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+🎧 [event] session.created
+💬 全双工会话：model=qwen3.8-omni-flash-realtime voice=Tina
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen3.8-omni-flash-realtime，音色 Tina）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🎧 [response.created t=1790329357.192] id=resp_DZ7cWcnxACT
+🧾 [ai-text +2字] resp=resp_DZ7cW 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔊 [ai-audio首块 t=1790329357.332] resp=resp_DZ7cW
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_DZ7cW 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_DZ7cWcnxACT
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790329357.898] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「你能」
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [user-transcript] item=item_Dcx5eMm 「你能看到我伸出几个手指吗？」
+🎙️ 上行块 #50（2720B）已发出
+🎧 [response.created t=1790329359.817] id=resp_DrmAQTJ1uUA
+🧾 [ai-text +1字] resp=resp_DrmAQ 累计1字：「我」
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🧾 [ai-text +3字] resp=resp_DrmAQ 累计4字：「看不见」
+🧾 [ai-text +2字] resp=resp_DrmAQ 累计6字：「你，」
+🧾 [ai-text +2字] resp=resp_DrmAQ 累计8字：「所以」
+🧾 [ai-text +4字] resp=resp_DrmAQ 累计12字：「不知道你」
+🧾 [ai-text +7字] resp=resp_DrmAQ 累计19字：「伸出了几个手指」
+🧾 [ai-text +1字] resp=resp_DrmAQ 累计20字：「。」
+⏱️ [hitch] main thread busy for 91ms
+🧾 [ai-text-done] resp=resp_DrmAQ 官方全文 20 字（累积值 20 字）
+🎧 [response.done] id=resp_DrmAQTJ1uUA
+🎙️ 上行块 #100（64B）已发出
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+🔊 [sfx] t=1790329362.526 session-hangup
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 72ms
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=全双工 预设=video.duplex.omni38（全模态 3.8 Flash）
+   识别=qwen3.8-omni-flash-realtime 理解=qwen3.8-omni-flash-realtime 表达=qwen3.8-omni-flash-realtime
+   音色=Tina（族=全模态）画面=允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+📷 [camera] 授权 14ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎧 [event] session.created
+💬 全双工会话：model=qwen3.8-omni-flash-realtime voice=Tina
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen3.8-omni-flash-realtime，音色 Tina）
+📷 [camera] startRunning 261ms（总 290ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+⏱️ [hitch] main thread busy for 44ms
+🎙️ 上行块 #1（2720B）已发出
+🎙️ 上行块 #2（2720B）已发出
+🎧 [response.created t=1790329364.531] id=resp_QFASSUAjcl8
+🧾 [ai-text +2字] resp=resp_QFASS 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🎙️ 上行块 #3（2720B）已发出
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [hitch] main thread busy for 79ms
+🧾 [ai-text-done] resp=resp_QFASS 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_QFASSUAjcl8
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790329366.008] speech_started（服务端听到用户开口）
+🎙️ 上行块 #50（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [user-transcript] item=item_GC4LywJ 「你能看到我伸出几个手指吗？」
+🎧 [response.created t=1790329368.330] id=resp_UpDI8GKpqga
+🧾 [ai-text +2字] resp=resp_UpDI8 累计2字：「我看」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🧾 [ai-text +6字] resp=resp_UpDI8 累计8字：「不到你伸出了」
+🧾 [ai-text +5字] resp=resp_UpDI8 累计13字：「几个手指。」
+🧾 [ai-text-done] resp=resp_UpDI8 官方全文 13 字（累积值 13 字）
+🎧 [response.done] id=resp_UpDI8GKpqga
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event t=1790329370.634] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [user-transcript] item=item_EWyvHNk 「你看到我屏幕内容了吗？」
+🎧 [response.created t=1790329372.734] id=resp_OCwQK8Q2Mcp
+🧾 [ai-text +1字] resp=resp_OCwQK 累计1字：「我」
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🧾 [ai-text +7字] resp=resp_OCwQK 累计8字：「没法直接看到你」
+🧾 [ai-text +7字] resp=resp_OCwQK 累计15字：「屏幕上的内容。」
+🎙️ 上行块 #150（64B）已发出
+🧾 [ai-text-done] resp=resp_OCwQK 官方全文 15 字（累积值 15 字）
+🎧 [response.done] id=resp_OCwQK8Q2Mcp
+🎙️ 上行块 #200（64B）已发出
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+🔊 [sfx] t=1790329376.916 session-hangup
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790329381.620
+⏱️ [expand] 内容就位 +53ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：16 字 → 16 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：20 字 → 20 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：13 字 → 13 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 86ms
+🔊 [sfx] t=1790329381.711 ui-navigation-push
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790329395.629
+⏱️ [expand] 内容就位 +63ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：16 字 → 16 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：20 字 → 20 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：13 字 → 13 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔊 [sfx] t=1790329395.771 ui-navigation-push
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 229ms
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=全双工 预设=video.duplex.omni35flash（全模态 3.5 Flash）
+   识别=qwen3.5-omni-flash-realtime-2026-03-15 理解=qwen3.5-omni-flash-realtime-2026-03-15 表达=qwen3.5-omni-flash-realtime-2026-03-15
+   音色=Tina（族=全模态）画面=允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+📷 [camera] 授权 14ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+⏱️ [hitch] main thread busy for 77ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen3.5-omni-flash-realtime-2026-03-15 voice=Tina
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen3.5-omni-flash-realtime-2026-03-15，音色 Tina）
+🎙️ 上行块 #1（2720B）已发出
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🎧 [response.created t=1790329399.179] id=resp_XWGNSXhbbAn
+🧾 [ai-text +2字] resp=resp_XWGNS 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_XWGNS 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_XWGNSXhbbAn
+📷 [camera] startRunning 1320ms（总 1350ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790329401.754] speech_started（服务端听到用户开口）
+🎙️ 上行块 #50（2720B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790329403.552] id=resp_Mv1zdKtjiIz
+🧾 [ai-text +1字] resp=resp_Mv1zd 累计1字：「我」
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🎧 [user-transcript] item=item_Ae8oyK9 「看到我手，你伸出几根手指。」
+🧾 [ai-text +3字] resp=resp_Mv1zd 累计4字：「看不见」
+🧾 [ai-text +4字] resp=resp_Mv1zd 累计8字：「你的手机」
+🧾 [ai-text +1字] resp=resp_Mv1zd 累计9字：「，」
+🧾 [ai-text +3字] resp=resp_Mv1zd 累计12字：「所以数」
+🧾 [ai-text +4字] resp=resp_Mv1zd 累计16字：「不出有几」
+⏱️ [hitch] main thread busy for 60ms
+🧾 [ai-text +4字] resp=resp_Mv1zd 累计20字：「根手指。」
+🧾 [ai-text-done] resp=resp_Mv1zd 官方全文 20 字（累积值 20 字）
+🎧 [response.done] id=resp_Mv1zdKtjiIz
+🎙️ 上行块 #100（64B）已发出
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+🔊 [sfx] t=1790329406.554 session-hangup
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms

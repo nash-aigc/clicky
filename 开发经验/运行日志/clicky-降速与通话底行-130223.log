@@ -1,0 +1,583 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 7 exchanges from session 「第一段文字第二段文字」
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 374ms
+⏱️ [hitch] main thread busy for 152ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 59ms
+🔊 [aecprobe] t=1790312569.441 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 151ms
+🔊 [aecprobe] t=1790312571.078 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790312571.315 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 A6ADA895-C767-42DF-A4B0-CCFF259E3659，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_Yt7hEr69GLw
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计5字：「关于」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计7字：「天津」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计8字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计10字：「你想」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计12字：「了解」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计13字：「哪」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计15字：「方面」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计16字：「？」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计17字：「是」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计19字：「历史」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计20字：「、」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计22字：「美食」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计23字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计25字：「还是」
+🧾 [ai-text +2字] resp=resp_Yt7hE 累计27字：「方言」
+🧾 [ai-text +1字] resp=resp_Yt7hE 累计28字：「？」
+🔊 [ai-audio块] resp=resp_Yt7hE
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_Yt7hE
+🔊 [ai-audio块] resp=resp_Yt7hE
+🔊 [ai-audio块] resp=resp_Yt7hE
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+📝 [写盘] 开场白（不参与配对）：答「你好！关于天津，你想了解哪方面？是历史、」
+🎧 [response.done] id=resp_Yt7hEr69GLw
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 上行块 #100（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #150（2730B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_Yt7hIekOMOp
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计2字：「北京」
+🧾 [ai-text +3字] resp=resp_Yt7hI 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计9字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计10字：「有」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计12字：「故宫」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计13字：「、」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计15字：「长城」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计17字：「这些」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计19字：「世界」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计21字：「遗产」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计22字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计24字：「也有」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计26字：「烤鸭」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计27字：「和」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计29字：「胡同」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计31字：「里的」
+🧾 [ai-text +2字] resp=resp_Yt7hI 累计33字：「烟火」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计34字：「气」
+🧾 [ai-text +1字] resp=resp_Yt7hI 累计35字：「。」
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🎧 [user-transcript] item=item_Yt7hEXe 「200个字介绍一下北京。」
+🗣️ [user-utterance] 「200个字介绍一下北京。」
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🔊 [ai-audio块] resp=resp_Yt7hI
+🎧 [response.done] id=resp_Yt7hIekOMOp
+📝 [写盘] 一条全写：问「200个字介绍一下北京。」 答「北京是中国的首都，有故宫、长城这些世界遗」
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 上行块 #250（64B）已发出
+🎙️ 上行块 #300（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #350（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_Yt7hA9CNR6B
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计2字：「北京」
+🧾 [ai-text +1字] resp=resp_Yt7hA 累计3字：「是」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计5字：「首都」
+🧾 [ai-text +1字] resp=resp_Yt7hA 累计6字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计8字：「也是」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计10字：「历史」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计12字：「名城」
+🧾 [ai-text +1字] resp=resp_Yt7hA 累计13字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计15字：「故宫」
+🧾 [ai-text +1字] resp=resp_Yt7hA 累计16字：「和」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计18字：「长城」
+🧾 [ai-text +1字] resp=resp_Yt7hA 累计19字：「是」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计21字：「它的」
+🧾 [ai-text +2字] resp=resp_Yt7hA 累计23字：「标志」
+🧾 [ai-text +1字] resp=resp_Yt7hA 累计24字：「。」
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🎧 [user-transcript] item=item_Yt7hD8M 「那就300个字介绍一下北京。」
+🗣️ [user-utterance] 「那就300个字介绍一下北京。」
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🔊 [ai-audio块] resp=resp_Yt7hA
+🎧 [response.done] id=resp_Yt7hA9CNR6B
+📝 [写盘] 一条全写：问「那就300个字介绍一下北京。」 答「北京是首都，也是历史名城，故宫和长城是它」
+🎙️ 上行块 #400（2730B）已发出
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_Yt7hCgWgnmD
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计2字：「北京」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计3字：「是」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计5字：「首都」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计6字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计7字：「有」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计9字：「故宫」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计10字：「、」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计12字：「长城」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计13字：「等」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计15字：「历史」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计17字：「遗迹」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计18字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计20字：「也有」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计22字：「胡同」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计23字：「、」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计24字：「四」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计26字：「合院」
+🧾 [ai-text +3字] resp=resp_Yt7hC 累计29字：「的生活」
+🧾 [ai-text +2字] resp=resp_Yt7hC 累计31字：「气息」
+🧾 [ai-text +1字] resp=resp_Yt7hC 累计32字：「。」
+🔊 [ai-audio块] resp=resp_Yt7hC
+🎙️ 上行块 #500（64B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hC
+🎧 [user-transcript] item=item_Yt7hUY8 「300个字能听懂吗？」
+🗣️ [user-utterance] 「300个字能听懂吗？」
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🔊 [ai-audio块] resp=resp_Yt7hC
+🎧 [response.done] id=resp_Yt7hCgWgnmD
+📝 [写盘] 一条全写：问「300个字能听懂吗？」 答「北京是首都，有故宫、长城等历史遗迹，也有」
+🎙️ 上行块 #550（64B）已发出
+🎙️ 上行块 #600（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #650（3200B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_Yt7hBOUYSdW
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计2字：「河南」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计3字：「是」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计5字：「中华」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计7字：「文明」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计10字：「的重要」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计13字：「发源地」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计14字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计16字：「有着」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计18字：「五千」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计21字：「多年的」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计23字：「悠久」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计25字：「历史」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计26字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计27字：「是」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计28字：「夏」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计29字：「商」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计30字：「周」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计31字：「等」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计32字：「朝」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计34字：「代的」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计36字：「中心」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计38字：「地带」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计39字：「。」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计41字：「这里」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计44字：「不仅有」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计46字：「洛阳」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计48字：「龙门」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计50字：「石窟」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计51字：「和」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计53字：「开封」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计54字：「府」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计55字：「等」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计57字：「古迹」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计58字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计60字：「还有」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计63字：「少林寺」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计64字：「和」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计67字：「太极拳」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计68字：「等」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计70字：「文化」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计72字：「名片」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计73字：「。」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计75字：「河南」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计77字：「也是」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计79字：「农业」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计80字：「大」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计81字：「省」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计82字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计83字：「以」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计85字：「小麦」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计86字：「、」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计88字：「玉米」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计90字：「种植」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计92字：「闻名」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计93字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计95字：「更是」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计97字：「中国」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计100字：「重要的」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计102字：「工业」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计104字：「基地」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计105字：「和」
+🧾 [ai-text +4字] resp=resp_Yt7hB 累计109字：「交通枢纽」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计110字：「。」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计112字：「河南」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计113字：「人」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计115字：「热情」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计116字：「豪」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计117字：「爽」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计118字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计119字：「豫」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计120字：「剧」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计121字：「和」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计122字：「烩」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计123字：「面」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计124字：「是」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计126字：「当地」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计128字：「最具」
+🧾 [ai-text +4字] resp=resp_Yt7hB 累计132字：「代表性的」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计134字：「文化」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计136字：「符号」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计137字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计138字：「整」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计141字：「座城市」
+🧾 [ai-text +3字] resp=resp_Yt7hB 累计144字：「充满了」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计146字：「厚重」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计147字：「与」
+🧾 [ai-text +2字] resp=resp_Yt7hB 累计149字：「活力」
+🧾 [ai-text +1字] resp=resp_Yt7hB 累计150字：「。」
+🎧 [user-transcript] item=item_Yt7hZCC 「那你提供300个字来介绍一下河南。」
+🗣️ [user-utterance] 「那你提供300个字来介绍一下河南。」
+🎙️ 上行块 #700（3200B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+⏱️ [hitch] main thread busy for 59ms
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🎙️ 上行块 #750（64B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+⏱️ [hitch] main thread busy for 43ms
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🎙️ 上行块 #800（3200B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🔊 [ai-audio块] resp=resp_Yt7hB
+🎧 [response.done] id=resp_Yt7hBOUYSdW
+📝 [写盘] 一条全写：问「那你提供300个字来介绍一下河南。」 答「河南是中华文明的重要发源地，有着五千多年」
+🎙️ 上行块 #850（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #900（3200B）已发出
+🎙️ 上行块 #950（64B）已发出
+🎙️ 上行块 #1000（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_Yt7hSRYzt3y
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计2字：「河南」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计3字：「是」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计5字：「中华」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计7字：「文明」
+🧾 [ai-text +3字] resp=resp_Yt7hS 累计10字：「的核心」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计11字：「发」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计12字：「祥」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计13字：「地」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计14字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计15字：「夏」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计16字：「商」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计17字：「周」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计18字：「及」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计19字：「汉」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计21字：「唐宋」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计22字：「等」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计24字：「朝代」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计25字：「多」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计27字：「在此」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计28字：「建」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计29字：「都」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计30字：「，」
+🧾 [ai-text +3字] resp=resp_Yt7hS 累计33字：「留下了」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计35字：「洛阳」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计36字：「、」
+🧾 [ai-text +42字] resp=resp_Yt7hS 累计78字：「开封等古都的厚重历史。这里曾是中原腹地，见证了无」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计79字：「虽」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计81字：「历经」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计83字：「战火」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计84字：「与」
+🧾 [ai-text +4字] resp=resp_Yt7hS 累计88字：「自然灾害」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计89字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计90字：「但」
+🔊 [ai-audio块] resp=resp_Yt7hS
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计92字：「凭借」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计94字：「农业」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计96字：「优势」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计98字：「成为」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计99字：「“」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计101字：「天下」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计102字：「粮」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计103字：「仓」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计105字：「”，」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计106字：「并」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计108字：「转型」
+🔊 [ai-audio块] resp=resp_Yt7hS
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计109字：「为」
+🧾 [ai-text +3字] resp=resp_Yt7hS 累计112字：「重要的」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计114字：「工业」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计115字：「与」
+🧾 [ai-text +4字] resp=resp_Yt7hS 累计119字：「交通枢纽」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计120字：「。」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计122字：「如今」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计123字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计125字：「河南」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计126字：「正」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计127字：「以」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计129字：「洛阳」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计130字：「、」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计132字：「郑州」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计133字：「等」
+🧾 [ai-text +4字] resp=resp_Yt7hS 累计137字：「中心城市」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计138字：「为」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计140字：「引擎」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计141字：「，」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计143字：「推动」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计145字：「文旅」
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计147字：「融合」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计148字：「与」
+🧾 [ai-text +4字] resp=resp_Yt7hS 累计152字：「科技创新」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计153字：「，」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计154字：「在」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计156字：「传承」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计158字：「千年」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计159字：「文」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计160字：「脉」
+🧾 [ai-text +3字] resp=resp_Yt7hS 累计163字：「的同时」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计164字：「，」
+🧾 [ai-text +3字] resp=resp_Yt7hS 累计167字：「展现出」
+🎧 [user-transcript] item=item_Yt7hNaV 「用那个，我让你用300个字来完整的介绍一下河南的历史，从过去到现在。」
+🗣️ [user-utterance] 「用那个，我让你用300个字来完整的介绍一下河南的历史，从过去到现在。」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计169字：「蓬勃」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计170字：「的」
+🧾 [ai-text +3字] resp=resp_Yt7hS 累计173字：「现代化」
+🧾 [ai-text +2字] resp=resp_Yt7hS 累计175字：「活力」
+🧾 [ai-text +1字] resp=resp_Yt7hS 累计176字：「。」
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🎙️ 上行块 #1050（3200B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+⏱️ [hitch] main thread busy for 43ms
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🎙️ 上行块 #1100（3200B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+⏱️ [hitch] main thread busy for 46ms
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🎙️ 上行块 #1150（3200B）已发出
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🔊 [ai-audio块] resp=resp_Yt7hS
+🎧 [response.done] id=resp_Yt7hSRYzt3y
+📝 [写盘] 一条全写：问「用那个，我让你用300个字来完整的介绍一」 答「河南是中华文明的核心发祥地，夏商周及汉唐」
+🎙️ 上行块 #1200（3200B）已发出
+⏱️ [hitch] main thread busy for 46ms
+🎙️ 上行块 #1250（64B）已发出
+🎙️ 上行块 #1300（3200B）已发出
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+🎙️ 上行块 #1350（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #1400（64B）已发出

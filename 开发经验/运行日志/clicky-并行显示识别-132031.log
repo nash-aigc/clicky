@@ -1,0 +1,308 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 18 exchanges from session 「第一段文字第二段文字」
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 570ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+🔊 [aecprobe] t=1790313653.785 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 97ms
+⏱️ [hitch] main thread busy for 160ms
+🔊 [aecprobe] t=1790313655.512 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790313655.614 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 A6ADA895-C767-42DF-A4B0-CCFF259E3659，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ Transcription: using Bailian Realtime ASR
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_PjimOOa5TCn
+🧾 [ai-text +2字] resp=resp_PjimO 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_PjimO 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_PjimO 累计5字：「刚才」
+🧾 [ai-text +2字] resp=resp_PjimO 累计7字：「我们」
+🧾 [ai-text +1字] resp=resp_PjimO 累计8字：「聊」
+🧾 [ai-text +2字] resp=resp_PjimO 累计10字：「到了」
+🧾 [ai-text +2字] resp=resp_PjimO 累计12字：「纽约」
+🧾 [ai-text +1字] resp=resp_PjimO 累计13字：「，」
+🎙️ Ask 语音电话：显示用识别已接上（Bailian Realtime ASR）—— 用户的话将在开口时显示
+🧾 [ai-text +2字] resp=resp_PjimO 累计15字：「你想」
+🧾 [ai-text +2字] resp=resp_PjimO 累计17字：「接着」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_PjimO 累计19字：「了解」
+🧾 [ai-text +2字] resp=resp_PjimO 累计21字：「它的」
+🧾 [ai-text +2字] resp=resp_PjimO 累计23字：「哪个」
+🧾 [ai-text +2字] resp=resp_PjimO 累计25字：「方面」
+🧾 [ai-text +1字] resp=resp_PjimO 累计26字：「？」
+🔊 [ai-audio块] resp=resp_PjimO
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🔊 [ai-audio块] resp=resp_PjimO
+🎧 [response.done] id=resp_PjimOOa5TCn
+📝 [写盘] 开场白（不参与配对）：答「你好！刚才我们聊到了纽约，你想接着了解它」
+⏱️ [hitch] main thread busy for 45ms
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 上行块 #100（64B）已发出
+🎙️ 上行块 #150（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #200（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_PjimRwgJ23U
+🧾 [ai-text +2字] resp=resp_PjimR 累计2字：「北京」
+🧾 [ai-text +3字] resp=resp_PjimR 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_PjimR 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_PjimR 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_PjimR 累计9字：「，」
+🧾 [ai-text +2字] resp=resp_PjimR 累计11字：「也是」
+🧾 [ai-text +2字] resp=resp_PjimR 累计13字：「政治」
+🧾 [ai-text +1字] resp=resp_PjimR 累计14字：「、」
+🧾 [ai-text +3字] resp=resp_PjimR 累计17字：「文化和」
+🧾 [ai-text +2字] resp=resp_PjimR 累计19字：「国际」
+🧾 [ai-text +2字] resp=resp_PjimR 累计21字：「交往」
+🧾 [ai-text +2字] resp=resp_PjimR 累计23字：「中心」
+🧾 [ai-text +1字] resp=resp_PjimR 累计24字：「，」
+🧾 [ai-text +2字] resp=resp_PjimR 累计26字：「拥有」
+🧾 [ai-text +2字] resp=resp_PjimR 累计28字：「故宫」
+🧾 [ai-text +1字] resp=resp_PjimR 累计29字：「、」
+🧾 [ai-text +2字] resp=resp_PjimR 累计31字：「长城」
+🧾 [ai-text +1字] resp=resp_PjimR 累计32字：「等」
+🧾 [ai-text +2字] resp=resp_PjimR 累计34字：「历史」
+🧾 [ai-text +2字] resp=resp_PjimR 累计36字：「地标」
+🧾 [ai-text +1字] resp=resp_PjimR 累计37字：「。」
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🎧 [user-transcript] item=item_PjimZ49 「关于北京的实习。」
+🗣️ [user-utterance] 「关于北京的实习。」
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🎙️ 上行块 #250（2720B）已发出
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🔊 [ai-audio块] resp=resp_PjimR
+🎧 [response.done] id=resp_PjimRwgJ23U
+📝 [写盘] 一条全写：问「关于北京的实习。」 答「北京是中国的首都，也是政治、文化和国际交」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+📝 [写盘] #20 等转写补配：答「北京是中国的首都，也是政治、文化和国际交」
+⏱️ [hitch] main thread busy for 52ms
+🎙️ 上行块 #300（64B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 上行块 #500（3200B）已发出
+🎙️ 上行块 #550（64B）已发出
+🎙️ 上行块 #600（3200B）已发出
+🎙️ 上行块 #650（64B）已发出
+🎙️ 上行块 #700（3200B）已发出
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 480ms
+⏱️ [hitch] main thread busy for 162ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 53ms
+2026-09-25 13:22:03.687 Clicky[94570:12947393] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-25 13:22:03.711 Clicky[94570:12947393] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 70ms
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 1 (9 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 9 字
+⏱️ [hitch] main thread busy for 761ms
+🗣️ Streaming speech: queued segment 2 (34 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 34 字
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 117ms
+🎙️ BuddyDictationManager: continuous listening requested
+🔊 [aecprobe] t=1790313729.019 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (120KB)
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 351ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🗣️ Streaming speech: queued segment 3 (39 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 39 字
+⏱️ [hitch] main thread busy for 293ms
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 4 (15 chars)
+⏱️ [hitch] main thread busy for 65ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "北京", recent mic peak 0.131)
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "北京。", recent mic peak 0.131)
+🔊 [aecprobe] t=1790313731.387 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (356KB)
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790313731.623 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+💬 Clicky: compressed 12 aged-out exchanges into the conversation summary
+⏱️ [hitch] main thread busy for 42ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 A6ADA895-C767-42DF-A4B0-CCFF259E3659，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ Transcription: using Bailian Realtime ASR
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_JmIdBm5Zv6q
+🧾 [ai-text +2字] resp=resp_JmIdB 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_JmIdB 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计5字：「刚才」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计7字：「咱们」
+🧾 [ai-text +1字] resp=resp_JmIdB 累计8字：「聊」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计10字：「到了」
+🎙️ Ask 语音电话：显示用识别已接上（Bailian Realtime ASR）—— 用户的话将在开口时显示
+🧾 [ai-text +2字] resp=resp_JmIdB 累计12字：「北京」
+🧾 [ai-text +1字] resp=resp_JmIdB 累计13字：「，」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计15字：「你是」
+🧾 [ai-text +3字] resp=resp_JmIdB 累计18字：「想了解」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计20字：「实习」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_JmIdB 累计22字：「机会」
+🧾 [ai-text +1字] resp=resp_JmIdB 累计23字：「，」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计25字：「还是」
+🧾 [ai-text +1字] resp=resp_JmIdB 累计26字：「想」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计28字：「聊聊」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计30字：「其他」
+🧾 [ai-text +2字] resp=resp_JmIdB 累计32字：「方面」
+🧾 [ai-text +1字] resp=resp_JmIdB 累计33字：「？」
+🔊 [ai-audio块] resp=resp_JmIdB
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🔊 [ai-audio块] resp=resp_JmIdB
+🎧 [response.done] id=resp_JmIdBm5Zv6q
+📝 [写盘] 开场白（不参与配对）：答「你好！刚才咱们聊到了北京，你是想了解实习」
+🎙️ 上行块 #50（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+📝 [写盘] 开场白（不参与配对）：答「你好！刚才咱们聊到了北京，你是想了解实习」
+🎧 [event] speech_started（服务端听到用户开口）
+📝 [写盘] 开场白（不参与配对）：答「你好！刚才咱们聊到了北京，你是想了解实习」
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_JmIdMi1qNGN
+🧾 [ai-text +2字] resp=resp_JmIdM 累计2字：「北京」
+🧾 [ai-text +3字] resp=resp_JmIdM 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计7字：「首都」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计8字：「，」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计9字：「集」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计11字：「政治」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计12字：「、」
+🧾 [ai-text +3字] resp=resp_JmIdM 累计15字：「文化与」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计17字：「国际」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计19字：「交往」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计21字：「中心」
+🧾 [ai-text +3字] resp=resp_JmIdM 累计24字：「于一身」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计25字：「。」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计27字：「这里」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计29字：「既有」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计31字：「故宫」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计32字：「、」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计34字：「长城」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计35字：「等」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计37字：「历史」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计39字：「地标」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计40字：「，」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计42字：「也有」
+🧾 [ai-text +3字] resp=resp_JmIdM 累计45字：「中关村」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计46字：「等」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计48字：「科技」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计50字：「前沿」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计51字：「，」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计53字：「传统」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计55字：「胡同」
+🧾 [ai-text +3字] resp=resp_JmIdM 累计58字：「与现代」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计60字：「都市」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计62字：「完美」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计64字：「融合」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计65字：「，」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计66字：「是」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计68字：「无数」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计69字：「人」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计71字：「向往」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计72字：「的」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计74字：「实习」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计75字：「与」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计77字：「成长」
+🧾 [ai-text +2字] resp=resp_JmIdM 累计79字：「之地」
+🧾 [ai-text +1字] resp=resp_JmIdM 累计80字：「。」
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🎧 [user-transcript] item=item_JmIdJKr 「信息300个字。」
+🗣️ [user-utterance] 「信息300个字。」
+⏱️ [hitch] main thread busy for 69ms
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🎙️ 上行块 #100（2720B）已发出
+🔊 [ai-audio块] resp=resp_JmIdM
+⏱️ [hitch] main thread busy for 61ms
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM
+🔊 [ai-audio块] resp=resp_JmIdM

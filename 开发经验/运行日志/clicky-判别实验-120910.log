@@ -1,0 +1,388 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 15 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 472ms
+⏱️ [hitch] main thread busy for 252ms
+⏱️ [hitch] main thread busy for 185ms
+🔊 [aecprobe] t=1790309368.979 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 123ms
+🔊 [aecprobe] t=1790309370.529 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790309370.780 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 60ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_SBqRBh7iz2M
+🧾 [ai-text +2字] resp=resp_SBqRB 累计2字：「你好」
+🔎 [duplex] 新开一条回答气泡：起始 2 字
+🧾 [ai-text +1字] resp=resp_SBqRB 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计5字：「我是」
+🎙️ 上行块 #2（3200B）已发出
+⏱️ [hitch] main thread busy for 53ms
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_SBqRB 累计7字：「你的」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计8字：「多」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计10字：「语种」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计12字：「教练」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计13字：「。」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计15字：「
+
+」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计16字：「请」
+🧾 [ai-text +3字] resp=resp_SBqRB 累计19字：「告诉我」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计21字：「你想」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计23字：「练习」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计25字：「哪种」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计27字：「语言」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计28字：「（」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计30字：「日语」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计31字：「、」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计33字：「韩语」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计34字：「、」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计36字：「英语」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计37字：「、」
+🧾 [ai-text +4字] resp=resp_SBqRB 累计41字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计42字：「、」
+⏱️ [hitch] main thread busy for 53ms
+🧾 [ai-text +2字] resp=resp_SBqRB 累计44字：「德语」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计45字：「或」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计47字：「法语」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计49字：「），」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计51字：「以及」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计52字：「你」
+🧾 [ai-text +3字] resp=resp_SBqRB 累计55字：「目前的」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计57字：「水平」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计58字：「或」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计59字：「想」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计61字：「练习」
+🧾 [ai-text +3字] resp=resp_SBqRB 累计64字：「的具体」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计66字：「场景」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计67字：「。」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计69字：「我们」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计71字：「随时」
+🧾 [ai-text +2字] resp=resp_SBqRB 累计73字：「开始」
+🧾 [ai-text +1字] resp=resp_SBqRB 累计74字：「。」
+🔊 [ai-audio块] resp=resp_SBqRB
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🎙️ 上行块 #50（64B）已发出
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🔊 [ai-audio块] resp=resp_SBqRB
+🎧 [response.done] id=resp_SBqRBh7iz2M
+🎙️ 上行块 #100（3200B）已发出
+⏱️ [hitch] main thread busy for 131ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 55ms
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 10 字
+⏱️ [hitch] main thread busy for 129ms
+🗣️ Streaming speech: queued segment 2 (35 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 35 字
+⏱️ [hitch] main thread busy for 42ms
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"fad9f6dd-09cd-9bdb-bd46-d271c7a184fb","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790309381.004 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 2 unplayed segment(s) dropped, first audio never started
+⏱️ [hitch] main thread busy for 72ms
+🗣️ Streaming speech: queued segment 3 (38 chars)
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #150（2730B）已发出
+⏱️ [hitch] main thread busy for 82ms
+🗣️ Streaming speech: queued segment 4 (39 chars)
+⏱️ [hitch] main thread busy for 122ms
+🗣️ Streaming speech: queued segment 5 (33 chars)
+⏱️ [hitch] main thread busy for 149ms
+⏱️ [hitch] main thread busy for 138ms
+🗣️ Streaming speech: queued segment 6 (31 chars)
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [hitch] main thread busy for 125ms
+🗣️ Streaming speech: queued segment 7 (33 chars)
+⏱️ [hitch] main thread busy for 123ms
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 8 (31 chars)
+🗣️ Streaming speech: queued segment 9 (35 chars)
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 71ms
+🗣️ Streaming speech: queued segment 10 (37 chars)
+⏱️ [hitch] main thread busy for 62ms
+🗣️ Streaming speech: queued segment 11 (31 chars)
+⏱️ [hitch] main thread busy for 89ms
+🎙️ 上行块 #200（3200B）已发出
+🗣️ Streaming speech: queued segment 12 (37 chars)
+⏱️ [hitch] main thread busy for 71ms
+🗣️ Streaming speech: queued segment 13 (31 chars)
+⏱️ [hitch] main thread busy for 118ms
+⏱️ [hitch] main thread busy for 78ms
+🗣️ Streaming speech: queued segment 14 (31 chars)
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 87ms
+🗣️ Streaming speech: queued segment 15 (37 chars)
+⏱️ [hitch] main thread busy for 80ms
+🗣️ Streaming speech: queued segment 16 (30 chars)
+⏱️ [hitch] main thread busy for 129ms
+⏱️ [hitch] main thread busy for 77ms
+🗣️ Streaming speech: queued segment 17 (31 chars)
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 89ms
+🗣️ Streaming speech: queued segment 18 (37 chars)
+⏱️ [hitch] main thread busy for 59ms
+🗣️ Streaming speech: queued segment 19 (35 chars)
+⏱️ [hitch] main thread busy for 68ms
+🎙️ 上行块 #250（64B）已发出
+⏱️ [hitch] main thread busy for 86ms
+🗣️ Streaming speech: queued segment 20 (32 chars)
+⏱️ [hitch] main thread busy for 84ms
+⏱️ [hitch] main thread busy for 47ms
+🗣️ Streaming speech: queued segment 21 (35 chars)
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 43ms
+🗣️ Streaming speech: queued segment 22 (34 chars)
+⏱️ [hitch] main thread busy for 90ms
+🗣️ Streaming speech: queued segment 23 (33 chars)
+⏱️ [hitch] main thread busy for 134ms
+🗣️ Streaming speech: queued segment 24 (32 chars)
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 168ms
+🗣️ Streaming speech: queued segment 25 (35 chars)
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 66ms
+🗣️ Streaming speech: queued segment 26 (39 chars)
+⏱️ [hitch] main thread busy for 115ms
+🎙️ 上行块 #300（3200B）已发出
+🗣️ Streaming speech: queued segment 27 (35 chars)
+⏱️ [hitch] main thread busy for 76ms
+🗣️ Streaming speech: queued segment 28 (31 chars)
+⏱️ [hitch] main thread busy for 131ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 29 (35 chars)
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 88ms
+🗣️ Streaming speech: queued segment 30 (35 chars)
+⏱️ [hitch] main thread busy for 46ms
+🗣️ Streaming speech: queued segment 31 (33 chars)
+⏱️ [hitch] main thread busy for 105ms
+🗣️ Streaming speech: queued segment 32 (24 chars)
+🎙️ 上行块 #350（64B）已发出
+🎙️ 上行块 #400（3200B）已发出
+🎙️ 上行块 #450（3200B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #500（64B）已发出
+🎙️ 上行块 #550（3200B）已发出
+🎙️ 上行块 #600（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #650（3200B）已发出
+🎙️ 上行块 #700（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #750（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_SBqRFoIHP2H
+🧾 [ai-text +2字] resp=resp_SBqRF 累计2字：「你好」
+🔎 [duplex] 新开一条回答气泡：起始 2 字
+🧾 [ai-text +1字] resp=resp_SBqRF 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计5字：「我是」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计7字：「你的」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计8字：「多」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计10字：「语种」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计12字：「教练」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计13字：「。」
+⏱️ [hitch] main thread busy for 59ms
+🧾 [ai-text +2字] resp=resp_SBqRF 累计15字：「
+
+」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计16字：「请」
+🧾 [ai-text +3字] resp=resp_SBqRF 累计19字：「告诉我」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计21字：「你想」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计23字：「练习」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计25字：「哪种」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计27字：「语言」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计28字：「（」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计30字：「日语」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计31字：「、」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计33字：「韩语」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计34字：「、」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计36字：「英语」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计37字：「、」
+🧾 [ai-text +4字] resp=resp_SBqRF 累计41字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计42字：「、」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计44字：「德语」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计45字：「或」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计47字：「法语」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计49字：「），」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计51字：「以及」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计52字：「你」
+🧾 [ai-text +3字] resp=resp_SBqRF 累计55字：「目前的」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计57字：「水平」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计58字：「或」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计59字：「想」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计61字：「练习」
+🧾 [ai-text +3字] resp=resp_SBqRF 累计64字：「的具体」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计66字：「场景」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计67字：「。」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计69字：「我们」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计71字：「随时」
+🧾 [ai-text +2字] resp=resp_SBqRF 累计73字：「开始」
+🧾 [ai-text +1字] resp=resp_SBqRF 累计74字：「。」
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🎧 [user-transcript] item=item_SBqRCXI 「」
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+⏱️ [hitch] main thread busy for 43ms
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🎙️ 上行块 #800（64B）已发出
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🔊 [ai-audio块] resp=resp_SBqRF
+🔊 [ai-audio块] resp=resp_SBqRF
+🎧 [response.done] id=resp_SBqRFoIHP2H
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_SBqRVuM54W1
+🧾 [ai-text +2字] resp=resp_SBqRV 累计2字：「是的」
+🔎 [duplex] 新开一条回答气泡：起始 2 字
+🧾 [ai-text +1字] resp=resp_SBqRV 累计3字：「，」
+🧾 [ai-text +2字] resp=resp_SBqRV 累计5字：「我在」
+🧾 [ai-text +1字] resp=resp_SBqRV 累计6字：「。」
+🧾 [ai-text +2字] resp=resp_SBqRV 累计8字：「你想」
+🧾 [ai-text +2字] resp=resp_SBqRV 累计10字：「练习」
+🧾 [ai-text +2字] resp=resp_SBqRV 累计12字：「哪种」
+🧾 [ai-text +2字] resp=resp_SBqRV 累计14字：「语言」
+🧾 [ai-text +1字] resp=resp_SBqRV 累计15字：「？」
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🎧 [user-transcript] item=item_SBqRE7W 「聊的吗？」
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🔊 [ai-audio块] resp=resp_SBqRV
+🎧 [response.done] id=resp_SBqRVuM54W1
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #850（2730B）已发出
+🎙️ 上行块 #900（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_SBqRKWnzj52
+🧾 [ai-text +1字] resp=resp_SBqRK 累计1字：「请」
+🔎 [duplex] 新开一条回答气泡：起始 1 字
+🧾 [ai-text +2字] resp=resp_SBqRK 累计3字：「具体」
+🧾 [ai-text +2字] resp=resp_SBqRK 累计5字：「说明」
+🧾 [ai-text +2字] resp=resp_SBqRK 累计7字：「你的」
+🧾 [ai-text +2字] resp=resp_SBqRK 累计9字：「问题」
+🧾 [ai-text +3字] resp=resp_SBqRK 累计12字：「是什么」
+🧾 [ai-text +1字] resp=resp_SBqRK 累计13字：「？」
+🎧 [user-transcript] item=item_SBqRCFg 「嗯，你帮我去研究一下，有一个问题。」
+🔊 [ai-audio块] resp=resp_SBqRK
+🔊 [ai-audio块] resp=resp_SBqRK
+🔊 [ai-audio块] resp=resp_SBqRK
+🔊 [ai-audio块] resp=resp_SBqRK
+🔊 [ai-audio块] resp=resp_SBqRK
+🔊 [ai-audio块] resp=resp_SBqRK
+🔊 [ai-audio块] resp=resp_SBqRK
+🎧 [response.done] id=resp_SBqRKWnzj52
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #950（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_SBqRIni36Zp
+🧾 [ai-text +1字] resp=resp_SBqRI 累计1字：「请」
+🔎 [duplex] 新开一条回答气泡：起始 1 字
+🧾 [ai-text +3字] resp=resp_SBqRI 累计4字：「告诉我」
+🧾 [ai-text +2字] resp=resp_SBqRI 累计6字：「你想」
+🧾 [ai-text +2字] resp=resp_SBqRI 累计8字：「研究」
+🧾 [ai-text +3字] resp=resp_SBqRI 累计11字：「的具体」
+⏱️ [hitch] main thread busy for 53ms
+🧾 [ai-text +2字] resp=resp_SBqRI 累计13字：「问题」
+🧾 [ai-text +3字] resp=resp_SBqRI 累计16字：「是什么」
+🧾 [ai-text +1字] resp=resp_SBqRI 累计17字：「？」
+🔊 [ai-audio块] resp=resp_SBqRI
+🔊 [ai-audio块] resp=resp_SBqRI
+🎧 [user-transcript] item=item_SBqRHly 「是什么问题？」
+🔊 [ai-audio块] resp=resp_SBqRI
+🔊 [ai-audio块] resp=resp_SBqRI
+🔊 [ai-audio块] resp=resp_SBqRI
+🔊 [ai-audio块] resp=resp_SBqRI
+🔊 [ai-audio块] resp=resp_SBqRI
+🔊 [ai-audio块] resp=resp_SBqRI
+🎧 [response.done] id=resp_SBqRIni36Zp
+🎙️ 上行块 #1000（3200B）已发出
+🎙️ 上行块 #1050（64B）已发出
+🎙️ 上行块 #1100（3200B）已发出
+🎙️ 上行块 #1150（3200B）已发出
+🎙️ 上行块 #1200（64B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms

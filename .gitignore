@@ -25,5 +25,16 @@ mini-agent/
 design-preview/
 .tmp-open-test/
 
+# 屏幕 OCR 的调试产物：截图和它的全文识别结果。**里面是用户屏幕上的真实内容**
+# （窗口标题、正文片段），推到 GitHub 就等于把这些内容公开出去 —— 和这个文件里
+# 挡住 voice-agent / mini-agent 是同一个理由，只是内容更贴脸。
+# 工具在 tools/截图与OCR/，产物不入库。
+
+# 截图与OCR 的编译产物 —— README 自己写的「build.sh 生成，不入库」。
+tools/截图与OCR/ocr
+截图-左侧-*.png
+截图-左侧-*.txt
+屏幕文字-*.txt
+
 # The running app appends to its own run log, so the newest one is never stable.
 开发经验/运行日志/clicky-冷重开验证-20260924-123505.log

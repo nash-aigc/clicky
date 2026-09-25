@@ -1,0 +1,231 @@
+{
+ "rows": [
+  {
+   "q": "打开计算器",
+   "goal": "执行",
+   "goal_conf": 1,
+   "way": "agent",
+   "way_conf": 0.17,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "open_calculator",
+   "script_conf": 0.99,
+   "ms": 1824,
+   "cost": 5.3718e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "执行",
+    "way": "直出",
+    "script": "open_calculator"
+   },
+   "hit": false,
+   "final": "脚本→open_calculator",
+   "final_hit": true
+  },
+  {
+   "q": "帮我把音量调到 30",
+   "goal": "执行",
+   "goal_conf": 1,
+   "way": "agent",
+   "way_conf": 0.25,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "volume_set",
+   "script_conf": 0.98,
+   "ms": 766,
+   "cost": 5.3928e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "执行",
+    "way": "直出",
+    "script": "volume_set"
+   },
+   "hit": false,
+   "final": "脚本→volume_set",
+   "final_hit": true
+  },
+  {
+   "q": "把这个按钮圈出来",
+   "goal": "图形",
+   "goal_conf": 0.99,
+   "way": "直出",
+   "way_conf": 0.14,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "no_match",
+   "script_conf": 0.99,
+   "ms": 740,
+   "cost": 5.3844e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "图形",
+    "way": "直出",
+    "script": null
+   },
+   "hit": true,
+   "final": "目标→图形（目标默认）",
+   "final_hit": true
+  },
+  {
+   "q": "画个流程图给我讲讲 TCP 三次握手",
+   "goal": "图形",
+   "goal_conf": 1,
+   "way": "直出",
+   "way_conf": 0.48,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "no_match",
+   "script_conf": 1,
+   "ms": 729,
+   "cost": 5.4138e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "图形",
+    "way": "agent",
+    "script": null
+   },
+   "hit": false,
+   "final": "目标→图形（目标默认）",
+   "final_hit": true
+  },
+  {
+   "q": "我昨天做了什么",
+   "goal": "文字",
+   "goal_conf": 0.99,
+   "way": "agent",
+   "way_conf": 0.64,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "no_match",
+   "script_conf": 0.99,
+   "ms": 1150,
+   "cost": 5.3802e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "文字",
+    "way": "agent",
+    "script": null
+   },
+   "hit": true,
+   "final": "目标→文字（目标默认）",
+   "final_hit": true
+  },
+  {
+   "q": "一加一等于几",
+   "goal": "文字",
+   "goal_conf": 1,
+   "way": "直出",
+   "way_conf": 1,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "no_match",
+   "script_conf": 0.91,
+   "ms": 751,
+   "cost": 5.376e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "文字",
+    "way": "直出",
+    "script": null
+   },
+   "hit": true,
+   "final": "目标→文字（目标默认）",
+   "final_hit": true
+  },
+  {
+   "q": "帮我把这段总结存到我的 Notion 笔记里",
+   "goal": "执行",
+   "goal_conf": 1,
+   "way": "agent",
+   "way_conf": 0.86,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "no_match",
+   "script_conf": 1,
+   "ms": 1014,
+   "cost": 5.4264e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "执行",
+    "way": "agent",
+    "script": null
+   },
+   "hit": true,
+   "final": "目标→执行（目标默认）",
+   "final_hit": true
+  },
+  {
+   "q": "翻译成英文：把音量调到最大",
+   "goal": "文字",
+   "goal_conf": 0.87,
+   "way": "直出",
+   "way_conf": 1,
+   "agent": "无点名",
+   "agent_conf": 1,
+   "script": "volume_set",
+   "script_conf": 0.61,
+   "ms": 864,
+   "cost": 5.4054e-05,
+   "expect": {
+    "agent": "无点名",
+    "goal": "文字",
+    "way": "直出",
+    "script": null
+   },
+   "hit": true,
+   "final": "脚本→volume_set",
+   "final_hit": true
+  },
+  {
+   "q": "用 Claude Code 帮我调研一下这个报错",
+   "goal": "文字",
+   "goal_conf": 0.88,
+   "way": "agent",
+   "way_conf": 0.83,
+   "agent": "claude-code",
+   "agent_conf": 1,
+   "script": "no_match",
+   "script_conf": 1,
+   "ms": 723,
+   "cost": 5.4138e-05,
+   "expect": {
+    "agent": "claude-code",
+    "goal": null,
+    "way": null,
+    "script": null
+   },
+   "hit": true,
+   "final": "点名→claude-code",
+   "final_hit": true
+  },
+  {
+   "q": "帮我复盘一下最近的任务",
+   "goal": "文字",
+   "goal_conf": 1,
+   "way": "agent",
+   "way_conf": 0.02,
+   "agent": "复盘",
+   "agent_conf": 0.67,
+   "script": "no_match",
+   "script_conf": 1,
+   "ms": 751,
+   "cost": 5.397e-05,
+   "expect": {
+    "agent": "复盘",
+    "goal": null,
+    "way": null,
+    "script": null
+   },
+   "hit": true,
+   "final": "点名→复盘",
+   "final_hit": true
+  }
+ ],
+ "score": {
+  "hit": "7/10",
+  "median_ms": 766,
+  "total_cost_usd": 0.000539616,
+  "final_hit": "10/10",
+  "final_rule": "点名0.35 > 脚本0.55 > 目标分类；way/复杂度由代码推定不问JEV"
+ }
+}

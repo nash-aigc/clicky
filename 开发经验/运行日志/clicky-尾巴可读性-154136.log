@@ -1,0 +1,251 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 9 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 337ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 130ms
+🔊 [aecprobe] t=1790322103.452 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 55ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🔊 [aecprobe] t=1790322105.198 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790322105.327 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790322105.327 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790322105.327 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [response.created t=1790322105.425] id=resp_Z5HnMikAXoQ
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计3字：「！」
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🧾 [ai-text +3字] resp=resp_Z5HnM 累计6字：「很高兴」
+⏱️ [hitch] main thread busy for 42ms
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计7字：「能」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计9字：「听到」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计11字：「你的」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计13字：「声音」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计14字：「。」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计16字：「请问」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计18字：「你想」
+🎙️ 上行块 #3（64B）已发出
+⏱️ [hitch] main thread busy for 153ms
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计19字：「用」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计21字：「哪种」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计23字：「语言」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计25字：「交流」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计26字：「？」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计27字：「（」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计29字：「日语」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计30字：「、」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计32字：「韩语」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计33字：「、」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计35字：「英语」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计36字：「、」
+🧾 [ai-text +4字] resp=resp_Z5HnM 累计40字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计41字：「、」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计43字：「德语」
+⏱️ [hitch] main thread busy for 92ms
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计44字：「、」
+🧾 [ai-text +2字] resp=resp_Z5HnM 累计46字：「法语」
+🧾 [ai-text +1字] resp=resp_Z5HnM 累计47字：「）」
+🔊 [ai-audio首块 t=1790322106.052] resp=resp_Z5HnM
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🧾 [ai-text-done] resp=resp_Z5HnM 官方全文 47 字（累积值 47 字）
+🎧 [response.done] id=resp_Z5HnMikAXoQ
+⏱️ [hitch] main thread busy for 51ms
+🎙️ 上行块 #50（64B）已发出
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 190ms
+⏱️ [hitch] main thread busy for 62ms
+🎙️ 上行块 #100（3200B）已发出
+🎙️ 上行块 #150（64B）已发出
+🎙️ 上行块 #200（2730B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 235ms
+⏱️ [hitch] main thread busy for 314ms
+2026-09-25 15:43:30.000 Clicky[24157:13559801] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-25 15:43:30.019 Clicky[24157:13559801] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 57ms
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 3 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+⏱️ [hitch] main thread busy for 94ms
+🔊 [aecprobe] t=1790322216.704 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (45KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790322217.626 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 138ms
+⏱️ [hitch] main thread busy for 132ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 112ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 49ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 上行块 #1（3200B）已发出
+🎙️ 上行块 #2（64B）已发出
+🎧 [response.created t=1790322224.321] id=resp_MCb2EMUZ7HZ
+🧾 [ai-text +2字] resp=resp_MCb2E 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_MCb2E 累计3字：「！」
+🧾 [ai-text +1字] resp=resp_MCb2E 累计4字：「请」
+🧾 [ai-text +3字] resp=resp_MCb2E 累计7字：「告诉我」
+🧾 [ai-text +2字] resp=resp_MCb2E 累计9字：「你想」
+🧾 [ai-text +2字] resp=resp_MCb2E 累计11字：「练习」
+🧾 [ai-text +2字] resp=resp_MCb2E 累计13字：「哪种」
+🎙️ 上行块 #3（3200B）已发出
+🧾 [ai-text +2字] resp=resp_MCb2E 累计15字：「语言」
+⏱️ [hitch] main thread busy for 76ms
+🧾 [ai-text +1字] resp=resp_MCb2E 累计16字：「，」
+🧾 [ai-text +2字] resp=resp_MCb2E 累计18字：「或者」
+🧾 [ai-text +2字] resp=resp_MCb2E 累计20字：「需要」
+🧾 [ai-text +1字] resp=resp_MCb2E 累计21字：「哪」
+🧾 [ai-text +3字] resp=resp_MCb2E 累计24字：「方面的」
+🧾 [ai-text +2字] resp=resp_MCb2E 累计26字：「帮助」
+🧾 [ai-text +1字] resp=resp_MCb2E 累计27字：「。」
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🧾 [ai-text-done] resp=resp_MCb2E 官方全文 27 字（累积值 27 字）
+🎧 [response.done] id=resp_MCb2EMUZ7HZ
+🗣️ Streaming speech: queued segment 1 (2 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanqian 文本 2 字
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"7f89370c-1653-944d-bbd0-e0eaf7db33dd","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790322226.701 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 上行块 #100（64B）已发出
+⏱️ [hitch] main thread busy for 44ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (2 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanqian 文本 2 字
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"df38e657-1b09-9ced-8c4f-7890f2c3e15e","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790322231.288 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+🎙️ 上行块 #150（64B）已发出
+🎙️ 上行块 #200（3200B）已发出
+🎧 [event t=1790322236.463] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「对」
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790322237.447] id=resp_MCb2UZmrjsV
+🧾 [ai-text +2字] resp=resp_MCb2U 累计2字：「好的」
+🧾 [ai-text +1字] resp=resp_MCb2U 累计3字：「，」
+🧾 [ai-text +1字] resp=resp_MCb2U 累计4字：「已」
+🧾 [ai-text +2字] resp=resp_MCb2U 累计6字：「恢复」
+🧾 [ai-text +1字] resp=resp_MCb2U 累计7字：「。」
+🧾 [ai-text +2字] resp=resp_MCb2U 累计9字：「请问」
+🧾 [ai-text +2字] resp=resp_MCb2U 累计11字：「你想」
+🧾 [ai-text +2字] resp=resp_MCb2U 累计13字：「练习」
+🎙️ 上行块 #250（64B）已发出
+🧾 [ai-text +2字] resp=resp_MCb2U 累计15字：「哪种」
+🧾 [ai-text +2字] resp=resp_MCb2U 累计17字：「语言」
+🧾 [ai-text +1字] resp=resp_MCb2U 累计18字：「？」
+🎧 [user-transcript] item=item_MCb2QAr 「给你恢复两个节目。」
+⏱️ [hitch] main thread busy for 58ms
+🧾 [ai-text-done] resp=resp_MCb2U 官方全文 18 字（累积值 18 字）
+🎧 [response.done] id=resp_MCb2UZmrjsV
+🎙️ 上行块 #300（3200B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 53ms
+🗣️ Streaming speech: queued segment 1 (2 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanqian 文本 2 字
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"936162b8-adc5-9f58-8d1f-003898ef9f85","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790322242.931 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+🎙️ 上行块 #350（3200B）已发出
+🎧 [event t=1790322243.597] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790322244.332] id=resp_MCb2GEx8oSE
+🧾 [ai-text +3字] resp=resp_MCb2G 累计3字：「没问题」
+🧾 [ai-text +1字] resp=resp_MCb2G 累计4字：「。」
+🧾 [ai-text +1字] resp=resp_MCb2G 累计5字：「请」
+🧾 [ai-text +3字] resp=resp_MCb2G 累计8字：「告诉我」
+🧾 [ai-text +2字] resp=resp_MCb2G 累计10字：「你想」
+🧾 [ai-text +2字] resp=resp_MCb2G 累计12字：「练习」
+🧾 [ai-text +2字] resp=resp_MCb2G 累计14字：「哪种」
+🧾 [ai-text +2字] resp=resp_MCb2G 累计16字：「语言」
+🧾 [ai-text +1字] resp=resp_MCb2G 累计17字：「？」
+⏱️ [hitch] main thread busy for 173ms
+🎧 [user-transcript] item=item_MCb2OA2 「」
+🧾 [ai-text-done] resp=resp_MCb2G 官方全文 17 字（累积值 17 字）
+🎧 [response.done] id=resp_MCb2GEx8oSE
+🎙️ 上行块 #400（64B）已发出
+🎙️ BuddyDictationManager: continuous listening window closing (listening window expired); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+⏱️ [hitch] main thread busy for 87ms
+⏱️ [hitch] main thread busy for 92ms
+⏱️ [hitch] main thread busy for 42ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🗣️ Streaming speech: queued segment 1 (17 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanqian 文本 17 字
+⏱️ [hitch] main thread busy for 227ms
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"9302168a-93de-970a-95d5-0a4b2c058499","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790322249.871 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+⏱️ [hitch] main thread busy for 117ms
+⏱️ [hitch] main thread busy for 112ms

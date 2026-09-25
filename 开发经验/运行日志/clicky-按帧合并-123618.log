@@ -1,0 +1,220 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 5 exchanges from session 「」
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 233ms
+⏱️ [hitch] main thread busy for 79ms
+🔊 [aecprobe] t=1790311013.582 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 100ms
+🔊 [aecprobe] t=1790311015.186 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790311015.433 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_JIqNFkgN6cX
+🧾 [ai-text +2字] resp=resp_JIqNF 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计5字：「关于」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计7字：「北京」
+🧾 [ai-text +3字] resp=resp_JIqNF 累计10字：「的介绍」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计11字：「，」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计12字：「我」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计14字：「刚才」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计16字：「已经」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计18字：「概括」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计19字：「了」
+🎙️ 上行块 #2（2720B）已发出
+🧾 [ai-text +2字] resp=resp_JIqNF 累计21字：「它的」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计23字：「历史」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计25字：「底蕴」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计26字：「和」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计28字：「现代」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计30字：「活力」
+🎙️ 上行块 #3（3200B）已发出
+🧾 [ai-text +1字] resp=resp_JIqNF 累计31字：「，」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计33字：「你是」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计34字：「想」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计35字：「再」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计37字：「深入」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计39字：「聊聊」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计40字：「哪」
+🧾 [ai-text +2字] resp=resp_JIqNF 累计42字：「方面」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计43字：「吗」
+🧾 [ai-text +1字] resp=resp_JIqNF 累计44字：「？」
+🔊 [ai-audio块] resp=resp_JIqNF
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🔊 [ai-audio块] resp=resp_JIqNF
+🎧 [response.done] id=resp_JIqNFkgN6cX
+📝 [写盘] 开场白（不参与配对）：答「你好！关于北京的介绍，我刚才已经概括了它」
+🎙️ 上行块 #50（64B）已发出
+🎙️ 上行块 #100（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #150（64B）已发出
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 上行块 #250（64B）已发出
+🎙️ 上行块 #300（64B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #400（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_JIqNWpG2eu1
+🧾 [ai-text +2字] resp=resp_JIqNW 累计2字：「北京」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计3字：「是」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计5字：「首都」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计6字：「，」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计7字：「集」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计9字：「政治」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计10字：「、」
+🧾 [ai-text +3字] resp=resp_JIqNW 累计13字：「文化与」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计15字：「国际」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计17字：「交往」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计19字：「中心」
+🧾 [ai-text +3字] resp=resp_JIqNW 累计22字：「于一体」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计23字：「。」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计25字：「这里」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计27字：「既有」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计29字：「三千」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计31字：「年的」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计32字：「建」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计33字：「城」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计34字：「史」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计35字：「，」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计37字：「也有」
+🧾 [ai-text +4字] resp=resp_JIqNW 累计41字：「现代化的」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计43字：「鸟巢」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计45字：「和水」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计47字：「立方」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计48字：「。」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计50字：「故宫」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计51字：「、」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计53字：「胡同」
+🧾 [ai-text +3字] resp=resp_JIqNW 累计56字：「展现了」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计58字：「古都」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计60字：「韵味」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计61字：「，」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计62字：「而」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计64字：「高校」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计65字：「、」
+🧾 [ai-text +3字] resp=resp_JIqNW 累计68字：「博物馆」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计69字：「则」
+🧾 [ai-text +3字] resp=resp_JIqNW 累计72字：「体现了」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计74字：「科技」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计75字：「与」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计77字：「人文」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计78字：「的」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计80字：「融合」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计81字：「。」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计83字：「四季」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计84字：「分」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计86字：「明的」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计88字：「气候」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计89字：「和」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计91字：「丰富」
+🧾 [ai-text +3字] resp=resp_JIqNW 累计94字：「的美食」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计95字：「，」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计96字：「让」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计98字：「这里」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计99字：「既」
+🧾 [ai-text +2字] resp=resp_JIqNW 累计101字：「古老」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计102字：「又」
+🧾 [ai-text +4字] resp=resp_JIqNW 累计106字：「充满活力」
+🧾 [ai-text +1字] resp=resp_JIqNW 累计107字：「。」
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🎧 [user-transcript] item=item_JIqNULB 「介绍一下北京的信息，200个字。」
+🗣️ [user-utterance] 「介绍一下北京的信息，200个字。」
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🎙️ 上行块 #450（3200B）已发出
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🎙️ 上行块 #500（64B）已发出
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🔊 [ai-audio块] resp=resp_JIqNW
+🎧 [response.done] id=resp_JIqNWpG2eu1
+📝 [写盘] 一条全写：问「介绍一下北京的信息，200个字。」 答「北京是首都，集政治、文化与国际交往中心于」
+🎙️ 上行块 #550（2730B）已发出
+⏱️ [hitch] main thread busy for 41ms
+💬 Ask 语音电话已挂断

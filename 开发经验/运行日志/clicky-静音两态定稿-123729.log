@@ -1,0 +1,440 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 7 exchanges from session 「」
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 235ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 135ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790311054.301 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 76ms
+🔊 [aecprobe] t=1790311055.942 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790311056.137 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_R1emCSdReDj
+🧾 [ai-text +2字] resp=resp_R1emC 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_R1emC 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_R1emC 累计6字：「有什么」
+🧾 [ai-text +2字] resp=resp_R1emC 累计8字：「关于」
+🧾 [ai-text +2字] resp=resp_R1emC 累计10字：「北京」
+🧾 [ai-text +3字] resp=resp_R1emC 累计13字：「的问题」
+🧾 [ai-text +1字] resp=resp_R1emC 累计14字：「想」
+🧾 [ai-text +1字] resp=resp_R1emC 累计15字：「问」
+🧾 [ai-text +1字] resp=resp_R1emC 累计16字：「吗」
+🧾 [ai-text +1字] resp=resp_R1emC 累计17字：「？」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🔊 [ai-audio块] resp=resp_R1emC
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_R1emC
+🔊 [ai-audio块] resp=resp_R1emC
+🔊 [ai-audio块] resp=resp_R1emC
+🔊 [ai-audio块] resp=resp_R1emC
+🔊 [ai-audio块] resp=resp_R1emC
+🔊 [ai-audio块] resp=resp_R1emC
+🔊 [ai-audio块] resp=resp_R1emC
+🎧 [response.done] id=resp_R1emCSdReDj
+📝 [写盘] 开场白（不参与配对）：答「你好！有什么关于北京的问题想问吗？」
+🎙️ 上行块 #50（64B）已发出
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 113ms
+⏱️ [hitch] main thread busy for 200ms
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 85ms
+⏱️ [hitch] main thread busy for 52ms
+🎯 Element pointing: no element
+🧠 Conversation history: 9 exchanges (limit 10)
+⏱️ [hitch] main thread busy for 74ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_XKt7F4cW7xr
+🧾 [ai-text +2字] resp=resp_XKt7F 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_XKt7F 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_XKt7F 累计6字：「有什么」
+🧾 [ai-text +2字] resp=resp_XKt7F 累计8字：「关于」
+🧾 [ai-text +2字] resp=resp_XKt7F 累计10字：「北京」
+🧾 [ai-text +3字] resp=resp_XKt7F 累计13字：「的问题」
+🧾 [ai-text +1字] resp=resp_XKt7F 累计14字：「想」
+🧾 [ai-text +1字] resp=resp_XKt7F 累计15字：「问」
+🧾 [ai-text +1字] resp=resp_XKt7F 累计16字：「吗」
+🧾 [ai-text +1字] resp=resp_XKt7F 累计17字：「？」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🔊 [ai-audio块] resp=resp_XKt7F
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_XKt7F
+🔊 [ai-audio块] resp=resp_XKt7F
+🔊 [ai-audio块] resp=resp_XKt7F
+🔊 [ai-audio块] resp=resp_XKt7F
+🔊 [ai-audio块] resp=resp_XKt7F
+🔊 [ai-audio块] resp=resp_XKt7F
+🔊 [ai-audio块] resp=resp_XKt7F
+🎧 [response.done] id=resp_XKt7F4cW7xr
+📝 [写盘] 开场白（不参与配对）：答「你好！有什么关于北京的问题想问吗？」
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #100（64B）已发出
+🎙️ 上行块 #150（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_XKt7BmfN68O
+🧾 [ai-text +2字] resp=resp_XKt7B 累计2字：「Be」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计7字：「ijing」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计10字：「 is」
+🧾 [ai-text +6字] resp=resp_XKt7B 累计16字：「 China」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计18字：「's」
+🧾 [ai-text +8字] resp=resp_XKt7B 累计26字：「 capital」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计27字：「,」
+🧾 [ai-text +9字] resp=resp_XKt7B 累计36字：「 blending」
+🧾 [ai-text +8字] resp=resp_XKt7B 累计44字：「 ancient」
+🧾 [ai-text +8字] resp=resp_XKt7B 累计52字：「 history」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计57字：「 like」
+🧾 [ai-text +4字] resp=resp_XKt7B 累计61字：「 the」
+🧾 [ai-text +10字] resp=resp_XKt7B 累计71字：「 Forbidden」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计76字：「 City」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计81字：「 with」
+🧾 [ai-text +7字] resp=resp_XKt7B 累计88字：「 modern」
+🧾 [ai-text +10字] resp=resp_XKt7B 累计98字：「 landmarks」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计103字：「 like」
+🧾 [ai-text +4字] resp=resp_XKt7B 累计107字：「 the」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计112字：「 Bird」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计114字：「's」
+🧾 [ai-text +5字] resp=resp_XKt7B 累计119字：「 Nest」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计120字：「.」
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🎧 [user-transcript] item=item_XKt7NGq 「那个给我用英文介绍一下关于北京的信息。」
+🗣️ [user-utterance] 「那个给我用英文介绍一下关于北京的信息。」
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🎧 [response.done] id=resp_XKt7BmfN68O
+📝 [写盘] 一条全写：问「那个给我用英文介绍一下关于北京的信息。」 答「Beijing is China's c」
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #200（2720B）已发出
+⏱️ [hitch] main thread busy for 43ms
+🎙️ 上行块 #250（3200B）已发出
+🎙️ 上行块 #300（64B）已发出
+⏱️ [hitch] main thread busy for 229ms
+⏱️ [hitch] main thread busy for 86ms
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #350（64B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 上行块 #500（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_XKt7EOa2Byy
+🧾 [ai-text +2字] resp=resp_XKt7E 累计2字：「天津」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计3字：「是」
+🧾 [ai-text +3字] resp=resp_XKt7E 累计6字：「中国的」
+🧾 [ai-text +3字] resp=resp_XKt7E 累计9字：「直辖市」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计10字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计12字：「位于」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计14字：「渤海」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计15字：「湾」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计16字：「畔」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计17字：「，」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计18字：「以」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计19字：「“」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计20字：「津」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计21字：「门」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计22字：「”」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计24字：「闻名」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计25字：「。」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计27字：「这里」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计29字：「既有」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计30字：「古」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计32字：「文化」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计33字：「街」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计34字：「和」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计35字：「五」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计37字：「大道」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计38字：「等」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计40字：「充满」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计42字：「历史」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计43字：「韵」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计45字：「味的」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计47字：「街区」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计48字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计50字：「又有」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计52字：「现代」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计54字：「繁华」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计55字：「的」
+🧾 [ai-text +4字] resp=resp_XKt7E 累计59字：「滨海新区」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计60字：「。」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计62字：「作为」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计64字：「北方」
+🧾 [ai-text +3字] resp=resp_XKt7E 累计67字：「重要的」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计69字：「经济」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计71字：「中心」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计72字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计74字：「天津」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计75字：「的」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计77字：「相声」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计78字：「、」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计79字：「泥」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计80字：「人」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计81字：「张」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计82字：「等」
+🧾 [ai-text +4字] resp=resp_XKt7E 累计86字：「民俗文化」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计88字：「独具」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计90字：「特色」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计91字：「，」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计92字：「而」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计93字：「狗」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计95字：「不理」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计97字：「包子」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计98字：「、」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计100字：「十八」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计101字：「街」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计103字：「麻花」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计104字：「等」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计106字：「美食」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计108字：「更是」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计110字：「享誉」
+🧾 [ai-text +2字] resp=resp_XKt7E 累计112字：「全国」
+🧾 [ai-text +1字] resp=resp_XKt7E 累计113字：「。」
+🎧 [user-transcript] item=item_XKt7KBA 「呃，用一个长文本，长文本介绍一下天津。」
+🗣️ [user-utterance] 「呃，用一个长文本，长文本介绍一下天津。」
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+⏱️ [hitch] main thread busy for 58ms
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🎙️ 上行块 #550（64B）已发出
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+⏱️ [hitch] main thread busy for 51ms
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🎙️ 上行块 #600（3200B）已发出
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+⏱️ [hitch] main thread busy for 147ms
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+⏱️ [hitch] main thread busy for 89ms
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+⏱️ [hitch] main thread busy for 158ms
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🔊 [ai-audio块] resp=resp_XKt7E
+🎧 [response.done] id=resp_XKt7EOa2Byy
+📝 [写盘] 一条全写：问「呃，用一个长文本，长文本介绍一下天津。」 答「天津是中国的直辖市，位于渤海湾畔，以“津」
+🎙️ 上行块 #650（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #700（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_XKt7BCqPqqm
+🧾 [ai-text +2字] resp=resp_XKt7B 累计2字：「上海」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计5字：「是中国」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计8字：「最大的」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计10字：「经济」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计12字：「中心」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计15字：「和国际」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计18字：「大都市」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计19字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计21字：「拥有」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计23字：「外滩」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计25字：「万国」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计28字：「建筑群」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计29字：「和」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计31字：「陆家」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计32字：「嘴」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计34字：「摩天」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计36字：「大楼」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计37字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计39字：「展现」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计40字：「着」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计42字：「历史」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计45字：「与现代」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计48字：「的完美」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计50字：「交融」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计51字：「。」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计53字：「这里」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计56字：「不仅是」
+🧾 [ai-text +4字] resp=resp_XKt7B 累计60字：「金融中心」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计61字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计63字：「更是」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计65字：「文化」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计67字：「枢纽」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计68字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计70字：「汇聚」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计71字：「了」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计73字：「众多」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计76字：「博物馆」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计77字：「、」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计79字：「剧院」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计80字：「和」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计82字：「高校」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计83字：「。」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计85字：「上海」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计86字：「菜」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计88字：「精致」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计90字：「独特」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计91字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计93字：「生活」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计95字：「节奏」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计96字：「快」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计97字：「而」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计99字：「有序」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计100字：「，」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计102字：「四季」
+🧾 [ai-text +2字] resp=resp_XKt7B 累计104字：「分明」
+🧾 [ai-text +3字] resp=resp_XKt7B 累计107字：「的气候」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计108字：「让」
+🧾 [ai-text +4字] resp=resp_XKt7B 累计112字：「这座城市」
+🧾 [ai-text +4字] resp=resp_XKt7B 累计116字：「充满活力」
+🧾 [ai-text +1字] resp=resp_XKt7B 累计117字：「。」
+🎧 [user-transcript] item=item_XKt7QR8 「介绍一下关于这个上海的信息，200个字。」
+🗣️ [user-utterance] 「介绍一下关于这个上海的信息，200个字。」
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🎙️ 上行块 #750（64B）已发出
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+🔊 [ai-audio块] resp=resp_XKt7B
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 265ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🎧 [response.created] id=resp_GJ2ZKaSyld5
+🧾 [ai-text +2字] resp=resp_GJ2ZK 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_GJ2ZK 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_GJ2ZK 累计6字：「有什么」
+🧾 [ai-text +2字] resp=resp_GJ2ZK 累计8字：「关于」
+🧾 [ai-text +2字] resp=resp_GJ2ZK 累计10字：「北京」
+🧾 [ai-text +1字] resp=resp_GJ2ZK 累计11字：「或」
+🧾 [ai-text +2字] resp=resp_GJ2ZK 累计13字：「天津」
+🧾 [ai-text +3字] resp=resp_GJ2ZK 累计16字：「的问题」
+🧾 [ai-text +1字] resp=resp_GJ2ZK 累计17字：「想」
+🧾 [ai-text +1字] resp=resp_GJ2ZK 累计18字：「问」
+🧾 [ai-text +1字] resp=resp_GJ2ZK 累计19字：「吗」
+🧾 [ai-text +1字] resp=resp_GJ2ZK 累计20字：「？」
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 140ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 115ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms

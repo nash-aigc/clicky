@@ -1,0 +1,429 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 42 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 886 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 1293 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 1293 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 650 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 779 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 144 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 73 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 79 字，streaming=否）
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 47 字，streaming=否）
+⏱️ [hitch] main thread busy for 654ms
+⏱️ [hitch] main thread busy for 150ms
+⏱️ [hitch] main thread busy for 154ms
+🔊 [aecprobe] t=1790305846.594 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 43ms
+🔊 [aecprobe] t=1790305848.173 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790305848.408 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎧 [response.created] id=resp_T8uDF6ibKfV
+🧾 [ai-text +2字] resp=resp_T8uDF 累计2字：「你好」
+🔎 [duplex] ⚠️ 新开一条回答气泡：这是本轮第 1 条，起始 2 字
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 2 字，streaming=否）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🧾 [ai-text +1字] resp=resp_T8uDF 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_T8uDF 累计5字：「我是」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +1字] resp=resp_T8uDF 累计6字：「多」
+⏱️ [hitch] main thread busy for 45ms
+🧾 [ai-text +2字] resp=resp_T8uDF 累计8字：「语种」
+🧾 [ai-text +2字] resp=resp_T8uDF 累计10字：「教练」
+🧾 [ai-text +1字] resp=resp_T8uDF 累计11字：「。」
+🧾 [ai-text +2字] resp=resp_T8uDF 累计13字：「你想」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_T8uDF 累计15字：「练习」
+🧾 [ai-text +2字] resp=resp_T8uDF 累计17字：「哪种」
+🧾 [ai-text +2字] resp=resp_T8uDF 累计19字：「语言」
+🔎 [duplex] 更新第 10 次：本条 19 字，屏上共 1 条
+🧾 [ai-text +1字] resp=resp_T8uDF 累计20字：「？」
+⏱️ [hitch] main thread busy for 53ms
+🔊 [ai-audio块] resp=resp_T8uDF
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🔊 [ai-audio块] resp=resp_T8uDF
+🎧 [response.done] id=resp_T8uDF6ibKfV
+🎙️ 上行块 #50（64B）已发出
+🎙️ 上行块 #100（3200B）已发出
+⏱️ [hitch] main thread busy for 89ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 58ms
+🎙️ 上行块 #150（3200B）已发出
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 2 字，streaming=是）
+⏱️ [hitch] main thread busy for 49ms
+🗣️ Streaming speech: queued segment 1 (9 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 9 字
+⏱️ [hitch] main thread busy for 111ms
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 2 (38 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 38 字
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"ed2e5e4c-7660-959b-bed6-2331bdfda7a1","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790305863.533 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 2 unplayed segment(s) dropped, first audio never started
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 3 (32 chars)
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 79ms
+🗣️ Streaming speech: queued segment 4 (31 chars)
+⏱️ [hitch] main thread busy for 85ms
+⏱️ [hitch] main thread busy for 63ms
+🗣️ Streaming speech: queued segment 5 (47 chars)
+⏱️ [hitch] main thread busy for 56ms
+🗣️ Streaming speech: queued segment 6 (30 chars)
+⏱️ [hitch] main thread busy for 47ms
+🗣️ Streaming speech: queued segment 7 (36 chars)
+🗣️ Streaming speech: queued segment 8 (36 chars)
+⏱️ [hitch] main thread busy for 97ms
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 9 (30 chars)
+⏱️ [hitch] main thread busy for 161ms
+🎙️ 上行块 #200（3200B）已发出
+🗣️ Streaming speech: queued segment 10 (30 chars)
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 70ms
+🗣️ Streaming speech: queued segment 11 (42 chars)
+⏱️ [hitch] main thread busy for 112ms
+🎙️ 上行块 #250（64B）已发出
+🎙️ 上行块 #300（3200B）已发出
+🎙️ 上行块 #350（64B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 上行块 #500（64B）已发出
+🎙️ 上行块 #550（3200B）已发出
+🎙️ 上行块 #600（64B）已发出
+🎙️ 上行块 #650（64B）已发出
+🎙️ 上行块 #700（3200B）已发出
+🎙️ 上行块 #750（64B）已发出
+🎙️ 上行块 #800（3200B）已发出
+🎙️ 上行块 #850（64B）已发出
+🎙️ 上行块 #900（2730B）已发出
+🎙️ 上行块 #950（3200B）已发出
+🎙️ 上行块 #1000（64B）已发出
+⏱️ [hitch] main thread busy for 42ms
+🎙️ 上行块 #1050（3200B）已发出
+🎙️ 上行块 #1100（64B）已发出
+🎙️ 上行块 #1150（2730B）已发出
+🎙️ 上行块 #1200（3200B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #1250（64B）已发出
+🎙️ 上行块 #1300（3200B）已发出
+🎙️ 上行块 #1350（64B）已发出
+🎙️ 上行块 #1400（3200B）已发出
+🎙️ 上行块 #1450（3200B）已发出
+🎙️ 上行块 #1500（64B）已发出
+🎙️ 上行块 #1550（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #1600（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_T8uDWROSqsG
+🧾 [ai-text +3字] resp=resp_T8uDW 累计3字：「没问题」
+🔎 [duplex] ⚠️ 新开一条回答气泡：这是本轮第 3 条，起始 3 字
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 3 字，streaming=否）
+🧾 [ai-text +1字] resp=resp_T8uDW 累计4字：「。」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计6字：「今晚」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计7字：「想」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计8字：「练」
+⏱️ [hitch] main thread busy for 79ms
+🧾 [ai-text +2字] resp=resp_T8uDW 累计10字：「什么」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计12字：「语言」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计13字：「？」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计15字：「日语」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计16字：「、」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计18字：「韩语」
+🔎 [duplex] 更新第 10 次：本条 18 字，屏上共 4 条
+🧾 [ai-text +1字] resp=resp_T8uDW 累计19字：「、」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计21字：「英语」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计22字：「、」
+🧾 [ai-text +4字] resp=resp_T8uDW 累计26字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计27字：「、」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计29字：「德语」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计31字：「还是」
+🧾 [ai-text +2字] resp=resp_T8uDW 累计33字：「法语」
+🧾 [ai-text +1字] resp=resp_T8uDW 累计34字：「？」
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🎧 [user-transcript] item=item_T8uDZEL 「我介绍我介绍300字，我介绍一下北京。」
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🎙️ 上行块 #1650（3200B）已发出
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🔊 [ai-audio块] resp=resp_T8uDW
+🎧 [response.done] id=resp_T8uDWROSqsG
+🎙️ 上行块 #1700（3200B）已发出
+🎙️ 上行块 #1750（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #1800（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_T8uDPyVQ8kW
+🧾 [ai-text +2字] resp=resp_T8uDP 累计2字：「北京」
+🔎 [duplex] ⚠️ 新开一条回答气泡：这是本轮第 4 条，起始 2 字
+🔎 [cardwidth] 正文列宽度 0.0 → 460.0（正文 2 字，streaming=否）
+🧾 [ai-text +3字] resp=resp_T8uDP 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计9字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计11字：「拥有」
+⏱️ [hitch] main thread busy for 52ms
+🧾 [ai-text +2字] resp=resp_T8uDP 累计13字：「三千」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计16字：「多年的」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计17字：「建」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计18字：「城」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计19字：「史」
+🔎 [duplex] 更新第 10 次：本条 19 字，屏上共 6 条
+🧾 [ai-text +1字] resp=resp_T8uDP 累计20字：「和」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计22字：「八百」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计25字：「多年的」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计26字：「建」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计27字：「都」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计28字：「史」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计29字：「。」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计31字：「这里」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计34字：「融合了」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计36字：「古老」
+🔎 [duplex] 更新第 20 次：本条 36 字，屏上共 6 条
+🧾 [ai-text +3字] resp=resp_T8uDP 累计39字：「与现代」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +1字] resp=resp_T8uDP 累计40字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计42字：「既有」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计44字：「故宫」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计45字：「、」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计46字：「天」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计47字：「坛」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计48字：「等」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计50字：「宏伟」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计51字：「的」
+🔎 [duplex] 更新第 30 次：本条 51 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计53字：「皇家」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计55字：「建筑」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计56字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计58字：「展现」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计59字：「着」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计62字：「深厚的」
+🧾 [ai-text +4字] resp=resp_T8uDP 累计66字：「历史文化」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计68字：「底蕴」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计69字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计71字：「又有」
+🔎 [duplex] 更新第 40 次：本条 71 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计73字：「鸟巢」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计74字：「、」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计75字：「水」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计77字：「立方」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计78字：「等」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计81字：「现代化」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计83字：「地标」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计84字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计86字：「彰显」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计87字：「着」
+🔎 [duplex] 更新第 50 次：本条 87 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计89字：「蓬勃」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计90字：「的」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计92字：「活力」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计93字：「。」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计95字：「作为」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计98字：「中国的」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计100字：「政治」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计101字：「、」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计104字：「文化和」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计106字：「国际」
+🔎 [duplex] 更新第 60 次：本条 106 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计108字：「交往」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计110字：「中心」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计111字：「，」
+⏱️ [hitch] main thread busy for 53ms
+🧾 [ai-text +2字] resp=resp_T8uDP 累计113字：「北京」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计115字：「汇聚」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计116字：「了」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计118字：「顶尖」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计121字：「的高校」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计122字：「、」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计125字：「博物馆」
+🔎 [duplex] 更新第 70 次：本条 125 字，屏上共 6 条
+🧾 [ai-text +1字] resp=resp_T8uDP 累计126字：「和」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计128字：「剧院」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计129字：「。」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计131字：「胡同」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计133字：「里的」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计134字：「四」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计136字：「合院」
+🔊 [ai-audio块] resp=resp_T8uDP
+🧾 [ai-text +1字] resp=resp_T8uDP 累计137字：「、」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计138字：「街」
+⏱️ [hitch] main thread busy for 150ms
+🧾 [ai-text +2字] resp=resp_T8uDP 累计140字：「边的」
+🔎 [duplex] 更新第 80 次：本条 140 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计142字：「烤鸭」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计143字：「店」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计144字：「和」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计146字：「繁忙」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计147字：「的」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计149字：「地铁」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计151字：「网络」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计152字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计154字：「共同」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计157字：「构成了」
+🔎 [duplex] 更新第 90 次：本条 157 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计159字：「这座」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计162字：「城市的」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计164字：「独特」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计166字：「魅力」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计167字：「，」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计169字：「让人」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计170字：「在」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计172字：「历史」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计174字：「长河」
+🔊 [ai-audio块] resp=resp_T8uDP
+🧾 [ai-text +1字] resp=resp_T8uDP 累计175字：「中」
+🔎 [duplex] 更新第 100 次：本条 175 字，屏上共 6 条
+🧾 [ai-text +2字] resp=resp_T8uDP 累计177字：「感受」
+🧾 [ai-text +2字] resp=resp_T8uDP 累计179字：「现代」
+🧾 [ai-text +3字] resp=resp_T8uDP 累计182字：「中国的」
+🎙️ 上行块 #1850（64B）已发出
+🧾 [ai-text +1字] resp=resp_T8uDP 累计183字：「脉」
+🧾 [ai-text +1字] resp=resp_T8uDP 累计184字：「动」
+⏱️ [hitch] main thread busy for 67ms
+🧾 [ai-text +1字] resp=resp_T8uDP 累计185字：「。」
+🎧 [user-transcript] item=item_T8uDNvz 「300个字介绍一下北京。」
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🎙️ 上行块 #1900（3200B）已发出
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🎙️ 上行块 #1950（3200B）已发出
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🎙️ 上行块 #2000（64B）已发出
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🔊 [ai-audio块] resp=resp_T8uDP
+🎧 [response.done] id=resp_T8uDPyVQ8kW
+🎙️ 上行块 #2050（3200B）已发出
+🎙️ 上行块 #2100（64B）已发出
+🎙️ 上行块 #2150（3200B）已发出
+🎙️ 上行块 #2200（3200B）已发出
+🎙️ 上行块 #2250（64B）已发出
+🎙️ 上行块 #2300（3200B）已发出

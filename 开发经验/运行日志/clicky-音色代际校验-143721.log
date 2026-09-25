@@ -1,0 +1,285 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 1 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 264ms
+⏱️ [hitch] main thread busy for 141ms
+🔊 [aecprobe] t=1790318263.422 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790318265.121 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790318265.228 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian_v3.1）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_ZEefZVtY4CV
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_ZEefZ 累计6字：「很高兴」
+⏱️ [hitch] main thread busy for 49ms
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计7字：「能」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计9字：「听到」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计11字：「你的」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计13字：「声音」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计14字：「。」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计16字：「我是」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计18字：「你的」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计19字：「多」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计21字：「语种」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计23字：「教练」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计24字：「，」
+⏱️ [hitch] main thread busy for 104ms
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计26字：「随时」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计28字：「准备」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计29字：「用」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计31字：「日语」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计32字：「、」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计34字：「韩语」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计35字：「、」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计37字：「英语」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计38字：「、」
+🧾 [ai-text +4字] resp=resp_ZEefZ 累计42字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计43字：「、」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计45字：「德语」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计46字：「或」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计48字：「法语」
+⏱️ [hitch] main thread busy for 53ms
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计50字：「与你」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计52字：「交流」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计53字：「。」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计55字：「你想」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计56字：「用」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计58字：「哪种」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计60字：「语言」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计62字：「开始」
+🧾 [ai-text +2字] resp=resp_ZEefZ 累计64字：「练习」
+🧾 [ai-text +1字] resp=resp_ZEefZ 累计65字：「？」
+⏱️ [hitch] main thread busy for 110ms
+🔊 [ai-audio块] resp=resp_ZEefZ
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🎙️ 上行块 #50（3200B）已发出
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🔊 [ai-audio块] resp=resp_ZEefZ
+🧾 [ai-text-done] resp=resp_ZEefZ 官方全文 65 字（累积值 65 字）
+🎧 [response.done] id=resp_ZEefZVtY4CV
+🎙️ 上行块 #100（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「专于」
+🎙️ 上行块 #150（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_ZEefMQrPSgM
+🧾 [ai-text +2字] resp=resp_ZEefM 累计2字：「美国」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计5字：「是一个」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计7字：「位于」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计9字：「北美」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计10字：「洲」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计11字：「的」
+⏱️ [hitch] main thread busy for 40ms
+🧾 [ai-text +2字] resp=resp_ZEefM 累计13字：「联邦」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计16字：「共和国」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计17字：「，」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计18字：「由」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计19字：「5」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计20字：「0」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计21字：「个」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计22字：「州」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计23字：「、」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计25字：「一个」
+⏱️ [hitch] main thread busy for 76ms
+🧾 [ai-text +2字] resp=resp_ZEefM 累计27字：「联邦」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计29字：「特区」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计30字：「（」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计33字：「华盛顿」
+🧾 [ai-text +4字] resp=resp_ZEefM 累计37字：「哥伦比亚」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计39字：「特区」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计40字：「）」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计41字：「和」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计43字：「若干」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计45字：「海外」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计47字：「领地」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计49字：「组成」
+⏱️ [hitch] main thread busy for 78ms
+🧾 [ai-text +1字] resp=resp_ZEefM 累计50字：「。」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计52字：「它是」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计54字：「世界」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计56字：「第三」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计57字：「大」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计59字：「人口」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计61字：「大国」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计62字：「和」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计65字：「最大的」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计68字：「经济体」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计70字：「之一」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计71字：「，」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计72字：「以」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计74字：「多元」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计76字：「文化」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计77字：「、」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计79字：「高度」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计81字：「发达」
+⏱️ [hitch] main thread busy for 146ms
+🧾 [ai-text +3字] resp=resp_ZEefM 累计84字：「的科技」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计85字：「和」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计88字：「强大的」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计90字：「军事」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计92字：「实力」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计94字：「著称」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计95字：「。」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计97字：「美国」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计99字：「实行」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计100字：「三」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计101字：「权」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计103字：「分立」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计106字：「的政治」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计108字：「体制」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计109字：「，」
+⏱️ [hitch] main thread busy for 108ms
+🧾 [ai-text +2字] resp=resp_ZEefM 累计111字：「首都」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计112字：「为」
+🧾 [ai-text +3字] resp=resp_ZEefM 累计115字：「华盛顿」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计117字：「特区」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计118字：「，」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计120字：「最大」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计122字：「城市」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计123字：「是」
+🧾 [ai-text +2字] resp=resp_ZEefM 累计125字：「纽约」
+🧾 [ai-text +1字] resp=resp_ZEefM 累计126字：「。」
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+⏱️ [hitch] main thread busy for 61ms
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🎧 [user-transcript] item=item_ZEefLYS 「关于美国的一些信息。」
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🎙️ 上行块 #200（64B）已发出
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🎙️ 上行块 #250（3200B）已发出
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+⏱️ [hitch] main thread busy for 55ms
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🔊 [ai-audio块] resp=resp_ZEefM
+🧾 [ai-text-done] resp=resp_ZEefM 官方全文 126 字（累积值 126 字）
+🎧 [response.done] id=resp_ZEefMQrPSgM
+🎙️ 上行块 #300（64B）已发出
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 63ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 197ms
+⏱️ [hitch] main thread busy for 57ms
+🎙️ 上行块 #350（64B）已发出
+🎙️ 上行块 #400（3200B）已发出
+🎙️ 上行块 #450（64B）已发出
+🎙️ 上行块 #500（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms

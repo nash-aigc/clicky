@@ -1,0 +1,384 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+🔊 [sfx] t=1790329295.043 reveal-boot
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790329295.736
+⏱️ [expand] 内容就位 +127ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：117 字 → 117 unit / 4 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：321 字 → 319 unit / 11 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：181 字 → 154 unit / 6 行，耗时 2.9ms
+🔬 [card] 冷启动完整排版：116 字 → 110 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：84 字 → 78 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：59 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：5 字 → 5 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：55 字 → 55 unit / 2 行，耗时 1.1ms
+🔊 [sfx] t=1790329296.008 ui-navigation-push
+⏱️ [hitch] main thread busy for 290ms
+🔊 [sfx] t=1790329296.802 ui-focus-change
+⏱️ [hitch] main thread busy for 132ms
+🔊 [aecprobe] t=1790329297.015 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 144ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+⏱️ [hitch] main thread busy for 71ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🔊 [aecprobe] t=1790329298.705 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790329298.833 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790329298.833 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790329298.833 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790329298.997] id=resp_MTIyJQglkIf
+🧾 [ai-text +2字] resp=resp_MTIyJ 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🔊 [ai-audio首块 t=1790329299.538] resp=resp_MTIyJ
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_MTIyJ 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_MTIyJQglkIf
+🎙️ 上行块 #50（64B）已发出
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 123ms
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+⏱️ [hitch] main thread busy for 83ms
+🎧 [event t=1790329302.485] speech_started（服务端听到用户开口）
+⏱️ [hitch] main thread busy for 170ms
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「hello」
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790329303.207] id=resp_MTIyJLQ4vOg
+🧾 [ai-text +2字] resp=resp_MTIyJ 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🎧 [user-transcript] item=item_MTIyPXc 「Hello，看一下。」
+🧾 [ai-text-done] resp=resp_MTIyJ 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_MTIyJLQ4vOg
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event t=1790329305.518] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #150（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790329307.474] id=resp_MTIyK5vqkfI
+🧾 [ai-text +2字] resp=resp_MTIyK 累计2字：「北京」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🧾 [ai-text +2字] resp=resp_MTIyK 累计4字：「今日」
+🧾 [ai-text +2字] resp=resp_MTIyK 累计6字：「天气」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计7字：「晴」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计8字：「转」
+🧾 [ai-text +2字] resp=resp_MTIyK 累计10字：「多云」
+⏱️ [hitch] main thread busy for 43ms
+🧾 [ai-text +1字] resp=resp_MTIyK 累计11字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyK 累计13字：「气温」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计14字：「1」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计15字：「2」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计16字：「℃」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计17字：「至」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计18字：「2」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计19字：「4」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计20字：「℃」
+🧾 [ai-text +1字] resp=resp_MTIyK 累计21字：「。」
+🎧 [user-transcript] item=item_MTIyWBZ 「那个说一下北京的新闻。」
+🧾 [ai-text-done] resp=resp_MTIyK 官方全文 21 字（累积值 21 字）
+🎧 [response.done] id=resp_MTIyK5vqkfI
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790329310.731] speech_started（服务端听到用户开口）
+🎙️ 上行块 #250（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790329313.576] id=resp_MTIyO6pjQUD
+🧾 [ai-text +2字] resp=resp_MTIyO 累计2字：「北京」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🧾 [ai-text +3字] resp=resp_MTIyO 累计5字：「是中国」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计7字：「的首」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计8字：「都」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计9字：「，」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计12字：「是一座」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计14字：「拥有」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计16字：「三千」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计18字：「多年」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计19字：「建」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计20字：「城」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计21字：「史」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计22字：「和」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计24字：「八百」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计26字：「多年」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计27字：「建」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计28字：「都」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计29字：「史」
+⏱️ [hitch] main thread busy for 109ms
+🧾 [ai-text +3字] resp=resp_MTIyO 累计32字：「的历史」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计34字：「文化」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计36字：「名城」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计37字：「。」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计39字：「这里」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计41字：「汇聚」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计42字：「了」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计44字：「故宫」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计45字：「、」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计46字：「天」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计47字：「坛」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计48字：「、」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计50字：「颐和」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计51字：「园」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计54字：「等众多」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计56字：「世界」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计60字：「文化遗产」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计61字：「，」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计64字：「展现了」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计66字：「中华」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计69字：「文明的」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计71字：「深厚」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计73字：「底蕴」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计74字：「。」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计76字：「作为」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计78字：「国家」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计80字：「政治」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计82字：「中心」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计83字：「、」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计87字：「文化中心」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计88字：「、」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计90字：「国际」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计92字：「交往」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计95字：「中心和」
+⏱️ [hitch] main thread busy for 430ms
+🧾 [ai-text +4字] resp=resp_MTIyO 累计99字：「科技创新」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计101字：「中心」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计102字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计104字：「北京」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计105字：「正」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计107字：「加速」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计109字：「建设」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计111字：「国际」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计114字：「一流的」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计116字：「和谐」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计118字：「宜居」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计120字：「之都」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计121字：「。」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计124字：「近年来」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计125字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计127字：「北京」
+🎧 [user-transcript] item=item_MTIyNZS 「这个关于北京的信息400个字。」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计128字：「在」
+⏱️ [hitch] main thread busy for 121ms
+🧾 [ai-text +4字] resp=resp_MTIyO 累计132字：「科技创新」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计134字：「领域」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计136字：「表现」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计138字：「亮眼」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计139字：「，」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计142字：「中关村」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计144字：「国家」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计148字：「自主创新」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计151字：「示范区」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计154字：「已成为」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计156字：「全球」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计158字：「创新」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计160字：「高地」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计161字：「，」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计165字：「人工智能」
+⏱️ [hitch] main thread busy for 50ms
+🧾 [ai-text +1字] resp=resp_MTIyO 累计166字：「、」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计170字：「生物医药」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计171字：「等」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计175字：「新兴产业」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计179字：「蓬勃发展」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计180字：「。」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计182字：「同时」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计183字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计185字：「北京」
+🎙️ 上行块 #300（2720B）已发出
+🧾 [ai-text +4字] resp=resp_MTIyO 累计189字：「持续推进」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计191字：「绿色」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计193字：「生态」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计195字：「建设」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计196字：「，」
+⏱️ [hitch] main thread busy for 95ms
+🧾 [ai-text +2字] resp=resp_MTIyO 累计198字：「城市」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计200字：「绿化」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计203字：「覆盖率」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计207字：「持续提升」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计208字：「，」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计212字：「空气质量」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计214字：「显著」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计216字：「改善」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计217字：「。」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计219字：「交通」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计221字：「网络」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计223字：「日益」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计225字：「完善」
+⏱️ [hitch] main thread busy for 100ms
+🧾 [ai-text +1字] resp=resp_MTIyO 累计226字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计228字：「地铁」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计230字：「运营」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计232字：「里程」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计233字：「居」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计235字：「世界」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计237字：「前列」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计238字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计240字：「高铁」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计241字：「与」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计243字：「航空」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计245字：「枢纽」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计247字：「高效」
+⏱️ [hitch] main thread busy for 67ms
+🧾 [ai-text +2字] resp=resp_MTIyO 累计249字：「连接」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计251字：「全球」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计252字：「。」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计254字：「北京」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计255字：「还」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计257字：「积极」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计259字：「举办」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计261字：「各类」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计263字：「国际」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计265字：「赛事」
+⏱️ [hitch] main thread busy for 162ms
+🧾 [ai-text +1字] resp=resp_MTIyO 累计266字：「与」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计270字：「文化交流」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计272字：「活动」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计273字：「，」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计274字：「如」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计277字：「冬奥会」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计278字：「和」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计279字：「服」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计280字：「贸」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计281字：「会」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计282字：「，」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计285字：「向世界」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计287字：「展示」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计289字：「开放」
+⏱️ [hitch] main thread busy for 74ms
+🧾 [ai-text +2字] resp=resp_MTIyO 累计291字：「包容」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计294字：「的城市」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计296字：「形象」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计297字：「。」
+🧾 [ai-text +4字] resp=resp_MTIyO 累计301字：「这座城市」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计302字：「在」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计304字：「保留」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计306字：「历史」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计307字：「韵」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计309字：「味的」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计311字：「同时」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计312字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计314字：「不断」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计316字：「注入」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计318字：「现代」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计320字：「活力」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计321字：「，」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计323字：「成为」
+⏱️ [hitch] main thread busy for 65ms
+🧾 [ai-text +2字] resp=resp_MTIyO 累计325字：「连接」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计327字：「传统」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计328字：「与」
+🧾 [ai-text +3字] resp=resp_MTIyO 累计331字：「未来的」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计333字：「重要」
+🧾 [ai-text +2字] resp=resp_MTIyO 累计335字：「桥梁」
+🧾 [ai-text +1字] resp=resp_MTIyO 累计336字：「。」
+🎙️ 上行块 #350（64B）已发出
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+🔊 [sfx] t=1790329318.604 session-hangup
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 47ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 237ms（屏幕=0 摄像头=0）
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [cascade] 回合开始 t=1790329319.980
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [cascade] 首字 +346ms
+⏱️ [cascade] 首段入队 +346ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790329320.339
+🔊 TTS 请求 t=1790329320.350 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 2 字
+🔊 [aecprobe] t=1790329321.134 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (48KB)
+🔊 [aecprobe] t=1790329322.123 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790329323.155 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.405, transcript: "。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790329323.555 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [cascade] 回合开始 t=1790329327.567
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790329327.607 event=speakersRestored
+⏱️ [cascade] 首字 +599ms
+⏱️ [cascade] 首段入队 +599ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 58ms
+🗣️ Streaming speech: queued segment 1 (14 chars) t=1790329328.393
+🔊 TTS 请求 t=1790329328.402 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 14 字
+⏱️ [hitch] main thread busy for 150ms
+🗣️ Streaming speech: queued segment 2 (30 chars) t=1790329328.625
+🔊 TTS 请求 t=1790329328.632 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 30 字
+🔊 [aecprobe] t=1790329329.081 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (135KB)
+🗣️ Streaming speech: queued segment 3 (36 chars) t=1790329329.135
+🔊 TTS 请求 t=1790329329.151 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 36 字
+⏱️ [hitch] main thread busy for 224ms
+⏱️ [hitch] main thread busy for 80ms
+🗣️ Streaming speech: queued segment 4 (33 chars) t=1790329329.477
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+🗣️ Streaming speech: queued segment 5 (37 chars) t=1790329329.750
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 6 (33 chars) t=1790329329.998
+⏱️ [hitch] main thread busy for 62ms
+🔬 [cascade] 文字仍在增长：201 字（本任务已取消=false，距回合开始 +2556ms）
+⏱️ [hitch] main thread busy for 53ms
+🗣️ Streaming speech: queued segment 7 (31 chars) t=1790329330.242
+⏱️ [hitch] main thread busy for 49ms
+🗣️ Streaming speech: queued segment 8 (30 chars) t=1790329330.550
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 91ms
+🗣️ Streaming speech: queued segment 9 (51 chars) t=1790329331.010
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 10 (38 chars) t=1790329331.269
+⏱️ [hitch] main thread busy for 47ms
+🗣️ Streaming speech: queued segment 11 (15 chars) t=1790329331.380
+🔊 [aecprobe] t=1790329331.521 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (326KB)
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 [sfx] t=1790329333.253 session-hangup
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790329333.293 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 43ms

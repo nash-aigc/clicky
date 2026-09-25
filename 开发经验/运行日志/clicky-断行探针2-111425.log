@@ -1,0 +1,868 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 623ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 162ms
+🔊 [aecprobe] t=1790306082.978 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 127ms
+🔊 [aecprobe] t=1790306084.580 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 3 ch)
+🔊 [aecprobe] t=1790306084.798 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/3ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 68ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+⏱️ [hitch] main thread busy for 42ms
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_YbakP1IEdik
+🧾 [ai-text +2字] resp=resp_YbakP 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_YbakP 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_YbakP 累计6字：「很高兴」
+🧾 [ai-text +2字] resp=resp_YbakP 累计8字：「听到」
+⏱️ [hitch] main thread busy for 48ms
+🧾 [ai-text +2字] resp=resp_YbakP 累计10字：「你的」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_YbakP 累计12字：「声音」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +1字] resp=resp_YbakP 累计13字：「。」
+🧾 [ai-text +3字] resp=resp_YbakP 累计16字：「有什么」
+🧾 [ai-text +3字] resp=resp_YbakP 累计19字：「我可以」
+🧾 [ai-text +1字] resp=resp_YbakP 累计20字：「帮」
+🧾 [ai-text +2字] resp=resp_YbakP 累计22字：「你的」
+🧾 [ai-text +1字] resp=resp_YbakP 累计23字：「吗」
+🧾 [ai-text +1字] resp=resp_YbakP 累计24字：「？」
+🔊 [ai-audio块] resp=resp_YbakP
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🔊 [ai-audio块] resp=resp_YbakP
+🎧 [response.done] id=resp_YbakP1IEdik
+🎙️ 上行块 #50（64B）已发出
+⏱️ [hitch] main thread busy for 128ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #100（64B）已发出
+🔎 [break] lineWidth=459 units=2 lines=1 每行unit数=[2]… 末行=2 首行填充=0.06
+🔎 [break] lineWidth=459 units=4 lines=1 每行unit数=[4]… 末行=4 首行填充=0.12
+🔎 [break] lineWidth=459 units=7 lines=1 每行unit数=[7]… 末行=7 首行填充=0.21
+🔎 [break] lineWidth=459 units=9 lines=1 每行unit数=[9]… 末行=9 首行填充=0.27
+🔎 [break] lineWidth=459 units=10 lines=1 每行unit数=[10]… 末行=10 首行填充=0.30
+🔎 [break] lineWidth=459 units=12 lines=1 每行unit数=[12]… 末行=12 首行填充=0.36
+🔎 [break] lineWidth=459 units=14 lines=1 每行unit数=[14]… 末行=14 首行填充=0.42
+🔎 [break] lineWidth=459 units=17 lines=1 每行unit数=[17]… 末行=17 首行填充=0.51
+🔎 [break] lineWidth=459 units=18 lines=1 每行unit数=[18]… 末行=18 首行填充=0.54
+🔎 [break] lineWidth=459 units=21 lines=1 每行unit数=[21]… 末行=21 首行填充=0.63
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🔎 [break] lineWidth=459 units=25 lines=1 每行unit数=[25]… 末行=25 首行填充=0.74
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 10 字
+🔎 [break] lineWidth=459 units=26 lines=1 每行unit数=[26]… 末行=26 首行填充=0.77
+🔎 [break] lineWidth=459 units=28 lines=1 每行unit数=[28]… 末行=28 首行填充=0.83
+🔎 [break] lineWidth=459 units=30 lines=1 每行unit数=[30]… 末行=30 首行填充=0.89
+🔎 [break] lineWidth=459 units=32 lines=1 每行unit数=[32]… 末行=32 首行填充=0.95
+🔎 [break] lineWidth=459 units=33 lines=1 每行unit数=[33]… 末行=33 首行填充=0.98
+⏱️ [hitch] main thread busy for 233ms
+🔎 [break] lineWidth=459 units=35 lines=2 每行unit数=[33, 2]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=37 lines=2 每行unit数=[33, 4]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=39 lines=2 每行unit数=[33, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=42 lines=2 每行unit数=[33, 9]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=44 lines=2 每行unit数=[33, 11]… 末行=11 首行填充=0.98
+🗣️ Streaming speech: queued segment 2 (35 chars)
+🔎 [break] lineWidth=459 units=46 lines=2 每行unit数=[33, 12]… 末行=12 首行填充=0.98
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 35 字
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"0b1ab0a0-9806-931a-8d16-489b8c108df8","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790306093.377 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 2 unplayed segment(s) dropped, first audio never started
+🔎 [break] lineWidth=459 units=48 lines=3 每行unit数=[33, 12, 2]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=49 lines=3 每行unit数=[33, 12, 3]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=51 lines=3 每行unit数=[33, 12, 5]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=52 lines=3 每行unit数=[33, 12, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=53 lines=3 每行unit数=[33, 12, 7]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=54 lines=3 每行unit数=[33, 12, 8]… 末行=8 首行填充=0.98
+⏱️ [hitch] main thread busy for 46ms
+🔎 [break] lineWidth=459 units=55 lines=3 每行unit数=[33, 12, 9]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=56 lines=3 每行unit数=[33, 12, 10]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=58 lines=3 每行unit数=[33, 12, 12]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=59 lines=3 每行unit数=[33, 12, 13]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=61 lines=3 每行unit数=[33, 12, 15]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=63 lines=3 每行unit数=[33, 12, 17]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=65 lines=3 每行unit数=[33, 12, 19]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=66 lines=3 每行unit数=[33, 12, 20]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=68 lines=3 每行unit数=[33, 12, 22]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=70 lines=3 每行unit数=[33, 12, 24]… 末行=24 首行填充=0.98
+⏱️ [hitch] main thread busy for 67ms
+🔎 [break] lineWidth=459 units=71 lines=3 每行unit数=[33, 12, 25]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=72 lines=3 每行unit数=[33, 12, 26]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=74 lines=3 每行unit数=[33, 12, 28]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=76 lines=3 每行unit数=[33, 12, 30]… 末行=30 首行填充=0.98
+🗣️ Streaming speech: queued segment 3 (33 chars)
+🔎 [break] lineWidth=459 units=77 lines=3 每行unit数=[33, 12, 31]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=80 lines=4 每行unit数=[33, 12, 33, 1]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=81 lines=4 每行unit数=[33, 12, 33, 2]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=83 lines=4 每行unit数=[33, 12, 33, 4]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=85 lines=4 每行unit数=[33, 12, 33, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=86 lines=4 每行unit数=[33, 12, 33, 7]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=88 lines=4 每行unit数=[33, 12, 33, 9]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=90 lines=4 每行unit数=[33, 12, 33, 11]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=91 lines=4 每行unit数=[33, 12, 33, 12]… 末行=12 首行填充=0.98
+⏱️ [hitch] main thread busy for 83ms
+🔎 [break] lineWidth=459 units=93 lines=4 每行unit数=[33, 12, 33, 14]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=94 lines=4 每行unit数=[33, 12, 33, 15]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=98 lines=4 每行unit数=[33, 12, 33, 19]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=100 lines=4 每行unit数=[33, 12, 33, 21]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=102 lines=4 每行unit数=[33, 12, 33, 23]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=104 lines=4 每行unit数=[33, 12, 33, 25]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=105 lines=4 每行unit数=[33, 12, 33, 26]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=107 lines=4 每行unit数=[33, 12, 33, 28]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=108 lines=4 每行unit数=[33, 12, 33, 29]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=111 lines=4 每行unit数=[33, 12, 33, 32]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=113 lines=5 每行unit数=[33, 12, 33, 33, 1]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=115 lines=5 每行unit数=[33, 12, 33, 33, 3]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=116 lines=5 每行unit数=[33, 12, 33, 33, 4]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=118 lines=5 每行unit数=[33, 12, 33, 33, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=119 lines=5 每行unit数=[33, 12, 33, 33, 7]… 末行=7 首行填充=0.98
+🗣️ Streaming speech: queued segment 4 (43 chars)
+🔎 [break] lineWidth=459 units=120 lines=5 每行unit数=[33, 12, 33, 33, 8]… 末行=8 首行填充=0.98
+⏱️ [hitch] main thread busy for 54ms
+🔎 [break] lineWidth=459 units=122 lines=5 每行unit数=[33, 12, 33, 33, 10]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=124 lines=5 每行unit数=[33, 12, 33, 33, 12]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=127 lines=5 每行unit数=[33, 12, 33, 33, 15]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=131 lines=5 每行unit数=[33, 12, 33, 33, 19]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=132 lines=5 每行unit数=[33, 12, 33, 33, 20]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=133 lines=5 每行unit数=[33, 12, 33, 33, 21]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=135 lines=5 每行unit数=[33, 12, 33, 33, 23]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=137 lines=5 每行unit数=[33, 12, 33, 33, 25]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=139 lines=5 每行unit数=[33, 12, 33, 33, 27]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=140 lines=5 每行unit数=[33, 12, 33, 33, 28]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=141 lines=5 每行unit数=[33, 12, 33, 33, 29]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=142 lines=5 每行unit数=[33, 12, 33, 33, 30]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=144 lines=5 每行unit数=[33, 12, 33, 33, 32]… 末行=32 首行填充=0.98
+⏱️ [hitch] main thread busy for 41ms
+🔎 [break] lineWidth=459 units=145 lines=5 每行unit数=[33, 12, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=146 lines=6 每行unit数=[33, 12, 33, 33, 33, 1]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=147 lines=6 每行unit数=[33, 12, 33, 33, 33, 2]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=148 lines=6 每行unit数=[33, 12, 33, 33, 33, 3]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=149 lines=6 每行unit数=[33, 12, 33, 33, 33, 4]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=151 lines=6 每行unit数=[33, 12, 33, 33, 33, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=153 lines=6 每行unit数=[33, 12, 33, 33, 33, 8]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=154 lines=6 每行unit数=[33, 12, 33, 33, 33, 9]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=155 lines=6 每行unit数=[33, 12, 33, 33, 33, 10]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=157 lines=6 每行unit数=[33, 12, 33, 33, 33, 12]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=159 lines=6 每行unit数=[33, 12, 33, 33, 33, 14]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=161 lines=6 每行unit数=[33, 12, 33, 33, 33, 16]… 末行=16 首行填充=0.98
+🗣️ Streaming speech: queued segment 5 (42 chars)
+🔎 [break] lineWidth=459 units=162 lines=6 每行unit数=[33, 12, 33, 33, 33, 17]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=164 lines=6 每行unit数=[33, 12, 33, 33, 33, 19]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=165 lines=6 每行unit数=[33, 12, 33, 33, 33, 20]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=166 lines=6 每行unit数=[33, 12, 33, 33, 33, 21]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=168 lines=6 每行unit数=[33, 12, 33, 33, 33, 23]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=169 lines=6 每行unit数=[33, 12, 33, 33, 33, 24]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=172 lines=6 每行unit数=[33, 12, 33, 33, 33, 27]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=173 lines=6 每行unit数=[33, 12, 33, 33, 33, 28]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=174 lines=6 每行unit数=[33, 12, 33, 33, 33, 29]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=175 lines=6 每行unit数=[33, 12, 33, 33, 33, 30]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=177 lines=6 每行unit数=[33, 12, 33, 33, 33, 32]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=178 lines=6 每行unit数=[33, 12, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+⏱️ [hitch] main thread busy for 52ms
+🔎 [break] lineWidth=459 units=179 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 1]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=180 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 2]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=182 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 4]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=183 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 5]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=184 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=185 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 7]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=186 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 8]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=187 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 9]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=189 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 11]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=190 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 12]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=193 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 15]… 末行=15 首行填充=0.98
+🗣️ Streaming speech: queued segment 6 (32 chars)
+🔎 [break] lineWidth=459 units=194 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 16]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=195 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 17]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=197 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 19]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=199 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 21]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=200 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 22]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=201 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 23]… 末行=23 首行填充=0.98
+⏱️ [hitch] main thread busy for 107ms
+🔎 [break] lineWidth=459 units=202 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 24]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=204 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 26]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=207 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 29]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=209 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 31]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=210 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 32]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=211 lines=7 每行unit数=[33, 12, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=212 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 1]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=213 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 2]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=214 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 3]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=215 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 4]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=216 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 5]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=217 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 6]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=218 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 7]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=219 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 8]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=220 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 9]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=221 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 10]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=222 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 11]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=223 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 12]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=224 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 13]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=227 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 16]… 末行=16 首行填充=0.98
+🗣️ Streaming speech: queued segment 7 (34 chars)
+🔎 [break] lineWidth=459 units=228 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 17]… 末行=17 首行填充=0.98
+⏱️ [hitch] main thread busy for 174ms
+🔎 [break] lineWidth=459 units=229 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 18]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=231 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 20]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=233 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 22]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=234 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 23]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=236 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 25]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=239 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 28]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=240 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 29]… 末行=29 首行填充=0.98
+🎙️ 上行块 #150（3200B）已发出
+🔎 [break] lineWidth=459 units=242 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 31]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=244 lines=8 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=246 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=248 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=249 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=250 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=252 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=255 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+⏱️ [hitch] main thread busy for 131ms
+🔎 [break] lineWidth=459 units=257 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=259 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🗣️ Streaming speech: queued segment 8 (32 chars)
+🔎 [break] lineWidth=459 units=260 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=263 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=265 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=267 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=270 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=272 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=274 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+⏱️ [hitch] main thread busy for 139ms
+🔎 [break] lineWidth=459 units=276 lines=9 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=277 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=279 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=281 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=283 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=286 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=288 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🗣️ Streaming speech: queued segment 9 (30 chars)
+🔎 [break] lineWidth=459 units=289 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=293 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=296 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+⏱️ [hitch] main thread busy for 89ms
+🔎 [break] lineWidth=459 units=298 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=300 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=302 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=303 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=305 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=307 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=308 lines=10 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=310 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=312 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+⏱️ [hitch] main thread busy for 40ms
+🔎 [break] lineWidth=459 units=313 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=314 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=316 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=317 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=319 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=320 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🗣️ Streaming speech: queued segment 10 (32 chars)
+🔎 [break] lineWidth=459 units=321 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=324 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=325 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=326 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=328 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=332 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=333 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=334 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=336 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=337 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+⏱️ [hitch] main thread busy for 135ms
+🔎 [break] lineWidth=459 units=338 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=341 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=342 lines=11 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=344 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=346 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=347 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=348 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=349 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=350 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=352 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🗣️ Streaming speech: queued segment 11 (32 chars)
+🔎 [break] lineWidth=459 units=353 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=354 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=355 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=356 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=358 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=359 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=360 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=361 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+⏱️ [hitch] main thread busy for 139ms
+🔎 [break] lineWidth=459 units=363 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=364 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=365 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=366 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=367 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=369 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=370 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=371 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=372 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=373 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=374 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+⏱️ [hitch] main thread busy for 60ms
+🔎 [break] lineWidth=459 units=375 lines=12 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=376 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=377 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=379 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=381 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=382 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=384 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=385 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=386 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=387 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=388 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=390 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=392 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=395 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🗣️ Streaming speech: queued segment 12 (43 chars)
+🔎 [break] lineWidth=459 units=396 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=397 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=398 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=399 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=402 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=404 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+⏱️ [hitch] main thread busy for 72ms
+🔎 [break] lineWidth=459 units=405 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=406 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=407 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=408 lines=13 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=411 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=413 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=416 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=417 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=418 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+⏱️ [hitch] main thread busy for 45ms
+🔎 [break] lineWidth=459 units=419 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=420 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=422 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=424 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=425 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🗣️ Streaming speech: queued segment 13 (30 chars)
+🔎 [break] lineWidth=459 units=426 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=427 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=429 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=431 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=432 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=435 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=437 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+⏱️ [hitch] main thread busy for 63ms
+🔎 [break] lineWidth=459 units=439 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=440 lines=14 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=442 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=444 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=446 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=448 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=449 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=451 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=454 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=456 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🗣️ Streaming speech: queued segment 14 (31 chars)
+🔎 [break] lineWidth=459 units=458 lines=15 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+⏱️ [hitch] main thread busy for 82ms
+🔎 [break] lineWidth=459 units=460 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=463 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=465 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=468 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=470 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=472 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=473 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=475 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=476 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=478 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=479 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=480 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=481 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=482 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=483 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=484 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=485 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=486 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🗣️ Streaming speech: queued segment 15 (31 chars)
+🔎 [break] lineWidth=459 units=487 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=489 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=490 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+⏱️ [hitch] main thread busy for 234ms
+🔎 [break] lineWidth=459 units=491 lines=16 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=493 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=495 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=496 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=497 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=498 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=499 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=501 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=503 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=504 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=505 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=506 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+⏱️ [hitch] main thread busy for 141ms
+🔎 [break] lineWidth=459 units=507 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=508 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=509 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=511 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=512 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=514 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=516 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🗣️ Streaming speech: queued segment 16 (30 chars)
+🔎 [break] lineWidth=459 units=517 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=519 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=523 lines=17 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=525 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+⏱️ [hitch] main thread busy for 49ms
+🔎 [break] lineWidth=459 units=526 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=528 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=529 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=530 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=531 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🎙️ 上行块 #200（64B）已发出
+🔎 [break] lineWidth=459 units=532 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=533 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=535 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=536 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=537 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=538 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=539 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=541 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=543 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=544 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=545 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+⏱️ [hitch] main thread busy for 163ms
+🔎 [break] lineWidth=459 units=546 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🗣️ Streaming speech: queued segment 17 (30 chars)
+🔎 [break] lineWidth=459 units=547 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=549 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=551 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=553 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=554 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=556 lines=18 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=558 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=559 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=562 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=563 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=565 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+⏱️ [hitch] main thread busy for 48ms
+🔎 [break] lineWidth=459 units=567 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=568 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=569 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=570 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=571 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=573 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=575 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=577 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=578 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=580 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=582 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=583 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=584 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=585 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🗣️ Streaming speech: queued segment 18 (39 chars)
+🔎 [break] lineWidth=459 units=586 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+⏱️ [hitch] main thread busy for 122ms
+🔎 [break] lineWidth=459 units=587 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=588 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=589 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=591 lines=19 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=34 首行填充=0.98
+🔎 [break] lineWidth=459 units=592 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=595 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=597 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=598 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=600 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=602 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=604 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=605 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=607 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=609 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=610 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=611 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=612 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=613 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=614 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+⏱️ [hitch] main thread busy for 91ms
+🔎 [break] lineWidth=459 units=616 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🗣️ Streaming speech: queued segment 19 (31 chars)
+🔎 [break] lineWidth=459 units=617 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=619 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=620 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=621 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=622 lines=20 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=625 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=627 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=631 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=632 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=635 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=637 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+⏱️ [hitch] main thread busy for 72ms
+🔎 [break] lineWidth=459 units=639 lines=21 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=640 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=641 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=642 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=644 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=646 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=648 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=649 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🗣️ Streaming speech: queued segment 20 (34 chars)
+🔎 [break] lineWidth=459 units=650 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=653 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=655 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+⏱️ [hitch] main thread busy for 49ms
+🔎 [break] lineWidth=459 units=657 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=659 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=660 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=662 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=663 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=666 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=668 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=670 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=671 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+⏱️ [hitch] main thread busy for 77ms
+🔎 [break] lineWidth=459 units=672 lines=22 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=673 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=674 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=676 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=678 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=680 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=682 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=683 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=684 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+⏱️ [hitch] main thread busy for 129ms
+🗣️ Streaming speech: queued segment 21 (35 chars)
+🔎 [break] lineWidth=459 units=685 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=686 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=687 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=688 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=689 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=691 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=692 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=693 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=694 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=696 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=698 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=700 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=701 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=702 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=703 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=704 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=705 lines=23 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=706 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=707 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=708 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=709 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=711 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=712 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=713 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=714 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=715 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=716 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=719 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🗣️ Streaming speech: queued segment 22 (35 chars)
+🔎 [break] lineWidth=459 units=720 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=722 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=724 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=726 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=728 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=729 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+⏱️ [hitch] main thread busy for 270ms
+🔎 [break] lineWidth=459 units=731 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=733 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=734 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=735 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=736 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=738 lines=24 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=740 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=741 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=743 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=744 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=745 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=746 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=747 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=748 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=750 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=751 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=752 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🗣️ Streaming speech: queued segment 23 (33 chars)
+🔎 [break] lineWidth=459 units=753 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=754 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=755 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+⏱️ [hitch] main thread busy for 147ms
+🔎 [break] lineWidth=459 units=756 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=757 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=759 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=761 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=763 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=766 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=767 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=768 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=769 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=770 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=771 lines=25 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🎙️ 上行块 #250（64B）已发出
+🔎 [break] lineWidth=459 units=772 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+⏱️ [hitch] main thread busy for 78ms
+🔎 [break] lineWidth=459 units=773 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=774 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=775 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=777 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=779 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=780 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=781 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=782 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=785 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=786 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=788 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=790 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=791 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+⏱️ [hitch] main thread busy for 42ms
+🗣️ Streaming speech: queued segment 24 (40 chars)
+🔎 [break] lineWidth=459 units=793 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=794 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=795 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=796 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=798 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=801 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=803 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=805 lines=26 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=34 首行填充=0.98
+🔎 [break] lineWidth=459 units=808 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=810 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=811 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=812 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=814 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=816 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=817 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=819 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=821 lines=27 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=822 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=823 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=825 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=827 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+⏱️ [hitch] main thread busy for 224ms
+🔎 [break] lineWidth=459 units=829 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🗣️ Streaming speech: queued segment 25 (38 chars)
+🔎 [break] lineWidth=459 units=830 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=831 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=833 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=834 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=835 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=837 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=838 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=839 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=840 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=841 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+⏱️ [hitch] main thread busy for 56ms
+🔎 [break] lineWidth=459 units=842 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=844 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=845 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=848 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=849 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=851 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=853 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=854 lines=28 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=858 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=859 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=861 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=862 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=864 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=868 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🗣️ Streaming speech: queued segment 26 (39 chars)
+🔎 [break] lineWidth=459 units=869 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=870 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+⏱️ [hitch] main thread busy for 45ms
+🔎 [break] lineWidth=459 units=871 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=873 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=875 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=876 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=877 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=878 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=879 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=880 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=881 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+⏱️ [hitch] main thread busy for 42ms
+🔎 [break] lineWidth=459 units=882 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=883 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=884 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=885 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=886 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=887 lines=29 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=888 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=889 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=890 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=891 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=892 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=893 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+⏱️ [hitch] main thread busy for 63ms
+🔎 [break] lineWidth=459 units=895 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=896 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+🔎 [break] lineWidth=459 units=898 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=900 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🗣️ Streaming speech: queued segment 27 (32 chars)
+🔎 [break] lineWidth=459 units=901 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=902 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=904 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=905 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=906 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=907 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=909 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+⏱️ [hitch] main thread busy for 51ms
+🔎 [break] lineWidth=459 units=911 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=912 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=913 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=914 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=27 首行填充=0.98
+🔎 [break] lineWidth=459 units=915 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=917 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=919 lines=30 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=32 首行填充=0.98
+🔎 [break] lineWidth=459 units=921 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=922 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=923 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=925 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=926 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=927 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=7 首行填充=0.98
+🔎 [break] lineWidth=459 units=928 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=929 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=9 首行填充=0.98
+⏱️ [hitch] main thread busy for 195ms
+🔎 [break] lineWidth=459 units=930 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=931 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=932 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=934 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=936 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=937 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=939 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=940 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=943 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🗣️ Streaming speech: queued segment 28 (43 chars)
+🔎 [break] lineWidth=459 units=944 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+⏱️ [hitch] main thread busy for 42ms
+🔎 [break] lineWidth=459 units=945 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=946 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=948 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=949 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=29 首行填充=0.98
+🔎 [break] lineWidth=459 units=950 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=951 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=953 lines=31 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=954 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=955 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=956 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=957 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=958 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=959 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=961 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+⏱️ [hitch] main thread busy for 262ms
+🔎 [break] lineWidth=459 units=963 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=964 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=966 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=967 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=968 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=969 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=971 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=972 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=973 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=975 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=976 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🗣️ Streaming speech: queued segment 29 (33 chars)
+🔎 [break] lineWidth=459 units=977 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=24 首行填充=0.98
+🔎 [break] lineWidth=459 units=978 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=979 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=981 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=983 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=30 首行填充=0.98
+🔎 [break] lineWidth=459 units=984 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+🔎 [break] lineWidth=459 units=986 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+⏱️ [hitch] main thread busy for 122ms
+🔎 [break] lineWidth=459 units=987 lines=32 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=34 首行填充=0.98
+🔎 [break] lineWidth=459 units=988 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=1 首行填充=0.98
+🔎 [break] lineWidth=459 units=990 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=992 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=995 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=998 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=11 首行填充=0.98
+🔎 [break] lineWidth=459 units=1000 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=13 首行填充=0.98
+🔎 [break] lineWidth=459 units=1002 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=1004 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🔎 [break] lineWidth=459 units=1006 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🗣️ Streaming speech: queued segment 30 (30 chars)
+🔎 [break] lineWidth=459 units=1008 lines=33 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=20 首行填充=0.98
+🔎 [break] lineWidth=459 units=1010 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🔎 [break] lineWidth=459 units=1012 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=4 首行填充=0.98
+🔎 [break] lineWidth=459 units=1014 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🎙️ 上行块 #300（64B）已发出
+🔎 [break] lineWidth=459 units=1016 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=1018 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=1020 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+⏱️ [hitch] main thread busy for 124ms
+🔎 [break] lineWidth=459 units=1022 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=1023 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=15 首行填充=0.98
+🔎 [break] lineWidth=459 units=1024 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+🔎 [break] lineWidth=459 units=1026 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=18 首行填充=0.98
+🔎 [break] lineWidth=459 units=1027 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=19 首行填充=0.98
+🔎 [break] lineWidth=459 units=1029 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=21 首行填充=0.98
+🔎 [break] lineWidth=459 units=1030 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=22 首行填充=0.98
+🔎 [break] lineWidth=459 units=1031 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=23 首行填充=0.98
+🔎 [break] lineWidth=459 units=1033 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=25 首行填充=0.98
+🔎 [break] lineWidth=459 units=1034 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=26 首行填充=0.98
+🔎 [break] lineWidth=459 units=1036 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=28 首行填充=0.98
+🔎 [break] lineWidth=459 units=1039 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=31 首行填充=0.98
+⏱️ [hitch] main thread busy for 52ms
+🔎 [break] lineWidth=459 units=1041 lines=34 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=33 首行填充=0.98
+🔎 [break] lineWidth=459 units=1043 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=2 首行填充=0.98
+🗣️ Streaming speech: queued segment 31 (38 chars)
+🔎 [break] lineWidth=459 units=1044 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=3 首行填充=0.98
+🔎 [break] lineWidth=459 units=1046 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=5 首行填充=0.98
+🔎 [break] lineWidth=459 units=1047 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=6 首行填充=0.98
+🔎 [break] lineWidth=459 units=1049 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=8 首行填充=0.98
+🔎 [break] lineWidth=459 units=1051 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=10 首行填充=0.98
+🔎 [break] lineWidth=459 units=1053 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=12 首行填充=0.98
+🔎 [break] lineWidth=459 units=1055 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=14 首行填充=0.98
+🔎 [break] lineWidth=459 units=1057 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=16 首行填充=0.98
+⏱️ [hitch] main thread busy for 88ms
+🔎 [break] lineWidth=459 units=1058 lines=35 每行unit数=[33, 12, 33, 33, 33, 33, 33, 33]… 末行=17 首行填充=0.98
+🗣️ Streaming speech: queued segment 32 (14 chars)
+🎙️ 上行块 #350（64B）已发出
+🎙️ 上行块 #400（3200B）已发出
+🎙️ 上行块 #450（64B）已发出
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #500（3200B）已发出
+🎙️ 上行块 #550（64B）已发出
+🎙️ 上行块 #600（64B）已发出
+🎙️ 上行块 #650（3200B）已发出
+🎙️ 上行块 #700（64B）已发出
+🎙️ 上行块 #750（3200B）已发出
+🎙️ 上行块 #800（64B）已发出
+🎙️ 上行块 #850（2730B）已发出
+🎙️ 上行块 #900（3200B）已发出
+🎙️ 上行块 #950（64B）已发出
+🎙️ 上行块 #1000（3200B）已发出
+🎙️ 上行块 #1050（64B）已发出
+🎙️ 上行块 #1100（2730B）已发出
+🎙️ 上行块 #1150（3200B）已发出
+🎙️ 上行块 #1200（64B）已发出
+🎙️ 上行块 #1250（3200B）已发出
+🎙️ 上行块 #1300（64B）已发出
+🎙️ 上行块 #1350（3200B）已发出
+🎙️ 上行块 #1400（3200B）已发出
+🎙️ 上行块 #1450（64B）已发出
+🎙️ 上行块 #1500（3200B）已发出
+🎙️ 上行块 #1550（64B）已发出
+🎙️ 上行块 #1600（3200B）已发出
+🎙️ 上行块 #1650（3200B）已发出
+🎙️ 上行块 #1700（64B）已发出
+🎙️ 上行块 #1750（3200B）已发出

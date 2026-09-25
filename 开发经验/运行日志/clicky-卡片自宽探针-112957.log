@@ -1,0 +1,332 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 15 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+🔎 [ownwidth] 本卡正文列 460.0（正文 260 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 62 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 45 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 34 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 32 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 227 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 113 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 37 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 33 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 40 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 33 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 260 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 62 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 45 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 34 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 32 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 222 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 227 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 113 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 37 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 33 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 40 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 33 字，streaming=否）
+⏱️ [hitch] main thread busy for 484ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 159ms
+🔊 [aecprobe] t=1790307018.920 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 82ms
+🔊 [aecprobe] t=1790307020.633 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790307020.722 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanlingxin（族=全双工）画面=不允许
+⏱️ [hitch] main thread busy for 75ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanlingxin
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanlingxin）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_Z2CJANAnfk1
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计2字：「你好」
+🔎 [ownwidth] 本卡正文列 460.0（正文 2 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 2 字，streaming=否）
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计5字：「我是」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计6字：「多」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计8字：「语种」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计10字：「教练」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计11字：「，」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计13字：「随时」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计15字：「准备」
+⏱️ [hitch] main thread busy for 128ms
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计17字：「协助」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计18字：「你」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计20字：「练习」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计22字：「日语」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计23字：「、」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计25字：「韩语」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计26字：「、」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计28字：「英语」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计29字：「、」
+🧾 [ai-text +4字] resp=resp_Z2CJA 累计33字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计34字：「、」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计36字：「德语」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计37字：「或」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计39字：「法语」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计40字：「。」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计42字：「你想」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计43字：「从」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计45字：「哪种」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计47字：「语言」
+🧾 [ai-text +2字] resp=resp_Z2CJA 累计49字：「开始」
+🧾 [ai-text +1字] resp=resp_Z2CJA 累计50字：「？」
+🔊 [ai-audio块] resp=resp_Z2CJA
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🎙️ 上行块 #50（64B）已发出
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🔊 [ai-audio块] resp=resp_Z2CJA
+🎧 [response.done] id=resp_Z2CJANAnfk1
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 51ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 87ms
+🎙️ 上行块 #100（64B）已发出
+🔎 [ownwidth] 本卡正文列 460.0（正文 2 字，streaming=是）
+🔎 [ownwidth] 本卡正文列 460.0（正文 2 字，streaming=是）
+⏱️ [hitch] main thread busy for 82ms
+🗣️ Streaming speech: queued segment 1 (8 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 8 字
+⏱️ [hitch] main thread busy for 42ms
+⚠️ Streaming speech: segment synthesis failed: Text-to-speech API error (400): {"request_id":"f0a2975f-227b-9aec-a2a2-a52a43be187e","code":"InvalidParameter","message":"[cosyvoice:]Engine error [411]: TTS speak operation failed"}
+🔊 [aecprobe] t=1790307029.851 event=chunkEnd (segment synthesis failed)
+🔊 Streaming speech: playback loop exited (segment synthesis failed); 1 unplayed segment(s) dropped, first audio never started
+🗣️ Streaming speech: queued segment 2 (38 chars)
+⏱️ [hitch] main thread busy for 122ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=longanlingxin 文本 38 字
+⏱️ [hitch] main thread busy for 81ms
+🗣️ Streaming speech: queued segment 3 (31 chars)
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 143ms
+🗣️ Streaming speech: queued segment 4 (32 chars)
+⏱️ [hitch] main thread busy for 84ms
+🗣️ Streaming speech: queued segment 5 (18 chars)
+🎙️ 上行块 #150（64B）已发出
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 上行块 #250（3200B）已发出
+🎙️ 上行块 #300（64B）已发出
+🎙️ 上行块 #350（3200B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 上行块 #500（3200B）已发出
+🎙️ 上行块 #550（64B）已发出
+🎙️ 上行块 #600（3200B）已发出
+🎙️ 上行块 #650（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #700（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_Z2CJYPQRT6E
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计2字：「韩国」
+🔎 [ownwidth] 本卡正文列 460.0（正文 2 字，streaming=否）
+🔎 [ownwidth] 本卡正文列 460.0（正文 2 字，streaming=否）
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计3字：「（」
+🧾 [ai-text +8字] resp=resp_Z2CJY 累计11字：「Republic」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计14字：「 of」
+🧾 [ai-text +6字] resp=resp_Z2CJY 累计20字：「 Korea」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计21字：「）」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计23字：「位于」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计25字：「朝鲜」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计27字：「半岛」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计29字：「南部」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计30字：「，」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计32字：「拥有」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计33字：「约」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计34字：「 」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计35字：「5」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计36字：「1」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计37字：「0」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计38字：「0」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计39字：「 」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计40字：「万」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计42字：「人口」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计43字：「。」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计45字：「这里」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计48字：「融合了」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计51字：「深厚的」
+⏱️ [hitch] main thread busy for 64ms
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计53字：「历史」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计55字：「传统」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计58字：「与现代」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计60字：「科技」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计61字：「：」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计63字：「既有」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计65字：「保存」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计66字：「完」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计68字：「好的」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计69字：「景」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计70字：「福」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计71字：「宫」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计72字：「等」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计73字：「古」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计74字：「蹟」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计75字：「，」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计77字：「也有」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计79字：「首尔」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计81字：「繁华」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计82字：「的」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计83字：「明」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计84字：「洞」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计85字：「和」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计87字：「江南」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计88字：「区」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计89字：「。」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计91字：「韩国」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计92字：「以」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计93字：「“」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计94字：「韩」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计95字：「流」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计96字：「”」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计98字：「闻名」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计99字：「，」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计101字：「包括」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计103字：「 K」
+🧾 [ai-text +4字] resp=resp_Z2CJY 累计107字：「-pop」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计108字：「 」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计110字：「音乐」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计111字：「、」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计113字：「韩剧」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计114字：「和」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计116字：「美妆」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计118字：「产业」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计119字：「，」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计121字：「同时」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计123字：「拥有」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计126字：「独特的」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计128字：「饮食」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计130字：「文化」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计131字：「，」
+⏱️ [hitch] main thread busy for 47ms
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计132字：「如」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计134字：「泡菜」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计135字：「（」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计138字：「Kim」
+🧾 [ai-text +3字] resp=resp_Z2CJY 累计141字：「chi」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计143字：「）、」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计145字：「烤肉」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计146字：「和」
+🔊 [ai-audio块] resp=resp_Z2CJY
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计148字：「韩式」
+🧾 [ai-text +2字] resp=resp_Z2CJY 累计150字：「炸鸡」
+🧾 [ai-text +1字] resp=resp_Z2CJY 累计151字：「。」
+🔊 [ai-audio块] resp=resp_Z2CJY
+🎧 [user-transcript] item=item_Z2CJCaW 「你介绍一下韩国呗。」
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🎙️ 上行块 #750（64B）已发出
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🎙️ 上行块 #800（64B）已发出
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🔊 [ai-audio块] resp=resp_Z2CJY
+🎧 [response.done] id=resp_Z2CJYPQRT6E
+🎙️ 上行块 #850（3200B）已发出
+🎙️ 上行块 #900（64B）已发出
+🎙️ 上行块 #950（3200B）已发出
+🎙️ 上行块 #1000（64B）已发出
+🎙️ 上行块 #1050（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #1100（3200B）已发出
+🎙️ 上行块 #1150（64B）已发出
+🎙️ 上行块 #1200（3200B）已发出
+🎙️ 上行块 #1250（64B）已发出
+🎙️ 上行块 #1300（2730B）已发出
+🎙️ 上行块 #1350（3200B）已发出
+🎙️ 上行块 #1400（64B）已发出
+🎙️ 上行块 #1450（3200B）已发出

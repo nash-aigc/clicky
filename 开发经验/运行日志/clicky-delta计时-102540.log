@@ -1,0 +1,134 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「你看一下当前页面在搞什么事情。」
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+🔎 [card] 正文 809 字 / 27 行 / 10 段：整卡体 37.9ms（其中算计划 14.2ms）streaming=否
+🔎 [card] 正文 758 字 / 21 行 / 2 段：整卡体 56.1ms（其中算计划 13.8ms）streaming=否
+🔎 [card] 正文 259 字 / 6 行 / 1 段：整卡体 60.8ms（其中算计划 3.3ms）streaming=否
+🔎 [card] 正文 679 字 / 19 行 / 4 段：整卡体 75.3ms（其中算计划 10.8ms）streaming=否
+🔎 [card] 正文 512 字 / 15 行 / 4 段：整卡体 88.3ms（其中算计划 10.1ms）streaming=否
+🔎 [card] 正文 118 字 / 3 行 / 1 段：整卡体 91.3ms（其中算计划 1.9ms）streaming=否
+🔎 [card] 正文 36 字 / 2 行 / 1 段：整卡体 93.1ms（其中算计划 0.9ms）streaming=否
+🔎 [card] 正文 255 字 / 8 行 / 2 段：整卡体 99.7ms（其中算计划 4.4ms）streaming=否
+🔎 [card] 正文 225 字 / 6 行 / 2 段：整卡体 105.8ms（其中算计划 4.2ms）streaming=否
+🔎 [card] 正文 127 字 / 4 行 / 1 段：整卡体 110.0ms（其中算计划 2.5ms）streaming=否
+⏱️ [hitch] main thread busy for 546ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 42ms
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 78ms
+🗣️ Streaming speech: queued segment 1 (19 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 19 字
+🔎 [delta] 最近 20 个 delta：合计 21.8ms / 最大 20.4ms / 当前累计 40 字
+⏱️ [hitch] main thread busy for 157ms
+🗣️ Streaming speech: queued segment 2 (31 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 31 字
+⏱️ [hitch] main thread busy for 45ms
+🔎 [delta] 最近 20 个 delta：合计 1.6ms / 最大 0.2ms / 当前累计 84 字
+🗣️ Streaming speech: queued segment 3 (43 chars)
+⏱️ [hitch] main thread busy for 94ms
+🔎 [delta] 最近 20 个 delta：合计 1.7ms / 最大 0.1ms / 当前累计 114 字
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 4 (30 chars)
+⏱️ [hitch] main thread busy for 108ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 43 字
+🔎 [delta] 最近 20 个 delta：合计 1.8ms / 最大 0.2ms / 当前累计 154 字
+🗣️ Streaming speech: queued segment 5 (34 chars)
+🎙️ BuddyDictationManager: continuous listening requested
+🔊 [aecprobe] t=1790303156.249 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 76ms
+🔎 [delta] 最近 20 个 delta：合计 1.9ms / 最大 0.2ms / 当前累计 184 字
+🗣️ Streaming speech: queued segment 6 (37 chars)
+⏱️ [hitch] main thread busy for 256ms
+🗣️ Streaming speech: queued segment 7 (32 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.1ms / 最大 0.2ms / 当前累计 226 字
+⏱️ [hitch] main thread busy for 118ms
+🗣️ Streaming speech: queued segment 8 (33 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.1ms / 最大 0.2ms / 当前累计 259 字
+⏱️ [hitch] main thread busy for 78ms
+🔎 [delta] 最近 20 个 delta：合计 2.2ms / 最大 0.1ms / 当前累计 293 字
+🔊 [aecprobe] t=1790303157.869 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+⏱️ [hitch] main thread busy for 177ms
+🗣️ Streaming speech: queued segment 9 (45 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.3ms / 最大 0.2ms / 当前累计 321 字
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790303158.094 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 [aecprobe] t=1790303158.123 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (247KB)
+⏱️ [hitch] main thread busy for 141ms
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Streaming speech: queued segment 10 (43 chars)
+⚠️ BuddyDictationManager: shared-engine listening failed (Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}); falling back to the own engine
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔎 [delta] 最近 20 个 delta：合计 2.3ms / 最大 0.2ms / 当前累计 352 字
+⏱️ [hitch] main thread busy for 376ms
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 11 (30 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.5ms / 最大 0.2ms / 当前累计 392 字
+⏱️ [hitch] main thread busy for 185ms
+🗣️ Streaming speech: queued segment 12 (33 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.5ms / 最大 0.2ms / 当前累计 426 字
+⏱️ [hitch] main thread busy for 97ms
+🗣️ Streaming speech: queued segment 13 (34 chars)
+⏱️ [hitch] main thread busy for 91ms
+🔎 [delta] 最近 20 个 delta：合计 2.4ms / 最大 0.2ms / 当前累计 458 字
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 14 (36 chars)
+⏱️ [hitch] main thread busy for 55ms
+🔎 [delta] 最近 20 个 delta：合计 2.5ms / 最大 0.2ms / 当前累计 491 字
+⏱️ [hitch] main thread busy for 60ms
+🗣️ Streaming speech: queued segment 15 (39 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.9ms / 最大 0.3ms / 当前累计 524 字
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 109ms
+🔎 [delta] 最近 20 个 delta：合计 2.6ms / 最大 0.2ms / 当前累计 550 字
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: failed to start continuous listening: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🎙️ BuddyDictationManager: continuous listening ended
+❌ BuddyDictationManager: listening session restart failed (attempt 1): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🗣️ Streaming speech: queued segment 16 (34 chars)
+⏱️ [hitch] main thread busy for 47ms
+🔎 [delta] 最近 20 个 delta：合计 2.7ms / 最大 0.2ms / 当前累计 575 字
+⏱️ [hitch] main thread busy for 54ms
+🗣️ Streaming speech: queued segment 17 (30 chars)
+⏱️ [hitch] main thread busy for 112ms
+🗣️ Streaming speech: queued segment 18 (39 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.8ms / 最大 0.2ms / 当前累计 629 字
+⏱️ [hitch] main thread busy for 77ms
+🗣️ Streaming speech: queued segment 19 (30 chars)
+🔎 [delta] 最近 20 个 delta：合计 2.8ms / 最大 0.2ms / 当前累计 681 字
+🗣️ Streaming speech: queued segment 20 (39 chars)
+⏱️ [hitch] main thread busy for 61ms
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 80ms
+🔊 [aecprobe] t=1790303162.812 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (191KB)
+⏱️ [hitch] main thread busy for 43ms
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790303165.187 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms

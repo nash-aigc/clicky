@@ -1,0 +1,1358 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+🔊 [sfx] t=1790332201.829 reveal-boot
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790332213.161
+⏱️ [expand] 内容就位 +147ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：302 字 → 298 unit / 10 行，耗时 7.0ms
+🔬 [card] 冷启动完整排版：35 字 → 30 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：161 字 → 133 unit / 5 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：42 字 → 35 unit / 2 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：23 字 → 23 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：74 字 → 74 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：25 字 → 25 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：18 字 → 18 unit / 1 行，耗时 0.4ms
+🔊 [sfx] t=1790332213.582 ui-navigation-push
+⏱️ [hitch] main thread busy for 486ms
+🔊 [sfx] t=1790332219.979 ui-focus-change
+⏱️ [hitch] main thread busy for 280ms
+🔊 [sfx] t=1790332225.986 ui-focus-change
+⏱️ [hitch] main thread busy for 147ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 100ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790333571.803 clicky-text-open
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🔊 [aecprobe] t=1790333572.062 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333572.161 event=speakersMuted
+🔊 [aecprobe] t=1790333573.740 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790333573.793 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: recognition session started
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790333577.149 clicky-text-send
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: 本来就在仓库外面，我进地铁啊。
+⏱️ [hitch] main thread busy for 192ms
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333577.531 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 [sfx] t=1790333578.766 clicky-text-receive
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (6 chars) t=1790333578.793
+🔊 TTS 请求 t=1790333578.794 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 6 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 2 (25 chars) t=1790333578.829
+🔬 [card] 冷启动完整排版：30 字 → 30 unit / 2 行，耗时 0.9ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 TTS 请求 t=1790333578.833 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 25 字
+🔊 [aecprobe] t=1790333579.705 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (60KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 [aecprobe] t=1790333580.876 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (232KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 [aecprobe] t=1790333584.964 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790333585.577 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333585.652 event=speakersMuted
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+📸 Companion: heard 屏幕 — capturing the screen immediately
+🗣️ Companion: follow-up question from continuous listening: 不是，我问你的是这个是什么意思？他这句话我没有看懂，你看屏幕。
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+📸 Companion: pre-captured 1 screen(s) — screen keyword
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333590.250 event=speakersRestored
+🌐 Bailian streaming request: 0.5MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 [sfx] t=1790333591.063 clicky-text-receive
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (7 chars) t=1790333591.197
+🔊 TTS 请求 t=1790333591.199 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 7 字
+🗣️ Streaming speech: queued segment 2 (33 chars) t=1790333591.299
+🔊 TTS 请求 t=1790333591.300 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 33 字
+🗣️ Streaming speech: queued segment 3 (32 chars) t=1790333591.416
+🗣️ Streaming speech: queued segment 4 (34 chars) t=1790333591.532
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 5 (13 chars) t=1790333591.559
+🔬 [card] 冷启动完整排版：118 字 → 95 unit / 5 行，耗时 2.0ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790333591.940 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (78KB)
+🔊 TTS 请求 t=1790333593.439 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 32 字
+🔊 [aecprobe] t=1790333593.442 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (408KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+⏱️ [hitch] main thread busy for 43ms
+🎙️ [aecprobe] t=1790333595.336 event=level botSpeaking=true level=0.386 peak0.5s=0.386 utteranceActive=no
+🎙️ [aecprobe] t=1790333595.389 event=level botSpeaking=true level=0.386 peak0.5s=0.386 utteranceActive=no
+🎙️ [aecprobe] t=1790333595.441 event=level botSpeaking=true level=0.885 peak0.5s=0.885 utteranceActive=no
+🎙️ [aecprobe] t=1790333595.494 event=level botSpeaking=true level=0.637 peak0.5s=0.885 utteranceActive=no
+🎙️ [aecprobe] t=1790333595.495 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.885, transcript: "嗯。")
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790333595.495 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333595.820 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🗣️ Companion: follow-up question from continuous listening: 不是，你看左侧，你看左侧，我给你画一个图，你看左侧，我看一下啊，左侧的，嗯，放哪了呢？
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333605.956 event=speakersRestored
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790333606.921 event=level botSpeaking=true level=0.356 peak0.5s=0.356 utteranceActive=no
+🎙️ [aecprobe] t=1790333606.972 event=level botSpeaking=true level=0.356 peak0.5s=0.356 utteranceActive=no
+🎙️ [aecprobe] t=1790333607.026 event=level botSpeaking=true level=0.679 peak0.5s=0.679 utteranceActive=no
+🎙️ [aecprobe] t=1790333607.077 event=level botSpeaking=true level=0.679 peak0.5s=0.679 utteranceActive=no
+🎙️ [aecprobe] t=1790333607.078 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.679, transcript: "嗯。")
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔊 [sfx] t=1790333607.438 clicky-text-receive
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.2ms
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333607.496 event=speakersMuted
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🔬 [card] 冷启动完整排版：67 字 → 59 unit / 3 行，耗时 1.5ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333611.554 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 等一下等一下等一下等一下等一下等一下等等等等等等，没说完呢没说完呢等等等等等等。
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 [sfx] t=1790333612.810 clicky-text-receive
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.4ms
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790333613.029
+🔊 TTS 请求 t=1790333613.030 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 2 字
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 2 (14 chars) t=1790333613.038
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.6ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 TTS 请求 t=1790333613.042 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 14 字
+🔊 [aecprobe] t=1790333613.572 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (45KB)
+🎙️ [aecprobe] t=1790333613.791 event=level botSpeaking=true level=0.552 peak0.5s=0.552 utteranceActive=no
+🎙️ [aecprobe] t=1790333613.844 event=level botSpeaking=true level=0.552 peak0.5s=0.552 utteranceActive=no
+🎙️ [aecprobe] t=1790333613.897 event=level botSpeaking=true level=0.397 peak0.5s=0.552 utteranceActive=no
+🎙️ [aecprobe] t=1790333613.947 event=level botSpeaking=true level=0.397 peak0.5s=0.552 utteranceActive=no
+🎙️ [aecprobe] t=1790333613.947 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.552, transcript: "咚咚咚。")
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790333613.948 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333614.079 event=speakersMuted
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333619.752 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 这儿呢这儿呢这儿呢这儿呢你看一下我这个界，我这个画这个圆，我这个蓝色的部分。
+📸 Companion: pre-captured screen discarded (stale)
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 [sfx] t=1790333620.883 clicky-text-receive
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (11 chars) t=1790333620.921
+🔊 TTS 请求 t=1790333620.922 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 11 字
+🗣️ Streaming speech: queued segment 2 (36 chars) t=1790333621.092
+🔊 TTS 请求 t=1790333621.096 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 36 字
+🗣️ Streaming speech: queued segment 3 (30 chars) t=1790333621.247
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 4 (6 chars) t=1790333621.281
+🔬 [card] 冷启动完整排版：81 字 → 79 unit / 4 行，耗时 2.0ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790333621.434 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (101KB)
+🔊 TTS 请求 t=1790333623.328 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 30 字
+🔊 [aecprobe] t=1790333623.340 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (363KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 TTS 请求 t=1790333629.676 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 6 字
+🔊 [aecprobe] t=1790333629.679 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (315KB)
+🎙️ [aecprobe] t=1790333633.395 event=level botSpeaking=true level=0.254 peak0.5s=0.254 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.446 event=level botSpeaking=true level=0.254 peak0.5s=0.254 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.499 event=level botSpeaking=true level=0.183 peak0.5s=0.254 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.550 event=level botSpeaking=true level=0.183 peak0.5s=0.254 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.601 event=level botSpeaking=true level=0.665 peak0.5s=0.665 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.655 event=level botSpeaking=true level=0.665 peak0.5s=0.665 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.707 event=level botSpeaking=true level=1.000 peak0.5s=1.000 utteranceActive=no
+🎙️ [aecprobe] t=1790333633.707 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 1.000, transcript: "嗯。")
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790333633.708 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333633.963 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333637.582 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 对呀，我说的就是什么叫仓库外面呀。
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+[Bailian ASR] ⚠️ No session.updated within 3.0s — starting audio anyway
+🔊 [sfx] t=1790333644.214 clicky-text-receive
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (6 chars) t=1790333644.339
+🔊 TTS 请求 t=1790333644.344 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 6 字
+🗣️ Streaming speech: queued segment 2 (34 chars) t=1790333644.475
+🔊 TTS 请求 t=1790333644.481 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 34 字
+🗣️ Streaming speech: queued segment 3 (42 chars) t=1790333644.523
+🗣️ Streaming speech: queued segment 4 (33 chars) t=1790333644.664
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 5 (22 chars) t=1790333644.704
+🔬 [card] 冷启动完整排版：136 字 → 117 unit / 6 行，耗时 2.7ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790333644.879 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (78KB)
+🔊 TTS 请求 t=1790333646.395 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 42 字
+🔊 [aecprobe] t=1790333646.397 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (258KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 TTS 请求 t=1790333650.955 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 33 字
+🔊 [aecprobe] t=1790333650.958 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (285KB)
+🔊 TTS 请求 t=1790333655.933 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 22 字
+🔊 [aecprobe] t=1790333655.936 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (281KB)
+⏱️ [hitch] main thread busy for 43ms
+🔊 [aecprobe] t=1790333660.845 event=chunkStart segment 5
+🔊 Bailian TTS: playing segment 5 (187KB)
+🔊 [aecprobe] t=1790333664.174 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790333665.945 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.636, transcript: "嗯。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333665.953 event=speakersMuted
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333669.027 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 啊，听不懂，你再解释解释。
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: using the pre-captured screen for this question
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 [sfx] t=1790333669.695 clicky-text-receive
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (14 chars) t=1790333669.832
+🔊 TTS 请求 t=1790333669.834 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 14 字
+🗣️ Streaming speech: queued segment 2 (38 chars) t=1790333669.873
+🔊 TTS 请求 t=1790333669.874 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 38 字
+🗣️ Streaming speech: queued segment 3 (30 chars) t=1790333669.943
+🗣️ Streaming speech: queued segment 4 (31 chars) t=1790333670.163
+🗣️ Streaming speech: queued segment 5 (30 chars) t=1790333670.196
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🔬 [card] 冷启动完整排版：143 字 → 131 unit / 6 行，耗时 2.7ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790333670.724 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (123KB)
+🔊 TTS 请求 t=1790333672.978 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 30 字
+🔊 [aecprobe] t=1790333672.981 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (352KB)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 TTS 请求 t=1790333679.138 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 31 字
+🔊 [aecprobe] t=1790333679.140 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (277KB)
+🔊 TTS 请求 t=1790333683.989 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 30 字
+🔊 [aecprobe] t=1790333683.992 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (292KB)
+🔊 [aecprobe] t=1790333689.127 event=chunkStart segment 5
+🔊 Bailian TTS: playing segment 5 (322KB)
+⏱️ [hitch] main thread busy for 53ms
+🔊 [aecprobe] t=1790333694.761 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 43ms
+🎙️ [aecprobe] t=1790333696.041 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.742, transcript: "。")
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333696.378 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🎙️ Companion: 追问还在说，持续监听窗口推迟（30s）
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333711.127 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 那也就是说我在git的时候，比如我在一个文件夹里面我创建git，那么其实并不会把文件夹里面所有的位置所有的内容全都传传到github是吧？那么这个这个代码外这个外外边是怎么设置的？哪个地方是外面，还是说它有默认的外面的这个地方这个设置要求啊？
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 [sfx] t=1790333712.163 clicky-text-receive
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790333712.298
+🔊 TTS 请求 t=1790333712.299 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 2 字
+🗣️ Streaming speech: queued segment 2 (38 chars) t=1790333712.340
+🔊 TTS 请求 t=1790333712.341 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 38 字
+🗣️ Streaming speech: queued segment 3 (30 chars) t=1790333712.435
+🗣️ Streaming speech: queued segment 4 (35 chars) t=1790333712.519
+🗣️ Streaming speech: queued segment 5 (32 chars) t=1790333712.639
+🗣️ Streaming speech: queued segment 6 (35 chars) t=1790333712.750
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 7 (23 chars) t=1790333712.829
+🔬 [card] 冷启动完整排版：194 字 → 170 unit / 8 行，耗时 3.2ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "对", recent mic peak 0.032)
+🔊 [aecprobe] t=1790333712.921 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (41KB)
+🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: "对。", recent mic peak 0.032)
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+🔊 TTS 请求 t=1790333713.773 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 30 字
+🔊 [aecprobe] t=1790333713.777 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (318KB)
+🔊 TTS 请求 t=1790333719.340 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 35 字
+🔊 [aecprobe] t=1790333719.342 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (296KB)
+🔊 TTS 请求 t=1790333724.524 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 32 字
+🔊 [aecprobe] t=1790333724.529 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (408KB)
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+🔊 TTS 请求 t=1790333731.658 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 35 字
+🔊 [aecprobe] t=1790333731.662 event=chunkStart segment 5
+🔊 Bailian TTS: playing segment 5 (311KB)
+🔊 TTS 请求 t=1790333737.096 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 23 字
+🔊 [aecprobe] t=1790333737.099 event=chunkStart segment 6
+🔊 Bailian TTS: playing segment 6 (337KB)
+🔊 [aecprobe] t=1790333742.991 event=chunkStart segment 7
+🔊 Bailian TTS: playing segment 7 (225KB)
+🎙️ Companion: 播报还没结束，持续监听窗口推迟到播报之后重新起算（30s）
+🔊 [aecprobe] t=1790333746.956 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790333748.797 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.464, transcript: "。")
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333749.162 event=speakersMuted
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 600ms
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333763.993 event=speakersRestored
+🗣️ Companion: follow-up question from continuous listening: 啊，像这种git git git note这种文件，还有那么其他的这种类型的文件，或者是在于这个跟git有关系的，就是我。
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🎙️ [aecprobe] t=1790333765.292 event=level botSpeaking=true level=0.516 peak0.5s=0.516 utteranceActive=no
+🎙️ [aecprobe] t=1790333765.344 event=level botSpeaking=true level=0.516 peak0.5s=0.516 utteranceActive=no
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🎙️ [aecprobe] t=1790333765.398 event=level botSpeaking=true level=0.516 peak0.5s=0.516 utteranceActive=no
+🎙️ [aecprobe] t=1790333765.448 event=level botSpeaking=true level=0.516 peak0.5s=0.516 utteranceActive=no
+🎙️ [aecprobe] t=1790333765.448 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.516, transcript: "")
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333765.552 event=speakersMuted
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+⏱️ [hitch] main thread busy for 44ms
+⚠️ Companion response error: Error Domain=NSURLErrorDomain Code=-1005 "The network connection was lost." UserInfo={_kCFStreamErrorCodeKey=-4, NSUnderlyingError=0x758c43e4f0 {Error Domain=kCFErrorDomainCFNetwork Code=-1005 "(null)" UserInfo={_kCFStreamErrorCodeKey=-4, _kCFStreamErrorDomainKey=4}}, _NSURLErrorFailingURLSessionTaskErrorKey=LocalDataTask <C27C505E-4858-4984-B367-0CE79267A4EF>.<18>, _NSURLErrorRelatedURLSessionTaskErrorKey=(
+    "LocalDataTask <C27C505E-4858-4984-B367-0CE79267A4EF>.<18>"
+), NSLocalizedDescription=The network connection was lost., NSErrorFailingURLStringKey=https://api.deepseek.com/chat/completions, NSErrorFailingURLKey=https://api.deepseek.com/chat/completions, _kCFStreamErrorDomainKey=4}
+🔊 [sfx] t=1790333774.452 clicky-surprised
+⚠️ Companion fallback — speaking apology. Reason: The network connection was lost.
+⏱️ [hitch] main thread busy for 419ms
+⏱️ [hitch] main thread busy for 44ms
+[Bailian ASR] ❌ Session failed: Error committing input audio buffer, maybe no invalid audio stream.
+❌ BuddyDictationManager: continuous listening session error: BailianRealtimeTranscriptionProviderError(message: "Error committing input audio buffer, maybe no invalid audio stream.")
+🎙️ [aecprobe] t=1790333780.798 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.516, transcript: "")
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333789.159 event=speakersRestored
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790333790.389 clicky-text-open
+⏱️ [hitch] main thread busy for 52ms
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790333790.730 event=speakersMuted
+⏱️ [hitch] main thread busy for 52ms
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🔊 [aecprobe] t=1790333791.860 event=vpToggleBefore device="MacBook Pro麦克风" node=44100Hz/2ch vpEnabled=false agc=false
+🔊 [aecprobe] t=1790333793.399 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790333793.623 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: recognition session started
+⏱️ [hitch] main thread busy for 41ms
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790333794.940 clicky-text-send
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333796.426 event=speakersRestored
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790333870.819
+⏱️ [expand] 内容就位 +86ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：25 字 → 25 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：18 字 → 18 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：30 字 → 30 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：118 字 → 95 unit / 3 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：67 字 → 59 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：81 字 → 79 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：136 字 → 117 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：143 字 → 131 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：194 字 → 170 unit / 6 行，耗时 3.1ms
+🔊 [sfx] t=1790333871.148 ui-navigation-push
+⏱️ [hitch] main thread busy for 432ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790333872.965
+⏱️ [expand] 内容就位 +67ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：25 字 → 25 unit / 1 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：18 字 → 18 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：30 字 → 30 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：118 字 → 95 unit / 3 行，耗时 1.9ms
+🔬 [card] 冷启动完整排版：67 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：81 字 → 79 unit / 3 行，耗时 1.7ms
+🔬 [card] 冷启动完整排版：136 字 → 117 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：143 字 → 131 unit / 4 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：194 字 → 170 unit / 6 行，耗时 3.4ms
+🔊 [sfx] t=1790333873.299 ui-navigation-push
+⏱️ [hitch] main thread busy for 384ms
+🔊 [sfx] t=1790333875.674 ui-focus-change
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 157ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790333878.282] id=resp_WqeZBWkTl7K
+🧾 [ai-text +2字] resp=resp_WqeZB 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🎙️ 上行块 #2（2720B）已发出
+🎙️ 上行块 #3（3200B）已发出
+🔊 [ai-audio首块 t=1790333878.850] resp=resp_WqeZB
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_WqeZB 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_WqeZBWkTl7K
+🎙️ 上行块 #50（3200B）已发出
+🎙️ 上行块 #100（64B）已发出
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+🔊 [sfx] t=1790333883.553 session-hangup
+💬 语音聊天：会话已结束
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790333884.194
+⏱️ [expand] 内容就位 +35ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 45ms
+🔥 语音聊天：音频引擎已预热
+🔊 [sfx] t=1790333884.287 ui-navigation-push
+🔊 [sfx] t=1790333886.315 ui-focus-change
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+⏱️ [hitch] main thread busy for 151ms
+🔊 [sfx] t=1790333886.911 ui-focus-change
+🔬 [card] 冷启动完整排版：25 字 → 25 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：18 字 → 18 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：30 字 → 30 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：118 字 → 95 unit / 3 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：67 字 → 59 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：81 字 → 79 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：136 字 → 117 unit / 4 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：143 字 → 131 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：194 字 → 170 unit / 6 行，耗时 3.2ms
+⏱️ [hitch] main thread busy for 321ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790333890.526 clicky-text-open
+🔇 SystemSpeakerMuteCoordinator: system speakers were already muted before recording — recording proceeds, nothing to change
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+⏱️ [hitch] main thread busy for 52ms
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790333897.096 clicky-text-send
+⏱️ [hitch] main thread busy for 45ms
+🗣️ Companion sending transcript: 也参考这个风格来做。
+🟢 Circle-to-ask: keeping the user's lasso visible for this capture
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+⏱️ [hitch] main thread busy for 46ms
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790333897.946 event=speakersRestored
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790334054.142 clicky-text-open
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790334054.212 event=speakersMuted
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790334082.993 clicky-text-send
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: 。
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🟢 Circle-to-ask: keeping the user's lasso visible for this capture
+⏱️ [hitch] main thread busy for 100ms
+info: starting traversal for pid: 60491 (Visible Only: true)
+info: checking accessibility permissions...
+info: [0.000s] finished 'checking accessibility permissions (granted)'
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790334083.490 event=speakersRestored
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+⏱️ [hitch] main thread busy for 40ms
+info: [1.659s] finished 'traversing accessibility tree (273 elements collected)'
+info: total execution time: 1.66 seconds
+🟢 Circle-to-ask region context:
+while asking, the user drew a circle around a region on screen 1: normalized bounding rect from (414, 15) to (586, 65) on the 1000x1000 grid. the circle marks the subject of their question.
+accessibility data for elements in or touching that region, smallest first; elements marked "fully inside" are the likeliest subject of the question (exact strings and exact coordinates — use them, do not re-read them from the image): 
+- AXStaticText (文本) "大模型流式语音识别API--豆包语音-火山引擎", center at (501, 53), fully inside the circle
+- AXImage (图像) "BD8AE63EFBFE9EBD63B812D7646812", center at (418, 53), partially overlapping the circle's edge
+- AXTextField (文本栏) "https://console.volcengine.com/ark/region:cn-beijing/subscription/coding-plan 智能搜索栏", center at (488, 60), partially overlapping the circle's edge
+- AXRadioButton (标签) "大模型流式语音识别API--豆包语音-火山引擎 大模型流式语音识别API--豆包语音-火山引擎", center at (493, 53), partially overlapping the circle's edge
+- AXRadioButton (标签) "火山方舟 - Coding Plan 火山方舟 - Coding Plan 若要与此按钮中的项目交互，请按下Control-Option-Shift-下箭头键。", center at (489, 53), partially overlapping the circle's edge
+- AXOpaqueProviderGroup (标签页组) "标签页栏，1个标签页", center at (567, 53), partially overlapping the circle's edge
+- AXOpaqueProviderGroup (标签页组) "标签页栏，4个标签页", center at (590, 53), partially overlapping the circle's edge
+- AXMenuBar (菜单栏) (no text), center at (500, 14), partially overlapping the circle's edge
+- AXWindow (标准窗口) "137 — 火山方舟 - Coding Plan", center at (489, 515), partially overlapping the circle's edge
+- AXTabGroup (标签页组) (no text), center at (489, 515), partially overlapping the circle's edge
+- AXWindow (标准窗口) "个人 — 鍒樻捣褰曢煶鍗佹", center at (489, 515), partially overlapping the circle's edge
+🌐 Bailian streaming request: 0.3MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⚠️ Companion response error: Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=https://api.deepseek.com/chat/completions, NSErrorFailingURLKey=https://api.deepseek.com/chat/completions, _NSURLErrorRelatedURLSessionTaskErrorKey=(
+    "LocalDataTask <9783C115-067E-4E08-9928-9D60EE71DAB6>.<19>"
+), _NSURLErrorFailingURLSessionTaskErrorKey=LocalDataTask <9783C115-067E-4E08-9928-9D60EE71DAB6>.<19>, NSLocalizedDescription=cancelled}
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790334200.116 clicky-text-open
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers were already muted before recording — recording proceeds, nothing to change
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790334200.987 clicky-text-send
+🗣️ Companion sending transcript: 嗯。
+📸 Companion: pre-captured screen discarded (stale)
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+⚠️ Companion response error: Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=https://api.deepseek.com/chat/completions, NSErrorFailingURLKey=https://api.deepseek.com/chat/completions, _NSURLErrorRelatedURLSessionTaskErrorKey=(
+    "LocalDataTask <3794AEF6-4301-4842-BA3C-34B3A003D61A>.<20>"
+), _NSURLErrorFailingURLSessionTaskErrorKey=LocalDataTask <3794AEF6-4301-4842-BA3C-34B3A003D61A>.<20>, NSLocalizedDescription=cancelled}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790334201.515 event=speakersRestored
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790334269.477 clicky-text-open
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790334269.857 event=speakersMuted
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790334269.915 clicky-text-send
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [hitch] main thread busy for 48ms
+🗣️ Companion sending transcript: 嗯。
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.2MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 120ms
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790334270.380 event=speakersRestored
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+⚠️ Companion response error: Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=https://api.deepseek.com/chat/completions, NSErrorFailingURLKey=https://api.deepseek.com/chat/completions, _NSURLErrorRelatedURLSessionTaskErrorKey=(
+    "LocalDataTask <BC34C14C-6291-4492-AC4B-F8A1665AD9ED>.<21>"
+), _NSURLErrorFailingURLSessionTaskErrorKey=LocalDataTask <BC34C14C-6291-4492-AC4B-F8A1665AD9ED>.<21>, NSLocalizedDescription=cancelled}
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔊 [sfx] t=1790334273.823 clicky-text-open
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790334273.960 event=speakersMuted
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 67ms
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+🔊 [sfx] t=1790334279.216 clicky-text-send
+🗣️ Companion sending transcript: 嗯。
+🟢 Circle-to-ask: keeping the user's lasso visible for this capture
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790334279.574 event=speakersRestored
+info: starting traversal for pid: 60491 (Visible Only: true)
+info: checking accessibility permissions...
+info: [0.000s] finished 'checking accessibility permissions (granted)'
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+info: [1.285s] finished 'traversing accessibility tree (243 elements collected)'
+info: total execution time: 1.29 seconds
+🟢 Circle-to-ask region context:
+while asking, the user drew a circle around a region on screen 1: normalized bounding rect from (348, -10) to (639, 53) on the 1000x1000 grid. the circle marks the subject of their question.
+accessibility data for elements in or touching that region, smallest first; elements marked "fully inside" are the likeliest subject of the question (exact strings and exact coordinates — use them, do not re-read them from the image): 
+- AXImage (图像) "BD8AE63EFBFE9EBD63B812D7646812", center at (378, 53), partially overlapping the circle's edge
+- AXImage (图像) "网站图标", center at (380, 53), partially overlapping the circle's edge
+- AXImage (图像) "BD8AE63EFBFE9EBD63B812D7646812", center at (532, 53), partially overlapping the circle's edge
+- AXButton (按钮) "页面菜单 页面菜单 更多选项", center at (597, 53), partially overlapping the circle's edge
+- AXStaticText (文本) "计费说明--豆包语音-火山引擎", center at (590, 53), partially overlapping the circle's edge
+- AXStaticText (文本) "大模型流式语音识别API--豆包语音-火山引擎", center at (445, 53), partially overlapping the circle's edge
+- AXRadioButton (标签) "火山方舟 - 模型广场-模型详情 火山方舟 - 模型广场-模型详情", center at (281, 53), partially overlapping the circle's edge
+- AXRadioButton (标签) "大模型流式语音识别API--豆包语音-火山引擎 大模型流式语音识别API--豆包语音-火山引擎", center at (432, 53), partially overlapping the circle's edge
+- AXRadioButton (标签) "计费说明--豆包语音-火山引擎 计费说明--豆包语音-火山引擎", center at (583, 53), partially overlapping the circle's edge
+- AXTextField (文本栏) "https://console.volcengine.com/ark/region:cn-beijing/subscription/coding-plan 智能搜索栏", center at (488, 60), partially overlapping the circle's edge
+- AXRadioButton (标签) "火山方舟 - Coding Plan 火山方舟 - Coding Plan 若要与此按钮中的项目交互，请按下Control-Option-Shift-下箭头键。", center at (489, 53), partially overlapping the circle's edge
+- AXOpaqueProviderGroup (标签页组) "标签页栏，1个标签页", center at (567, 53), partially overlapping the circle's edge
+🌐 Bailian streaming request: 0.2MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⚠️ Companion response error: Error Domain=NSURLErrorDomain Code=-999 "cancelled" UserInfo={NSErrorFailingURLStringKey=https://api.deepseek.com/chat/completions, NSErrorFailingURLKey=https://api.deepseek.com/chat/completions, _NSURLErrorRelatedURLSessionTaskErrorKey=(
+    "LocalDataTask <C15209FE-754E-4CDE-8D2B-48C0AA6664E2>.<22>"
+), _NSURLErrorFailingURLSessionTaskErrorKey=LocalDataTask <C15209FE-754E-4CDE-8D2B-48C0AA6664E2>.<22>, NSLocalizedDescription=cancelled}
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790334284.670
+⏱️ [expand] 内容就位 +71ms（此前屏幕上只有那块白板）
+🔬 [card] 冷启动完整排版：25 字 → 25 unit / 1 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：18 字 → 18 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：30 字 → 30 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：118 字 → 95 unit / 3 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：67 字 → 59 unit / 2 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：81 字 → 79 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：136 字 → 117 unit / 4 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：143 字 → 131 unit / 4 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：194 字 → 170 unit / 6 行，耗时 3.4ms
+🔊 [sfx] t=1790334285.012 ui-navigation-push
+⏱️ [hitch] main thread busy for 415ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 400ms
+⏱️ [hitch] main thread busy for 144ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms

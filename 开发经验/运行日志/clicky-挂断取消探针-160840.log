@@ -1,0 +1,238 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 492ms
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 167ms
+🔊 [aecprobe] t=1790323736.049 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 141ms
+🔊 [aecprobe] t=1790323737.697 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790323737.922 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=三段式 预设=video.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc（族=三段式）画面=允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 501ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 954ms（总 1347ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1417ms（屏幕=1 摄像头=1）
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (22 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 22 字
+⏱️ [hitch] main thread busy for 281ms
+⏱️ [hitch] main thread busy for 66ms
+🗣️ Streaming speech: queued segment 2 (37 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 37 字
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 162ms
+🗣️ Streaming speech: queued segment 3 (32 chars)
+⏱️ [hitch] main thread busy for 79ms
+⏱️ [hitch] main thread busy for 122ms
+🔊 [aecprobe] t=1790323748.148 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (243KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 32 字
+🗣️ Streaming speech: queued segment 4 (41 chars)
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 70ms
+🗣️ Streaming speech: queued segment 5 (36 chars)
+⏱️ [hitch] main thread busy for 203ms
+🔬 [cascade] 文字仍在增长：203 字（本任务已取消=false）
+🗣️ Streaming speech: queued segment 6 (30 chars)
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 7 (35 chars)
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 114ms
+🗣️ Streaming speech: queued segment 8 (41 chars)
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 9 (30 chars)
+⏱️ [hitch] main thread busy for 58ms
+🗣️ Streaming speech: queued segment 10 (35 chars)
+⏱️ [hitch] main thread busy for 146ms
+🗣️ Streaming speech: queued segment 11 (30 chars)
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 86ms
+🗣️ Streaming speech: queued segment 12 (30 chars)
+⏱️ [hitch] main thread busy for 152ms
+⏱️ [hitch] main thread busy for 43ms
+🔊 [aecprobe] t=1790323752.482 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (146KB)
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🔊 [aecprobe] t=1790323754.580 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 50ms
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 63ms
+🗣️ Streaming speech: queued segment 1 (8 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 8 字
+⏱️ [hitch] main thread busy for 113ms
+🗣️ Streaming speech: queued segment 2 (36 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 36 字
+⏱️ [hitch] main thread busy for 178ms
+⏱️ [hitch] main thread busy for 179ms
+🔊 [aecprobe] t=1790323756.959 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (105KB)
+⏱️ [hitch] main thread busy for 210ms
+🗣️ Streaming speech: queued segment 3 (35 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 35 字
+⏱️ [hitch] main thread busy for 239ms
+⏱️ [hitch] main thread busy for 127ms
+⏱️ [hitch] main thread busy for 181ms
+⏱️ [hitch] main thread busy for 60ms
+🗣️ Streaming speech: queued segment 4 (42 chars)
+⏱️ [hitch] main thread busy for 94ms
+⏱️ [hitch] main thread busy for 73ms
+🗣️ Streaming speech: queued segment 5 (31 chars)
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 72ms
+🔊 [aecprobe] t=1790323758.987 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (371KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 42 字
+⏱️ [hitch] main thread busy for 78ms
+🔬 [cascade] 文字仍在增长：201 字（本任务已取消=false）
+🗣️ Streaming speech: queued segment 6 (47 chars)
+⏱️ [hitch] main thread busy for 75ms
+🗣️ Streaming speech: queued segment 7 (33 chars)
+⏱️ [hitch] main thread busy for 295ms
+⏱️ [hitch] main thread busy for 85ms
+🗣️ Streaming speech: queued segment 8 (30 chars)
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 9 (31 chars)
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 100ms
+⏱️ [hitch] main thread busy for 137ms
+🗣️ Streaming speech: queued segment 10 (40 chars)
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 241ms
+⏱️ [hitch] main thread busy for 102ms
+🗣️ Streaming speech: queued segment 11 (39 chars)
+⏱️ [hitch] main thread busy for 91ms
+⏱️ [hitch] main thread busy for 66ms
+🔬 [cascade] 文字仍在增长：401 字（本任务已取消=false）
+🗣️ Streaming speech: queued segment 12 (30 chars)
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 66ms
+🗣️ Streaming speech: queued segment 13 (33 chars)
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 52ms
+🗣️ Streaming speech: queued segment 14 (41 chars)
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 97ms
+🗣️ Streaming speech: queued segment 15 (32 chars)
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 178ms
+🗣️ Streaming speech: queued segment 16 (37 chars)
+⏱️ [hitch] main thread busy for 138ms
+⏱️ [hitch] main thread busy for 56ms
+🗣️ Streaming speech: queued segment 17 (34 chars)
+⏱️ [hitch] main thread busy for 58ms
+🔬 [cascade] 文字仍在增长：600 字（本任务已取消=false）
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 18 (35 chars)
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 124ms
+🗣️ Streaming speech: queued segment 19 (35 chars)
+⏱️ [hitch] main thread busy for 156ms
+🗣️ Streaming speech: queued segment 20 (32 chars)
+⏱️ [hitch] main thread busy for 47ms
+🔊 [aecprobe] t=1790323765.499 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (393KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 31 字
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 21 (32 chars)
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 67ms
+🗣️ Streaming speech: queued segment 22 (35 chars)
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 164ms
+🗣️ Streaming speech: queued segment 23 (30 chars)
+⏱️ [hitch] main thread busy for 124ms
+🔬 [cascade] 文字仍在增长：801 字（本任务已取消=false）
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 24 (31 chars)
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [hitch] main thread busy for 238ms
+🗣️ Streaming speech: queued segment 25 (31 chars)
+⏱️ [hitch] main thread busy for 114ms
+⏱️ [hitch] main thread busy for 119ms
+🗣️ Streaming speech: queued segment 26 (34 chars)
+⏱️ [hitch] main thread busy for 119ms
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790323768.146 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 140ms
+⏱️ [hitch] main thread busy for 197ms
+⏱️ [hitch] main thread busy for 118ms
+⏱️ [hitch] main thread busy for 341ms
+⏱️ [hitch] main thread busy for 177ms
+🔬 [cascade] 文字仍在增长：1000 字（本任务已取消=true）
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 150ms
+⏱️ [hitch] main thread busy for 165ms
+⏱️ [hitch] main thread busy for 365ms
+⏱️ [hitch] main thread busy for 271ms
+⏱️ [hitch] main thread busy for 572ms
+⏱️ [hitch] main thread busy for 87ms
+⏱️ [hitch] main thread busy for 225ms
+🔬 [cascade] 文字仍在增长：1200 字（本任务已取消=true）
+⏱️ [hitch] main thread busy for 319ms
+⏱️ [hitch] main thread busy for 352ms
+⏱️ [hitch] main thread busy for 153ms
+⏱️ [hitch] main thread busy for 115ms
+⏱️ [hitch] main thread busy for 501ms
+⏱️ [hitch] main thread busy for 469ms
+🔬 [cascade] 文字仍在增长：1400 字（本任务已取消=true）
+⏱️ [hitch] main thread busy for 292ms
+⏱️ [hitch] main thread busy for 146ms
+⏱️ [hitch] main thread busy for 105ms
+⏱️ [hitch] main thread busy for 303ms
+⏱️ [hitch] main thread busy for 312ms
+⏱️ [hitch] main thread busy for 431ms
+⏱️ [hitch] main thread busy for 250ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 154ms
+🔬 [cascade] 文字仍在增长：1601 字（本任务已取消=true）
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 321ms
+⏱️ [hitch] main thread busy for 206ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 359ms
+⏱️ [hitch] main thread busy for 148ms
+⏱️ [hitch] main thread busy for 485ms
+🔬 [cascade] 文字仍在增长：1801 字（本任务已取消=true）
+⏱️ [hitch] main thread busy for 292ms
+⏱️ [hitch] main thread busy for 401ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 242ms
+⏱️ [hitch] main thread busy for 548ms
+⏱️ [hitch] main thread busy for 425ms
+⏱️ [hitch] main thread busy for 251ms
+🔬 [cascade] 文字仍在增长：2000 字（本任务已取消=true）
+⏱️ [hitch] main thread busy for 354ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 613ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 676ms

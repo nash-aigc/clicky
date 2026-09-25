@@ -1,0 +1,1337 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 2 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 139ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 125ms
+🔊 [aecprobe] t=1790319353.874 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 124ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🎧 [event] session.created
+⏱️ [hitch] main thread busy for 41ms
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🔊 [aecprobe] t=1790319355.664 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790319355.776 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790319355.777 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790319355.777 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [response.created t=1790319355.873] id=resp_Q27vHy89lIh
+🧾 [ai-text +2字] resp=resp_Q27vH 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_Q27vH 累计3字：「！」
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🧾 [ai-text +1字] resp=resp_Q27vH 累计4字：「我」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +2字] resp=resp_Q27vH 累计6字：「随时」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计8字：「准备」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计10字：「协助」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +1字] resp=resp_Q27vH 累计11字：「你」
+⏱️ [hitch] main thread busy for 156ms
+🧾 [ai-text +1字] resp=resp_Q27vH 累计12字：「。」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_Q27vH 累计14字：「你想」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计16字：「练习」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计18字：「哪种」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计20字：「语言」
+🧾 [ai-text +1字] resp=resp_Q27vH 累计21字：「，」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计23字：「或者」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计25字：「需要」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计27字：「翻译」
+⏱️ [hitch] main thread busy for 96ms
+🧾 [ai-text +2字] resp=resp_Q27vH 累计29字：「什么」
+🧾 [ai-text +2字] resp=resp_Q27vH 累计31字：「内容」
+🧾 [ai-text +1字] resp=resp_Q27vH 累计32字：「？」
+🔊 [ai-audio首块 t=1790319356.791] resp=resp_Q27vH
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ 上行块 #50（3200B）已发出
+🧾 [ai-text-done] resp=resp_Q27vH 官方全文 32 字（累积值 32 字）
+🎧 [response.done] id=resp_Q27vHy89lIh
+🎙️ 上行块 #100（64B）已发出
+🎙️ 上行块 #150（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 191ms
+⏱️ [hitch] main thread busy for 60ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790319481.873] id=resp_TTxeG5hArUk
+🧾 [ai-text +2字] resp=resp_TTxeG 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计3字：「！」
+🧾 [ai-text +3字] resp=resp_TTxeG 累计6字：「很高兴」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计7字：「能」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计9字：「和你」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计11字：「交流」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +1字] resp=resp_TTxeG 累计12字：「。」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计14字：「请问」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_TTxeG 累计16字：「你想」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计17字：「用」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计19字：「哪种」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计21字：「语言」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计23字：「练习」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计24字：「？」
+⏱️ [hitch] main thread busy for 119ms
+🧾 [ai-text +1字] resp=resp_TTxeG 累计25字：「（」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计27字：「日语」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计28字：「、」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计30字：「韩语」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计31字：「、」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计33字：「英语」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计34字：「、」
+🧾 [ai-text +4字] resp=resp_TTxeG 累计38字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计39字：「、」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计41字：「德语」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计42字：「、」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计44字：「法语」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计45字：「）」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计47字：「或者」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计49字：「需要」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计50字：「我」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计52字：「帮你」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计54字：「翻译」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计56字：「什么」
+🧾 [ai-text +2字] resp=resp_TTxeG 累计58字：「内容」
+⏱️ [hitch] main thread busy for 113ms
+🧾 [ai-text +1字] resp=resp_TTxeG 累计59字：「吗」
+🧾 [ai-text +1字] resp=resp_TTxeG 累计60字：「？」
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ 上行块 #50（64B）已发出
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 161ms
+⏱️ [hitch] main thread busy for 161ms
+🎙️ 上行块 #100（3200B）已发出
+⏱️ [hitch] main thread busy for 50ms
+🧾 [ai-text-done] resp=resp_TTxeG 官方全文 60 字（累积值 60 字）
+🎧 [response.done] id=resp_TTxeG5hArUk
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 54ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎧 [response.created t=1790319495.403] id=resp_ONQLRN1Oba9
+🧾 [ai-text +2字] resp=resp_ONQLR 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_ONQLR 累计3字：「！」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +3字] resp=resp_ONQLR 累计6字：「很高兴」
+🧾 [ai-text +2字] resp=resp_ONQLR 累计8字：「听到」
+🧾 [ai-text +2字] resp=resp_ONQLR 累计10字：「你的」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_ONQLR 累计12字：「声音」
+🧾 [ai-text +1字] resp=resp_ONQLR 累计13字：「。」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_ONQLR 累计15字：「请问」
+🧾 [ai-text +2字] resp=resp_ONQLR 累计17字：「你想」
+🧾 [ai-text +2字] resp=resp_ONQLR 累计19字：「练习」
+🧾 [ai-text +2字] resp=resp_ONQLR 累计21字：「哪种」
+⏱️ [hitch] main thread busy for 49ms
+🧾 [ai-text +2字] resp=resp_ONQLR 累计23字：「语言」
+🧾 [ai-text +1字] resp=resp_ONQLR 累计24字：「？」
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_ONQLR 官方全文 24 字（累积值 24 字）
+🎧 [response.done] id=resp_ONQLRN1Oba9
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #50（64B）已发出
+🎙️ 上行块 #100（3200B）已发出
+🎙️ 上行块 #150（64B）已发出
+🎙️ 上行块 #200（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 53ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 131ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 196ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 3 字
+⏱️ [hitch] main thread busy for 110ms
+🗣️ Streaming speech: queued segment 2 (20 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 20 字
+🔊 [aecprobe] t=1790319536.126 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (48KB)
+🔊 [aecprobe] t=1790319537.104 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (168KB)
+🎙️ [aecprobe] t=1790319537.772 event=level botSpeaking=true level=0.353 peak0.5s=0.353 utteranceActive=no
+🎙️ [aecprobe] t=1790319537.823 event=level botSpeaking=true level=0.353 peak0.5s=0.353 utteranceActive=no
+🎙️ [aecprobe] t=1790319537.874 event=level botSpeaking=true level=0.868 peak0.5s=0.868 utteranceActive=no
+🎙️ [aecprobe] t=1790319537.927 event=level botSpeaking=true level=0.868 peak0.5s=0.868 utteranceActive=no
+🎙️ [aecprobe] t=1790319537.928 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.868, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319537.928 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319538.219 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319541.271 event=speakersRestored
+⏱️ [hitch] main thread busy for 45ms
+🗣️ Streaming speech: queued segment 1 (23 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 23 字
+⏱️ [hitch] main thread busy for 63ms
+🗣️ Streaming speech: queued segment 2 (35 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 35 字
+⏱️ [hitch] main thread busy for 148ms
+🗣️ Streaming speech: queued segment 3 (34 chars)
+⏱️ [hitch] main thread busy for 139ms
+🗣️ Streaming speech: queued segment 4 (30 chars)
+⏱️ [hitch] main thread busy for 73ms
+🔊 [aecprobe] t=1790319542.857 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (232KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 34 字
+🗣️ Streaming speech: queued segment 5 (40 chars)
+⏱️ [hitch] main thread busy for 88ms
+⏱️ [hitch] main thread busy for 199ms
+🗣️ Streaming speech: queued segment 6 (45 chars)
+⏱️ [hitch] main thread busy for 155ms
+⏱️ [hitch] main thread busy for 135ms
+🗣️ Streaming speech: queued segment 7 (47 chars)
+⏱️ [hitch] main thread busy for 111ms
+🗣️ Streaming speech: queued segment 8 (40 chars)
+⏱️ [hitch] main thread busy for 46ms
+🗣️ Streaming speech: queued segment 9 (16 chars)
+⏱️ [hitch] main thread busy for 53ms
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790319546.818 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 120ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 223ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 210ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [hitch] main thread busy for 49ms
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=三段式 预设=video.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 627ms
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+📷 [camera] startRunning 838ms（总 1380ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 [voicechat] 采集就绪 总耗时 1433ms（屏幕=1 摄像头=1）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ [aecprobe] t=1790319579.752 event=level botSpeaking=true level=0.212 peak0.5s=0.212 utteranceActive=no
+⏱️ [hitch] main thread busy for 98ms
+🎙️ [aecprobe] t=1790319579.828 event=level botSpeaking=true level=0.615 peak0.5s=0.615 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (18 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 18 字
+🎙️ [aecprobe] t=1790319579.891 event=level botSpeaking=true level=0.615 peak0.5s=0.615 utteranceActive=no
+🎙️ [aecprobe] t=1790319579.957 event=level botSpeaking=true level=0.443 peak0.5s=0.615 utteranceActive=no
+⏱️ [hitch] main thread busy for 104ms
+🎙️ [aecprobe] t=1790319580.015 event=level botSpeaking=true level=0.319 peak0.5s=0.615 utteranceActive=no
+🎙️ [aecprobe] t=1790319580.015 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.615, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🗣️ Streaming speech: queued segment 2 (33 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 33 字
+⏱️ [hitch] main thread busy for 80ms
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319580.381 event=speakersMuted
+⏱️ [hitch] main thread busy for 96ms
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 32 字
+⏱️ [hitch] main thread busy for 98ms
+🗣️ Streaming speech: queued segment 4 (36 chars)
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [hitch] main thread busy for 144ms
+🗣️ Streaming speech: queued segment 5 (31 chars)
+🔊 [aecprobe] t=1790319581.310 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (326KB)
+⏱️ [hitch] main thread busy for 58ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 36 字
+🎙️ [aecprobe] t=1790319581.340 event=level botSpeaking=true level=0.072 peak0.5s=0.463 utteranceActive=yes
+🎙️ [aecprobe] t=1790319581.399 event=level botSpeaking=true level=0.072 peak0.5s=0.372 utteranceActive=yes
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319581.468 event=speakersRestored
+🎙️ [aecprobe] t=1790319581.468 event=level botSpeaking=true level=0.052 peak0.5s=0.372 utteranceActive=yes
+⏱️ [hitch] main thread busy for 81ms
+🎙️ [aecprobe] t=1790319581.522 event=level botSpeaking=true level=0.037 peak0.5s=0.268 utteranceActive=yes
+🗣️ Streaming speech: queued segment 6 (37 chars)
+🎙️ [aecprobe] t=1790319581.586 event=level botSpeaking=true level=0.037 peak0.5s=0.193 utteranceActive=yes
+🎙️ [aecprobe] t=1790319581.662 event=level botSpeaking=true level=0.028 peak0.5s=0.193 utteranceActive=yes
+🗣️ Streaming speech: queued segment 7 (13 chars)
+⏱️ [hitch] main thread busy for 95ms
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790319582.601 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (322KB)
+⏱️ [hitch] main thread busy for 191ms
+🗣️ Streaming speech: queued segment 1 (15 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 15 字
+⏱️ [hitch] main thread busy for 68ms
+🗣️ Streaming speech: queued segment 2 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 143ms
+🗣️ Streaming speech: queued segment 3 (49 chars)
+🔊 [aecprobe] t=1790319584.340 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (153KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 49 字
+⏱️ [hitch] main thread busy for 68ms
+🗣️ Streaming speech: queued segment 4 (33 chars)
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 5 (31 chars)
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 6 (27 chars)
+🎙️ [aecprobe] t=1790319586.090 event=level botSpeaking=true level=0.493 peak0.5s=0.493 utteranceActive=no
+🎙️ [aecprobe] t=1790319586.141 event=level botSpeaking=true level=0.493 peak0.5s=0.493 utteranceActive=no
+🎙️ [aecprobe] t=1790319586.194 event=level botSpeaking=true level=0.493 peak0.5s=0.493 utteranceActive=no
+🎙️ [aecprobe] t=1790319586.245 event=level botSpeaking=true level=0.972 peak0.5s=0.972 utteranceActive=no
+🎙️ [aecprobe] t=1790319586.245 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.972, transcript: "对。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319586.248 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 31 字
+🔊 [aecprobe] t=1790319586.270 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (352KB)
+🎙️ [aecprobe] t=1790319586.300 event=level botSpeaking=true level=0.700 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.353 event=level botSpeaking=true level=0.700 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.407 event=level botSpeaking=true level=0.685 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.457 event=level botSpeaking=true level=0.685 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.544 event=level botSpeaking=true level=0.879 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.597 event=level botSpeaking=true level=0.633 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.650 event=level botSpeaking=true level=0.633 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.702 event=level botSpeaking=true level=0.875 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.754 event=level botSpeaking=true level=0.875 peak0.5s=0.972 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.806 event=level botSpeaking=true level=0.630 peak0.5s=0.879 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.858 event=level botSpeaking=true level=0.630 peak0.5s=0.879 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.910 event=level botSpeaking=true level=0.629 peak0.5s=0.879 utteranceActive=yes
+🎙️ [aecprobe] t=1790319586.961 event=level botSpeaking=true level=0.629 peak0.5s=0.879 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.013 event=level botSpeaking=true level=0.560 peak0.5s=0.879 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.065 event=level botSpeaking=true level=0.560 peak0.5s=0.875 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.119 event=level botSpeaking=true level=0.407 peak0.5s=0.875 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.171 event=level botSpeaking=true level=0.407 peak0.5s=0.875 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.222 event=level botSpeaking=true level=0.293 peak0.5s=0.875 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.277 event=level botSpeaking=true level=0.293 peak0.5s=0.630 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.331 event=level botSpeaking=true level=0.211 peak0.5s=0.630 utteranceActive=yes
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🎙️ [aecprobe] t=1790319587.382 event=level botSpeaking=true level=0.211 peak0.5s=0.629 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.435 event=level botSpeaking=true level=0.152 peak0.5s=0.629 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.489 event=level botSpeaking=true level=0.109 peak0.5s=0.560 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.539 event=level botSpeaking=true level=0.109 peak0.5s=0.560 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.592 event=level botSpeaking=true level=0.079 peak0.5s=0.407 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.645 event=level botSpeaking=true level=0.079 peak0.5s=0.407 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.696 event=level botSpeaking=true level=0.057 peak0.5s=0.293 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.748 event=level botSpeaking=true level=0.057 peak0.5s=0.293 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.802 event=level botSpeaking=true level=0.041 peak0.5s=0.211 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.853 event=level botSpeaking=true level=0.041 peak0.5s=0.211 utteranceActive=yes
+🎙️ [aecprobe] t=1790319587.904 event=level botSpeaking=true level=0.029 peak0.5s=0.152 utteranceActive=yes
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🌐 Bailian streaming request: 0.4MB, 2 image(s), model=deepseek-flash @ DeepSeek
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 37 字
+🔊 [aecprobe] t=1790319588.841 event=chunkStart segment 5
+🔊 Bailian TTS: playing segment 5 (303KB)
+🗣️ Streaming speech: queued segment 1 (4 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 4 字
+⏱️ [hitch] main thread busy for 262ms
+🗣️ Streaming speech: queued segment 2 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 295ms
+🔊 [aecprobe] t=1790319590.295 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (71KB)
+🗣️ Streaming speech: queued segment 3 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 130ms
+🗣️ Streaming speech: queued segment 4 (34 chars)
+⏱️ [hitch] main thread busy for 274ms
+🗣️ Streaming speech: queued segment 5 (49 chars)
+⏱️ [hitch] main thread busy for 124ms
+⏱️ [hitch] main thread busy for 145ms
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790319591.552 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 13 字
+🔊 [aecprobe] t=1790319591.593 event=chunkStart segment 6
+🔊 Bailian TTS: playing segment 6 (326KB)
+⏱️ [hitch] main thread busy for 314ms
+⏱️ [hitch] main thread busy for 175ms
+⏱️ [hitch] main thread busy for 134ms
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🔊 [aecprobe] t=1790319596.958 event=chunkStart segment 7
+🔊 Bailian TTS: playing segment 7 (157KB)
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🔊 [aecprobe] t=1790319597.853 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=全双工 预设=video.duplex.omni38（全模态 3.8 Flash）
+   识别=qwen3.8-omni-flash-realtime 理解=qwen3.8-omni-flash-realtime 表达=qwen3.8-omni-flash-realtime
+   音色=Ethan（族=全模态）画面=允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+📷 [camera] 授权 13ms
+📷 [camera] 选中设备「FaceTime高清相机」 type=AVCaptureDeviceTypeBuiltInWideAngleCamera
+⏱️ [hitch] main thread busy for 62ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen3.8-omni-flash-realtime voice=Ethan
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen3.8-omni-flash-realtime，音色 Ethan）
+❌ 全双工会话服务端报错：message=<400> InternalError.Algo.InvalidParameter: Voice 'Ethan' is not supported. code=COMMON_ERROR type=- param=-
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+📷 [camera] startRunning 1292ms（总 1321ms）
+📷 语音聊天：摄像头已开启（FaceTime高清相机，比例 1.78）
+💬 语音聊天开始连接：聊天类型=视频聊天 模式=全双工 预设=video.duplex.omni38（全模态 3.8 Flash）
+   识别=qwen3.8-omni-flash-realtime 理解=qwen3.8-omni-flash-realtime 表达=qwen3.8-omni-flash-realtime
+   音色=Ethan（族=全模态）画面=允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen3.8-omni-flash-realtime voice=Ethan
+🖥️ 语音聊天：屏幕预览流已开启（640×413 @ 2fps）
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen3.8-omni-flash-realtime，音色 Ethan）
+❌ 全双工会话服务端报错：message=<400> InternalError.Algo.InvalidParameter: Voice 'Ethan' is not supported. code=COMMON_ERROR type=- param=-
+📷 语音聊天：摄像头已关闭
+🖥️ 语音聊天：屏幕预览流已关闭
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 44ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 378ms
+⏱️ [hitch] main thread busy for 173ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 47ms
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 238ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 3 字
+⏱️ [hitch] main thread busy for 92ms
+⏱️ [hitch] main thread busy for 107ms
+🗣️ Streaming speech: queued segment 2 (23 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 23 字
+🔊 [aecprobe] t=1790319737.012 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (48KB)
+🔊 [aecprobe] t=1790319737.981 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (187KB)
+🎙️ [aecprobe] t=1790319738.869 event=level botSpeaking=true level=0.374 peak0.5s=0.374 utteranceActive=no
+🎙️ [aecprobe] t=1790319738.922 event=level botSpeaking=true level=0.374 peak0.5s=0.374 utteranceActive=no
+🎙️ [aecprobe] t=1790319738.974 event=level botSpeaking=true level=0.729 peak0.5s=0.729 utteranceActive=no
+🎙️ [aecprobe] t=1790319739.025 event=level botSpeaking=true level=0.729 peak0.5s=0.729 utteranceActive=no
+🎙️ [aecprobe] t=1790319739.025 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.729, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319739.029 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319739.377 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319741.978 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🗣️ Streaming speech: queued segment 1 (19 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 19 字
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 117ms
+🗣️ Streaming speech: queued segment 2 (33 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 33 字
+⏱️ [hitch] main thread busy for 202ms
+🗣️ Streaming speech: queued segment 3 (30 chars)
+⏱️ [hitch] main thread busy for 102ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 64ms
+🗣️ Streaming speech: queued segment 4 (31 chars)
+🔊 [aecprobe] t=1790319743.818 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (236KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 57ms
+🗣️ Streaming speech: queued segment 5 (35 chars)
+⏱️ [hitch] main thread busy for 109ms
+🗣️ Streaming speech: queued segment 6 (33 chars)
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 118ms
+🗣️ Streaming speech: queued segment 7 (33 chars)
+⏱️ [hitch] main thread busy for 117ms
+🗣️ Streaming speech: queued segment 8 (32 chars)
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 56ms
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319746.629 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 61ms
+🗣️ Streaming speech: queued segment 1 (14 chars)
+⏱️ [hitch] main thread busy for 80ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 14 字
+⏱️ [hitch] main thread busy for 128ms
+⏱️ [hitch] main thread busy for 134ms
+🗣️ Streaming speech: queued segment 2 (43 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 43 字
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 3 (16 chars)
+🔊 [aecprobe] t=1790319748.042 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (150KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 16 字
+🔊 [aecprobe] t=1790319750.748 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (468KB)
+🔊 [aecprobe] t=1790319758.879 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (142KB)
+🔊 [aecprobe] t=1790319761.434 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 48ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 422ms
+⏱️ [hitch] main thread busy for 163ms
+🎙️ [aecprobe] t=1790319801.319 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.451, transcript: "。")
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319801.737 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319804.790 event=speakersRestored
+⏱️ [hitch] main thread busy for 66ms
+🗣️ Streaming speech: queued segment 1 (16 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 16 字
+⏱️ [hitch] main thread busy for 177ms
+⏱️ [hitch] main thread busy for 85ms
+🗣️ Streaming speech: queued segment 2 (40 chars)
+⏱️ [hitch] main thread busy for 61ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 40 字
+⏱️ [hitch] main thread busy for 121ms
+⏱️ [hitch] main thread busy for 44ms
+🔊 [aecprobe] t=1790319806.122 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (187KB)
+🗣️ Streaming speech: queued segment 3 (42 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 42 字
+⏱️ [hitch] main thread busy for 143ms
+⏱️ [hitch] main thread busy for 96ms
+🗣️ Streaming speech: queued segment 4 (32 chars)
+🔊 [aecprobe] t=1790319809.474 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (431KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 32 字
+🔊 [aecprobe] t=1790319816.962 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (408KB)
+🔊 [aecprobe] t=1790319824.057 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (277KB)
+🎙️ [aecprobe] t=1790319824.965 event=level botSpeaking=true level=0.239 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.040 event=level botSpeaking=true level=0.239 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.093 event=level botSpeaking=true level=0.172 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.148 event=level botSpeaking=true level=0.124 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.199 event=level botSpeaking=true level=0.124 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.250 event=level botSpeaking=true level=0.130 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.302 event=level botSpeaking=true level=0.130 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.356 event=level botSpeaking=true level=0.093 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.407 event=level botSpeaking=true level=0.093 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.459 event=level botSpeaking=true level=0.067 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.511 event=level botSpeaking=true level=0.067 peak0.5s=0.239 utteranceActive=no
+🎙️ [aecprobe] t=1790319825.563 event=level botSpeaking=true level=0.048 peak0.5s=0.172 utteranceActive=no
+🔊 [aecprobe] t=1790319828.910 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [hitch] main thread busy for 98ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 205ms
+🗣️ Streaming speech: queued segment 1 (37 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 37 字
+⏱️ [hitch] main thread busy for 88ms
+⏱️ [hitch] main thread busy for 162ms
+⏱️ [hitch] main thread busy for 78ms
+🗣️ Streaming speech: queued segment 2 (46 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 46 字
+⏱️ [hitch] main thread busy for 184ms
+⏱️ [hitch] main thread busy for 53ms
+🗣️ Streaming speech: queued segment 3 (45 chars)
+🔊 [aecprobe] t=1790319848.000 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (356KB)
+⏱️ [hitch] main thread busy for 127ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 45 字
+🗣️ Streaming speech: queued segment 4 (46 chars)
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 128ms
+🗣️ Streaming speech: queued segment 5 (41 chars)
+⏱️ [hitch] main thread busy for 92ms
+🗣️ Streaming speech: queued segment 6 (36 chars)
+⏱️ [hitch] main thread busy for 137ms
+⏱️ [hitch] main thread busy for 143ms
+🗣️ Streaming speech: queued segment 7 (31 chars)
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 8 (38 chars)
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 237ms
+🗣️ Streaming speech: queued segment 9 (36 chars)
+⏱️ [hitch] main thread busy for 109ms
+🗣️ Streaming speech: queued segment 10 (35 chars)
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 70ms
+🗣️ Streaming speech: queued segment 11 (37 chars)
+⏱️ [hitch] main thread busy for 159ms
+⏱️ [hitch] main thread busy for 115ms
+🗣️ Streaming speech: queued segment 12 (35 chars)
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 145ms
+🗣️ Streaming speech: queued segment 13 (33 chars)
+⏱️ [hitch] main thread busy for 289ms
+⏱️ [hitch] main thread busy for 140ms
+🗣️ Streaming speech: queued segment 14 (30 chars)
+⏱️ [hitch] main thread busy for 46ms
+🔊 [aecprobe] t=1790319854.249 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (446KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 46 字
+🔊 [aecprobe] t=1790319861.975 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (472KB)
+🎙️ [aecprobe] t=1790319864.271 event=level botSpeaking=true level=0.514 peak0.5s=0.514 utteranceActive=no
+🎙️ [aecprobe] t=1790319864.323 event=level botSpeaking=true level=0.514 peak0.5s=0.514 utteranceActive=no
+🎙️ [aecprobe] t=1790319864.377 event=level botSpeaking=true level=0.531 peak0.5s=0.531 utteranceActive=no
+🎙️ [aecprobe] t=1790319864.428 event=level botSpeaking=true level=0.506 peak0.5s=0.531 utteranceActive=no
+🎙️ [aecprobe] t=1790319864.428 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.531, transcript: "。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319864.429 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319864.792 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319866.906 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+⏱️ [hitch] main thread busy for 43ms
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 10 字
+⏱️ [hitch] main thread busy for 114ms
+🗣️ Streaming speech: queued segment 2 (25 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 25 字
+🔊 [aecprobe] t=1790319868.160 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (75KB)
+🔊 [aecprobe] t=1790319869.594 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (195KB)
+🎙️ [aecprobe] t=1790319869.645 event=level botSpeaking=true level=0.184 peak0.5s=0.184 utteranceActive=no
+🎙️ [aecprobe] t=1790319869.698 event=level botSpeaking=true level=0.184 peak0.5s=0.184 utteranceActive=no
+🎙️ [aecprobe] t=1790319869.752 event=level botSpeaking=true level=0.377 peak0.5s=0.377 utteranceActive=no
+🎙️ [aecprobe] t=1790319869.803 event=level botSpeaking=true level=0.377 peak0.5s=0.377 utteranceActive=no
+🎙️ [aecprobe] t=1790319869.857 event=level botSpeaking=true level=0.581 peak0.5s=0.581 utteranceActive=no
+🎙️ [aecprobe] t=1790319869.910 event=level botSpeaking=true level=0.581 peak0.5s=0.581 utteranceActive=no
+🎙️ [aecprobe] t=1790319869.910 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.581, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319869.911 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319869.993 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319873.044 event=speakersRestored
+🗣️ Streaming speech: queued segment 1 (10 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 10 字
+⏱️ [hitch] main thread busy for 194ms
+⏱️ [hitch] main thread busy for 76ms
+🗣️ Streaming speech: queued segment 2 (36 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 36 字
+⏱️ [hitch] main thread busy for 48ms
+🗣️ Streaming speech: queued segment 3 (34 chars)
+⏱️ [hitch] main thread busy for 70ms
+🔊 [aecprobe] t=1790319874.144 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (138KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 34 字
+⏱️ [hitch] main thread busy for 46ms
+🗣️ Streaming speech: queued segment 4 (32 chars)
+⏱️ [hitch] main thread busy for 306ms
+🗣️ Streaming speech: queued segment 5 (30 chars)
+🗣️ Streaming speech: queued segment 6 (5 chars)
+🔊 [aecprobe] t=1790319876.689 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (240KB)
+🎙️ [aecprobe] t=1790319879.570 event=level botSpeaking=true level=0.462 peak0.5s=0.462 utteranceActive=no
+🎙️ [aecprobe] t=1790319879.623 event=level botSpeaking=true level=0.462 peak0.5s=0.462 utteranceActive=no
+🎙️ [aecprobe] t=1790319879.673 event=level botSpeaking=true level=0.515 peak0.5s=0.515 utteranceActive=no
+🎙️ [aecprobe] t=1790319879.727 event=level botSpeaking=true level=0.515 peak0.5s=0.515 utteranceActive=no
+🎙️ [aecprobe] t=1790319879.727 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.515, transcript: "。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319879.731 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319880.220 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319882.811 event=speakersRestored
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 168ms
+🗣️ Streaming speech: queued segment 1 (7 chars)
+⏱️ [hitch] main thread busy for 225ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 7 字
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 2 (32 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 32 字
+⏱️ [hitch] main thread busy for 171ms
+🔊 [aecprobe] t=1790319884.298 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (78KB)
+⏱️ [hitch] main thread busy for 339ms
+🗣️ Streaming speech: queued segment 3 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 162ms
+🗣️ Streaming speech: queued segment 4 (30 chars)
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 123ms
+⏱️ [hitch] main thread busy for 54ms
+🗣️ Streaming speech: queued segment 5 (32 chars)
+🔊 [aecprobe] t=1790319885.820 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (378KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 247ms
+⏱️ [hitch] main thread busy for 50ms
+🗣️ Streaming speech: queued segment 6 (30 chars)
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 52ms
+🗣️ Streaming speech: queued segment 7 (34 chars)
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 145ms
+⏱️ [hitch] main thread busy for 87ms
+🗣️ Streaming speech: queued segment 8 (32 chars)
+⏱️ [hitch] main thread busy for 140ms
+⏱️ [hitch] main thread busy for 108ms
+🗣️ Streaming speech: queued segment 9 (30 chars)
+⏱️ [hitch] main thread busy for 87ms
+⏱️ [hitch] main thread busy for 68ms
+🗣️ Streaming speech: queued segment 10 (30 chars)
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 108ms
+🗣️ Streaming speech: queued segment 11 (31 chars)
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 211ms
+🗣️ Streaming speech: queued segment 12 (32 chars)
+⏱️ [hitch] main thread busy for 96ms
+⏱️ [hitch] main thread busy for 79ms
+🗣️ Streaming speech: queued segment 13 (33 chars)
+⏱️ [hitch] main thread busy for 47ms
+🎙️ [aecprobe] t=1790319890.494 event=level botSpeaking=true level=0.525 peak0.5s=0.525 utteranceActive=no
+🎙️ [aecprobe] t=1790319890.562 event=level botSpeaking=true level=0.378 peak0.5s=0.525 utteranceActive=no
+⏱️ [hitch] main thread busy for 229ms
+🎙️ [aecprobe] t=1790319890.616 event=level botSpeaking=true level=0.378 peak0.5s=0.525 utteranceActive=no
+🎙️ [aecprobe] t=1790319890.674 event=level botSpeaking=true level=0.426 peak0.5s=0.525 utteranceActive=no
+🎙️ [aecprobe] t=1790319890.674 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.525, transcript: "。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790319890.706 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🗣️ Streaming speech: queued segment 14 (34 chars)
+⏱️ [hitch] main thread busy for 81ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 34 字
+⏱️ [hitch] main thread busy for 142ms
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790319891.117 event=speakersMuted
+⏱️ [hitch] main thread busy for 250ms
+🗣️ Streaming speech: queued segment 15 (38 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 38 字
+🔊 [aecprobe] t=1790319891.701 event=chunkStart segment 5
+🔊 Bailian TTS: playing segment 5 (333KB)
+🎙️ [aecprobe] t=1790319891.714 event=level botSpeaking=true level=0.349 peak0.5s=0.589 utteranceActive=yes
+🎙️ [aecprobe] t=1790319891.766 event=level botSpeaking=true level=0.264 peak0.5s=0.484 utteranceActive=yes
+🎙️ [aecprobe] t=1790319891.817 event=level botSpeaking=true level=0.264 peak0.5s=0.484 utteranceActive=yes
+🎙️ [aecprobe] t=1790319891.869 event=level botSpeaking=true level=0.190 peak0.5s=0.484 utteranceActive=yes
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🎙️ [aecprobe] t=1790319891.922 event=level botSpeaking=true level=0.190 peak0.5s=0.484 utteranceActive=yes
+🎙️ [aecprobe] t=1790319891.974 event=level botSpeaking=true level=0.137 peak0.5s=0.484 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.027 event=level botSpeaking=true level=0.137 peak0.5s=0.484 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.078 event=level botSpeaking=true level=0.099 peak0.5s=0.484 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.129 event=level botSpeaking=true level=0.071 peak0.5s=0.349 utteranceActive=yes
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790319892.162 event=speakersRestored
+🎙️ [aecprobe] t=1790319892.182 event=level botSpeaking=true level=0.071 peak0.5s=0.349 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.235 event=level botSpeaking=true level=0.051 peak0.5s=0.264 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.286 event=level botSpeaking=true level=0.051 peak0.5s=0.264 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.337 event=level botSpeaking=true level=0.037 peak0.5s=0.190 utteranceActive=yes
+🎙️ [aecprobe] t=1790319892.391 event=level botSpeaking=true level=0.037 peak0.5s=0.190 utteranceActive=yes
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 [aecprobe] t=1790319893.248 event=chunkStart segment 6
+🔊 Bailian TTS: playing segment 6 (337KB)
+🗣️ Streaming speech: queued segment 1 (6 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 6 字
+⏱️ [hitch] main thread busy for 143ms
+🗣️ Streaming speech: queued segment 2 (14 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 14 字
+🔊 [aecprobe] t=1790319894.515 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (63KB)
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790319898.764 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+🔊 [aecprobe] t=1790319898.764 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 62ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 82ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 186ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [hitch] main thread busy for 105ms
+🗣️ Streaming speech: queued segment 1 (18 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 18 字
+⏱️ [hitch] main thread busy for 74ms
+🔊 [aecprobe] t=1790319918.741 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (135KB)
+🔊 [aecprobe] t=1790319921.198 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 211ms
+🗣️ Streaming speech: queued segment 1 (22 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 22 字
+⏱️ [hitch] main thread busy for 132ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 121ms
+🗣️ Streaming speech: queued segment 2 (39 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 39 字
+⏱️ [hitch] main thread busy for 151ms
+🗣️ Streaming speech: queued segment 3 (32 chars)
+🔊 [aecprobe] t=1790319926.613 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (228KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 32 字
+⏱️ [hitch] main thread busy for 133ms
+⏱️ [hitch] main thread busy for 212ms
+🗣️ Streaming speech: queued segment 4 (36 chars)
+⏱️ [hitch] main thread busy for 310ms
+⏱️ [hitch] main thread busy for 230ms
+🗣️ Streaming speech: queued segment 5 (31 chars)
+⏱️ [hitch] main thread busy for 220ms
+⏱️ [hitch] main thread busy for 222ms
+🗣️ Streaming speech: queued segment 6 (34 chars)
+⏱️ [hitch] main thread busy for 167ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 150ms
+🗣️ Streaming speech: queued segment 7 (39 chars)
+⏱️ [hitch] main thread busy for 202ms
+⏱️ [hitch] main thread busy for 197ms
+🗣️ Streaming speech: queued segment 8 (30 chars)
+⏱️ [hitch] main thread busy for 126ms
+⏱️ [hitch] main thread busy for 125ms
+🗣️ Streaming speech: queued segment 9 (36 chars)
+⏱️ [hitch] main thread busy for 170ms
+🗣️ Streaming speech: queued segment 10 (11 chars)
+⏱️ [hitch] main thread busy for 129ms
+🔊 [aecprobe] t=1790319930.678 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (431KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 36 字
+🔊 [aecprobe] t=1790319938.172 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (296KB)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 31 字
+🔊 [aecprobe] t=1790319943.352 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (341KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790319949.182 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 55ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 61ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 272ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [hitch] main thread busy for 44ms
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 3 字
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 100ms
+🔊 [aecprobe] t=1790319952.427 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (71KB)
+🗣️ Streaming speech: queued segment 2 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+⏱️ [hitch] main thread busy for 109ms
+⏱️ [hitch] main thread busy for 135ms
+🗣️ Streaming speech: queued segment 3 (30 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 30 字
+🔊 [aecprobe] t=1790319954.000 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (300KB)
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790319955.790 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 64ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 978ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 58ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 704ms
+⏱️ [hitch] main thread busy for 245ms
+⏱️ [hitch] main thread busy for 76ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 695ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 677ms
+⏱️ [hitch] main thread busy for 107ms
+⏱️ [hitch] main thread busy for 156ms
+⏱️ [hitch] main thread busy for 162ms
+⏱️ [hitch] main thread busy for 107ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 771ms
+⏱️ [hitch] main thread busy for 102ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 627ms
+⏱️ [hitch] main thread busy for 124ms
+⏱️ [hitch] main thread busy for 49ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 604ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)
+⏱️ [hitch] main thread busy for 80ms
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 238ms（屏幕=0 摄像头=0）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 1 (3 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 3 字
+⏱️ [hitch] main thread busy for 183ms
+⏱️ [hitch] main thread busy for 68ms
+🗣️ Streaming speech: queued segment 2 (17 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 17 字
+🔊 [aecprobe] t=1790320058.955 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (48KB)
+🔊 [aecprobe] t=1790320059.954 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (135KB)
+🎙️ [aecprobe] t=1790320060.044 event=level botSpeaking=true level=0.322 peak0.5s=0.322 utteranceActive=no
+🎙️ [aecprobe] t=1790320060.096 event=level botSpeaking=true level=0.322 peak0.5s=0.322 utteranceActive=no
+🎙️ [aecprobe] t=1790320060.149 event=level botSpeaking=true level=0.256 peak0.5s=0.322 utteranceActive=no
+🎙️ [aecprobe] t=1790320060.200 event=level botSpeaking=true level=0.256 peak0.5s=0.322 utteranceActive=no
+🎙️ [aecprobe] t=1790320060.200 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.322, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790320060.202 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790320060.660 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790320063.702 event=speakersRestored
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+⏱️ [hitch] main thread busy for 147ms
+🗣️ Streaming speech: queued segment 1 (13 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 13 字
+⏱️ [hitch] main thread busy for 218ms
+🗣️ Streaming speech: queued segment 2 (31 chars)
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 31 字
+⏱️ [hitch] main thread busy for 240ms
+⏱️ [hitch] main thread busy for 150ms
+🔊 [aecprobe] t=1790320065.665 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (157KB)
+🗣️ Streaming speech: queued segment 3 (31 chars)
+⏱️ [hitch] main thread busy for 168ms
+🔊 TTS 合成：model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-lyf-c81770bd5b1e4eef94896704b7f1999b 文本 31 字
+⏱️ [hitch] main thread busy for 265ms
+⏱️ [hitch] main thread busy for 74ms
+🗣️ Streaming speech: queued segment 4 (34 chars)
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 144ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [hitch] main thread busy for 463ms
+🗣️ Streaming speech: queued segment 5 (39 chars)
+⏱️ [hitch] main thread busy for 168ms
+⏱️ [hitch] main thread busy for 85ms
+🗣️ Streaming speech: queued segment 6 (29 chars)
+⏱️ [hitch] main thread busy for 57ms
+🔊 [aecprobe] t=1790320068.482 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (333KB)
+⏱️ [hitch] main thread busy for 42ms
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790320071.556 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 61ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 53ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎧 [response.created t=1790320074.061] id=resp_Cg8VQTTyXiX
+🧾 [ai-text +2字] resp=resp_Cg8VQ 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_Cg8VQ 累计3字：「！」
+🧾 [ai-text +1字] resp=resp_Cg8VQ 累计4字：「我」
+⏱️ [hitch] main thread busy for 46ms
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +3字] resp=resp_Cg8VQ 累计7字：「听到了」
+🧾 [ai-text +1字] resp=resp_Cg8VQ 累计8字：「。」
+🧾 [ai-text +2字] resp=resp_Cg8VQ 累计10字：「请问」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +2字] resp=resp_Cg8VQ 累计12字：「你想」
+🧾 [ai-text +2字] resp=resp_Cg8VQ 累计14字：「练习」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_Cg8VQ 累计16字：「哪种」
+🧾 [ai-text +2字] resp=resp_Cg8VQ 累计18字：「语言」
+🧾 [ai-text +1字] resp=resp_Cg8VQ 累计19字：「？」
+⏱️ [hitch] main thread busy for 51ms
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_Cg8VQ 官方全文 19 字（累积值 19 字）
+🎧 [response.done] id=resp_Cg8VQTTyXiX
+🎙️ 上行块 #50（64B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 52ms
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎧 [response.created t=1790320078.800] id=resp_RlPnS9EwEVS
+🧾 [ai-text +2字] resp=resp_RlPnS 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_RlPnS 累计3字：「！」
+⏱️ [hitch] main thread busy for 65ms
+🧾 [ai-text +3字] resp=resp_RlPnS 累计6字：「很高兴」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +2字] resp=resp_RlPnS 累计8字：「听到」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计10字：「你的」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计12字：「声音」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +1字] resp=resp_RlPnS 累计13字：「。」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_RlPnS 累计15字：「请问」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计17字：「你想」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计19字：「练习」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计21字：「哪种」
+⏱️ [hitch] main thread busy for 82ms
+🧾 [ai-text +2字] resp=resp_RlPnS 累计23字：「语言」
+🧾 [ai-text +1字] resp=resp_RlPnS 累计24字：「，」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计26字：「或者」
+🧾 [ai-text +2字] resp=resp_RlPnS 累计28字：「需要」
+🧾 [ai-text +1字] resp=resp_RlPnS 累计29字：「哪」
+🧾 [ai-text +3字] resp=resp_RlPnS 累计32字：「方面的」
+⏱️ [hitch] main thread busy for 110ms
+🧾 [ai-text +2字] resp=resp_RlPnS 累计34字：「帮助」
+🧾 [ai-text +1字] resp=resp_RlPnS 累计35字：「？」
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🧾 [ai-text-done] resp=resp_RlPnS 官方全文 35 字（累积值 35 字）
+🎧 [response.done] id=resp_RlPnS9EwEVS
+🎧 [event t=1790320080.801] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「然过」
+🎙️ 上行块 #50（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790320081.845] id=resp_RlPnLz1NCZJ
+🧾 [ai-text +3字] resp=resp_RlPnL 累计3字：「没问题」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计4字：「！」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计5字：「请」
+🧾 [ai-text +3字] resp=resp_RlPnL 累计8字：「告诉我」
+⏱️ [hitch] main thread busy for 129ms
+🧾 [ai-text +2字] resp=resp_RlPnL 累计10字：「你想」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计12字：「练习」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计14字：「哪种」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计16字：「语言」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计17字：「（」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计19字：「日语」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计20字：「、」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计22字：「韩语」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计23字：「、」
+⏱️ [hitch] main thread busy for 95ms
+🧾 [ai-text +2字] resp=resp_RlPnL 累计25字：「英语」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计26字：「、」
+🧾 [ai-text +4字] resp=resp_RlPnL 累计30字：「西班牙语」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计31字：「、」
+⏱️ [hitch] main thread busy for 43ms
+🧾 [ai-text +2字] resp=resp_RlPnL 累计33字：「德语」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计34字：「或」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计36字：「法语」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计38字：「），」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计40字：「以及」
+🧾 [ai-text +3字] resp=resp_RlPnL 累计43字：「具体的」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计45字：「练习」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计47字：「目标」
+⏱️ [hitch] main thread busy for 125ms
+🧾 [ai-text +1字] resp=resp_RlPnL 累计48字：「（」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计50字：「例如」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计51字：「：」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计53字：「日常」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计55字：「对话」
+⏱️ [hitch] main thread busy for 79ms
+🧾 [ai-text +1字] resp=resp_RlPnL 累计56字：「、」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计58字：「商务」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计60字：「用语」
+🧾 [ai-text +1字] resp=resp_RlPnL 累计61字：「、」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计63字：「语法」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计65字：「练习」
+⏱️ [hitch] main thread busy for 96ms
+🧾 [ai-text +1字] resp=resp_RlPnL 累计66字：「或」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计68字：「发音」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计70字：「纠正」
+🧾 [ai-text +2字] resp=resp_RlPnL 累计72字：「）。」
+🎧 [user-transcript] item=item_RlPnYy3 「相关的信息。」
+⏱️ [hitch] main thread busy for 198ms
+🎙️ 上行块 #100（64B）已发出
+🧾 [ai-text-done] resp=resp_RlPnL 官方全文 72 字（累积值 72 字）
+🎧 [response.done] id=resp_RlPnLz1NCZJ
+🎙️ 上行块 #150（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 72ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 149ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 64ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms

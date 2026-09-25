@@ -1,0 +1,70 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 2 exchanges from session 「200 个字说一下关于北京的新闻」
+⏱️ [hitch] main thread busy for 73ms
+⏱️ [hitch] main thread busy for 70ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 267ms
+⏱️ [hitch] main thread busy for 181ms
+⏱️ [hitch] main thread busy for 150ms
+🔊 [aecprobe] t=1790319233.326 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 60ms
+🔊 [aecprobe] t=1790319235.127 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790319235.203 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 78ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎧 [response.created t=1790319240.009] id=resp_U7IuGypnROZ
+🧾 [ai-text +2字] resp=resp_U7IuG 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_U7IuG 累计3字：「！」
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🧾 [ai-text +3字] resp=resp_U7IuG 累计6字：「很高兴」
+🧾 [ai-text +1字] resp=resp_U7IuG 累计7字：「能」
+🎙️ 上行块 #1（2720B）已发出
+🧾 [ai-text +2字] resp=resp_U7IuG 累计9字：「听到」
+🧾 [ai-text +2字] resp=resp_U7IuG 累计11字：「你的」
+⏱️ [hitch] main thread busy for 98ms
+🧾 [ai-text +2字] resp=resp_U7IuG 累计13字：「声音」
+🧾 [ai-text +1字] resp=resp_U7IuG 累计14字：「。」
+🧾 [ai-text +3字] resp=resp_U7IuG 累计17字：「有什么」
+🧾 [ai-text +3字] resp=resp_U7IuG 累计20字：「我可以」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +1字] resp=resp_U7IuG 累计21字：「帮」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_U7IuG 累计23字：「你的」
+🧾 [ai-text +1字] resp=resp_U7IuG 累计24字：「吗」
+🧾 [ai-text +1字] resp=resp_U7IuG 累计25字：「？」
+⏱️ [hitch] main thread busy for 40ms
+🔊 [ai-audio首块 t=1790319240.602] resp=resp_U7IuG
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_U7IuG 官方全文 25 字（累积值 25 字）
+🎧 [response.done] id=resp_U7IuGypnROZ
+🎙️ 上行块 #50（64B）已发出
+🎙️ 上行块 #100（3200B）已发出
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms

@@ -1,0 +1,720 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 11 exchanges from session 「你好」
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 400ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+🔊 [aecprobe] t=1790295119.286 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 62ms
+🔊 [aecprobe] t=1790295120.901 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790295121.144 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_CFjYKxsZM3Z
+🧾 [ai-text +2字] resp=resp_CFjYK 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_CFjYK 累计5字：「刚才」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计6字：「你」
+🧾 [ai-text +2字] resp=resp_CFjYK 累计8字：「提到」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计9字：「想」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计10字：「听」
+⏱️ [hitch] main thread busy for 43ms
+🧾 [ai-text +2字] resp=resp_CFjYK 累计12字：「关于」
+🎙️ 上行块 #2（3200B）已发出
+🧾 [ai-text +3字] resp=resp_CFjYK 累计15字：「美国的」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_CFjYK 累计17字：「新闻」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计18字：「，」
+🧾 [ai-text +2字] resp=resp_CFjYK 累计20字：「具体」
+🧾 [ai-text +2字] resp=resp_CFjYK 累计22字：「是指」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计23字：「哪」
+🧾 [ai-text +2字] resp=resp_CFjYK 累计25字：「一条」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计26字：「呢」
+🧾 [ai-text +1字] resp=resp_CFjYK 累计27字：「？」
+⏱️ [hitch] main thread busy for 169ms
+🔊 [ai-audio块] resp=resp_CFjYK
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🔊 [ai-audio块] resp=resp_CFjYK
+🎧 [response.done] id=resp_CFjYKxsZM3Z
+📝 [写盘] 跳过（非用户触发的回合，如开场白）：「你好！刚才你提到想听关于美国的新闻，具体」
+🎙️ 上行块 #50（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #100（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_CFjYCUuOYa5
+🧾 [ai-text +2字] resp=resp_CFjYC 累计2字：「抱歉」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计3字：「，」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计5字：「我不」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计6字：「太」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计8字：「确定」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计9字：「你」
+🧾 [ai-text +3字] resp=resp_CFjYC 累计12字：「指的是」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计13字：「哪」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计14字：「本」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计16字：「关于」
+🧾 [ai-text +3字] resp=resp_CFjYC 累计19字：「北京的」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计20字：「“」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计21字：「书」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计23字：「”。」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计25字：「你能」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计27字：「再说」
+⏱️ [hitch] main thread busy for 63ms
+🧾 [ai-text +2字] resp=resp_CFjYC 累计29字：「一遍」
+🧾 [ai-text +2字] resp=resp_CFjYC 累计31字：「书名」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计32字：「吗」
+🧾 [ai-text +1字] resp=resp_CFjYC 累计33字：「？」
+🎧 [user-transcript] item=item_CFjYUhI 「关于这个北京的新闻，给我来两个。」
+🗣️ [user-utterance] 「关于这个北京的新闻，给我来两个。」
+🔊 [ai-audio块] resp=resp_CFjYC
+🎙️ 上行块 #150（3200B）已发出
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🔊 [ai-audio块] resp=resp_CFjYC
+🎧 [response.done] id=resp_CFjYCUuOYa5
+📝 [写盘] 一条全写：问「关于这个北京的新闻，给我来两个。」 答「抱歉，我不太确定你指的是哪本关于北京的“」
+🎙️ 上行块 #200（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #250（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_CFjYBcoHfbO
+🧾 [ai-text +2字] resp=resp_CFjYB 累计2字：「抱歉」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计3字：「，」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计5字：「我不」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计6字：「太」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计8字：「明白」
+🧾 [ai-text +3字] resp=resp_CFjYB 累计11字：「你说的」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计12字：「“」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计14字：「北京」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计16字：「新闻」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计17字：「”」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计19字：「具体」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计20字：「指」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计21字：「哪」
+⏱️ [hitch] main thread busy for 167ms
+🧾 [ai-text +1字] resp=resp_CFjYB 累计22字：「条」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计23字：「。」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计25字：「你能」
+🧾 [ai-text +3字] resp=resp_CFjYB 累计28字：「告诉我」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计30字：「新闻」
+🧾 [ai-text +3字] resp=resp_CFjYB 累计33字：「的主题」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计34字：「或」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计36字：「大概」
+🧾 [ai-text +2字] resp=resp_CFjYB 累计38字：「内容」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计39字：「吗」
+🧾 [ai-text +1字] resp=resp_CFjYB 累计40字：「？」
+⏱️ [hitch] main thread busy for 50ms
+🔊 [ai-audio块] resp=resp_CFjYB
+🎧 [user-transcript] item=item_CFjYWp1 「因为这个北京的新闻200个字。」
+🗣️ [user-utterance] 「因为这个北京的新闻200个字。」
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🎙️ 上行块 #300（3200B）已发出
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+⏱️ [hitch] main thread busy for 45ms
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+⏱️ [hitch] main thread busy for 44ms
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🔊 [ai-audio块] resp=resp_CFjYB
+🎧 [response.done] id=resp_CFjYBcoHfbO
+📝 [写盘] 一条全写：问「因为这个北京的新闻200个字。」 答「抱歉，我不太明白你说的“北京新闻”具体指」
+🎙️ 上行块 #350（64B）已发出
+🎙️ 上行块 #400（64B）已发出
+🎙️ 上行块 #450（3200B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 60ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 152ms
+⏱️ [hitch] main thread busy for 167ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 6F4618AA-793B-475A-A31C-EB557A2B6941，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_J1WHFUIAWyt
+🧾 [ai-text +2字] resp=resp_J1WHF 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_J1WHF 累计5字：「刚才」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计6字：「你」
+🧾 [ai-text +3字] resp=resp_J1WHF 累计9字：「提到的」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计10字：「“」
+🎙️ 上行块 #2（3200B）已发出
+⏱️ [hitch] main thread busy for 76ms
+🧾 [ai-text +2字] resp=resp_J1WHF 累计12字：「北京」
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_J1WHF 累计14字：「新闻」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计15字：「”」
+🧾 [ai-text +2字] resp=resp_J1WHF 累计17字：「具体」
+🧾 [ai-text +2字] resp=resp_J1WHF 累计19字：「是指」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计20字：「哪」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计21字：「条」
+🧾 [ai-text +2字] resp=resp_J1WHF 累计23字：「内容」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计24字：「？」
+⏱️ [hitch] main thread busy for 48ms
+🧾 [ai-text +1字] resp=resp_J1WHF 累计25字：「能」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计26字：「再」
+🧾 [ai-text +3字] resp=resp_J1WHF 累计29字：「告诉我」
+🧾 [ai-text +2字] resp=resp_J1WHF 累计31字：「一下」
+🧾 [ai-text +2字] resp=resp_J1WHF 累计33字：「主题」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计34字：「吗」
+🧾 [ai-text +1字] resp=resp_J1WHF 累计35字：「？」
+⏱️ [hitch] main thread busy for 87ms
+🔊 [ai-audio块] resp=resp_J1WHF
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🔊 [ai-audio块] resp=resp_J1WHF
+🎧 [response.done] id=resp_J1WHFUIAWyt
+📝 [写盘] 跳过（非用户触发的回合，如开场白）：「你好！刚才你提到的“北京新闻”具体是指哪」
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #50（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #100（2730B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_J1WHDL91nZW
+🧾 [ai-text +2字] resp=resp_J1WHD 累计2字：「抱歉」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计3字：「，」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计4字：「我」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计6字：「还没」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计7字：「听」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计8字：「清」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计10字：「具体」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计12字：「是哪」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计13字：「条」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计15字：「新闻」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计16字：「，」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计18字：「你能」
+🧾 [ai-text +3字] resp=resp_J1WHD 累计21字：「告诉我」
+⏱️ [hitch] main thread busy for 123ms
+🧾 [ai-text +2字] resp=resp_J1WHD 累计23字：「新闻」
+🧾 [ai-text +3字] resp=resp_J1WHD 累计26字：「的主题」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计27字：「或」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计29字：「大概」
+🧾 [ai-text +2字] resp=resp_J1WHD 累计31字：「内容」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计32字：「吗」
+🧾 [ai-text +1字] resp=resp_J1WHD 累计33字：「？」
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+⏱️ [hitch] main thread busy for 69ms
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🎧 [user-transcript] item=item_J1WHQnv 「我说一下关于北京的新闻，200个字。」
+🗣️ [user-utterance] 「我说一下关于北京的新闻，200个字。」
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🔊 [ai-audio块] resp=resp_J1WHD
+🎧 [response.done] id=resp_J1WHDL91nZW
+📝 [写盘] 一条全写：问「我说一下关于北京的新闻，200个字。」 答「抱歉，我还没听清具体是哪条新闻，你能告诉」
+🎙️ 上行块 #150（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #200（3200B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_J1WHMVCbXHc
+🧾 [ai-text +2字] resp=resp_J1WHM 累计2字：「北京」
+🧾 [ai-text +2字] resp=resp_J1WHM 累计4字：「历史」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计5字：「可」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计6字：「长」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计7字：「啦」
+⏱️ [hitch] main thread busy for 64ms
+🧾 [ai-text +1字] resp=resp_J1WHM 累计8字：「，」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计9字：「从」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计10字：「元」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计11字：「朝」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计12字：「定」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计13字：「都」
+🧾 [ai-text +3字] resp=resp_J1WHM 累计16字：「到现在」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计17字：「，」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计18字：「有」
+🧾 [ai-text +2字] resp=resp_J1WHM 累计20字：「七百」
+🧾 [ai-text +2字] resp=resp_J1WHM 累计22字：「多年」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计23字：「呢」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计24字：「，」
+🧾 [ai-text +2字] resp=resp_J1WHM 累计26字：「故宫」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计27字：「和」
+🧾 [ai-text +2字] resp=resp_J1WHM 累计29字：「长城」
+⏱️ [hitch] main thread busy for 68ms
+🧾 [ai-text +2字] resp=resp_J1WHM 累计31字：「都是」
+🧾 [ai-text +3字] resp=resp_J1WHM 累计34字：「历史的」
+🧾 [ai-text +2字] resp=resp_J1WHM 累计36字：「见证」
+🧾 [ai-text +1字] resp=resp_J1WHM 累计37字：「。」
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🎧 [user-transcript] item=item_J1WHNOK 「北京的历史。」
+🗣️ [user-utterance] 「北京的历史。」
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🎙️ 上行块 #250（3200B）已发出
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🔊 [ai-audio块] resp=resp_J1WHM
+🎧 [response.done] id=resp_J1WHMVCbXHc
+📝 [写盘] 一条全写：问「北京的历史。」 答「北京历史可长啦，从元朝定都到现在，有七百」
+⏱️ [hitch] main thread busy for 53ms
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms

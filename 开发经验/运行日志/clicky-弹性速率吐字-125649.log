@@ -1,0 +1,563 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Clicky: Starting...
+🎯 Clicky: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Clicky start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+💬 Clicky: restored 10 exchanges from session 「」
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 338ms
+⏱️ [hitch] main thread busy for 179ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 86ms
+⏱️ [hitch] main thread busy for 67ms
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 383ms
+⏱️ [hitch] main thread busy for 71ms
+⏱️ [hitch] main thread busy for 182ms
+🎯 Element pointing: no element
+🧠 Conversation history: 10 exchanges (limit 10)
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔊 [aecprobe] t=1790312274.505 event=vpToggleBefore device="MacBook Pro麦克风" node=48000Hz/1ch vpEnabled=false agc=false
+⏱️ [hitch] main thread busy for 111ms
+💬 Clicky: compressed 1 aged-out exchanges into the conversation summary
+⏱️ [hitch] main thread busy for 40ms
+🔊 [aecprobe] t=1790312276.126 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+💬 Ask 语音电话已挂断
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790312276.372 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 254ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created] id=resp_Xv2YNNsoPG1
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计5字：「刚才」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计7字：「咱们」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计8字：「聊」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计9字：「了」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计11字：「北京」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计12字：「、」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计14字：「天津」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计15字：「和」
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计17字：「杭州」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计18字：「，」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计20字：「你想」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计22字：「接着」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计24字：「了解」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计25字：「哪」
+🧾 [ai-text +3字] resp=resp_Xv2YN 累计28字：「座城市」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计29字：「，」
+🧾 [ai-text +2字] resp=resp_Xv2YN 累计31字：「还是」
+🧾 [ai-text +3字] resp=resp_Xv2YN 累计34字：「有什么」
+🧾 [ai-text +3字] resp=resp_Xv2YN 累计37字：「新问题」
+🧾 [ai-text +1字] resp=resp_Xv2YN 累计38字：「？」
+🔊 [ai-audio块] resp=resp_Xv2YN
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+⏱️ [hitch] main thread busy for 54ms
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+⏱️ [hitch] main thread busy for 41ms
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+⏱️ [hitch] main thread busy for 62ms
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+🎙️ 上行块 #50（3200B）已发出
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+🔊 [ai-audio块] resp=resp_Xv2YN
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 46ms
+🔥 语音聊天：音频引擎已预热
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+💬 Ask 语音电话：会话配置已接受
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 Ask 语音电话已接通（会话 B63A89BE-CE23-42FF-BC0F-D7148A920C8D，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎙️ 上行块 #2（3200B）已发出
+🎙️ 上行块 #3（64B）已发出
+🎧 [response.created] id=resp_MJC4IybgkAF
+🧾 [ai-text +2字] resp=resp_MJC4I 累计2字：「你好」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计3字：「！」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计5字：「刚才」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计7字：「咱们」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计8字：「聊」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计9字：「了」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计11字：「北京」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计12字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计14字：「天津」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计15字：「和」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计17字：「杭州」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计18字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计20字：「你想」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计22字：「接着」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计24字：「了解」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计25字：「哪」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计26字：「座」
+🧾 [ai-text +3字] resp=resp_MJC4I 累计29字：「城市的」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计31字：「细节」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计32字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4I 累计34字：「还是」
+🧾 [ai-text +3字] resp=resp_MJC4I 累计37字：「有什么」
+🧾 [ai-text +3字] resp=resp_MJC4I 累计40字：「新问题」
+🧾 [ai-text +1字] resp=resp_MJC4I 累计41字：「？」
+🔊 [ai-audio块] resp=resp_MJC4I
+💬 Ask 语音电话：第一段音频已开始播 —— 状态切到「通话中」
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+⏱️ [hitch] main thread busy for 41ms
+🎙️ 上行块 #50（64B）已发出
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+⏱️ [hitch] main thread busy for 52ms
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🔊 [ai-audio块] resp=resp_MJC4I
+🎧 [response.done] id=resp_MJC4IybgkAF
+📝 [写盘] 开场白（不参与配对）：答「你好！刚才咱们聊了北京、天津和杭州，你想」
+🎙️ 上行块 #100（3200B）已发出
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [hitch] main thread busy for 76ms
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #150（64B）已发出
+🎧 [event] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MJC4Uo8dw5B
+🧾 [ai-text +2字] resp=resp_MJC4U 累计2字：「美国」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计3字：「是」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计5字：「北美」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计6字：「洲」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计9字：「最大的」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计11字：「国家」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计12字：「，」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计13字：「由」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计14字：「5」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计15字：「0」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计16字：「个」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计17字：「州」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计19字：「组成」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计20字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计22字：「首都」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计25字：「华盛顿」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计27字：「特区」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计28字：「。」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计30字：「这里」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计32字：「既有」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计34字：「纽约」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计35字：「、」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计38字：「洛杉矶」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计39字：「等」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计42字：「现代化」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计45字：「大都市」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计46字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计48字：「也有」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计51字：「大峡谷」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计52字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计54字：「黄石」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计56字：「公园」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计57字：「等」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计59字：「壮丽」
+🧾 [ai-text +4字] resp=resp_MJC4U 累计63字：「自然景观」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计64字：「。」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计66字：「作为」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计68字：「世界」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计70字：「超级」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计72字：「大国」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计73字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计75字：「它在」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计77字：「科技」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计78字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计80字：「金融」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计83字：「和文化」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计85字：「领域」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计88字：「影响力」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计90字：「巨大」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计91字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计93字：「多元」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计95字：「移民」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计97字：「文化」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计98字：「也」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计101字：「造就了」
+🧾 [ai-text +3字] resp=resp_MJC4U 累计104字：「独特的」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计106字：「社会」
+🧾 [ai-text +2字] resp=resp_MJC4U 累计108字：「氛围」
+🧾 [ai-text +1字] resp=resp_MJC4U 累计109字：「。」
+🔊 [ai-audio块] resp=resp_MJC4U
+🎧 [user-transcript] item=item_MJC4TNT 「200个字介绍一下美国。」
+🗣️ [user-utterance] 「200个字介绍一下美国。」
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🎙️ 上行块 #200（3200B）已发出
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🎙️ 上行块 #250（64B）已发出
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🎙️ 上行块 #300（3200B）已发出
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🔊 [ai-audio块] resp=resp_MJC4U
+🎧 [response.done] id=resp_MJC4Uo8dw5B
+📝 [写盘] 一条全写：问「200个字介绍一下美国。」 答「美国是北美洲最大的国家，由50个州组成，」
+🎙️ 上行块 #350（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #400（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MJC4ZVupg5u
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计2字：「纽约」
+🧾 [ai-text +3字] resp=resp_MJC4Z 累计5字：「是美国」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计7字：「最大」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计9字：「城市」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计10字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计12字：「也是」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计14字：「全球」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计16字：「金融」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计17字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计19字：「时尚」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计20字：「和」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计22字：「媒体」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计24字：「中心」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计25字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计27字：「拥有」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计29字：「自由」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计31字：「女神」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计32字：「像」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计33字：「和」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计35字：「时代」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计37字：「广场」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计38字：「等」
+🧾 [ai-text +2字] resp=resp_MJC4Z 累计40字：「标志」
+🧾 [ai-text +1字] resp=resp_MJC4Z 累计41字：「。」
+🎧 [user-transcript] item=item_MJC4Tuk 「这个纽约。」
+🗣️ [user-utterance] 「这个纽约。」
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🎙️ 上行块 #450（3200B）已发出
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🔊 [ai-audio块] resp=resp_MJC4Z
+🎧 [response.done] id=resp_MJC4ZVupg5u
+📝 [写盘] 一条全写：问「这个纽约。」 答「纽约是美国最大城市，也是全球金融、时尚和」
+🎙️ 上行块 #500（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event] speech_started（服务端听到用户开口）
+🎙️ 上行块 #550（2730B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created] id=resp_MJC4YmhZSP3
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计2字：「韩国」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计4字：「位于」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计6字：「朝鲜」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计8字：「半岛」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计10字：「南部」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计11字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计13字：「首都」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计14字：「为」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计16字：「首尔」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计17字：「。」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计19字：「这里」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计21字：「既有」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计22字：「景」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计23字：「福」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计24字：「宫」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计25字：「、」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计26字：「北」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计27字：「村」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计28字：「韩」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计29字：「屋」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计30字：「等」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计32字：「保存」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计33字：「完」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计35字：「好的」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计37字：「历史」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计39字：「古迹」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计40字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计42字：「又有」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计44字：「现代」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计46字：「摩天」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计48字：「大楼」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计49字：「与」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计51字：「繁华」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计53字：「商圈」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计54字：「。」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计56字：「韩国」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计57字：「以」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计59字：「泡菜」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计60字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计62字：「烤肉」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计63字：「等」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计65字：「美食」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计66字：「和」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计67字：「K」
+🧾 [ai-text +4字] resp=resp_MJC4Y 累计71字：「-pop」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计72字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计74字：「韩剧」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计75字：「等」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计77字：「流行」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计79字：「文化」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计81字：「闻名」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计83字：「世界」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计84字：「。」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计85字：「其」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计87字：「经济」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计89字：「高度」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计91字：「发达」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计92字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计94字：「三星」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计95字：「、」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计97字：「现代」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计98字：「等」
+🧾 [ai-text +4字] resp=resp_MJC4Y 累计102字：「知名企业」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计104字：「享誉」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计106字：「全球」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计107字：「，」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计109字：「同时」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计111字：「拥有」
+🧾 [ai-text +3字] resp=resp_MJC4Y 累计114字：「深厚的」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计116字：「儒家」
+🧾 [ai-text +4字] resp=resp_MJC4Y 累计120字：「文化底蕴」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计121字：「和」
+🔊 [ai-audio块] resp=resp_MJC4Y
+🧾 [ai-text +3字] resp=resp_MJC4Y 累计124字：「独特的」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计126字：「现代」
+🧾 [ai-text +2字] resp=resp_MJC4Y 累计128字：「活力」
+🧾 [ai-text +1字] resp=resp_MJC4Y 累计129字：「。」
+🔊 [ai-audio块] resp=resp_MJC4Y
+🎧 [user-transcript] item=item_MJC4R7H 「用200个字介绍一下韩国。」
+🗣️ [user-utterance] 「用200个字介绍一下韩国。」
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🎙️ 上行块 #600（3200B）已发出
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🎙️ 上行块 #650（3200B）已发出
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🎙️ 上行块 #700（64B）已发出
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+🔊 [ai-audio块] resp=resp_MJC4Y
+💬 Ask 语音电话已挂断
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [hitch] main thread busy for 215ms
+⏱️ [hitch] main thread busy for 145ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 100ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 231ms
+⏱️ [hitch] main thread busy for 186ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 40ms
