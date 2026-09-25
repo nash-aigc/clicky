@@ -323,6 +323,9 @@ private struct ComposerTextView: NSViewRepresentable {
         textView.handleSendKeyEvent = { [weak coordinator = context.coordinator] event in
             coordinator?.handleSendKeyEvent(event) ?? false
         }
+        textView.handleFocusChange = { [weak coordinator = context.coordinator] isFocusedNow in
+            coordinator?.reportFocusChange(isFocusedNow)
+        }
 
         let scrollView = NSScrollView()
         scrollView.documentView = textView
@@ -380,12 +383,15 @@ private struct ComposerTextView: NSViewRepresentable {
             parent.text = textView.string
         }
 
-        func textDidBeginEditing(_ notification: Notification) {
-            if !parent.isFocused { parent.isFocused = true }
-        }
-
-        func textDidEndEditing(_ notification: Notification) {
-            if parent.isFocused { parent.isFocused = false }
+        /// 把 AppKit 的**响应者转移**翻译成 SwiftUI 的 `isFocused`。
+        ///
+        /// 唯一的写入点，由 `ComposerNSTextView.becomeFirstResponder` /
+        /// `resignFirstResponder` 调用 —— 不再监听 `textDidBeginEditing` /
+        /// `textDidEndEditing`，原因见那里关于「编辑会话 ≠ 第一响应者」的注释。
+        func reportFocusChange(_ isFocusedNow: Bool) {
+            if parent.isFocused != isFocusedNow {
+                parent.isFocused = isFocusedNow
+            }
         }
 
         /// Returns true when the event was the send key, in which case it has
@@ -430,6 +436,42 @@ private struct ComposerTextView: NSViewRepresentable {
 private final class ComposerNSTextView: NSTextView {
 
     var handleSendKeyEvent: ((NSEvent) -> Bool)?
+
+    /// 焦点变化的上报口，由 coordinator 接住（见 `reportFocusChange`）。
+    var handleFocusChange: ((Bool) -> Void)?
+
+    /// **焦点状态由「第一响应者转移」上报，不由「编辑会话」上报。**
+    ///
+    /// 这是 2026-09-25 「点输入框无法输入」的根因修复。原实现只在
+    /// `textDidBeginEditing` / `textDidEndEditing` 里翻转 `isFocused`，而那对
+    /// 通知描述的是 AppKit 的**编辑会话**：NSTextView 只在窗口为 key 时才进入
+    /// 编辑会话。于是能造出这样一条不一致状态 —— 视图**已经是**第一响应者，
+    /// 但一个通知都没发过。装探针实测到的现场（日志原文）：
+    ///
+    ///     mouseDown 到达；isKeyWindow=true  点击前 firstResponder=ComposerNSTextView
+    ///     （此后 textDidBeginEditing 从未出现）
+    ///     updateNSView isFocused=false isEditing=true
+    ///     textDidEndEditing → 异步 makeFirstResponder(nil)
+    ///
+    /// 三步合起来是一个**自我加固的死锁**：视图已是第一响应者 → 再点它不产生
+    /// 转移 → 通知不再发 → `isFocused` 永远是 false；而 `updateNSView` 一旦看到
+    /// 「isFocused=false 而 isEditing=true」就主动把它踢出第一响应者，把失败钉死。
+    /// 用户看到的「偶尔能用、偶尔不能用」正是它：取决于第一次点击落在窗口是否
+    /// 已经 key 的时刻。
+    ///
+    /// `becomeFirstResponder` / `resignFirstResponder` 在**响应者转移**时必然被
+    /// 调用，与窗口是否 key 无关，所以上面那条状态造不出来。
+    override func becomeFirstResponder() -> Bool {
+        let becameFirstResponder = super.becomeFirstResponder()
+        if becameFirstResponder { handleFocusChange?(true) }
+        return becameFirstResponder
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let resignedFirstResponder = super.resignFirstResponder()
+        if resignedFirstResponder { handleFocusChange?(false) }
+        return resignedFirstResponder
+    }
 
     /// **首次点击就能聚焦**（用户 2026-09-25：「点击 Asking 后立即点击输入框……
     /// 无法输入任何问题；只有点击输入框上面，光标才能定位到输入框」）。
