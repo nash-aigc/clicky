@@ -2796,7 +2796,13 @@ final class CompanionManager: ObservableObject {
                         // 空总结就落回 sub agent 自己那句话 —— 一次空回复不该让用户
                         // 什么都听不到，那正是 §07 说的「不许静默失败」。
                         if !summary.isEmpty { dispatchedSummary = summary }
-                        SoundEffectPlayer.appendToDiagnosticLog("  主 agent 总结 \(summary.count) 字符")
+                        // **把实际用的模型打出来。** 这一句总结走的是 🧠 角色，
+                        // 而角色是可以在「模型」页换的 —— 不打出模型名的话，
+                        // 「它到底用哪个模型总结的」只能靠猜。和连接时那次「三模型 +
+                        // 音色」的日志同一个理由：**「真的用了吗」唯一可核对的判据**。
+                        SoundEffectPlayer.appendToDiagnosticLog(
+                            "  主 agent 总结 \(summary.count) 字符"
+                            + "（\(ModelConfigurationStore.snapshot().status(of: .vision).resolvedRole?.modelID ?? "没有可用的 🧠")）")
                     } else if let unknownName = UnknownSubAgentName.consume() {
                         // 派了一个认不出的名字。**必须留下痕迹** —— 静默丢掉和
                         // 「模型根本没派活」在日志里长得一样，而两者的修法完全不同。
