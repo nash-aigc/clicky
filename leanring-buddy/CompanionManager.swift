@@ -3141,8 +3141,20 @@ final class CompanionManager: ObservableObject {
     /// 花新的合成请求）。下一次自动静音由设置本身保证：两条播报路径的门禁在
     /// 发送前读 `voiceReplyMuted`。
     ///
-    /// 状态收尾复用正常播完的同一台机器：`scheduleVoiceStateResetAfterPlayback`
-    /// 轮询 `isPlaying`（现在已是 false）→ 复位 `.responding` → 收刘海。
+    /// 状态收尾**分两种情况**，这是用户 2026-09-25 明确划开的：
+    ///
+    /// > 「1. AI 的回复已经完成，文字部分已完全显示在页面上。此时除了静音，还要
+    /// > 实现一个类似快捷键的效果，逻辑类似于中断当前任务，而不是在刘海上继续
+    /// > 显示 speaking 这样的内容。
+    /// > 2. 提示词很多，处于流式输出、尚未生成完成的状态。此时用户按静音，就是
+    /// > 停止播放声音……文字部分继续。**刘海与文字部分是对应关系**，这部分改变
+    /// > 不了。但如果……已经全部生成完成，再按静音时，就能调整刘海的状态。」
+    ///
+    /// 也就是说：**文字还在流**时，刘海跟着文字（不能收）；**文字已流完**、只剩
+    /// 声音在播时，按静音等于一次打断（收刘海回待命）。
+    ///
+    /// 上一版无条件调 `scheduleVoiceStateResetAfterPlayback()` —— 那对第 2 种情况
+    /// 是错的：文字还在长，刘海却被收掉了，两者当场对不上。
     ///
     /// 门禁是「这一条回复还在跑」而不是「现在有声音」：用户可能在第一段还没
     /// 合成完、甚至视觉调用还没返回时点静音。没在播时 `stopPlayback()` 各步
@@ -3151,7 +3163,11 @@ final class CompanionManager: ObservableObject {
     func silenceActiveReplyAudio() {
         guard currentResponseTask != nil || bailianTTSClient.isPlaying else { return }
         bailianTTSClient.stopPlayback()
-        scheduleVoiceStateResetAfterPlayback()
+        // 文字还在流 → 只停声音，刘海留着（它跟文字对应）。
+        // 文字已流完、只剩声音在播 → 连刘海一起收回待命。
+        if !isAnswerStreamLive {
+            scheduleVoiceStateResetAfterPlayback()
+        }
     }
 
     func interruptActiveResponse() {
