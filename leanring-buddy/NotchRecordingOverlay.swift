@@ -617,8 +617,20 @@ private struct SmoothRevealedTranscriptText: View {
     /// 5 组配置 + 21 次真实重定目标，打断瞬间的位置跳变**全是 0.000pt**）—— 于是
     /// 连续说话时屏幕上的位移是连续的，没有静止段。
     private static let slideDuration: Double = 0.6
-    /// 窗口最多留多少字。超过就从左边裁 —— **裁掉的必须是屏幕外那部分**。
+    /// 窗口的**基准**字数。
     private static let maximumWindowCharacters = 160
+    /// 裁剪的迟滞：窗口再多长这么多字才裁一次。
+    ///
+    /// **没有这个迟滞，上限就等于把窗口变回了定长窗口 —— 而那正是最初的根因。**
+    /// 原条件是「超过 160 就裁到 160」，于是文本一过 160 字，**每来一个字都裁一次**：
+    /// `windowStart` 前进 1、窗口永远 160 字、**宽度恒定不变** → 位移不变 →
+    /// `onChange` 不触发 → 动画再也不被调度。而窗口内容每来一个字就换一格，屏幕上
+    /// 就是一个字一个字地瞬跳。160 字 ≈ 6–10 秒语音，正好是用户说的「过了几秒钟、
+    /// 十几秒之后就不丝滑了」。
+    ///
+    /// 有了迟滞，窗口在 160↔220 之间**先长后裁**：长的那 60 个字宽度一直在增，动画
+    /// 一直在跑；裁的那一下右边缘仍然钉着、可见内容逐字不变，所以看不出来。
+    private static let trimHysteresisCharacters = 60
 
     /// 窗口左端在全文里的位置。
     ///
@@ -664,7 +676,8 @@ private struct SmoothRevealedTranscriptText: View {
                 let total = newText.count
                 // 窗口太长时把左端推近。**裁掉的是屏幕外面那部分**，而右边缘仍然钉住，
                 // 所以屏幕上**看不出任何变化** —— 这一步不带动画是安全的。
-                let truncated = total - windowStart > Self.maximumWindowCharacters
+                let truncated = total - windowStart
+                    > Self.maximumWindowCharacters + Self.trimHysteresisCharacters
                 if truncated {
                     windowStart = total - Self.maximumWindowCharacters
                     slideOffset = availableWidth - Self.width(of: String(newText.dropFirst(windowStart)))
