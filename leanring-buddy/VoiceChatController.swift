@@ -945,7 +945,11 @@ final class VoiceChatController: ObservableObject {
 
         // 打字也算一轮新对话：先把正在念的打断。
         cascadeEngine.bargeIn()
-        appendTranscriptEntry(isUser: true, text: trimmed)
+        // **用户气泡不在这里追加。** `startTurn` 自己会追加（`announcesUserBubble`
+        // 默认为真），这里再来一次就是**同一条消息画两个气泡** —— 实测：往 Chatting
+        // 打字发一句，屏幕上出现两条一模一样的用户气泡（2026-09-25）。
+        // 说话那条路（`handleUserUtterance`）只调 `startTurn`，所以一直是对的；
+        // 打字这条路两边都写了一遍。
         startTurn(utterance: trimmed)
     }
 
