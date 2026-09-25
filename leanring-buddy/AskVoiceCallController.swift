@@ -47,7 +47,20 @@ final class AskVoiceCallController: ObservableObject {
     /// 用户正在说的那句话（实时转写，Ask 页据此显示）。
     @Published private(set) var liveUserTranscript = ""
     /// AI 正在说的回复（增量文本，Ask 页据此显示；回合结束时落成一条正式条目）。
+    ///
+    /// **它是按帧合并后发布的那一份**，不是每收到一个字节就更新 —— 见
+    /// `acceptAssistantText`。落盘用的是 `latestAssistantText`，两者刻意分开。
     @Published private(set) var liveAssistantText = ""
+
+    /// 最新收到的累积文本，**不经过合并**。落盘（`commitAssistantTurn`）读它。
+    ///
+    /// 为什么必须与界面上那份分开：界面那份是**按帧发布**的，收到最后一个 delta 与
+    /// 它被画出来之间有一帧的间隔；如果落盘也读界面那份，回合结束时就可能把最后
+    /// 一两个字丢掉 —— 而"最后那句不完整"正是用户最会注意到的东西。
+    private var latestAssistantText = ""
+
+    /// 按帧合并发布用的挂起值与任务，见 `acceptAssistantText`。
+    private var pendingAssistantTextFlushTask: Task<Void, Never>?
 
     /// 音色（跨启动保留）。nil = 兜底音色。
     @Published var voiceID: String? {
@@ -130,7 +143,7 @@ final class AskVoiceCallController: ObservableObject {
         }
         targetSessionID = sessionID
         liveUserTranscript = ""
-        liveAssistantText = ""
+        resetAssistantTextBuffers()
         // 会话的状态属于会话：上一通电话残留的配对状态绝不带进来
         // （引擎侧在 start 里清自己的字段，这里清编排侧的）。
         pendingUserTranscript = nil
@@ -172,7 +185,7 @@ final class AskVoiceCallController: ObservableObject {
                     self?.noteAssistantTurnStarted()
                 },
                 onAssistantText: { [weak self] cumulativeText in
-                    self?.liveAssistantText = cumulativeText
+                    self?.acceptAssistantText(cumulativeText)
                 },
                 onAssistantTurnFinished: { [weak self] in
                     self?.commitAssistantTurn()
@@ -255,7 +268,7 @@ final class AskVoiceCallController: ObservableObject {
         phase = .idle
         targetSessionID = nil
         liveUserTranscript = ""
-        liveAssistantText = ""
+        resetAssistantTextBuffers()
         pendingAssistantEntryIndex = nil
         setNotchPhase?(nil)
         print("💬 Ask 语音电话已挂断")
@@ -331,9 +344,55 @@ final class AskVoiceCallController: ObservableObject {
     ///     等转写到达补配。
     ///   · **开场白 / 不是用户触发的回合 → 一个字都不写**：它不属于任何一轮提问，
     ///     落了盘就会把用户的话吸过去（错位的根源）。
-    private func commitAssistantTurn() {
-        let spoken = liveAssistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// 收到一段累积文本（引擎每个 delta 调一次）。
+    ///
+    /// **按帧合并后再发布** —— 这是用户 2026-09-25 报的「全双工回复卡顿」的修复，
+    /// 方案也是他自己提的：「可以考虑一个方案：不要逐字渲染……等到十个字、二十个字，
+    /// 或者一行两行时再渲染」。
+    ///
+    /// 为什么偏偏全双工卡、别的路不卡（实测）：**全双工的 delta 每个只有 1~3 个字**
+    /// （日志里 `🧾 [ai-text +1字]`／`+2字` 是常态，一段 150 字的回答发了 144 个 delta），
+    /// 而 DeepSeek 那条路一次吐一大块。卡片是**每发布一次就重排一次整段**的，于是同
+    /// 样一段正文，全双工要付**高一两个数量级**的排版次数；正文越长每次排版越贵，
+    /// 所以是「开头正常、后面突然卡」——不是渲染变慢了，是**次数**太多。
+    ///
+    /// 合并到 30fps（33ms 一帧）之后，一帧内到达的几十个 delta 只换来一次排版，
+    /// 肉眼完全看不出差别（反正一次也只有一两个字）。
+    ///
+    /// 落盘不读这里发布的值，读 `latestAssistantText` —— 见它的注释。
+    private func acceptAssistantText(_ cumulativeText: String) {
+        latestAssistantText = cumulativeText
+        // 已经有一个挂起的发布任务就什么都不做：它醒来时会取"当时最新"的那一份，
+        // 所以中间的 delta 天然被合并掉，不需要排队。
+        guard pendingAssistantTextFlushTask == nil else { return }
+        pendingAssistantTextFlushTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(33))
+            guard let self else { return }
+            self.pendingAssistantTextFlushTask = nil
+            guard !Task.isCancelled else { return }
+            if self.liveAssistantText != self.latestAssistantText {
+                self.liveAssistantText = self.latestAssistantText
+            }
+        }
+    }
+
+    /// 把两份文本与挂起的发布任务一起归零。
+    ///
+    /// 三处调用（起会话 / 挂断 / 回合落盘）都必须三样一起清：只清界面那份而留着
+    /// 挂起的任务，它醒过来会把**上一轮**的文本重新贴到屏幕上。
+    private func resetAssistantTextBuffers() {
+        pendingAssistantTextFlushTask?.cancel()
+        pendingAssistantTextFlushTask = nil
         liveAssistantText = ""
+        latestAssistantText = ""
+    }
+
+    private func commitAssistantTurn() {
+        // **落盘读 `latestAssistantText`，不读界面那份。** 界面那份是按帧发布的，
+        // 最后一个 delta 与它被画出来之间隔着一帧；读界面那份就会把最后一两个字
+        // 丢在条目外 —— 「最后一句不完整」正是最容易被注意到的缺陷。
+        let spoken = latestAssistantText.trimmingCharacters(in: .whitespacesAndNewlines)
+        resetAssistantTextBuffers()
         guard !spoken.isEmpty, let sessionID = targetSessionID else { return }
 
         // ① 用户的话攥在手里 → 一条写全。
