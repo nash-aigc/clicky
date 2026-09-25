@@ -358,6 +358,24 @@ class BailianVisionChatAPI {
         var accumulatedResponseText = ""
 
         for try await line in byteStream.lines {
+            // **取消必须在这里判 —— 这个循环是唯一能做这件事的地方。**
+            //
+            // `URLSession.bytes(for:)` 给回来的 `AsyncBytes`，**在 Swift 任务被取消时
+            // 不会立即结束**：底层的 `URLSessionTask` 要等这个流被释放才跟着取消，
+            // 在那之前 `for try await` 会继续把已经缓冲的行吐出来。而 `await
+            // onTextChunk(...)` 每吐一行就把全文交给上层重画一次。
+            //
+            // 实测（2026-09-25，`clicky-挂断取消探针-160840.log`）：用户挂断之后
+            // —— 任务**已经**是取消态（探针打出 `本任务已取消=true`）—— 文字仍然
+            // 从 1000 字继续长到 1200、1400 字，屏幕上继续显示、主线程被一串
+            // 140~572ms 的重排打断。用户的原话是「挂断之后内容还在继续生成，
+            // 比如一千字，它还在后面继续生成、继续显示」。
+            //
+            // 抛 `CancellationError` 而不是 `break`：`break` 会让这次调用**正常返回**
+            // 一段截断的文本，上层会当成"这一轮正常答完了"记进历史；抛出则走
+            // `CascadeVoiceEngine` 已有的取消分支（那条路本来就是为打断准备的）。
+            if Task.isCancelled { throw CancellationError() }
+
             // SSE lines look like: "data: {...}"
             guard line.hasPrefix("data: ") else { continue }
             let jsonString = String(line.dropFirst(6)) // Drop "data: " prefix

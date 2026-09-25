@@ -105,6 +105,9 @@ final class CascadeVoiceEngine {
 
     /// 真正作废当前一轮（有新的一轮要开始时用）。
     private func cancelCurrentTurn() {
+        // TEMPORARY PROBE (2026-09-25)：用户报「挂断之后内容还在继续生成」。
+        // 这一行回答两件事：取消**有没有被调到**，以及取消时手里**有没有**任务。
+        print("🔬 [cascade] cancelCurrentTurn（有任务=\(currentTurnTask != nil)，已取消=\(currentTurnTask?.isCancelled ?? false)）")
         currentTurnTask?.cancel()
         currentTurnTask = nil
     }
@@ -191,6 +194,12 @@ final class CascadeVoiceEngine {
                     userPrompt: utterance,
                     modelIDOverride: understandingModelID,
                     onTextChunk: { @MainActor accumulatedText in
+                        // TEMPORARY PROBE (2026-09-25)：每长 200 字打一行 —— 用户报
+                        // 「挂断之后内容还在继续生成，比如一千字，它还在后面继续生成」。
+                        // 这一行回答的是：取消之后**文字流有没有真的停**。
+                        if accumulatedText.count / 200 != streamedReplyText.count / 200 {
+                            print("🔬 [cascade] 文字仍在增长：\(accumulatedText.count) 字（本任务已取消=\(Task.isCancelled)）")
+                        }
                         streamedReplyText = accumulatedText
 
                         // 念的是**剥掉标签**的那份：回复里可能带 `[POINT:]` 这类标记，
