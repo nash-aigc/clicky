@@ -2191,6 +2191,31 @@ final class CompanionManager: ObservableObject {
         bailianTTSClient.stopPlayback()
 
         currentResponseTask = Task {
+            // **任何退出路径都要收掉「正在回答的问题」这个占位。**
+            //
+            // 它原先只在两个 catch 里清（happy path 清一次、`CancellationError`
+            // 与通用 catch 各清一次），但任务体里还有几处**早退**：
+            // `guard !Task.isCancelled else { return }` —— `return` 不走 catch，
+            // 于是被打断在那些点上的回合会把 `pendingQuestionText` **永久留在非空**。
+            //
+            // 后果不止是界面上多挂一个气泡：Ask 页那条「正在流式的回答」分支的判据
+            // 就是 `pendingQuestionText != nil`（`NotchHomeView.swift:295`），一旦它
+            // 恒真，**任何**写 `streamingAnswerText` 的管线都会画到 Ask 页上 —— 而
+            // Chatting 语音会话的 `presentAnswer` 正是写的这个属性
+            // （`CompanionManager.swift:310-321`）。用户 2026-09-25 报的
+            // 「Chatting 连接后对话跑到 ask 页面」就是这条路径，而且它**偶发**：
+            // 只有先在某次 Ask 回合里打断过，之后才会一直这样。
+            //
+            // 只在「这个任务仍是当前那个、且确实被取消」时清 —— 与两个 catch 里
+            // 那条替换规则同一条（`currentResponseTask?.isCancelled == true`）：
+            // 新问题已经把新任务放进这个槽时，旧任务的收尾绝不能把新任务的占位抹掉。
+            defer {
+                if Task.isCancelled, currentResponseTask?.isCancelled == true {
+                    pendingQuestionText = nil
+                    liveJobProgressSteps = []
+                }
+            }
+
             // One snapshot for the whole interaction. Re-reading the settings
             // mid-reply would let a save land between the screenshot and the
             // request — or between chunk 1 and chunk 2 of the answer text — and
@@ -3138,6 +3163,15 @@ final class CompanionManager: ObservableObject {
         currentResponseTask = nil
         bailianTTSClient.stopPlayback()
         clearAnswerBubble()
+        // **停止必须把「正在回答的问题」占位一起收掉。** 上面把
+        // `currentResponseTask` 置 nil 之后，任务体里那个兜底的 `defer` 就不会
+        // 生效了（它的条件要求槽里还是这个被取消的任务），所以这里得显式清。
+        // 不清的话：停在某一轮之后，Ask 页那条流式分支的判据
+        // （`pendingQuestionText != nil`）会永远为真，任何写 `streamingAnswerText`
+        // 的管线都会画到 Ask 页上 —— Chatting 语音会话的回答就是这么串过去的。
+        // 见 `sendTranscriptToVisionChatWithScreenshot` 里那段注释。
+        pendingQuestionText = nil
+        liveJobProgressSteps = []
         clearDetectedElementLocation()
         // The marks belong to the reply that just got cancelled — leaving them
         // up would show a drawing for an answer the user stopped. The pending
