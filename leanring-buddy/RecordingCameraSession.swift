@@ -30,8 +30,12 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
     ///
     /// 12 帧/秒对「转动摄像头看房间」是够跟手的，而 4 帧/秒 × 24 帧 = 覆盖 6 秒，
     /// token 也还在合理范围。
-    static let previewFramesPerSecond: Double = 12
-    static let modelFramesPerSecond: Double = 4
+    /// 用户 2026-09-26 又调了一次，而且理由比数字本身重要：
+    /// 「送给模型的是每秒 1 帧。不需要那么快，**因为人类的动作不会那么快，摄像头拍的就是人**」
+    /// —— 模型那边要的是「这一段时间里镜头对着什么」，一秒一张足够；
+    /// 而预览是**眼睛在看**，「要加就直接加 30 帧」，少了就知道卡。
+    static let previewFramesPerSecond: Double = 30
+    static let modelFramesPerSecond: Double = 1
     /// 最多留几帧。超过就丢最早的 —— 一段话说了几分钟时，前面那些帧跟最后的提问
     /// 已经没关系了，而每多一帧就多一份 token。
     ///

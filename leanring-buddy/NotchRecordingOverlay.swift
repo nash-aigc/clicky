@@ -486,8 +486,23 @@ private struct NotchCameraPreviewStrip: View {
     @ObservedObject var previewModel: CameraPreviewModel
     let width: CGFloat
 
-    private static let collapsedPreviewHeight: CGFloat = 86
-    private static let expandedPreviewHeight: CGFloat = 200
+    /// 预览高度**由宽度和画面的比例推出来**，不是一个写死的高度。
+    ///
+    /// 用户 2026-09-26：「高度应该再增加一点，因为现在左右两侧还有很大的空白。
+    /// 既然已经测到宽度，也知道摄像头的比例了，就能让摄像头占满整个宽度空间，
+    /// 并保持它的比例」。
+    ///
+    /// 之前是 `.fit` + 一个 86pt 的高度上限：16:9 的画面被高度卡住，只能画到
+    /// 153pt 宽，**两侧各空 80pt**。现在反过来 —— 宽度是已知的，高度按比例算出来，
+    /// 于是画面正好填满宽度，空白消失，高度也自然变高。
+    private func previewHeight(for cgImage: CGImage) -> CGFloat {
+        let ratio = CGFloat(cgImage.height) / max(CGFloat(cgImage.width), 1)
+        // 上限只是防呆（竖屏画面会把小窗拉得极高），正常横向画面用不到它。
+        return min(width * ratio, Self.maximumPreviewHeight)
+    }
+
+    /// 防呆上限。
+    private static let maximumPreviewHeight: CGFloat = 320
     static let titleBarHeight: CGFloat = 26
 
     var body: some View {
@@ -586,15 +601,14 @@ private struct NotchCameraPreviewStrip: View {
             Image(decorative: cgImage, scale: 1)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(maxWidth: .infinity,
-                       maxHeight: recorder.isCameraPreviewExpanded
-                       ? Self.expandedPreviewHeight : Self.collapsedPreviewHeight)
+                // **填满宽度，高度按比例。** 这是「左右两侧的空白」的正面修复。
+                .frame(width: width, height: previewHeight(for: cgImage))
         } else {
             // 还没抓到第一帧 —— 预热要 0.35 秒，这一小段是正常的，要说出来而不是留一块空白。
             Text("正在启动摄像头…")
                 .font(.system(size: 11))
                 .foregroundColor(.white.opacity(0.45))
-                .frame(height: Self.collapsedPreviewHeight)
+                .frame(height: 90)
         }
     }
 }
