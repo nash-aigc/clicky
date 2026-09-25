@@ -164,13 +164,6 @@ final class DuplexVoiceEngine {
     private var currentAssistantText = ""
     private var isStopped = false
 
-    /// **显示用的并行识别**：每块麦克风音频的副本喂给它。
-    ///
-    /// 由 `AskVoiceCallController` 装上、由它拆掉。**只用于界面显示** —— 让用户说的
-    /// 话在开口时就可见，而不是等全双工协议在一轮结束时才下发转写。它不参与写盘，
-    /// 也不参与回合判定；落盘的仍然是服务端那份（与回答同源）。见 `start()` 里的说明。
-    var displayTranscriptionSink: ((AVAudioPCMBuffer) -> Void)?
-
     init(playbackEngine: VoicePlaybackEngine, callbacks: Callbacks) {
         self.playbackEngine = playbackEngine
         self.callbacks = callbacks
@@ -260,20 +253,6 @@ final class DuplexVoiceEngine {
         // 听见自己刚说的话。
         try await playbackEngine.installInputTap(bufferSize: 1024) { [weak self] buffer, _ in
             self?.appendUplinkAudio(from: buffer)
-            // **同一块麦克风音频，复制一份给"显示用识别"。**
-            //
-            // 为什么要复制：全双工协议**只在一轮结束时**才下发用户的转写
-            // （`conversation.item.input_audio_transcription.completed`，实测排在
-            // `response.done` 之后），所以界面要等 AI 把一整句话答完，才知道用户
-            // 刚才说了什么 —— 用户 2026-09-25 报的「用户的提示词在 AI 回复完成之后
-            // 才突然出现」就是这个。这一路的唯一用途是**让用户的话立刻可见**。
-            //
-            // 为什么在这里而不是再装一个 tap：同一根输入总线只有一个 tap，后装的会把
-            // 先装的顶掉（`VoicePlaybackEngine.installInputTap`）。这是唯一一个
-            // 「每块麦克风音频都经过」的点，分流只能在这里做。
-            //
-            // 它**不参与任何写盘** —— 落盘的仍是服务端的转写（那才是与回答同源的）。
-            self?.displayTranscriptionSink?(buffer)
         }
         // **上行可见性**：这条链原先一行日志都没有，于是"麦克风有没有在送"完全不可查
         // （2026-09-25 两路调查都点了这件事）。首块音频到达时打一行就够定位。
