@@ -52,15 +52,25 @@ final class AskVoiceCallController: ObservableObject {
     /// `acceptAssistantText`。落盘用的是 `latestAssistantText`，两者刻意分开。
     @Published private(set) var liveAssistantText = ""
 
-    /// 最新收到的累积文本，**不经过合并**。落盘（`commitAssistantTurn`）读它。
+    /// 最新收到的累积文本，**不经过任何节奏控制**。落盘（`commitAssistantTurn`）读它。
     ///
-    /// 为什么必须与界面上那份分开：界面那份是**按帧发布**的，收到最后一个 delta 与
-    /// 它被画出来之间有一帧的间隔；如果落盘也读界面那份，回合结束时就可能把最后
-    /// 一两个字丢掉 —— 而"最后那句不完整"正是用户最会注意到的东西。
+    /// 为什么必须与界面上那份分开：界面那份是**按帧、按算出来的速率**逐字吐出来的，
+    /// 落盘那一刻它多半还没吐完；读它就会把还没显示的字丢掉 —— 而"最后一句不完整"
+    /// 正是最容易被注意到的缺陷。
     private var latestAssistantText = ""
 
-    /// 按帧合并发布用的挂起值与任务，见 `acceptAssistantText`。
-    private var pendingAssistantTextFlushTask: Task<Void, Never>?
+    /// 界面上已经吐到第几个字（`latestAssistantText` 的前缀长度）。
+    private var displayedCharacterCount = 0
+
+    /// 逐字吐字的时钟。33ms ≈ 30fps。
+    private static let displayPacerTickMilliseconds = 33
+    /// 积压要在这段时间内平滑追平 —— 一整句突然到齐时，用户看到的是一次约 0.4 秒的
+    /// 快速书写，而不是一次粘贴。
+    private static let displayCatchUpSeconds = 0.4
+    /// 一帧最多推进几个字。没有这个上限，积压很大时一帧能吐几十个字 ——
+    /// 「粘贴感」就又回来了。
+    private static let displayMaximumCharactersPerTick = 3
+    private var displayPacerTask: Task<Void, Never>?
 
     /// 音色（跨启动保留）。nil = 兜底音色。
     @Published var voiceID: String? {
@@ -346,33 +356,76 @@ final class AskVoiceCallController: ObservableObject {
     ///     落了盘就会把用户的话吸过去（错位的根源）。
     /// 收到一段累积文本（引擎每个 delta 调一次）。
     ///
-    /// **按帧合并后再发布** —— 这是用户 2026-09-25 报的「全双工回复卡顿」的修复，
-    /// 方案也是他自己提的：「可以考虑一个方案：不要逐字渲染……等到十个字、二十个字，
-    /// 或者一行两行时再渲染」。
+    /// **只负责收，不负责显示** —— 显示交给 `advanceDisplayedText` 按帧推进。
     ///
-    /// 为什么偏偏全双工卡、别的路不卡（实测）：**全双工的 delta 每个只有 1~3 个字**
-    /// （日志里 `🧾 [ai-text +1字]`／`+2字` 是常态，一段 150 字的回答发了 144 个 delta），
-    /// 而 DeepSeek 那条路一次吐一大块。卡片是**每发布一次就重排一次整段**的，于是同
-    /// 样一段正文，全双工要付**高一两个数量级**的排版次数；正文越长每次排版越贵，
-    /// 所以是「开头正常、后面突然卡」——不是渲染变慢了，是**次数**太多。
+    /// 为什么必须解耦（用户 2026-09-25，两次反馈合起来才看清）：
     ///
-    /// 合并到 30fps（33ms 一帧）之后，一帧内到达的几十个 delta 只换来一次排版，
-    /// 肉眼完全看不出差别（反正一次也只有一两个字）。
+    /// 1. 服务端的 delta **每个只有 1~3 个字**（日志里 `🧾 [ai-text +1字]` 是常态），
+    ///    一段 150 字的回答发了 144 个 delta；但它是**成串**到达的 —— 一整句几乎同时
+    ///    生成完，然后音频慢慢播。卡片每发布一次就重排一次整段，于是同样一段正文，
+    ///    全双工要付高一两个数量级的排版次数 → 用户报的「卡顿」。
+    /// 2. 按帧合并之后那些 delta 被压成 1~2 次发布 → **整句一下子贴上去**，然后
+    ///    躺在那里等音频播完 —— 用户报的「突然间显示出所有文字、没有任何渲染效果，
+    ///    然后卡在这个位置上等很长时间」。
     ///
-    /// 落盘不读这里发布的值，读 `latestAssistantText` —— 见它的注释。
+    /// 两次是同一个原因的两面：**显示被绑在了到达节奏上**。到达是「一大阵 + 一段
+    /// 静默」，而人想看到的是**匀速**。所以这里把两者彻底分开。
     private func acceptAssistantText(_ cumulativeText: String) {
         latestAssistantText = cumulativeText
-        // 已经有一个挂起的发布任务就什么都不做：它醒来时会取"当时最新"的那一份，
-        // 所以中间的 delta 天然被合并掉，不需要排队。
-        guard pendingAssistantTextFlushTask == nil else { return }
-        pendingAssistantTextFlushTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(33))
-            guard let self else { return }
-            self.pendingAssistantTextFlushTask = nil
-            guard !Task.isCancelled else { return }
-            if self.liveAssistantText != self.latestAssistantText {
-                self.liveAssistantText = self.latestAssistantText
+        startDisplayPacerIfNeeded()
+    }
+
+    /// 把已经收到的文字，按帧、按计算出来的速率，**一帧一帧**地送到界面上。
+    ///
+    /// 速率不是一个常数，而是**看着积压算**的：
+    ///
+    ///     本帧推进的字符数 = 积压 × (一帧时长 / 追平时间)
+    ///
+    /// 积压小（服务端一字一字地来）时它自然退化成「每帧一个字」≈ 30 字/秒，读起来
+    /// 是匀速的；积压大（一整句突然到齐）时它按比例加速，在 `catchUpSeconds` 内
+    /// **平滑地追平**，而不是一次性贴上去。这就是用户要的：
+    ///
+    /// > 「前端渲染的时候一定要检测时间，让它能够很平滑地过渡这个效果……一定是渲染
+    /// > 出来的，而不是突然间把这个东西粘贴在这个位置上」。
+    private func startDisplayPacerIfNeeded() {
+        guard displayPacerTask == nil else { return }
+        displayPacerTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(Self.displayPacerTickMilliseconds))
+                guard let self, !Task.isCancelled else { return }
+                self.advanceDisplayedText()
             }
+        }
+    }
+
+    private func advanceDisplayedText() {
+        let targetText = latestAssistantText
+        let targetCount = targetText.count
+
+        // 目标比已显示的短 = 换了一轮 / 被清空 → 直接跟随，不要倒着"播放"。
+        if targetCount < displayedCharacterCount {
+            displayedCharacterCount = targetCount
+        }
+
+        let backlog = targetCount - displayedCharacterCount
+        guard backlog > 0 else {
+            // 追平了：台上没词可吐。表继续走（下一句到达时立刻接上），但不再写
+            // `liveAssistantText` —— 没有新内容却反复赋值，只会白白触发重渲染。
+            return
+        }
+
+        let tickSeconds = Double(Self.displayPacerTickMilliseconds) / 1000
+        let proportionalAdvance = Double(backlog) * tickSeconds / Self.displayCatchUpSeconds
+        // 至少一个：小积压时退化成匀速（≈30 字/秒）。
+        // 最多 `displayMaximumCharactersPerTick`：大积压时也不会一帧糊上去 ——
+        // 一帧几十个字就又把「粘贴感」请回来了。
+        let advanceCount = max(1, min(Self.displayMaximumCharactersPerTick,
+                                      Int(proportionalAdvance.rounded(.up))))
+        displayedCharacterCount = min(targetCount, displayedCharacterCount + advanceCount)
+
+        let shownText = String(targetText.prefix(displayedCharacterCount))
+        if liveAssistantText != shownText {
+            liveAssistantText = shownText
         }
     }
 
@@ -381,10 +434,11 @@ final class AskVoiceCallController: ObservableObject {
     /// 三处调用（起会话 / 挂断 / 回合落盘）都必须三样一起清：只清界面那份而留着
     /// 挂起的任务，它醒过来会把**上一轮**的文本重新贴到屏幕上。
     private func resetAssistantTextBuffers() {
-        pendingAssistantTextFlushTask?.cancel()
-        pendingAssistantTextFlushTask = nil
+        displayPacerTask?.cancel()
+        displayPacerTask = nil
         liveAssistantText = ""
         latestAssistantText = ""
+        displayedCharacterCount = 0
     }
 
     private func commitAssistantTurn() {
