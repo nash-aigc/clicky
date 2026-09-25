@@ -40,6 +40,15 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
 
     var releaseEngineShortcutBinding: RecordedKeyboardShortcut?
     let releaseEngineShortcutTransitionsPublisher = PassthroughSubject<Bool, Never>()
+
+    /// 长录音的触发键。和「释放引擎」同一个形状：单个可选绑定，nil 就整段跳过。
+    ///
+    /// 这个功能**没有出厂预设**，所以在用户录一条之前这里恒为 nil —— 这是刻意的。
+    /// ⌃⌥1–3 被语音聊天占着、⌃⌥4 被释放引擎占着，再塞一个进去就会互相抢；
+    /// 一个「设置了但按了没反应」的功能比没有这个功能更糟。
+    var recordingShortcutBinding: RecordedKeyboardShortcut?
+    let recordingShortcutTransitionsPublisher = PassthroughSubject<Bool, Never>()
+    private var recordingShortcutPressed = false
     private var releaseEngineShortcutPressedState = false
 
     /// Per-index pressed state, the multi-binding analogue of
@@ -149,6 +158,14 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
         }
 
         if matchOpenSheetShortcuts(
+            eventType: eventType,
+            keyCode: eventKeyCode,
+            modifierFlagsRawValue: event.flags.rawValue
+        ) {
+            return Unmanaged.passUnretained(event)
+        }
+
+        if matchRecordingShortcut(
             eventType: eventType,
             keyCode: eventKeyCode,
             modifierFlagsRawValue: event.flags.rawValue
@@ -289,8 +306,33 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
         return anyTransitioned
     }
 
-    private func matchReleaseEngineShortcut(
+    /// 长录音键。形状与 `matchReleaseEngineShortcut` 完全一致 —— 单个可选绑定，
+    /// 没录过就整段不参与匹配。和「打开窗口」那种定长数组不同，这里只有一条，
+    /// 所以不套那个逐格循环。
+    private func matchRecordingShortcut(
         eventType: CGEventType,
+        keyCode: UInt16,
+        modifierFlagsRawValue: UInt64
+    ) -> Bool {
+        guard let binding = recordingShortcutBinding else { return false }
+        guard eventType == .flagsChanged || eventType == .keyDown || eventType == .keyUp else {
+            return false
+        }
+        let modifierFlags = NSEvent.ModifierFlags(rawValue: UInt(modifierFlagsRawValue))
+            .intersection(.deviceIndependentFlagsMask)
+        guard let pressedNow = Self.shortcutPressednessChange(
+            for: binding,
+            eventType: eventType,
+            keyCode: keyCode,
+            modifierFlags: modifierFlags,
+            wasPressed: recordingShortcutPressed
+        ) else { return false }
+        recordingShortcutPressed = pressedNow
+        recordingShortcutTransitionsPublisher.send(pressedNow)
+        return true
+    }
+
+    private func matchReleaseEngineShortcut(        eventType: CGEventType,
         keyCode: UInt16,
         modifierFlagsRawValue: UInt64
     ) -> Bool {

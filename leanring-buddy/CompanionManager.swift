@@ -335,6 +335,10 @@ final class CompanionManager: ObservableObject {
     private var externalShortcutTransitionsCancellable: AnyCancellable?
     /// 「打开窗口」四格快捷键的订阅（与上一条同样的生命周期：start 建、teardown 取消）。
     private var openSheetShortcutTransitionsCancellable: AnyCancellable?
+
+    /// 长录音键。只认按下沿 —— 按一下开始、再按一下结束，两次都是「按下」，
+    /// 所以这里不做 if/else 分辨，直接交给控制器自己 toggle。
+    private var recordingShortcutTransitionsCancellable: AnyCancellable?
     /// 「释放引擎」的快捷键订阅 —— 与上面那三个 VoiceWeb 快捷键共用同一条事件流。
     private var releaseEngineShortcutCancellable: AnyCancellable?
     private var voiceStateCancellable: AnyCancellable?
@@ -697,6 +701,13 @@ final class CompanionManager: ObservableObject {
         // 播完就把系统扬声器静音半分钟 —— 远超「按住快捷键 → 任务结束」，而且是在
         // 用户根本没在用 App 的时候。改用「utterance 进行中」后，静音只覆盖正在录的
         // 那一句，句子结束立刻恢复。
+        // 长录音在刘海上那一条带（左右两翼 + 下方跑马灯）。
+        //
+        // 它是一块**独立的面板**，不画进刘海自己的窗口 —— 那个窗口只有「刘海高 +
+        // 一点动画余量」，而跑马灯在刘海下方，画进去也看不见。这里只订阅录音控制器
+        // 的相位：一开录就出现，录完就整个消失。不碰刘海的相位机、面板和点击逻辑。
+        NotchRecordingOverlayController.shared.startObservingRecorder()
+
         if systemSpeakerMuteCoordinator == nil {
             systemSpeakerMuteCoordinator = SystemSpeakerMuteCoordinator(
                 recordingActiveProvider: { [weak self] in
@@ -1349,6 +1360,20 @@ final class CompanionManager: ObservableObject {
                 guard transition.pressed else { return }
                 self?.handleOpenSheetShortcut(index: transition.index)
             }
+
+        // **长录音。** 同样只认按下沿：按一下开始、再按一下结束，两次都是「按下」，
+        // 由 `LongFormRecorderController` 自己 toggle —— 它才知道当前是在录还是没录。
+        //
+        // 这一条**不碰**语音管线的任何状态（`currentResponseTask` / `voiceState`）：
+        // 录音是独立子系统，和对话页、语音聊天页没有共享状态。唯一共享的是这个
+        // 事件源本身，而那是分发器，不是状态机。
+        recordingShortcutTransitionsCancellable = globalPushToTalkShortcutMonitor
+            .recordingShortcutTransitionsPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { pressed in
+                guard pressed else { return }
+                LongFormRecorderController.shared.toggleRecording()
+            }
     }
 
     /// Copies the current VoiceWeb shortcut bindings into the monitor's match
@@ -1362,6 +1387,10 @@ final class CompanionManager: ObservableObject {
             AppSettingsStore.snapshot().releaseAudioEngineShortcutBinding
         globalPushToTalkShortcutMonitor.openSheetShortcutBindings =
             AppSettingsStore.snapshot().openSheetShortcutBindings
+        // 长录音键：没录过就是 nil，监视器会整段跳过它 —— 所以「设置页里录一条」
+        // 这件事是它唯一的启用方式，保存后立刻生效，不需要重启。
+        globalPushToTalkShortcutMonitor.recordingShortcutBinding =
+            AppSettingsStore.snapshot().recordingShortcut
     }
 
     /// 「打开窗口」那四格快捷键的接收端。

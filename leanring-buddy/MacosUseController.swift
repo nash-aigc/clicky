@@ -557,6 +557,33 @@ enum MacosUseController {
         }
     }
 
+    /// 把文本放进剪贴板并在最前面的 App 里粘贴，**不还原剪贴板**。
+    ///
+    /// 和 `pasteText` 只差一件事：不把旧内容写回去。这个差别是必要的 ——
+    /// 长录音的停止动作有两条用户明确提出的要求：① 内容保存到剪贴板；
+    /// ② 粘贴到当前光标处。`pasteText` 半秒后还原剪贴板是给「模型替用户粘一段
+    /// 东西」设计的（不该霸占用户的剪贴板），用在录音上会让第 ① 条失效：用户
+    /// 事后去粘，粘出来的是他几小时前的旧内容。
+    ///
+    /// 修饰键表仍然只有一份（`modifierFlag(named:)`，见 A4），键码也仍然走
+    /// `mapKeyNameToKeyCode`，所以这里没有引入第二张表。
+    ///
+    /// 返回是否真的把按键送出去了。**不抛错**：粘贴是收尾动作，它失败不该让
+    /// 「停止录音」这件事也跟着失败 —— 音频和文本那时已经落盘了。
+    @discardableResult
+    static func pasteKeepingClipboard(_ textToPaste: String) -> Bool {
+        guard let pasteKeyCode = mapKeyNameToKeyCode("v") else { return false }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(textToPaste, forType: .string)
+        do {
+            try pressKey(keyCode: pasteKeyCode, flags: modifierFlag(named: "cmd") ?? [])
+            return true
+        } catch {
+            NSLog("[MacosUse] 粘贴失败：\(error)")
+            return false
+        }
+    }
+
     /// Selects a stretch of text in the focused text area by finding the words in
     /// the text area's real value and setting the selection through Accessibility.
     ///

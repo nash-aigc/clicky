@@ -1,0 +1,293 @@
+import AppKit
+import SwiftUI
+
+/// 设置页「录音」。
+///
+/// 放在 `GeneralSettingsView` 的扩展里而不是它自己的一个 View，是因为这一页
+/// 读写的就是 `AppSettings`、用的也是同一套 `SettingsRow` / `SettingsCard` ——
+/// 和「操作」「看与截图」那几页没有任何结构差别，另起一个 View 只会多一层
+/// 用不上的间接。
+///
+/// 这一页里唯一不是偏好的两块：
+/// - **历史录音**是浏览已有数据（和「归档」页同类），
+/// - **录音状态**是一行实时读数。
+///
+/// ## API Key 存在哪（用户明确要求过）
+///
+/// 直接写进 App 自己的设置文件：`~/Library/Application Support/Clicky/AppSettings.json`
+/// （`0600`，**在仓库之外**）。不建 env 文件、不建仓库内配置文件 —— 所以它不可能
+/// 被推到 GitHub。这一页是它唯一的入口。
+extension GeneralSettingsView {
+
+    var recordingPage: some View {
+        Group {
+            SettingsPageHeader(
+                title: "录音",
+                subtitle: "按住快捷键开始录，再按一次结束。音频和文字都是边录边落盘的，中途断电也能在本地看到已经录到的部分。"
+            )
+
+            recordingShortcutSection
+            recordingServiceSection
+            recordingStorageSection
+            recordingHistorySection
+        }
+    }
+
+    // MARK: - 触发
+
+    @ViewBuilder
+    private var recordingShortcutSection: some View {
+        SettingsGroupLabel("触发")
+        SettingsCard {
+            SettingsRow(
+                label: "录音快捷键",
+                description: recorderIsConfigured
+                    ? "按下开始录，再按一次结束。录完之后音频、文字都落在下面的文件夹里。"
+                    : "这一项**没有出厂预设** —— ⌃⌥1–3 给了语音聊天、⌃⌥4 给了释放引擎，再塞一个进去就会互相抢。所以请你点右边录一条自己的组合。"
+            ) {
+                ShortcutRecorderButton(
+                    fallbackBinding: nil,
+                    recordedShortcut: generalSettingsViewModel.binding(\.recordingShortcut)
+                )
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "停止后放进剪贴板",
+                description: "录完把全文写进系统剪贴板，并且**不会被还原** —— 你可以随时再去粘一次。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingCopiesToClipboard))
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "停止后自动粘贴",
+                description: "录完自动切回你当时用的那个 App，在光标处按一次 ⌘V。需要辅助功能权限（和「操作」页要的是同一个）。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingPastesAfterStop))
+            }
+        }
+    }
+
+    /// 有没有录过快捷键。没录的话功能根本不会启动，所以上面那行要把话说清楚 ——
+    /// 一个「设置好了但按了没反应」的功能比没有这个功能更糟。
+    private var recorderIsConfigured: Bool {
+        generalSettingsViewModel.draftSettings.recordingShortcut != nil
+    }
+
+    // MARK: - 识别服务
+
+    @ViewBuilder
+    private var recordingServiceSection: some View {
+        SettingsGroupLabel("识别服务（豆包流式语音识别）")
+        SettingsCard {
+            SettingsRow(
+                label: "API Key",
+                description: "火山引擎控制台里的 API Key。只写进本机的设置文件（仓库之外），不会同步、不会被提交。"
+            ) {
+                SecureField("粘贴到这里", text: generalSettingsViewModel.binding(\.recordingServiceAPIKey))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 240)
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "档位",
+                description: generalSettingsViewModel.draftSettings.recordingResourceID.explanation
+            ) {
+                SettingsMenuPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingResourceID),
+                    options: VolcengineASRResource.allCases.map {
+                        SettingsPickerOption(label: $0.displayName, value: $0)
+                    }
+                )
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "自定义资源 ID",
+                description: "填了就覆盖上面的档位。控制台里自建模型的 ID 不在那四个档位里，就填这里。"
+            ) {
+                TextField("留空则用上面的档位", text: generalSettingsViewModel.binding(\.recordingCustomResourceID))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 240)
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "识别语言",
+                description: "直接作为 language 发给服务端。留空让服务自己判断。"
+            ) {
+                TextField("zh-CN", text: generalSettingsViewModel.binding(\.recordingLanguage))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 160)
+            }
+        }
+
+        SettingsCard {
+            SettingsTextEditorRow(
+                label: "热词",
+                description: "人名、地名、项目代号 —— 逗号或换行分隔。识别时会被优先考虑，但不保证百分之百。",
+                text: generalSettingsViewModel.binding(\.recordingHotwords),
+                placeholder: "张三，Clicky，火山引擎"
+            )
+        }
+    }
+
+    // MARK: - 落盘与长会话
+
+    @ViewBuilder
+    private var recordingStorageSection: some View {
+        SettingsGroupLabel("长会话")
+        SettingsCard {
+            SettingsRow(
+                label: "保存位置",
+                description: recordingFolderDescription
+            ) {
+                Button("选择…") { chooseRecordingFolder() }
+                    .buttonStyle(.bordered)
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "断线自动重连",
+                description: "连接掉了就自动接上继续录，音频从头到尾不受影响。关掉的话断了就停，已录的部分照常保住。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.recordingAutoReconnects))
+            }
+
+            SettingsCardRowDivider()
+
+            SettingsRow(
+                label: "换连接的间隔",
+                description: "单次连接能活多久，官方没有给明确上限 —— 所以这里不依赖它。每隔一段时间在**静音处**换一条新连接：静音处换，接缝上没有字可丢。小时版按音频时长计费，换连接不额外花钱。"
+            ) {
+                SettingsMenuPicker(
+                    selection: generalSettingsViewModel.binding(\.recordingRotationMinutes),
+                    options: [
+                        SettingsPickerOption(label: "不主动换", value: 0),
+                        SettingsPickerOption(label: "每 10 分钟", value: 10),
+                        SettingsPickerOption(label: "每 20 分钟", value: 20),
+                        SettingsPickerOption(label: "每 30 分钟", value: 30),
+                        SettingsPickerOption(label: "每 60 分钟", value: 60),
+                    ]
+                )
+            }
+        }
+
+        SettingsCard {
+            SettingsRow(
+                label: "录音状态",
+                description: recordingStatusDescription
+            ) {
+                Text(recorderIsRunning ? "录音中" : "空闲")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(recorderIsRunning ? DS.Colors.destructive : DS.Colors.textTertiary)
+            }
+        }
+
+        SettingsCard {
+            SettingsNote(
+                text: "录音文件是标准的 16kHz 单声道 WAV —— 它里面的字节就是发给识别服务的字节，所以任何一段都能原样重放给服务端复现一次识别。文字同时写两份：`.txt` 是给人和剪贴板用的，`.jsonl` 每行一句、带毫秒时间戳。"
+            )
+        }
+    }
+
+    private var recordingFolderDescription: String {
+        let configured = generalSettingsViewModel.draftSettings.recordingSaveFolderPath
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let url = RecordingLibraryStore.resolvedFolderURL(fromSettingsPath: configured)
+        return "音频和文字都放这里。默认在桌面，方便你直接打开看：\(url.path)"
+    }
+
+    private var recordingStatusDescription: String {
+        let recorder = LongFormRecorderController.shared
+        if recorder.isRecording {
+            return String(format: "已录 %.1f 秒，电平 %.2f", recorder.elapsedSeconds, recorder.audioLevel)
+        }
+        if let error = recorder.lastErrorMessage {
+            return "上次出错：\(error)"
+        }
+        return "没在录。按下上面那条快捷键就开始。"
+    }
+
+    private var recorderIsRunning: Bool { LongFormRecorderController.shared.isRecording }
+
+    private func chooseRecordingFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "选这个文件夹"
+        panel.directoryURL = RecordingLibraryStore.resolvedFolderURL(
+            fromSettingsPath: generalSettingsViewModel.draftSettings.recordingSaveFolderPath)
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        generalSettingsViewModel.draftSettings.recordingSaveFolderPath = url.path
+    }
+
+    // MARK: - 历史
+
+    @ViewBuilder
+    private var recordingHistorySection: some View {
+        SettingsGroupLabel("历史录音")
+        SettingsCard {
+            let sessions = RecordingLibraryStore.shared.allSessions()
+            if sessions.isEmpty {
+                SettingsRow(
+                    label: "还没有录音",
+                    description: "录完第一场之后，这里会列出每一场的时长、字数，以及打开音频 / 打开文件夹 / 复制全文三个动作。"
+                ) {
+                    EmptyView()
+                }
+            } else {
+                ForEach(Array(sessions.enumerated()), id: \.element.id) { index, session in
+                    if index > 0 { SettingsCardRowDivider() }
+                    recordingHistoryRow(session)
+                }
+            }
+        }
+
+        SettingsCard {
+            SettingsNote(
+                text: "这里只列已经录过的场次。**删文件请到访达里删** —— 这个界面不会替你删掉任何一段录音。"
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func recordingHistoryRow(_ session: RecordingSession) -> some View {
+        let folder = RecordingLibraryStore.resolvedFolderURL(
+            fromSettingsPath: generalSettingsViewModel.draftSettings.recordingSaveFolderPath)
+        SettingsRow(
+            label: "\(session.startedAt.formatted(date: .abbreviated, time: .shortened)) · \(session.formattedDuration)",
+            description: "\(session.characterCount) 字 · \(session.segmentCount) 句"
+                + (session.endedCleanly ? "" : " · 未正常结束")
+                + (session.connectionRotationCount > 0 ? " · 换过 \(session.connectionRotationCount) 次连接" : "")
+        ) {
+            HStack(spacing: 8) {
+                Button("播放") {
+                    NSWorkspace.shared.open(session.audioFileURL(inFolder: folder))
+                }
+                .buttonStyle(.bordered)
+                Button("文件夹") {
+                    NSWorkspace.shared.activateFileViewerSelecting([session.audioFileURL(inFolder: folder)])
+                }
+                .buttonStyle(.bordered)
+                Button("复制全文") {
+                    let text = (try? String(contentsOf: session.transcriptFileURL(inFolder: folder),
+                                            encoding: .utf8)) ?? ""
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+}

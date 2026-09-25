@@ -420,6 +420,42 @@ nonisolated enum AgentPermissionMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// 豆包流式语音识别的资源档位，也就是请求头 `X-Api-Resource-Id` 的值。
+///
+/// 这个字符串就是用户说的「模型」—— 豆包这套接口的请求体里 `model_name` 恒为
+/// `"bigmodel"`，真正决定用哪一代、哪一档模型的是这个头。所以设置页把它做成
+/// 下拉，而不是让用户去猜一个 model 名字。
+///
+/// 2.0 的两档按**计费方式**分，这一点对长录音很关键：
+/// - `duration` 小时版按**音频时长**计费。3 小时的录音就买 3 小时，
+///   中间断线重连、主动轮换连接都不额外花钱 —— 所以长录音用它。
+/// - `concurrent` 并发版按**同时在跑的连接数**计费。适合同时开很多路，
+///   单路长跑反而更贵。
+nonisolated enum VolcengineASRResource: String, Codable, CaseIterable, Sendable {
+    case seedDurationV2 = "volc.seedasr.sauc.duration"
+    case seedConcurrentV2 = "volc.seedasr.sauc.concurrent"
+    case bigDurationV1 = "volc.bigasr.sauc.duration"
+    case bigConcurrentV1 = "volc.bigasr.sauc.concurrent"
+
+    var displayName: String {
+        switch self {
+        case .seedDurationV2: return "豆包 2.0 · 小时版"
+        case .seedConcurrentV2: return "豆包 2.0 · 并发版"
+        case .bigDurationV1: return "豆包 1.0 · 小时版"
+        case .bigConcurrentV1: return "豆包 1.0 · 并发版"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .seedDurationV2: return "按音频时长计费，长录音首选。断线重连、换连接都不额外花钱。"
+        case .seedConcurrentV2: return "按同时进行的路数计费，适合很多路一起跑。单路长录音会比小时版贵。"
+        case .bigDurationV1: return "上一代模型的小时版。新接入建议先用 2.0。"
+        case .bigConcurrentV1: return "上一代模型的并发版。新接入建议先用 2.0。"
+        }
+    }
+}
+
 nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     // MARK: - 通用 · 启动
@@ -996,6 +1032,80 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// which is an order of magnitude below DeepSeek's.
     var visionMaxCompletionTokens: Int = 32768
 
+    // MARK: - 长录音
+
+    /// 长录音的触发快捷键。**没有出厂预设**，`nil` 就是「还没录过」。
+    ///
+    /// 这是这个功能里唯一一处刻意的例外：语音聊天占了 ⌃⌥1–3、释放引擎占了
+    /// ⌃⌥4，再硬塞一个预设进去就会和它们抢。所以录音这件事必须由用户自己录
+    /// 一条才会生效（`recordingShortcutBinding`）。没录快捷键时功能不启动，
+    /// 设置页那一行也会把「录一条才会生效」写出来 —— 静默不生效比没有更糟。
+    var recordingShortcut: RecordedKeyboardShortcut?
+
+    /// 豆包流式语音识别的 API Key（请求头 `X-Api-Key`）。
+    ///
+    /// 按用户的要求，它存在 App 自己的设置文件里
+    /// （`~/Library/Application Support/Clicky/AppSettings.json`，`0600`，
+    /// **在仓库外**），不建 env 文件、不建仓库内配置文件 —— 所以它不会、也
+    /// 不可能被推到 GitHub。这个文件是唯一存放处，`BailianSecrets.plist`
+    /// 那种「首次启动的种子」模式这里不需要，因为它不是启动时就必须要的东西：
+    /// 没配就是按不了录音，不是整个 App 跑不起来。
+    var recordingServiceAPIKey: String = ""
+
+    /// 档位选择，存 rawValue 而不是枚举本身 —— 和 `agentPermissionModeRawValue`
+    /// 同一个理由：将来增删档位时，一个读不出来的旧值应该退化成默认，
+    /// 而不是让整个 `AppSettings.json` 解不出来。
+    var recordingResourceIDRawValue: String = VolcengineASRResource.seedDurationV2.rawValue
+
+    var recordingResourceID: VolcengineASRResource {
+        get { VolcengineASRResource(rawValue: recordingResourceIDRawValue) ?? .seedDurationV2 }
+        set { recordingResourceIDRawValue = newValue.rawValue }
+    }
+
+    /// 自定义资源 ID。非空时**覆盖**上面的档位选择。
+    ///
+    /// 存在的理由：火山控制台里可以建自定义模型，它的 ID 不在上面那四个内置
+    /// 档位里。留一个填的地方，比让用户去改代码强。
+    var recordingCustomResourceID: String = ""
+
+    /// 真正发出去的 `X-Api-Resource-Id`：自定义非空就用自定义，否则用档位。
+    var recordingEffectiveResourceID: String {
+        let trimmed = recordingCustomResourceID.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? recordingResourceID.rawValue : trimmed
+    }
+
+    /// 识别语言，直接作为 `request.language` 发出去。空字符串 = 让服务自己判断。
+    var recordingLanguage: String = "zh-CN"
+
+    /// 热词，逗号或换行分隔。专有名词偏置 —— 人名、地名、项目代号全靠它。
+    var recordingHotwords: String = ""
+
+    /// 录音与转录的落盘目录。空 = 用默认的 `~/Desktop/Clicky录音/`。
+    ///
+    /// 默认落桌面而不是 Application Support：那是隐藏目录，用户在访达里
+    /// 根本找不到。这个项目里已经有 `~/Desktop/Clicky图形/` 这个先例，
+    /// 录音沿用同一个约定 —— 录完的文件是要给人看、给人拖走的。
+    var recordingSaveFolderPath: String = ""
+
+    /// 断线后自动重连并接着录。关掉的话断了就停，已录的部分照常保住。
+    var recordingAutoReconnects: Bool = true
+
+    /// 主动轮换连接的间隔（分钟）。0 = 不主动轮换，只在断了才重连。
+    ///
+    /// 为什么要有这个：单次连接能活多久官方没有给明确上限，所以设计上不能
+    /// 依赖它。轮换发生在**静音处**，接缝上没有词可丢；小时版按时长计费，
+    /// 轮换本身不花钱。所以这是「把未知的上限变成已知的小块」，不是补丁。
+    var recordingRotationMinutes: Int = 20
+
+    /// 停止后把全文放进剪贴板。
+    var recordingCopiesToClipboard: Bool = true
+
+    /// 停止后自动粘贴到当时最前面的那个 App 的光标处。
+    ///
+    /// 它需要辅助功能权限（和「操作」页要的是同一个），且会把焦点切回去 ——
+    /// 所以做成一档可关的偏好，而不是默认行为里的硬编码。
+    var recordingPastesAfterStop: Bool = true
+
     // MARK: - Clamping
 
     /// A copy of these settings with every numeric value forced back inside the
@@ -1017,6 +1127,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         settings.continuousListeningSilenceSendSeconds = min(max(settings.continuousListeningSilenceSendSeconds, 1.0), 5.0)
         settings.audioEngineIdleReleaseMinutes = min(max(settings.audioEngineIdleReleaseMinutes, 0), 60)
         settings.notchExpansionSpeedMultiplier = min(max(settings.notchExpansionSpeedMultiplier, 1.0), 4.0)
+        settings.recordingRotationMinutes = min(max(settings.recordingRotationMinutes, 0), 120)
         return settings
     }
 }
@@ -1103,6 +1214,17 @@ nonisolated extension AppSettings {
         case maximumConcurrentAgents
         case allowsAgentDesktopHUD
         case announcesAgentCompletion
+        case recordingShortcut
+        case recordingServiceAPIKey
+        case recordingResourceIDRawValue
+        case recordingCustomResourceID
+        case recordingLanguage
+        case recordingHotwords
+        case recordingSaveFolderPath
+        case recordingAutoReconnects
+        case recordingRotationMinutes
+        case recordingCopiesToClipboard
+        case recordingPastesAfterStop
     }
 
     init(from decoder: Decoder) throws {
@@ -1209,5 +1331,22 @@ nonisolated extension AppSettings {
         maximumConcurrentAgents = try container.decodeIfPresent(Int.self, forKey: .maximumConcurrentAgents) ?? defaults.maximumConcurrentAgents
         allowsAgentDesktopHUD = try container.decodeIfPresent(Bool.self, forKey: .allowsAgentDesktopHUD) ?? defaults.allowsAgentDesktopHUD
         announcesAgentCompletion = try container.decodeIfPresent(Bool.self, forKey: .announcesAgentCompletion) ?? defaults.announcesAgentCompletion
+        // 长录音。档位存 rawValue 字符串而不是枚举本身，理由同
+        // `agentPermissionModeRawValue`：旧文件里一个读不出来的档位值应当退回
+        // 默认，而不是让整个设置文件解不出来。
+        // `recordingShortcut` 是 Optional 且**不给 `?? defaults` 兜底** ——
+        // 「没有这个键」和「键是 null」都必须落到 nil，因为 nil 正是「用户还
+        // 没录过快捷键」这个有意义的状态，兜一个默认值进去等于替用户按了一下录音键。
+        recordingShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .recordingShortcut)
+        recordingServiceAPIKey = try container.decodeIfPresent(String.self, forKey: .recordingServiceAPIKey) ?? defaults.recordingServiceAPIKey
+        recordingResourceIDRawValue = try container.decodeIfPresent(String.self, forKey: .recordingResourceIDRawValue) ?? defaults.recordingResourceIDRawValue
+        recordingCustomResourceID = try container.decodeIfPresent(String.self, forKey: .recordingCustomResourceID) ?? defaults.recordingCustomResourceID
+        recordingLanguage = try container.decodeIfPresent(String.self, forKey: .recordingLanguage) ?? defaults.recordingLanguage
+        recordingHotwords = try container.decodeIfPresent(String.self, forKey: .recordingHotwords) ?? defaults.recordingHotwords
+        recordingSaveFolderPath = try container.decodeIfPresent(String.self, forKey: .recordingSaveFolderPath) ?? defaults.recordingSaveFolderPath
+        recordingAutoReconnects = try container.decodeIfPresent(Bool.self, forKey: .recordingAutoReconnects) ?? defaults.recordingAutoReconnects
+        recordingRotationMinutes = try container.decodeIfPresent(Int.self, forKey: .recordingRotationMinutes) ?? defaults.recordingRotationMinutes
+        recordingCopiesToClipboard = try container.decodeIfPresent(Bool.self, forKey: .recordingCopiesToClipboard) ?? defaults.recordingCopiesToClipboard
+        recordingPastesAfterStop = try container.decodeIfPresent(Bool.self, forKey: .recordingPastesAfterStop) ?? defaults.recordingPastesAfterStop
     }
 }
