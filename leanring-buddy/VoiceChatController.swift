@@ -1223,13 +1223,38 @@ final class VoiceChatController: ObservableObject {
     }
 
     /// 全双工那一轮的助手气泡：第一次 delta 建气泡，之后原地更新。
+    ///
+    /// ## 为什么这里必须同时设 `streamingAnswerEntryID`
+    ///
+    /// 卡片靠它判断"这段文字**还在长**"，而那一个判断决定了两件完全不同的事：
+    ///
+    /// ```swift
+    /// paragraphs(settlingFinalLine: !isStreaming)   // AnswerCardView
+    /// if isStreaming, let liveLine = lines.last { liveLineView(...) }
+    /// ```
+    ///
+    /// `streamingAnswerEntryID` 原先**只在三段式那条路（`startTurn`）被赋值**，而全双工
+    /// 根本走不到那里 —— 于是全双工的卡片拿到的是 `isStreaming == false`，走"已定稿"
+    /// 分支：`settlingFinalLine: true` 会把**还在长的那一行也折叠一遍，就在它刚出生的
+    /// 那一刻**，而 `foldedLineCount` 只增不减 —— 那一行后来长出来的字**永远不会再被
+    /// 折叠、也没有任何地方画它**。
+    ///
+    /// 表现就是用户报的「全双工回复乱码」：一条 304 字的回答只显示出 23 个字，每行
+    /// 只剩开头一两个 —— 实测（用他自己那次通话的 149 个 delta 重放卡片的算法）输出
+    /// 与截图逐字符一致，碎片之间的间距正好是一行（33 字符），而且碎片可能是半个词
+    /// （「动力」只剩下「力」），因为折叠抓到的是跨过行边界那个 delta 的尾巴。
+    ///
+    /// 修法只是**把这一页缺的那一个赋值补上** —— 文字、累积、换行全都是好的。
+    /// 顺带也把模糊书写尾巴还给了这一页：`liveLineView` 原本同样被这个 false 关在门外。
     private func updateDuplexAssistantEntry(_ cumulativeText: String) {
         if let entryID = duplexAssistantEntryID {
             updateAnswerEntry(entryID, text: cumulativeText)
+            streamingAnswerEntryID = entryID
         } else {
             let entryID = UUID()
             transcriptEntries.append(VoiceChatTranscriptEntry(id: entryID, isUser: false, text: cumulativeText))
             duplexAssistantEntryID = entryID
+            streamingAnswerEntryID = entryID
         }
     }
 
