@@ -387,9 +387,17 @@ final class LongFormRecorderController: ObservableObject {
     /// 停止那一刻抓到的屏幕（JPEG）。没开「屏幕截图」时是 nil。
     private var polishScreenshotJPEG: Data?
 
-    /// 停止那一刻开始的摄像头抓帧任务。**在停止那一秒启动、收尾时 await** ——
-    /// 启动的时机决定画面是哪一刻的，await 的位置决定它不阻塞点击。
-    private var cameraFrameTask: Task<Data?, Never>?
+    /// 录音期间持续抓摄像头帧的会话。**只有转写里出现「摄像头」才启动**。
+    private let cameraSession = RecordingCameraSession()
+
+    /// 这一轮会话里抓到的帧。停止时一并交给润色。
+    private var cameraFrames: [Data] = []
+
+    /// 用户在这一轮里按过「退出抓帧」。**只作用于本轮** —— 下一轮录音重新按关键词激活。
+    private var hasUserStoppedCameraThisSession = false
+
+    /// 抓帧的绿点闪动计数。小窗用它「抓一帧大一下」。
+    @Published private(set) var cameraFramePulse = 0
 
     /// 最近 8 秒音频，重连时重喂用。见 `RecentAudioRing`。
     private let recentAudio = RecentAudioRing(
@@ -407,6 +415,53 @@ final class LongFormRecorderController: ObservableObject {
         let bitmap = NSBitmapImageRep(cgImage: cgImage)
         return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.7])
     }
+
+    /// 转写里出现了摄像头就开抓；用户按过退出就这一轮都不再开。
+    ///
+    /// **判据跟着转写实时走，不是等到停止才判。** 用户的原话：「转写时能够识别到
+    /// 摄像头这个文本，才需要抓取关键帧」「当能够在文本上识别到'摄像头'这三个字……
+    /// 就按照一秒一帧来抓」。
+    ///
+    /// 这也顺带躲开了「停止那一刻最后一句还没定稿」那个竞态 —— 判据在整段录音里
+    /// 反复检查，不是只看某一个瞬间。
+    private func considerStartingCameraCapture() {
+        guard phase == .recording else { return }
+        guard AppSettingsStore.snapshot().recordingPolishCapturesCamera else { return }
+        guard !hasUserStoppedCameraThisSession else { return }
+        guard !isCameraCapturing else { return }
+        let spoken = transcriptPlainText + livePartialText
+        guard Self.transcriptMentionsCamera(spoken) else { return }
+
+        isCameraCapturing = true
+        publishDiagnostic("转写里出现「摄像头」→ 开始一秒一帧抓帧")
+        cameraSession.onFrame = { [weak self] jpeg in
+            Task { @MainActor in
+                guard let self else { return }
+                self.cameraFrames.append(jpeg)
+                if self.cameraFrames.count > RecordingCameraSession.maximumRetainedFrames {
+                    self.cameraFrames.removeFirst()
+                }
+                // 抓一帧、绿点闪一下。
+                self.cameraFramePulse &+= 1
+            }
+        }
+        cameraSession.onFailure = { [weak self] reason in
+            Task { @MainActor in self?.publishDiagnostic("摄像头抓帧失败：\(reason)") }
+        }
+        cameraSession.start()
+    }
+
+    /// 用户按了「退出抓帧」。**只作用于当前这一轮**，下一轮录音还会按关键词重新激活。
+    func stopCameraCaptureForThisSession() {
+        guard isCameraCapturing else { return }
+        hasUserStoppedCameraThisSession = true
+        isCameraCapturing = false
+        cameraSession.stop()
+        publishDiagnostic("用户退出了抓帧，本轮不再抓（下一轮录音仍会按关键词激活）")
+    }
+
+    /// 正在抓帧。刘海下面的小窗读它决定要不要显示。
+    @Published private(set) var isCameraCapturing = false
 
     /// 转写里有没有提到摄像头。
     ///
@@ -426,31 +481,31 @@ final class LongFormRecorderController: ObservableObject {
         let settings = AppSettingsStore.snapshot()
         guard settings.recordingPolishEnabled else { return false }
         let styles = RecordingPolishStyleStore.shared.enabledStyles()
-        return !styles.isEmpty || polishScreenshotJPEG != nil || cameraFrameTask != nil
+        return !styles.isEmpty || polishScreenshotJPEG != nil || !cameraFrames.isEmpty
     }
 
     /// 按「自定义风格」重写一遍转写原文。
     ///
     /// **没勾选任何风格、也没勾截图时原样返回** —— 用户明确要求这种情况下必须和以前
     /// 完全一致，一步都不多走（不建请求、不动文本）。
-    private func polishIfConfigured(rawText: String, cameraFrame: Data?) async -> String {
+    private func polishIfConfigured(rawText: String, cameraFrames: [Data]) async -> String {
         let settings = AppSettingsStore.snapshot()
         guard settings.recordingPolishEnabled else { return rawText }
         let styles = RecordingPolishStyleStore.shared.enabledStyles()
         let screenshot = polishScreenshotJPEG
-        guard !styles.isEmpty || screenshot != nil || cameraFrame != nil else { return rawText }
+        guard !styles.isEmpty || screenshot != nil || !cameraFrames.isEmpty else { return rawText }
         let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return rawText }
 
         let prompt = RecordingPolishClient.buildPrompt(
             styles: styles, transcript: trimmed,
-            hasScreenshot: screenshot != nil, hasCamera: cameraFrame != nil)
+            hasScreenshot: screenshot != nil, cameraFrameCount: cameraFrames.count)
         publishDiagnostic("自定义风格：\(styles.count) 条风格 + 截图\(screenshot != nil ? "有" : "无")"
-            + " + 摄像头\(cameraFrame != nil ? "有" : "无")，开始重写")
+            + " + 摄像头\(cameraFrames.count) 帧，开始重写")
         do {
             let result = try await RecordingPolishClient.polish(
                 prompt: prompt, screenshotJPEG: screenshot,
-                cameraJPEG: cameraFrame, settings: settings)
+                cameraFrames: cameraFrames, settings: settings)
             publishDiagnostic("自定义风格：重写完成，\(result.count) 字（原文 \(trimmed.count) 字）")
             return result
         } catch {
@@ -851,21 +906,10 @@ final class LongFormRecorderController: ObservableObject {
             ? Self.captureMainDisplayJPEG() : nil
         // 摄像头抓帧是**异步**的（要等一帧到），所以在停止这一秒启动、稍后再 await。
         // 同步等会把点击冻住最多 1.5 秒 —— 而用户按下停止时最不该有的就是卡顿。
-        // **抓帧不再看转写。** 开关开着就抓。
-        //
-        // 原来这里用「停止那一刻攒下的转写文本」判关键词、判中才抓。那是个**竞态**：
-        // 判据用的是 `transcriptPlainText + livePartialText`，而最后一句那时可能还没
-        // 定稿 —— 用户把「摄像头」说在最后一句里，检查就漏了。实测就漏过一次：
-        // 日志里写着「摄像头无」，而用户明明是在问纸上的内容。
-        //
-        // 现在分两步：**抓是抓、附是附**。抓在这里无条件下发（一帧 33KB，成本可忽略），
-        // 附不附由 `completeStop` 里**定稿之后的完整文本**决定 —— 那时文本是全的，
-        // 没有竞态。
-        //
-        // 代价：开关开着时，每次停止摄像头都会开一下，绿灯会闪一下。这一点必须让用户
-        // 知道 —— 见下面 `transcriptMentionsCamera` 的注释。
-        cameraFrameTask = stopMomentSettings.recordingPolishCapturesCamera
-            ? Task { await RecordingCameraGrabber.grabOneFrameJPEG() } : nil
+        // 抓帧**已经在这一轮里一帧一帧攒好了**（转写里一出现「摄像头」就开始，
+        // 一秒一帧）—— 这里是收尾，不是起点。见 `considerStartingCameraCapture`。
+        cameraSession.stop()
+        isCameraCapturing = false
 
         // 停止的音效。
         //
@@ -1020,16 +1064,13 @@ final class LongFormRecorderController: ObservableObject {
         let willPolish = shouldRunPolishStep()
         if willPolish { isPolishingTranscript = true }
         let generationBeforePolish = cancellationGeneration
-        // **附不附，看定稿之后的完整文本。** 这里 `text` 是全的（末包定稿已到）。
-        let capturedCameraFrame = await cameraFrameTask?.value
-        let fullTranscript = text + transcriptPlainText
-        let cameraFrame = Self.transcriptMentionsCamera(fullTranscript) ? capturedCameraFrame : nil
-        if capturedCameraFrame != nil {
-            publishDiagnostic(cameraFrame != nil
-                ? "转写里提到摄像头 → 附上那一帧"
-                : "抓到了摄像头那一帧，但转写里没提摄像头 → 不附")
+        // 帧只可能来自「转写里出现过摄像头」那一条路 —— 没提就一帧都没有，
+        // 所以这里不需要再判一次。
+        let cameraFramesForPolish = cameraFrames
+        if !cameraFramesForPolish.isEmpty {
+            publishDiagnostic("附上 \(cameraFramesForPolish.count) 帧摄像头画面")
         }
-        let polished = await polishIfConfigured(rawText: text, cameraFrame: cameraFrame)
+        let polished = await polishIfConfigured(rawText: text, cameraFrames: cameraFramesForPolish)
         isPolishingTranscript = false
         // 用户在润色期间按了取消 → 这条路到此为止。录音文件和已转写的文本**照常保留**
         // （它们早就落盘了），只是不再往下走：不粘贴、不进剪贴板、不收尾。
@@ -1161,6 +1202,8 @@ final class LongFormRecorderController: ObservableObject {
                 // **面板也读实时部分** —— 这就是「展开后能不能实时」的全部差别。
                 self.livePartialText = segment.text
             }
+            // 每来一段都看一眼 —— 用户可能说到一半才提到摄像头。
+            self.considerStartingCameraCapture()
         }
         client.onStateChange = { [weak self] state in
             guard let self else { return }

@@ -38,7 +38,7 @@ nonisolated enum RecordingPolishClient {
     static func buildPrompt(styles: [RecordingPolishStyle],
                             transcript: String,
                             hasScreenshot: Bool,
-                            hasCamera: Bool) -> String {
+                            cameraFrameCount: Int) -> String {
         let ruleBlocks = styles.enumerated().map { index, style in
             """
             <style name="\(style.name)" order="\(index + 1)">
@@ -54,7 +54,7 @@ nonisolated enum RecordingPolishClient {
         // 「要处理的东西」里根本没有那张图，于是它有时用、有时当噪声忽略掉。
         // 这是「有时候能识别、有时候不能」的一半原因；另一半在下面 `<screenshot>`
         // 的措辞里（它当时写的是「不要描述这张图」，读起来像「别用它」）。
-        let hasAttachments = hasScreenshot || hasCamera
+        let hasAttachments = hasScreenshot || cameraFrameCount > 0
         sections.append("""
         <task>
         下面 <rules> 里是你必须遵守的处理要求。请**严格按照这些要求**，处理 <transcript> 里的
@@ -84,15 +84,22 @@ nonisolated enum RecordingPolishClient {
             """)
         }
 
-        if hasCamera {
+        if cameraFrameCount > 0 {
             // 和 <screenshot> 同一个形状：说清它是什么、以及**不许拿它做什么**。
+            //
+            // **多帧这件事必须在提示词里说明白**，否则模型会把它们当成「同一时刻的几张图」
+            // 而只挑一张看。它们是一段时间里的连续画面 —— 用户会移动摄像头去看房间的
+            // 不同方向、或者把纸从左看到右，答案要靠这几帧合起来才成立。
             sections.append("""
             <camera>
-            随本条消息附上了一张摄像头画面，拍摄于用户停止录音的那一刻 —— 也就是他说话时
-            摄像头正对着的东西。
-            - **转录里提到「摄像头」「镜头」「这个」「你看一下」，或者有靠画面才能确定的东西
-              （实物、人、白板上的字、手里的东西）时，以这张图为准。**
-            - **不要描述这张图本身**，也不要把画面里的文字当成待处理的正文。
+            随本条消息附上了 \(cameraFrameCount) 张摄像头画面，**按时间先后顺序排列**，
+            大约每秒一张 —— 它们不是同一时刻的重复，而是**一段时间里的连续画面**：
+            用户可能在这段时间里移动了摄像头去看不同方向，或者把某个东西从左到右展示了一遍。
+
+            - **提到「摄像头」「镜头」「这个东西」「你看一下」，或者有靠画面才能确定的东西
+              （实物、人、纸上的字、房间里的布置）时，以这些画面为准。**
+            - **需要看多个角度时，把这几帧合起来看**，不要只看第一张。
+            - **不要描述这些画面本身**，也不要把画面里的文字当成待处理的正文。
             </camera>
             """)
         }
@@ -109,13 +116,13 @@ nonisolated enum RecordingPolishClient {
     /// 发一次请求，返回整理好的文本。
     static func polish(prompt: String,
                        screenshotJPEG: Data?,
-                       cameraJPEG: Data?,
+                       cameraFrames: [Data],
                        settings: AppSettings) async throws -> String {
         let endpoint = try resolvedEndpoint(settings: settings)
 
         var messages: [[String: Any]] = []
         messages.append(["role": "user", "content": contentParts(
-            prompt: prompt, screenshotJPEG: screenshotJPEG, cameraJPEG: cameraJPEG)])
+            prompt: prompt, screenshotJPEG: screenshotJPEG, cameraFrames: cameraFrames)])
 
         var body: [String: Any] = [
             "model": endpoint.model,
@@ -163,13 +170,13 @@ nonisolated enum RecordingPolishClient {
     /// 但纯文本那一种几乎所有服务商都收，所以只在真有图时才用数组。
     private static func contentParts(prompt: String,
                                      screenshotJPEG: Data?,
-                                     cameraJPEG: Data?) -> Any {
-        // 两张图都没有 → 按纯文本发（那种形状所有服务商都收）。
-        guard screenshotJPEG != nil || cameraJPEG != nil else { return prompt }
+                                     cameraFrames: [Data]) -> Any {
+        // 一张图都没有 → 按纯文本发（那种形状所有服务商都收）。
+        guard screenshotJPEG != nil || !cameraFrames.isEmpty else { return prompt }
         var parts: [[String: Any]] = [["type": "text", "text": prompt]]
-        // **顺序和提示词里块的顺序一致**：先屏幕、后摄像头。模型按顺序对号入座，
-        // 顺序反了它会把两张图认错 —— 而两张图都没有可辨认的标记。
-        for image in [screenshotJPEG, cameraJPEG].compactMap({ $0 }) {
+        // **顺序和提示词里块的顺序一致**：先屏幕、后摄像头，摄像头内部按拍摄先后。
+        // 模型按顺序对号入座，顺序反了它会把两张图认错 —— 而图本身没有可辨认的标记。
+        for image in ([screenshotJPEG].compactMap { $0 } + cameraFrames) {
             parts.append(["type": "image_url",
                           "image_url": ["url": "data:image/jpeg;base64,\(image.base64EncodedString())"]])
         }
