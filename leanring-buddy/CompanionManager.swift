@@ -1210,35 +1210,6 @@ final class CompanionManager: ObservableObject {
         overlayWindowManager.showOverlay(onScreens: NSScreen.screens, companionManager: self)
         isOverlayVisible = true
         ensureNotchPresenceIfNeeded()
-        speakOpeningGreetingOnce()
-    }
-
-    /// 这一幕只会发生一次：这个 App **刚刚变得可用**（引导完成 + 权限齐全 + 覆盖层装上）。
-    private var hasSpokenOpeningGreeting = false
-
-    /// **Screen 页也要「AI 先说第一句」。**
-    ///
-    /// 用户 2026-09-25：「这个 screen 页面可以模拟用户。因为 screen 页面是三段式的，
-    /// 既然是三段式，就可以发动提示词。它默认的提示词就是屏幕截图加上一段转写文本，
-    /// 你直接把这个截图和那个文本发给他，当做一个提示不就可以了吗？」
-    ///
-    /// **他说得对，而且这条路已经存在**：`submitTypedQuestion` 就是「替用户说一句话」，
-    /// 它走的是和按住说话**完全相同**的那条管线 —— `sendTranscriptToVisionChatWithScreenshot`，
-    /// 也就是截图 + 文本 → 视觉模型 → 回复 → 朗读。所以不需要新接线，只要在正确的
-    /// 时刻调用它。
-    ///
-    /// 时刻选在 `installCompanionPresenceIfReady`，因为那是"刚刚能用"的那一瞬：
-    /// 引导完成、三个权限齐、覆盖层第一次装上。用户要这句开场白回答的正是
-    /// 「连上了没有、能不能正常回复」——见 `defaultVoiceChatGreetingText` 的说明，
-    /// 那句话本身是一句**指令**（请只回"你好"），所以模型的回复只可能来自它真的
-    /// 读懂了，而不是把问候语原样念回来。
-    ///
-    /// 只发一次：`hasSpokenOpeningGreeting`。权限轮询那条路也会调到这里（用户中途
-    /// 补授一个权限），没有这个标志就会在整点重放一遍开场白。
-    private func speakOpeningGreetingOnce() {
-        guard !hasSpokenOpeningGreeting else { return }
-        hasSpokenOpeningGreeting = true
-        submitTypedQuestion(AppSettings.defaultVoiceChatGreetingText)
     }
 
     private func bindAudioPowerLevel() {
