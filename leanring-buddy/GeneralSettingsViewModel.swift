@@ -21,6 +21,35 @@ final class GeneralSettingsViewModel: ObservableObject {
 
     /// The settings being edited. Controls bind directly to fields of this struct
     /// through `binding(_:)`.
+    // MARK: - 复盘（设置页「复盘」）
+
+    /// 跑复盘的结果。**放在这里而不是直接读 `ReviewRunner`** —— 这一页是
+    /// `GeneralSettingsView` 的扩展，struct 的扩展加不了 `@ObservedObject`，
+    /// 而 ViewModel 是它已经在观察的那个对象。转发一层，观察关系就现成了。
+    @Published var reviewTable: [ReviewCountRow] = []
+    @Published var reviewCandidates: [ReviewCountRow] = []
+    @Published var reviewIsRunning = false
+    @Published var reviewLastError: String?
+    @Published var reviewHasRun = false
+
+    /// 「这条候选走哪条路」的草稿，键是「大类/小类」。
+    ///
+    /// **不落盘**：用户打字打到一半，不该每敲一个字符就写一次设置文件。批准才写。
+    @Published var reviewRoutes: [String: String] = [:]
+
+    func runReview() async {
+        guard !reviewIsRunning else { return }
+        reviewIsRunning = true
+        reviewLastError = nil
+        await ReviewRunner.shared.run()
+        let runner = ReviewRunner.shared
+        reviewTable = runner.lastTable
+        reviewCandidates = runner.candidates
+        reviewLastError = runner.lastError
+        reviewHasRun = true
+        reviewIsRunning = false
+    }
+
     @Published var draftSettings: AppSettings {
         didSet {
             guard draftSettings != oldValue else { return }

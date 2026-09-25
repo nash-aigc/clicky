@@ -27,6 +27,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
     case vision
     case action
     case recording
+    case review
     case shortcuts
     case voiceChatRoles
     case voiceCatalog
@@ -66,6 +67,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .vision: return "看与截图"
         case .action: return "操作"
         case .recording: return "录音"
+        case .review: return "复盘"
         case .shortcuts: return "快捷键"
         case .voiceChatRoles: return "角色"
         case .voiceCatalog: return "音色查看"
@@ -90,6 +92,7 @@ enum SettingsPage: String, CaseIterable, Identifiable {
         case .vision: return "eye.fill"
         case .action: return "cursorarrow"
         case .recording: return "record.circle"
+        case .review: return "chart.bar.doc.horizontal"
         case .shortcuts: return "keyboard"
         case .voiceChatRoles: return "person.2.fill"
         case .voiceCatalog: return "waveform.circle.fill"
@@ -139,6 +142,7 @@ struct GeneralSettingsView: View {
                 case .vision: visionPage
                 case .action: actionPage
                 case .recording: recordingPage
+                case .review: reviewPage
                 case .shortcuts: shortcutsPage
                 case .voiceChatRoles:
                     // 角色页由 `VoiceChatRoleSettingsView` 自己画（它有两栏、

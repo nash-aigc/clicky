@@ -334,7 +334,7 @@ struct NotchSettingsArea: View {
     /// titled window's sidebar uses.
     private static let sidebarSections: [(label: String?, pages: [SettingsPage])] = [
         (label: nil, pages: [.general, .interactionStyle, .model, .agent]),
-        (label: "对话", pages: [.memory, .listen, .speak, .shortcuts, .recording]),
+        (label: "对话", pages: [.memory, .listen, .speak, .shortcuts, .recording, .review]),
         (label: "看与操作", pages: [.vision, .action]),
         // 「语音聊天」分组（用户 2026-09-24 要求）。角色页与语音聊天页右键
         // 「编辑」共用同一份视图，所以两处入口改的是同一份数据。
