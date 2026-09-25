@@ -830,6 +830,21 @@ final class VoiceChatController: ObservableObject {
     private func startDuplexSession(role: VoiceChatRole, settings: AppSettings) async {
         // 引擎要热着：VPIO 的首次重配 ~2 秒，现在付掉，等用户开口时就没有这个延迟。
         warmUpVoiceEngine()
+
+        // **先亮灯，再握手。**
+        //
+        // 原先 `setNotchOverride(.externalConnecting)` 在握手**返回之后**才执行，
+        // 而握手要等 VPIO 重配（~2 秒）加上 `session.updated`（最长 8 秒）——
+        // 也就是用户按下「连接」之后最初那几秒，**刘海左右两侧什么都没有**，
+        // 看起来像没反应。用户 2026-09-25：「进入这个界面点击连接时，左右两侧应该
+        // 有挂断按钮或连接按钮」。
+        //
+        // 相位放在这里就没有那个空窗：按下去立刻是「连接中」，接上了转「通话中」
+        // （`onFirstAudioScheduled` → `markVoiceChatFullyConnected`），失败由下面的
+        // catch 收掉 —— 三种结局都有可见的反馈。
+        connectionPhase = .connecting
+        setNotchOverride(.externalConnecting)
+
         do {
             try await duplexVoiceEngine.start(
                 role: role,
@@ -841,11 +856,10 @@ final class VoiceChatController: ObservableObject {
             isDuplexSessionLive = true
             noteVoiceSessionActivity()
 
-            // **先只到「连接中」**：模型接受了 session.update 只说明配置合法，
-            // 不能说明它听得到、说得出。真正的「已连接」等第一段音频
+            // 「连接中」在上面已经亮了（握手前就亮）。这里只补一行日志 ——
+            // 真正的「已连接」等第一段音频
             // （`onFirstAudioScheduled` → `markVoiceChatFullyConnected`）。
-            connectionPhase = .connecting
-            setNotchOverride(.externalConnecting)
+            //
             // **打印"真正发出去"的那一对，不是角色里存的原始值。**
             //
             // 原先这里打的是 `selectedDuplexModel(for:)`（一个返回默认常量的函数，
@@ -872,6 +886,13 @@ final class VoiceChatController: ObservableObject {
             duplexVoiceEngine.stop()
             connectionPhase = .idle
             activeRoleID = nil
+            // **失败也要把刘海收干净。**
+            //
+            // 原先这里什么都不写相位 —— 而 `setNotchOverride(.externalConnecting)`
+            // 已经在握手前亮起来了（见上面那段），不清就会**留一个假的「连接中」
+            // 挂在刘海上**，与实际状态（什么都没连）不符。收尾口径与
+            // `disconnectCurrentSession` 一致：相位回 idle，override 清空。
+            setNotchOverride(nil)
             presentFailure("语音聊天：全双工语音起不来 —— \(error.localizedDescription)")
         }
     }
