@@ -722,9 +722,19 @@ final class NotchRecordingOverlayController {
         phaseCancellable = Publishers.CombineLatest3(
             recorder.$phase, recorder.$isTranscriptExpanded, recorder.$isSessionActive)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] phase, isExpanded, _ in
+            // **参数只用来看「有东西变了」，具体值一律现读 live 值。**
+            //
+            // 实测：`@Published` 在 willSet 里发值，`receive(on:)` 又把它推迟一个
+            // 主队列轮次，于是闭包拿到的 `isExpanded` 和运行时的真实值是**两份不同的
+            // 读取**（实测 4/4 次回调都对不上）。`@Published` 赋同值也会发，一次收起
+            // 会触发 3 次 sink。
+            //
+            // 原来 `installDismissMonitors()` 和 `makeKey()` 读的是那个过期参数，
+            // 所以会出现「面板已经收起、却给它 makeKey() 并装上全局 ESC 监听」。
+            .sink { [weak self] _, _, _ in
                 guard let self else { return }
-                if phase == .idle && !recorder.isSessionActive {
+                let isExpanded = recorder.isTranscriptExpanded
+                if recorder.phase == .idle && !recorder.isSessionActive {
                     self.hide()
                 } else {
                     self.show()
@@ -785,6 +795,7 @@ final class NotchRecordingOverlayController {
     /// 刘海窗口的理由之一** —— 这块窗口的高度完全由我们自己说了算。
     private func reframePanels() {
         guard isPresented else { return }
+
         for panel in panels {
             guard let screen = panel.screen ?? NSScreen.main,
                   let frame = panelFrame(for: screen) else { continue }
@@ -871,6 +882,25 @@ final class NotchRecordingOverlayController {
             recorder: .shared,
             notchWidth: notch.width,
             notchHeight: notch.height))
+        // **必须置空。** 这是「展开时向右上角甩一下」的根因，实测 + A/B 验证：
+        //
+        // `NSHostingView.sizingOptions` 默认是 `.standardBounds`（实测 rawValue=7）。
+        // 当它被设为窗口的 `contentView` 时，会**绕开 Auto Layout 直接调
+        // `setContentSize`** —— 抓到的调用栈：
+        //     NSHostingView.updateConstraints
+        //       → updateWindowContentSizeExtremaIfNecessary
+        //         → setContentSize → setFrame
+        // 而 `setContentSize` 是**钉住左上角**的语义（实测：顶边和左边不动，向下向右长）。
+        //
+        // 于是：`reframePanels()` 设好正确的帧之后约 82ms，NSHostingView 会按
+        // **SwiftUI 内容的固有尺寸**再改一次窗口，把我们的值当场作废。内容从收起
+        // 换到展开时，它搬的方向是错的 —— 实测 dx=+179pt（向右）、高度少 42pt
+        // （底边上移），合起来正是用户说的「向右上角甩一下」，随后下一次
+        // `reframePanels` 把它拽回正位，就是「然后再回到正位置」。
+        //
+        // 置空之后实测 dx=0 / dTop=0 / dH=0 —— 窗口再没被它碰过。
+        // 这个面板的几何全部由 `panelFrame(for:)` 说了算，不需要宿主视图再插一手。
+        hostingView.sizingOptions = []
         hostingView.frame = CGRect(origin: .zero, size: frame.size)
         panel.contentView = hostingView
         return panel
