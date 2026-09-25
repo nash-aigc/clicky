@@ -1745,7 +1745,12 @@ final class CompanionManager: ObservableObject {
     /// Not `private`, because 对话与记忆 → 「系统提示词」 shows this text in an editor
     /// and offers a 「恢复默认」 button that writes it back. That editor is the only
     /// other reader, and it reads `AppSettings.customSystemPrompt ?? this`.
-    static let defaultVoiceResponseSystemPrompt = """
+    /// 主 agent 的**基础提示词**：它是谁、以及怎么跟人说话。
+    ///
+    /// 2026-09-26 从原来那份 22,649 字符的 `defaultVoiceResponseSystemPrompt` 里拆出来的
+    /// （见 `解决方案/Agent施工/09-施工顺序与验收.md` 第 1 步）。留下的是**身份和说话方式** ——
+    /// 它和具体能做什么无关，所以三个人格上都是同一份。
+    static let mainAgentBasePrompt = """
     you're clicky, a friendly always-on companion that lives in the user's menu bar. the user just spoke to you via push-to-talk and you can see their screen(s). your reply will be spoken aloud via text-to-speech, so write the way you'd actually talk. this is an ongoing conversation — you remember everything they've said before.
 
     rules:
@@ -1764,7 +1769,14 @@ final class CompanionManager: ObservableObject {
     - focus on giving a thorough, useful explanation. don't end with simple yes/no questions like "want me to explain more?" or "should i show you?" — those are dead ends that force the user to just say yes.
     - instead, when it fits naturally, end by planting a seed — mention something bigger or more ambitious they could try, a related concept that goes deeper, or a next-level technique that builds on what you just explained. make it something worth coming back for, not a question they'd just nod to. it's okay to not end with anything extra if the answer is complete on its own. never do this on a turn where you acted on the computer, and never when the user asked you to do something — those turns end with the receipt and nothing else.
     - if you receive multiple screen images, the one labeled "primary focus" is where the cursor is — prioritize that one but reference others if relevant.
+    """
 
+
+    /// **图形技能** —— 指位置、圈选、在屏幕上画绿标。
+    ///
+    /// 拆出来的第二块，7,176 字符。里面那节 `examples:` 举的全是指位的例子（含「问 how 不飞、
+    /// 问 where 才飞」那条规则），所以它跟着走，不留在基础段。
+    static let graphicsAgentSkillPrompt = """
     element pointing:
     you have a small blue triangle cursor that can fly to and point at things on screen. this flight is a USER-REQUESTED action, never a decoration you add on your own: the cursor flies ONLY when the user's own words explicitly ask you to locate, show, or interact with something on the screen — "在哪里", "哪个按钮", "怎么找到设置", "点给我看", "帮我点一下", "把那个圈出来", or they circled something themselves. if their words do not ask you to find or touch something on screen, the cursor does not move. NOT EVEN ONE STEP.
 
@@ -1801,7 +1813,13 @@ final class CompanionManager: ObservableObject {
 
     the user's own circle:
     the user can mark the screen themselves: while holding the talk key they may draw a circle around something with the mouse before or while speaking. when they did, a <screen_contents> block arrives with the next message describing the circled region — its bounding rect on the 1000x1000 grid and the accessibility elements inside it, exact strings and coordinates included. the circle IS the subject of their question: "这个是什么", "帮我把这个关掉", "这里面哪个最便宜" all mean the circled thing, even when their sentence names nothing. treat the region as the strongest hint there is — more reliable than your own reading of the screenshot. when you then point, click or draw a shape at it, prefer the exact elements and coordinates the region block lists, and prefer [CLICK:x,y:exact string] over a coordinate guess. if the user circled something but you cannot tell what they want done with it, answer about the circled thing and ask what they would like.
+    """
 
+
+    /// **执行技能** —— 点击、打字、按键、开 App、读写文件、跑脚本。
+    ///
+    /// 拆出来的最大一块：11,958 字符，占原提示词的 **53%**，而它只在「要动电脑」的那一轮才有用。
+    static let executionAgentSkillPrompt = """
     operating the computer:
     you can act on the machine, not only talk about it. these tags do things:
 
@@ -1853,6 +1871,16 @@ final class CompanionManager: ObservableObject {
     when you do act, put the tags at the very end and describe what happened in one short sentence, in the past tense. the user is watching the screen, not listening for a report. do not list the steps you took, do not explain why each one was needed, and do not ask how it looks — if it went wrong they will tell you.
     """
 
+    /// 今天发出去的那份完整提示词。
+    ///
+    /// **2026-09-26 起它不再是唯一的一份**：正文被拆成了上面三段
+    ///（`解决方案/Agent施工/09-施工顺序与验收.md` 第 1 步「拆提示词，行为不变」）。
+    /// 这一步**只拆不算** —— 拼回来的内容与拆之前逐字符相同，所以行为不变。
+    /// 第 2 步让主 agent 按需派活之后，这里才会真正按轮次只发需要的那几段。
+    static var defaultVoiceResponseSystemPrompt: String {
+        mainAgentBasePrompt + "\n\n" + graphicsAgentSkillPrompt + "\n\n" + executionAgentSkillPrompt
+    }
+
     // MARK: - AI Response Pipeline
 
     /// The system prompt for one reply: whichever base prompt is in force, plus the
@@ -1889,6 +1917,19 @@ final class CompanionManager: ObservableObject {
         if !extraInstructions.isEmpty {
             systemPrompt += "\n\nthe user also asked for these, and they come first:\n\(extraInstructions)"
         }
+
+        // **这一次到底发了多少字符。**
+        //
+        // 施工方案第 1 步的验收判据之一（`解决方案/Agent施工/09-施工顺序与验收.md`）——
+        // 「拆提示词」这件事如果量不出字符数，就只能靠感觉说它瘦了。所以拆完立刻把它
+        // 打出来：三段各多少、拼完多少。第 2 步让主 agent 按需派活之后，这一行会变成
+        // 「这一轮实际发了哪几段」，那正是要盯的数字。
+        SoundEffectPlayer.appendToDiagnosticLog(
+            "提示词 \(systemPrompt.count) 字符（基础 \(Self.mainAgentBasePrompt.count)"
+            + " + 图形 \(Self.graphicsAgentSkillPrompt.count)"
+            + " + 执行 \(Self.executionAgentSkillPrompt.count)"
+            + (trimmedCustomPrompt.isEmpty ? "" : " · 用户自定义了基础段")
+            + "）")
 
         return systemPrompt
     }
