@@ -118,9 +118,6 @@ final class NotchWindowController {
 
     /// 展开驻留期的混合圆角表面层（顶 36 / 底 24）。`removeReveal` 摘掉。
     private var revealSurfaceLayer: CAShapeLayer?
-
-    /// 窗口动画那两条用的遮罩层（径向 / 线性渐变），只在展开期间存在。
-    private var revealMaskLayer: CAGradientLayer?
     private let audioHistoryProvider: () -> [CGFloat]
 
     private var screenPresences: [ScreenPresence] = []
@@ -608,12 +605,12 @@ final class NotchWindowController {
         // saving in the settings window mid-animation must not turn one reveal
         // into two.
         let expansionStyle = AppSettingsStore.snapshot().windowExpansionStyle
-        // **窗口动画**：盖在面板上那层怎么做动画。与 `expansionStyle` 是两件事 ——
-        // 那一个管窗口尺寸，这一个管遮罩。见 `WindowRevealAnimation`。
-        let revealAnimation = AppSettingsStore.snapshot().windowRevealAnimation
-        let speedMultiplier = AppSettingsStore.snapshot().notchExpansionSpeedMultiplier
-        let revealDuration = NotchSupport.revealDuration(for: revealAnimation, speedMultiplier: speedMultiplier)
-        print("⏱️ [expand] 窗口动画=\(revealAnimation.rawValue)（展开方式 \(expansionStyle.rawValue)）")
+        // **不做展开动画 —— 点击即整块出现。**
+        //
+        // 用户 2026-09-25 的最终要求：「只保留一个直接显示……就直接显示」。此前试过三条
+        // 展开动画（参考页的三种）和两条遮罩动画（演示页的第 1、5 条），用户都不满意 ——
+        // 抖动、末尾爬行、观感不对。这一条是唯一被留下的：**没有动画**。
+        print("⏱️ [expand] 直接显示（不做展开动画）；展开方式=\(expansionStyle.rawValue)（当前不生效）")
 
         expansionGeneration += 1
         let expansionGenerationAtStart = expansionGeneration
@@ -635,19 +632,16 @@ final class NotchWindowController {
         //     `display: true`，那会强制一次整面板的同步绘制 —— 冷的时候要 300~600ms，
         //     而那正是那块白板的时长（见 `clicky-卡片冷启动-164349.log`）。
         //  ③ 一个 tick 之后翻 `isExpanded` —— 面板那棵树开始在遮罩后面构建。
-        //  ④ **再一个 tick 之后开始揭**。这一块排在构建与绘制**后面**：主线程是串行的，
+        //  ④ **再一个 tick 之后掀开遮罩**。这一块排在构建与绘制**后面**：主线程是串行的，
         //     构建那 300ms（冷）或 50ms（热）会先把主线程占住，定时器插不进去，于是
-        //     "揭"必然发生在内容真的画完之后。
+        //     "掀开"必然发生在内容真的画完之后 —— 面板带着完整内容**整块出现**。
         //
-        // 揭的方式由 `windowRevealAnimation` 决定：两条动画都只改**遮罩的渐变**，
-        // 窗口 frame 与组件 frame 都不动。
+        // 全程没有任何动画：窗口 frame 一次到位，组件一个像素都不动。
         installRevealCover(on: presence)
 
         presence.panel.setFrame(expandedFrame, display: false)
 
         presence.panel.ignoresMouseEvents = false
-
-        let revealDurationAtStart = revealDuration
 
         // The content flip is DEFERRED one run-loop tick. Measured 2026-09-23
         // (「点击刘海之后没有马上开始展开，而是等了一段时间」): with the flip
@@ -669,13 +663,7 @@ final class NotchWindowController {
                 guard let self,
                       self.expansionGeneration == expansionGenerationAtStart,
                       self.panelModel.isExpanded else { return }
-                switch revealAnimation {
-                case .none:
-                    self.removeReveal(on: presence)
-                case .fogBloom:
-                    self.startFogBloomReveal(on: presence, expandedFrame: expandedFrame,
-                                             duration: revealDurationAtStart)
-                }
+                self.removeReveal(on: presence)
                 self.finishExpansionCommit(on: presence)
             }
         }
@@ -686,62 +674,12 @@ final class NotchWindowController {
         // must be fully open. It only repairs visibility — it does NOT run
         // `finishExpansionCommit` again, which would play the reveal chime a
         // second time (that was a real bug: two chimes, a second apart).
-        DispatchQueue.main.asyncAfter(deadline: .now() + revealDuration + 0.45) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self,
                   self.expansionGeneration == expansionGenerationAtStart,
                   self.panelModel.isExpanded else { return }
             self.removeReveal(on: presence)
         }
-    }
-
-    // MARK: - 窗口动画（盖在面板上那层怎么化开）
-
-    /// **雾里浮现**（`WindowRevealAnimation.fogBloom`）。
-    ///
-    /// 把遮罩换成一层**径向渐变**：白色是不透明（看得见），透明是还盖着。渐变的
-    /// `locations` 从"四个 stop 全在负侧"（整块都盖着）扫到"都跑到正侧"（整块都露出来），
-    /// 于是可见区域是一圈**没有边界的软边**从面板中心往外长 —— 没有一条硬边，所以读起来
-    /// 是"雾散了"而不是"框打开了"。
-    ///
-    /// 组件那一侧由 `NotchExpandedSheetView` 的入场承担（浮起 + 去模糊），两条线共用
-    /// 同一个 `duration`，所以它们是一件事。
-    private func startFogBloomReveal(on presence: ScreenPresence, expandedFrame: CGRect, duration: TimeInterval) {
-        guard let hosting = presence.contentHostingView.layer else { return }
-        let gradient = CAGradientLayer()
-        gradient.type = .radial
-        gradient.frame = CGRect(origin: .zero, size: expandedFrame.size)
-        // 圆心略高于正中：观感上"雾的源"落在面板上部，和刘海的关系更近。
-        //
-        // **`endPoint` 就是那个圆的半径**，而用户 2026-09-25 说它太大
-        // （「中间的可见的那个圆圈太大了，让他小一点，因为窗口本身不大」）——
-        // 从 (1.35, 1.35) 收到 (1.05, 1.05)：半径小了约 22%，同一个 `locations`
-        // 下露出的圆明显更小。(stop 的位置要跟着往后挪，否则右下角永远盖不住 ——
-        // 面板四角在归一化半径上离圆心 1.16~1.42。)
-        gradient.startPoint = CGPoint(x: 0.5, y: 0.44)
-        gradient.endPoint = CGPoint(x: 1.05, y: 1.05)
-        let hidden: [NSNumber] = [-1.60, -1.24, -1.08, -0.62]
-        let shown: [NSNumber] = [0.12, 0.62, 1.18, 1.62]
-        gradient.colors = [
-            NSColor.white.cgColor, NSColor.white.cgColor,
-            NSColor.clear.cgColor, NSColor.clear.cgColor,
-        ]
-        gradient.locations = hidden
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        hosting.mask = gradient
-        CATransaction.commit()
-
-        let animation = CABasicAnimation(keyPath: "locations")
-        animation.fromValue = hidden
-        animation.toValue = shown
-        animation.duration = duration
-        // **曲线换掉了。** 原来是参考页的 `cubic-bezier(.22,.9,.3,1)` —— 那条曲线把
-        // 九成的位移压在前三成时间里，末段几乎不动，用户读到的是「展开到窗口边缘的时候
-        // 有个卡顿」。`easeInEaseOut` 把位移均开，末尾不再爬行。
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        gradient.locations = shown
-        gradient.add(animation, forKey: "fogBloomReveal")
-        revealMaskLayer = gradient
     }
 
     /// Hides the content before the final frame is committed, so the
@@ -1150,10 +1088,6 @@ final class NotchWindowController {
     private func removeReveal(on presence: ScreenPresence) {
         revealSurfaceLayer?.removeFromSuperlayer()
         revealSurfaceLayer = nil
-        // 渐变遮罩的动画要**先按 key 摘掉再丢层**（与中心缩放同一个道理：动画还挂在
-        // 层上时会继续驱动 presentation，只把层 nil 掉并不保证它当帧就停）。
-        revealMaskLayer?.removeAnimation(forKey: "fogBloomReveal")
-        revealMaskLayer = nil
 
         guard let hostingLayer = presence.contentHostingView.layer else { return }
         CATransaction.begin()

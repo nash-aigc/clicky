@@ -128,27 +128,6 @@ nonisolated enum NotchSupport {
     /// CSS ease-in（0.42, 0, 1, 1）——参考页 winClose 的 animation-timing-function。
     static let centerScaleCollapseTimingControlPoints: (Float, Float, Float, Float) = (0.42, 0.0, 1.0, 1.0)
 
-    /// **窗口动画**（盖在面板上那层遮罩）要走多久。
-    ///
-    /// 与 `expansionRevealDuration(for:)`（窗口尺寸动画）分开：那两个数已经在没有
-    /// 窗口尺寸动画的时候只剩一个用途 —— 排控制器里那两处截止点和看门狗；这两个是
-    /// 遮罩自己的时长。两处都跟着用户设的「弹出速度」倍率走，所以面板和遮罩永远同一
-    /// 节奏，不会一个走完另一个还在动。
-    ///
-    /// 实测（演示页与真机）：雾里浮现（现存的唯一一条）在 2× 下 0.31 秒左右观感最好 ——
-    /// 再短就只剩"闪一下"，再长会让人觉得面板卡住了。
-    static func revealDuration(
-        for animation: WindowRevealAnimation,
-        speedMultiplier: Double
-    ) -> TimeInterval {
-        let base: TimeInterval
-        switch animation {
-        case .fogBloom: base = 0.62
-        case .none: base = 0.0
-        }
-        return base / max(1.0, speedMultiplier)
-    }
-
     /// 展开动画要多长，按用户选的窗口样式取。    ///
     /// `NotchWindowController` 用它排那两个截止点（撤掉揭示的遮罩 / 收敛到展开态）
     /// 和看门狗。**两套时长必须从这一个函数出**：控制器里再写一个 switch，等于把

@@ -1057,19 +1057,6 @@ struct NotchExpandedSheetView: View {
     /// 重新走一遍；折叠期间不驻留，不会中途触发。
     @State private var hasContentSettledIn = false
 
-    /// 组件浮起的两个量：「直接显示」时恒为 0（硬出现），两条窗口动画开着时才从
-    /// 14pt / 5px 回到 0 —— 与遮罩共用同一个 `windowRevealAnimation`，所以两处
-    /// 不可能分家。
-    private var contentRiseOffset: CGFloat {
-        guard !shouldReduceMotion, AppSettingsStore.snapshot().windowRevealAnimation != .none
-        else { return 0 }
-        return hasContentSettledIn ? 0 : 14
-    }
-    private var contentRiseBlur: CGFloat {
-        guard !shouldReduceMotion, AppSettingsStore.snapshot().windowRevealAnimation != .none
-        else { return 0 }
-        return hasContentSettledIn ? 0 : 5
-    }
     @Environment(\.accessibilityReduceMotion) private var shouldReduceMotion
 
     var body: some View {
@@ -1107,15 +1094,6 @@ struct NotchExpandedSheetView: View {
             // （侧栏没有滚动，它看到的抖动只能来自这个偏移）。淡入 + 模糊
             // 仍然是参考页的入场语言；丢掉的只有那 8pt。
             .opacity(hasContentSettledIn ? 1 : 0)
-            // **组件这一侧：窗口动画开着时才浮起。**
-            //
-            // 用户 2026-09-25 在演示页里挑的那两条，都是"遮罩 × 组件一起走"：
-            // 雾从中心化开的同时，组件浮起、从模糊变清晰。所以位移和模糊只有在选了两条
-            // 动画之一时才存在；选「直接显示」时它们恒为 0，面板就是硬出现。
-            //
-            // 只碰 opacity / offset / blur 三个 —— 都是合成器属性，不改 frame，不重排。
-            .offset(y: contentRiseOffset)
-            .blur(radius: contentRiseBlur)
             .onAppear {
                 guard !shouldReduceMotion else {
                     hasContentSettledIn = true
@@ -1125,16 +1103,8 @@ struct NotchExpandedSheetView: View {
                 let entranceDelay = appSettingsSnapshot.expansionContentEntranceDelayInForce(
                     appSettingsSnapshot.notchExpansionSpeedMultiplier
                 )(appSettingsSnapshot.windowExpansionStyle)
-                let revealAnimation = appSettingsSnapshot.windowRevealAnimation
-                // 时长与遮罩共用同一个来源（`NotchSupport.revealDuration`），所以两条线
-                // 不会一个走完另一个还在动。「直接显示」沿用 0.15 秒的纯淡入。
-                let duration = revealAnimation == .none
-                    ? 0.15
-                    : NotchSupport.revealDuration(
-                        for: revealAnimation,
-                        speedMultiplier: appSettingsSnapshot.notchExpansionSpeedMultiplier
-                      )
-                withAnimation(.easeOut(duration: duration).delay(entranceDelay)) {
+                // **0.15 秒纯淡入**：面板整块出现，内容只是亮起来，没有任何位移。
+                withAnimation(.easeOut(duration: 0.15).delay(entranceDelay)) {
                     hasContentSettledIn = true
                 }
             }
