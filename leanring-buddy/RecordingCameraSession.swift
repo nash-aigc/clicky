@@ -18,12 +18,20 @@ import AppKit
 /// 曝光稳定的。
 nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
 
-    /// 每秒抓几帧。
+    /// **预览和送模型是两条不同步率的路径。**
     ///
-    /// 用户 2026-09-26 调整过这道题：一开始说「一秒一帧」，用过之后改口
-    /// 「一秒一张太慢了……0.25 秒一张的话可能会好一点」。**预览要跟得上手的动作** ——
-    /// 他移动摄像头看房间的时候，一秒才换一次画面是看不清自己转到哪了。
-    static let framesPerSecond: Double = 4
+    /// 用户 2026-09-26：「如果现在是一秒 4 帧的话，我觉得应该到一秒 12 帧……现在太卡了，
+    /// 体验没法忍」，同时又说「是不是你采集的时候是一秒一张，但是显示的时候你可以很同步？」
+    /// —— 他两次都指向同一件事：**看的要跟得上手，发出去的不用那么多**。
+    ///
+    /// - **预览 12 帧/秒**：只做 `CVPixelBuffer → CGImage → NSImage`，**不编码 JPEG**。
+    ///   编码再解码是这条路上最贵的一段，而预览根本不需要它。
+    /// - **送模型 4 帧/秒**：才做 JPEG 编码、才进那个 24 帧的缓冲。
+    ///
+    /// 12 帧/秒对「转动摄像头看房间」是够跟手的，而 4 帧/秒 × 24 帧 = 覆盖 6 秒，
+    /// token 也还在合理范围。
+    static let previewFramesPerSecond: Double = 12
+    static let modelFramesPerSecond: Double = 4
     /// 最多留几帧。超过就丢最早的 —— 一段话说了几分钟时，前面那些帧跟最后的提问
     /// 已经没关系了，而每多一帧就多一份 token。
     ///
@@ -31,9 +39,27 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
     /// 4 帧/秒之后不跟着放大就等于只覆盖 3 秒 —— 用户把镜头转一圈都录不全。
     static let maximumRetainedFrames = 24
 
-    var onFrame: ((Data) -> Void)?
+    /// 预览帧（**不编码**，直接给 CGImage）。12 帧/秒。
+    var onPreviewFrame: ((CGImage) -> Void)?
+    /// 送模型的帧（JPEG）。4 帧/秒。
+    var onModelFrame: ((Data) -> Void)?
     /// 已经抓了多少帧。界面上的数字用它。
     private(set) var capturedFrameCount = 0
+    /// 缩放到指定长边，**不编码**。预览走这条。
+    private static func downscaled(from image: CGImage, maximumDimension: CGFloat) -> CGImage? {
+        let longestSide = CGFloat(max(image.width, image.height))
+        let scale = min(1, maximumDimension / max(longestSide, 1))
+        let width = Int(CGFloat(image.width) * scale)
+        let height = Int(CGFloat(image.height) * scale)
+        guard let context = CGContext(data: nil, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
+        context.interpolationQuality = .low
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
+    }
+
     /// 当前用的采集分辨率。展开小窗时切成 1080p。
     private var currentPreset: AVCaptureSession.Preset = .hd1280x720
 
@@ -71,7 +97,8 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
 
     private let session = AVCaptureSession()
     private let queue = DispatchQueue(label: "clicky.camera.session")
-    private var lastCapturedAt = Date.distantPast
+    private var lastPreviewAt = Date.distantPast
+    private var lastModelFrameAt = Date.distantPast
     private var startedAt = Date.distantPast
     private var arrivedFrameCount = 0
     private var isRunning = false
@@ -141,7 +168,8 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
 
         startedAt = Date()
         arrivedFrameCount = 0
-        lastCapturedAt = .distantPast
+        lastPreviewAt = .distantPast
+        lastModelFrameAt = .distantPast
         isRunning = true
         session.startRunning()
     }
@@ -156,16 +184,26 @@ nonisolated final class RecordingCameraSession: NSObject, AVCaptureVideoDataOutp
         guard arrivedFrameCount > Self.minimumFramesToDiscard,
               Date().timeIntervalSince(startedAt) >= Self.settleSeconds else { return }
 
-        // 一秒一帧。摄像头本身可能给 30fps，这里按时间间隔丢。
         let now = Date()
-        guard now.timeIntervalSince(lastCapturedAt) >= 1.0 / Self.framesPerSecond else { return }
-        lastCapturedAt = now
+
+        // **预览：12 帧/秒，不编码。** 这一步只做像素搬运，是「跟手」的来源。
+        guard now.timeIntervalSince(lastPreviewAt) >= 1.0 / Self.previewFramesPerSecond else { return }
+        lastPreviewAt = now
 
         let ciImage = CIImage(cvPixelBuffer: buffer)
-        guard let cgImage = ciContext.createCGImage(ciImage, from: ciImage.extent),
-              let jpeg = Self.downscaledJPEG(from: cgImage, maximumDimension: 768) else { return }
+        guard let fullImage = ciContext.createCGImage(ciImage, from: ciImage.extent) else { return }
+        // 预览缩到 480 长边 —— 那条小窗最宽 315pt、高 86pt，再清晰也是浪费，
+        // 而缩放本身就发生在绘制路径上，不额外编码。
+        if let previewImage = Self.downscaled(from: fullImage, maximumDimension: 480) {
+            onPreviewFrame?(previewImage)
+        }
+
+        // **送模型：4 帧/秒，才做 JPEG。** 这一段贵，所以按自己的节奏走。
+        guard now.timeIntervalSince(lastModelFrameAt) >= 1.0 / Self.modelFramesPerSecond else { return }
+        lastModelFrameAt = now
+        guard let jpeg = Self.downscaledJPEG(from: fullImage, maximumDimension: 768) else { return }
         capturedFrameCount += 1
-        onFrame?(jpeg)
+        onModelFrame?(jpeg)
     }
 
     /// 小窗要的是「看得见」，模型要的是「看得清」—— 768 长边是两者的折中：

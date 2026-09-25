@@ -400,19 +400,8 @@ final class LongFormRecorderController: ObservableObject {
     /// 用户在这一轮里按过「退出抓帧」。**只作用于本轮** —— 下一轮录音重新按关键词激活。
     private var hasUserStoppedCameraThisSession = false
 
-    /// 抓帧的绿点闪动计数。小窗用它「抓一帧大一下」。
-    @Published private(set) var cameraFramePulse = 0
-
-    /// 已经抓了多少帧。小窗在绿点旁边把这个数字显示出来 —— 用户要「已经抓了几张」
-    /// 这件事一直看得见，而不是只能靠绿点闪去猜。
-    @Published private(set) var capturedCameraFrameCount = 0
-
-    /// 最近抓到的那一帧，给小窗做预览用。
-    ///
-    /// 单开一个字段而不是让小窗去读 `cameraFrames.last`：那个数组是**要发给模型的
-    /// 那一批**（有上限、会丢最早的），而预览要的是「此刻镜头里是什么」—— 两件事，
-    /// 共用一份只会让「预览显示的那张没发出去」这种状态出现。
-    @Published private(set) var latestCameraFrameData: Data?
+    /// 摄像头小窗要显示的东西。**单独一个对象** —— 见 `CameraPreviewModel` 的注释：
+    /// 挂在控制器上会让 12 帧/秒变成「每秒重建整条刘海 12 次」。
 
     /// 小窗收起来了没有。**收起来只是收成一条标题栏**，入口永远在 ——
     /// 早期版本把「缩起来」做成整条消失，用户点一下就再也叫不回来。
@@ -465,17 +454,22 @@ final class LongFormRecorderController: ObservableObject {
 
         isCameraCapturing = true
         publishDiagnostic("转写里出现「摄像头」→ 开始一秒一帧抓帧")
-        cameraSession.onFrame = { [weak self] jpeg in
+        // **预览：12 帧/秒，只更新那个独立的小模型。**
+        // 不经 `@Published` 走控制器 —— 走了的话整条刘海每秒重建 12 次。
+        cameraSession.onPreviewFrame = { [weak self] image in
+            Task { @MainActor in self?.cameraPreviewModel.update(frame: image) }
+        }
+        // **送模型：4 帧/秒。**
+        cameraSession.onModelFrame = { [weak self] jpeg in
             Task { @MainActor in
                 guard let self else { return }
                 self.cameraFrames.append(jpeg)
                 if self.cameraFrames.count > RecordingCameraSession.maximumRetainedFrames {
                     self.cameraFrames.removeFirst()
                 }
-                // 抓一帧、绿点闪一下、预览换一张、计数加一。
-                self.latestCameraFrameData = jpeg
-                self.cameraFramePulse &+= 1
-                self.capturedCameraFrameCount = self.cameraSession.capturedFrameCount
+                // 抓一帧、绿点闪一下、数字加一 —— 这三个都挂在预览模型上，
+                // 所以它们不牵动刘海那条带。
+                self.cameraPreviewModel.update(capturedFrameCount: self.cameraSession.capturedFrameCount)
             }
         }
         cameraSession.onFailure = { [weak self] reason in
@@ -495,6 +489,9 @@ final class LongFormRecorderController: ObservableObject {
 
     /// 正在抓帧。刘海下面的小窗读它决定要不要显示。
     @Published private(set) var isCameraCapturing = false
+
+    /// 小窗的预览数据。见 `CameraPreviewModel`。
+    let cameraPreviewModel = CameraPreviewModel()
 
     /// 转写里有没有说出**触发短语**。
     ///
@@ -837,8 +834,7 @@ final class LongFormRecorderController: ObservableObject {
         hasUserStoppedCameraThisSession = false
         isCameraCapturing = false
         cameraFrames = []
-        latestCameraFrameData = nil
-        capturedCameraFrameCount = 0
+        cameraPreviewModel.reset()
         cameraSession = RecordingCameraSession()
         if !isResuming {
             committedTranscriptTail = ""

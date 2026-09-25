@@ -72,6 +72,7 @@ struct NotchRecordingBandView: View {
                         // 用户当场说「太小了」。字幕条是整条带宽（359），它的圆角是 18。
                         NotchCameraPreviewStrip(
                             recorder: recorder,
+                            previewModel: recorder.cameraPreviewModel,
                             width: max(bandWidth - Self.ribbonCornerRadius * 2, 120))
                     }
                 }
@@ -481,6 +482,8 @@ private struct SilentButtonStyle: ButtonStyle {
 /// 既不额外开一路预览流，也让「你看到的这一张，就是正在被看的那一张」这句话成立。
 private struct NotchCameraPreviewStrip: View {
     @ObservedObject var recorder: LongFormRecorderController
+    /// **单独观察预览模型** —— 12 帧/秒只重算这一块，不牵动刘海那条带。
+    @ObservedObject var previewModel: CameraPreviewModel
     let width: CGFloat
 
     private static let collapsedPreviewHeight: CGFloat = 86
@@ -514,8 +517,16 @@ private struct NotchCameraPreviewStrip: View {
             .buttonStyle(.plain)
             .help("停止抓帧（本轮不再抓）")
 
-            // 抓一帧、这颗点亮一下并变大。「让用户知道现在正在抓帧」。
-            CameraCapturePulseDot(pulse: recorder.cameraFramePulse)
+            // 抓一帧、这颗点亮一下并变大。
+            //
+            // **它的占位必须固定。** 用户 2026-09-26：「绿色的点右侧这个数字总是在
+            // 左右移动」。原因就是这颗点自己从 7pt 长到 11pt，而它在数字左边 ——
+            // 每抓一帧就把数字往右推 4pt。所以缩放发生在**固定尺寸的容器内部**，
+            // 容器本身不动。
+            ZStack {
+                Color.clear.frame(width: 13, height: 13)
+                CameraCapturePulseDot(pulse: previewModel.capturedFrameCount)
+            }
 
             Text("摄像头")
                 .font(.system(size: 12, weight: .semibold))
@@ -525,11 +536,12 @@ private struct NotchCameraPreviewStrip: View {
             // 用户 2026-09-26：「你那个绿灯要闪，然后在旁边写上数字……同步地显示出来」。
             // 绿点闪是「刚刚抓了一帧」的瞬时信号，而这个数字是累计量 —— 只有闪烁的话，
             // 用户看不出已经攒了多少，也就判断不了「够不够模型看清一个来回」。
-            Text("\(recorder.capturedCameraFrameCount)")
+            Text("\(previewModel.capturedFrameCount)")
                 .font(.system(size: 11, weight: .semibold).monospacedDigit())
                 .foregroundColor(DS.Colors.success.opacity(0.9))
-                // 数字变宽不会把后面的东西推走（等宽数字 + 固定宽度）。
-                .frame(minWidth: 18, alignment: .leading)
+                // **固定宽度 + 居中**：1 位变 2 位、2 位变 3 位时它不会把后面的
+                // 东西推走，也不会自己左右挪。等宽数字保证每个字符同宽。
+                .frame(width: 26, alignment: .center)
 
             Spacer(minLength: 0)
 
@@ -565,20 +577,18 @@ private struct NotchCameraPreviewStrip: View {
 
     @ViewBuilder
     private var preview: some View {
-        if let data = recorder.latestCameraFrameData, let image = NSImage(data: data) {
+        if let cgImage = previewModel.frame {
             // **等比缩放整张，不裁切。**
             //
             // 上一版用的是 `.fill` + `.clipped()` —— 那是「填满这个框、多出来的切掉」，
             // 于是画面被裁掉一部分。用户：「你只有正确的比例，我才能看到摄像头里面的
             // 内容」。`.fit` 才是「整张都看得见」。
-            Image(nsImage: image)
+            Image(decorative: cgImage, scale: 1)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(maxWidth: .infinity,
                        maxHeight: recorder.isCameraPreviewExpanded
                        ? Self.expandedPreviewHeight : Self.collapsedPreviewHeight)
-                // 换帧不带动画：一秒一张，加淡入反而糊。
-                .id(data.count)
         } else {
             // 还没抓到第一帧 —— 预热要 0.35 秒，这一小段是正常的，要说出来而不是留一块空白。
             Text("正在启动摄像头…")
@@ -590,6 +600,8 @@ private struct NotchCameraPreviewStrip: View {
 }
 
 /// 抓帧指示点：每抓一帧亮一下、大一下。
+///
+/// 外面套着一个**固定 13pt 的容器**（见调用处）—— 这里长多大都不会推动右边的数字。
 private struct CameraCapturePulseDot: View {
     let pulse: Int
     @State private var isBright = false
@@ -597,13 +609,13 @@ private struct CameraCapturePulseDot: View {
     var body: some View {
         Circle()
             .fill(DS.Colors.success)
-            .frame(width: isBright ? 11 : 7, height: isBright ? 11 : 7)
+            .frame(width: isBright ? 12 : 7, height: isBright ? 12 : 7)
             .opacity(isBright ? 1 : 0.55)
-            .animation(.easeOut(duration: 0.32), value: isBright)
+            .animation(.easeOut(duration: 0.3), value: isBright)
             .onChange(of: pulse) { _, _ in
                 isBright = true
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 130_000_000)
+                    try? await Task.sleep(nanoseconds: 120_000_000)
                     isBright = false
                 }
             }
