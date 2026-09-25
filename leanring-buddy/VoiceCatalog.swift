@@ -657,7 +657,43 @@ nonisolated enum VoiceCatalog {
         let trimmed = voice.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         if systemVoices(for: engine, model: model).contains(where: { $0.id == trimmed }) { return true }
+
+        // **本族、但不是「本代」的系统音色，对这个模型同样不合法。**
+        //
+        // 实测（2026-09-25，日志原文）：默认全双工模型 `qwen-audio-3.0-realtime-flash`
+        // 发出去的 `voice` 是 `longanqian_v3.1`（3.1 那一代的名字），服务端把**整条
+        // `session.update`** 拒了，并在错误里回出它真正支持的清单：
+        //
+        //   Unsupported voice: 'longanqian_v3.1'.
+        //   Supported voices: longanqian, longanlingxin, … , longanhuan_v3.6, … , sherry
+        //
+        // 3.0 这一代要的是 `longanqian`（**没有后缀**），清单里带 `_v3.1` 的一个都没有。
+        //
+        // 原先这里只判"是不是外族"，而 `longanqian_v3.1` 属于本族 → 放行 → 会话连不上。
+        // 后果比一句音色错误严重得多：界面立刻挂断、相位回 idle，用户看到的是
+        // **「刘海左右两侧什么都不显示」**，而不是"音色选错了"。
+        //
+        // 所以判据收紧成：在本引擎**全部**系统音色里出现过、但不在**本模型**可用列表里
+        // 的，一律判非法 —— 它会走 `legalVoice` 换成该模型的兜底音色，并给出一条说明。
+        if allSystemVoices(for: engine).contains(where: { $0.id == trimmed }) { return false }
+
         return !isForeignSystemVoice(trimmed, for: engine)
+    }
+
+    /// 本引擎**所有代数**的系统音色（不按模型过滤）。
+    ///
+    /// 只用来回答"这个 id 是不是我们自己的音色" —— 是，但不在本模型列表里，
+    /// 那就属于"异代"，见 `isSelectable`。与 `systemVoices(for:model:)` 的区别
+    /// 正是**有没有按模型过滤**，两者不要合并。
+    private static func allSystemVoices(for engine: VoiceChatEngine) -> [VoiceOption] {
+        switch engine {
+        case .threeStage:
+            return threeStageVoices
+        case .omni:
+            return omniVoices
+        case .duplexVoice:
+            return duplexSharedVoices + duplex31OnlyVoices
+        }
     }
 
     /// 是不是**别的**模式的内置系统音色。
