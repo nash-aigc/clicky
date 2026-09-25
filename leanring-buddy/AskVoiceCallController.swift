@@ -100,13 +100,16 @@ final class AskVoiceCallController: ObservableObject {
     /// `60 / (25 − 8) ≈ 3.5 秒` 的快节奏，之后平滑落到交付速度附近 ——
     /// 快的那一段既看得清、也撑得久。
     private static let displayNormalCharactersPerSecond = 25.0
-    /// **全速所需的在手缓冲：60 字。**
+    /// **快节奏所需的在手缓冲，同时也是启动阈值：40 字。**
     ///
-    /// 一行约 27~33 字（实测：断行器在 459pt 宽下每行装 33 个 unit），所以 60 字
-    /// 约等于两行 —— 正好是用户划的那条线：「前面这三行或者两行的时候，一定要
-    /// 正常速度」。它同时是**启动阈值**：攒够两行才开始吐，于是开头那两行必然
-    /// 是快的。
-    private static let displayFullSpeedBufferCharacters = 60
+    /// 两个数必须**是同一个**：速率按 `缓冲 / 它` 算，所以攒到多少才开口，决定了
+    /// 开口那一刻跑不跑得到快速度 —— 阈值低于它，第一行就永远是慢的。
+    ///
+    /// 取 40 的理由：服务端一次大约就下发这么多（实测一整句几乎同时到齐），所以
+    /// 「等一串」只需要 1~2 秒；而 40 字约一行半，配合下面的速率能换来
+    /// `40 / (25 − 8) ≈ 2.4 秒` 的快节奏。早先设成 60（两行）要等更久才出第一个字，
+    /// 而多等的那一段并没有换来更长的快节奏 —— 收益不划算。
+    private static let displayFullSpeedBufferCharacters = 40
     /// **最低速度：6 字/秒。**
     ///
     /// 取在实测交付速度（约 8 字/秒）**之下**：低于交付，缓冲才会在慢下来的时候
@@ -221,6 +224,13 @@ final class AskVoiceCallController: ObservableObject {
             callbacks: DuplexVoiceEngine.Callbacks(
                 onUserUtterance: { [weak self] transcript in
                     self?.handleUserUtterance(transcript)
+                },
+                // **用户正在说的话**：服务端从开口那一刻就增量下发
+                // （官方事件 `conversation.item.input_audio_transcription.delta`）。
+                // 只用它画界面上的用户气泡 —— 落盘/配对仍走上面的 `onUserUtterance`，
+                // 见 `Callbacks.onUserTranscriptUpdate` 的说明。
+                onUserTranscriptUpdate: { [weak self] partial in
+                    self?.liveUserTranscript = partial
                 },
                 onFirstAudioScheduled: { [weak self] in
                     // **接通判据 = AI 的第一段声音真的开始播**，与 Chatting 完全一致
@@ -457,11 +467,15 @@ final class AskVoiceCallController: ObservableObject {
     ///
     /// 速率式（连续，所以不会有"突然减速"）：
     ///
-    ///     速率 = 25 × clamp(缓冲 / 60, 6/25, 1)     字/秒
+    ///     速率 = 25 × clamp(缓冲 / 40, 6/25, 1)     字/秒
     ///
-    /// - 缓冲 ≥ 60 → 25 字/秒（快的那一段，约撑 3.5 秒）
-    /// - 缓冲 = 30 → 12.5 字/秒
+    /// - 缓冲 ≥ 40 → 25 字/秒（快的那一段，约撑 2.4 秒）
+    /// - 缓冲 = 20 → 12.5 字/秒
     /// - 缓冲 → 0  → 6 字/秒兜底（仍在前移，不是停住）
+    ///
+    /// **一条结构性保证值得记住**：上限 25 字/秒 ÷ 30 帧 ≈ **每帧不到一个字**。
+    /// 也就是说无论缓冲攒了多少，这个方案在结构上**不可能"糊"上去** —— 这是它不需要
+    /// 额外上限、也不需要判定的原因。
     ///
     /// 兜底那 1.2 秒是给短回复的：开场白只有二十来字，永远攒不到 60，
     /// 没有它就会一个字都不显示。

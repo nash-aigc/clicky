@@ -575,6 +575,11 @@ final class VoiceChatController: ObservableObject {
                 onUserUtterance: { [weak self] transcript in
                     self?.insertDuplexUserEntry(transcript)
                 },
+                // Chatting 页**不显示增量**：用户 2026-09-25 明确要求「用户的提示词
+                // 要一次性展示，不要一个字一个字地显示」，所以这里刻意什么都不做 ——
+                // 用户气泡仍由上面的 `onUserUtterance`（最终稿）建立。
+                // Ask 页那条路**相反**，它显示增量，见 `AskVoiceCallController`。
+                onUserTranscriptUpdate: { _ in },
                 onFirstAudioScheduled: { [weak self] in
                     self?.markVoiceChatFullyConnected()
                 },

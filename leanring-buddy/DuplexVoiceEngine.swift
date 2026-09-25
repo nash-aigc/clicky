@@ -64,6 +64,19 @@ final class DuplexVoiceEngine {
         /// 全部到完，这条才到）—— 服务端是先听到用户说话就开始回答，转写是最后补的。
         /// 调用方据此把用户气泡插到回答气泡**前面**。
         var onUserUtterance: (String) -> Void
+        /// **用户正在说的那句话（增量）** —— 服务端从开口那一刻就一直在下发。
+        ///
+        /// 与 `onUserUtterance` 的分工是**显示 vs 落盘**，两者都要：
+        /// - 这一个 → 界面上的用户气泡，让用户的话**开口即现**；
+        /// - `onUserUtterance`（`…transcription.completed`）→ 落盘与配对。
+        ///
+        /// 为什么不能只保留后者：`completed` 实测排在 `response.done` 之后，也就是
+        /// **一整轮答完才到**，界面因此要等 AI 说完才知道用户说了什么
+        /// （用户 2026-09-25：「用户的提示词在 AI 回复完成之后才突然出现」）。
+        ///
+        /// 为什么不能只保留前者：增量那份是"还在改"的文本（官方事件里它带一个
+        /// `stash` 暂存尾巴），而且与回答不是同一个推理产物；记录必须用最终稿。
+        var onUserTranscriptUpdate: (String) -> Void
         /// **第一段回答音频刚刚排进播放队列** —— 也就是「真的出声了」。
         ///
         /// 连接状态切换到「已连接」必须等它：在那之前对方是不是真的活着、
@@ -579,6 +592,26 @@ final class DuplexVoiceEngine {
             guard let delta = event["delta"] as? String else { return }
             currentAssistantText += delta
             callbacks.onAssistantText(currentAssistantText)
+
+        case "conversation.item.input_audio_transcription.delta":
+            // **用户正在说的话，服务端从开口那一刻就在增量下发。**
+            //
+            // 官方服务端事件参考（阿里云 `qwen-audio-realtime-server-events`）写着：
+            //   「服务端检测到语音开始，返回 `input_audio_buffer.speech_started`，
+            //     同时流式返回 ASR 转写增量 `conversation.item.input_audio_transcription.delta`」
+            // 事件体带两个字段（官方示例）：
+            //   { "text": "你好", "stash": "世界" }
+            // `text` 是已确定的部分，`stash` 是还没定稿的暂存尾巴 —— 两个拼起来才是
+            // 此刻完整的一句话。
+            //
+            // **原先这里只有 `completed` 一个分支**，所以界面要等一整轮结束才知道用户
+            // 说了什么（`completed` 实测排在 `response.done` 之后）——用户 2026-09-25 报的
+            // 「用户的提示词在 AI 回复完成之后才突然出现」就是这个，而不是协议做不到。
+            // 这一条只补了"没接的那个事件"，没有第二条识别、没有第二个 websocket。
+            let settledText = event["text"] as? String ?? ""
+            let stashedText = event["stash"] as? String ?? ""
+            let partial = (settledText + stashedText).trimmingCharacters(in: .whitespacesAndNewlines)
+            if !partial.isEmpty { callbacks.onUserTranscriptUpdate(partial) }
 
         case "conversation.item.input_audio_transcription.completed":
             guard let transcript = event["transcript"] as? String else { return }
