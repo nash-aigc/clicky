@@ -49,6 +49,18 @@
 import AppKit
 import SwiftUI
 
+/// 输入框右下角除 ✕ 之外的那个按钮。目前只有 Ask 页的静音开关用它。
+///
+/// 做成一个值类型而不是泛型插槽，是因为这里只需要「一个纯图标按钮」这一种形状：
+/// 泛型会把三个调用点的类型签名都改一遍，而它们要的只是「有没有这个按钮」。
+/// 图标与颜色由调用方按自己的状态算好传进来，输入框不持有那个状态。
+struct ComposerAccessoryButton {
+    let systemImageName: String
+    let tint: Color
+    let helpText: String
+    let action: () -> Void
+}
+
 struct MessageComposerField: View {
 
     let placeholder: String
@@ -95,6 +107,8 @@ struct MessageComposerField: View {
     /// The trailing inset that keeps text out from under the two corner
     /// buttons (they are 20pt wide and sit 4pt from the edge).
     static let trailingButtonInset: CGFloat = 26
+    /// 右下角多一个附加按钮时的右侧留白：✕(20) + 间隔(2) + 附加按钮(24) + 余量(6)。
+    static let trailingButtonInsetWithAccessory: CGFloat = 52
 
     /// The stop button: 「长方形的、竖向的」, and its height is exactly the
     /// box's own — the user's 「停止按钮的高度必须与输入框高度完全相同」
@@ -110,6 +124,15 @@ struct MessageComposerField: View {
     @State private var isExpandButtonHovered = false
     @State private var isClearButtonHovered = false
     @State private var isStopButtonHovered = false
+    @State private var isAccessoryButtonHovered = false
+
+    /// 右下角的附加图标按钮（可选）。默认没有 —— 只有 Ask 页传它。
+    ///
+    /// **它必须在输入框内部**，这是用户 2026-09-25 的直接要求：「把声音按钮移到
+    /// 用户输入框的右下角，减少空间占用。现在用户发送提示词后，声音按钮会挡住
+    /// 提示词」。原先它是输入框上方独立的一行，而那一行与输入框之间只有 10 pt，
+    /// 提示词一长就往那一行底下钻，正好被它盖住。
+    var composerAccessory: ComposerAccessoryButton? = nil
 
     var body: some View {
         HStack(alignment: .bottom, spacing: Self.stopButtonGap) {
@@ -128,7 +151,11 @@ struct MessageComposerField: View {
         )
         .padding(.horizontal, 12)
         .padding(.vertical, Self.verticalTextInset)
-        .padding(.trailing, Self.trailingButtonInset)
+        // 右侧给角上按钮留的宽度随「有没有附加按钮」变化：✕ 一个要 26，✕ 加静音
+        // 要 52（20 + 2 + 24），否则最后一行文字会钻到静音图标底下。
+        .padding(.trailing, composerAccessory == nil
+                 ? Self.trailingButtonInset
+                 : Self.trailingButtonInsetWithAccessory)
         .frame(height: height, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
@@ -147,7 +174,41 @@ struct MessageComposerField: View {
         // overlay is the version that cannot leak into the value.
         .overlay(alignment: .topLeading) { placeholderLabel }
         .overlay(alignment: .topTrailing) { expandButton }
-        .overlay(alignment: .bottomTrailing) { clearButton }
+        // 右下角是一组，不是单个：✕ 只在有字时出现，附加按钮（静音）常驻。
+        // 并排放才不会有字的时候两者抢同一个角落。
+        .overlay(alignment: .bottomTrailing) {
+            HStack(spacing: 2) {
+                clearButton
+                accessoryButton
+            }
+        }
+    }
+
+    /// 右下角常驻的那个图标按钮（Ask 页的静音开关）。
+    ///
+    /// 纯图标、无文字（用户要求），因此比 ✕ 稍大一点以保证可点面积 ——
+    /// 22 pt 的图标落在 24 pt 的方形热区里，比 ✕ 的 20 pt 大一档。
+    @ViewBuilder
+    private var accessoryButton: some View {
+        if let composerAccessory {
+            Button(action: composerAccessory.action) {
+                Image(systemName: composerAccessory.systemImageName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(
+                        isAccessoryButtonHovered
+                        ? composerAccessory.tint
+                        : composerAccessory.tint.opacity(0.75)
+                    )
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .onHover { hovering in
+                isAccessoryButtonHovered = hovering
+            }
+            .help(composerAccessory.helpText)
+        }
     }
 
     @ViewBuilder

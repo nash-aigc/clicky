@@ -61,11 +61,16 @@ struct NotchHomeView: View {
                 conversationFlow
             }
 
-            // **静音开关**（用户 2026-09-25：「放在输入框和停止按钮的上面、右上方，
-            // 宽度可以比停止按钮大」）：默认是播放（开）。它只控制 CompanionManager
-            // 回复管线的朗读，不影响 Chatting 会话自己的音频。
+            // **静音开关**（用户 2026-09-25：「把声音按钮移到用户输入框的右下角，
+            // 减少空间占用。现在用户发送提示词后，声音按钮会挡住提示词……做成只有
+            // 一个图标、没有文字的按钮，可以稍微大一点」）。
             //
-            // **两种情况**（用户 2026-09-25 追加）：
+            // 它曾经是输入框**上方独立的一行**，而那一行与输入框之间只有 10 pt ——
+            // 提示词一长就从输入框里往上顶，正好钻到那一行底下被盖住。现在它作为
+            // 输入框自己的右下角附加按钮渲染（`MessageComposerField.composerAccessory`），
+            // 不再占任何额外高度，也不可能盖住文字。
+            //
+            // **两种情况**（用户 2026-09-25）：
             //   1. 提示词还没发送 / AI 还没开始说话 —— 点它就只是关设置，
             //      下一条回复的门禁在发送前读它，整条合成根本不会发生。
             //   2. 回复已经开始合成/播放 —— 点它除了关设置，还立刻停掉这一条
@@ -74,50 +79,6 @@ struct NotchHomeView: View {
             // 两条情况走同一个动作：先翻转设置，再让 manager 停这一条 ——
             // `silenceActiveReplyAudio` 的门禁是「这一条回复还在跑（或还在播）」，
             // 情况 1 下两者都不成立，它是 no-op。
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                Button {
-                    companionManager.voiceReplyMuted.toggle()
-                    if companionManager.voiceReplyMuted {
-                        companionManager.silenceActiveReplyAudio()
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: companionManager.voiceReplyMuted
-                              ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                            .font(.system(size: 11, weight: .medium))
-                        Text(companionManager.voiceReplyMuted ? "已静音" : "声音")
-                            .font(.system(size: 11.5, weight: .medium))
-                    }
-                    .foregroundColor(companionManager.voiceReplyMuted
-                                     ? Color.red.opacity(0.8) : .white.opacity(0.75))
-                    .padding(.horizontal, 12)
-                    .frame(height: 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.white.opacity(0.08))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(
-                                companionManager.voiceReplyMuted
-                                ? Color.red.opacity(0.4) : Color.clear,
-                                lineWidth: 1)
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help(companionManager.voiceReplyMuted
-                      ? "已静音：回复只显示文字（点击恢复朗读）"
-                      : "正在朗读回复（点击静音，只显示文字）")
-            }
-            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-            // 间距收紧（用户 2026-09-25：「把这个按钮往下一点，它的间距太大了」）。
-            // 输入框自己带 10 pt 顶部留白，这里再加 4 就成了 14 —— 现在贴到
-            // 输入框的留白上，按钮与输入框之间只剩那一条 10 pt。
-            .padding(.bottom, 0)
-
             composerRow
 
             // The last error's verbatim API text. The deleted menu bar panel
@@ -666,7 +627,23 @@ struct NotchHomeView: View {
             // watching it work.
             isResponding: companionManager.voiceState == .processing
                 || companionManager.voiceState == .responding,
-            onStop: { companionManager.interruptActiveResponse() }
+            onStop: { companionManager.interruptActiveResponse() },
+            // 右下角常驻的静音开关 —— 它是输入框自己的一部分，不再是上面一行。
+            composerAccessory: ComposerAccessoryButton(
+                systemImageName: companionManager.voiceReplyMuted
+                    ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                tint: companionManager.voiceReplyMuted
+                    ? Color(red: 1.0, green: 0.42, blue: 0.42) : .white,
+                helpText: companionManager.voiceReplyMuted
+                    ? "已静音：回复只显示文字（点击恢复朗读）"
+                    : "正在朗读回复（点击静音，只显示文字）",
+                action: {
+                    companionManager.voiceReplyMuted.toggle()
+                    if companionManager.voiceReplyMuted {
+                        companionManager.silenceActiveReplyAudio()
+                    }
+                }
+            )
         )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)
