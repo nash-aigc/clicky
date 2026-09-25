@@ -240,8 +240,8 @@ struct NotchRecordingBandView: View {
             // 某一行，体验太差了」。所以这里是一个 `TextEditor`：点哪改哪，
             // 全文连续，段落之间没有换行。
             TextEditor(text: Binding(
-                get: { recorder.transcriptDraftText ?? recorder.transcriptPlainText },
-                set: { recorder.transcriptDraftText = $0 }))
+                get: { recorder.transcriptDisplayText },
+                set: { recorder.applyEditedTranscript($0) }))
                 .font(.system(size: 17))
                 .foregroundColor(EmbossMaterial.textPrimary)
                 // 用户要求「行间距稍微再增大一点」。
@@ -543,96 +543,88 @@ private struct RecordingWaveformLabel: View {
 /// 逐字追一个被改过的串只会得到一段乱码动画，所以直接对齐过去。
 private struct SmoothRevealedTranscriptText: View {
     let text: String
-    /// 这一行能用多少宽度。用来决定文字是**从左排起**还是**贴着右边滚**。
+    /// 这一行能用多少宽度。
     let availableWidth: CGFloat
-    /// 文字颜色。展开面板里那一行用**绿色**（用户：「实时转写的这个文字，在最上面
-    /// 那一行，应该要绿色」），刘海下那一行仍然是白的。
     var textColor: Color = .white
-    /// 短文本时是不是也要贴着右边。
-    ///
-    /// 展开面板里是 `true`：那一行右边有个复制按钮，文字要顶到它左边；
-    /// 刘海下那条是 `false`：短句从左排起（否则短句会缩在右边，看着像「只显示了
-    /// 后半句」）。
-    var alwaysTrails: Bool = false
 
-    /// 屏幕上本来就只看得到最后几十个字。用窗口而不是全文，是为了让每帧的
-    /// 布局开销与会话长度无关 —— 否则录得越久越卡。
-    private static let windowCharacterCount = 64
-    private static let charactersPerSecond: Double = 40
-    private static let framesPerSecond: Double = 30
-    /// 落后超过这么多字就不再逐字爬、直接对齐。见 `advance()`。
-    private static let catchUpThresholdCharacterCount = 6
     private static let fontSize: CGFloat = 15
+    /// 一次位移用多久滑完。
+    ///
+    /// **必须大于服务端的到达间隔（实测 300–400ms）。** 这是实测结论：动画时长
+    /// 0.35s 配 400ms 间隔时，每段动画都跑完了下一批还没到 —— 实测 **9.0% 的时间完全
+    /// 静止**，单次停顿中位 38ms，表现成 2.5 次/秒的「走—停—走」方波，正是用户说的
+    /// 「停住不动、然后突然向左移动一下」。
+    ///
+    /// 0.6s 让动画永远跑不完，被下一批**从当前呈现值**平滑接上（这一点也是实测的：
+    /// 5 组配置 + 21 次真实重定目标，打断瞬间的位置跳变**全是 0.000pt**）—— 于是
+    /// 连续说话时屏幕上的位移是连续的，没有静止段。
+    private static let slideDuration: Double = 0.6
+    /// 窗口最多留多少字。超过就从左边裁 —— **裁掉的必须是屏幕外那部分**。
+    private static let maximumWindowCharacters = 160
 
-    @State private var shownText = ""
-    private let ticker = Timer.publish(every: 1.0 / framesPerSecond, on: .main, in: .common).autoconnect()
+    /// 窗口左端在全文里的位置。
+    ///
+    /// **这是这一版的关键，也是前十次全错的根源。**
+    ///
+    /// 之前用的是 `text.suffix(64)` —— 一个**定长**窗口。窗口满了之后，「前面掉出一个
+    /// 汉字、后面进来一个汉字」会让窗口的**宽度一个 bit 都不变**（实测：汉字 advance
+    /// 恒为 14.883268pt，纯中文 64 字窗口恒为 952.53pt）。而位移是
+    /// `availableWidth - 窗口宽度`，所以位移**再也不变**，`onChange` **一次都不触发**，
+    /// `withAnimation` **从来没有被执行过**。
+    ///
+    /// 屏幕上之所以还有位移，是因为窗口的**内容**被整串换掉、瞬时生效 —— 那一跳和
+    /// 位移量无关，所以不受任何动画保护。这就是「停住不动、然后突然向左跳一下」。
+    /// 而唯一还能改变宽度的东西是**半宽的标点**（「，」「。」实测 7.587549pt，正好
+    /// 半个汉字），于是屏幕上唯一还会动的步长就是半个字 —— 这就是「半个字半个字地蹦」。
+    ///
+    /// 换成「由这个游标控制的**变长**窗口」之后，每来一个字窗口就真的变宽 14.88pt，
+    /// 位移随之变化，动画每一次都被调度。
+    @State private var windowStart = 0
+    @State private var slideOffset: CGFloat = 0
 
     var body: some View {
-        Text(shownText.isEmpty ? " " : shownText)
+        let shown = String(text.dropFirst(windowStart))
+        // **文字右边缘永远钉在这一行的右端**，随着字变多向左长 ——
+        // 用户的要求：「无论是第一个字还是第二个字，永远都是从右向左移动」。
+        let targetOffset = availableWidth - Self.width(of: shown)
+
+        Text(shown.isEmpty ? " " : shown)
             .font(.system(size: Self.fontSize, weight: .medium))
             .foregroundColor(textColor)
             .lineLimit(1)
             .fixedSize()
-            // 短句**从左排起**（用户报的「只显示在右半部分」就是这个：之前一律
-            // 右对齐，短句自然缩在右边）；一旦长过这一行，改成贴着右边 ——
-            // 最新说的字必须留在可见处，左对齐会让新字从右边被裁掉。
-            .frame(width: availableWidth,
-                   alignment: (alwaysTrails || measuredWidth > availableWidth) ? .trailing : .leading)
-            .onReceive(ticker) { _ in advance() }
-            .onChange(of: text) { _, _ in advance() }
-            // **首次出现直接对齐，不从空串逐字爬。**
-            //
-            // 平滑揭示是给「新字到达」用的（30 字/秒，跟得上服务端每秒 ~25 字的
-            // 吞吐）。但视图第一次出现时**根本没有新字** —— 文本早就在那儿了，
-            // 应该立刻完整显示。原来这里调的是 `advance()`，而它每次只推进一个字，
-            // 于是几十秒的录音要从空白爬十几秒才能爬完，用户看到的就是
-            // 「第一次展开只显示左侧一点点」。第二次展开时 SwiftUI 复用了这个视图、
-            // `shownText` 还留着上一次爬完的结果，所以看起来「第二次就正常了」。
+            // **文字不进动画事务**（动画只挂在 `slideOffset` 上）。否则 SwiftUI 会把
+            // 「旧文字→新文字」也当成可动画的变化，两个版本同时画 = 叠影。
+            .offset(x: slideOffset)
+            .frame(width: availableWidth, alignment: .leading)
+            .clipped()
             .onAppear {
-                shownText = String(text.suffix(Self.windowCharacterCount))
+                windowStart = max(0, text.count - Self.maximumWindowCharacters)
+                slideOffset = availableWidth - Self.width(of: String(text.dropFirst(windowStart)))
+            }
+            .onChange(of: text) { _, newText in
+                let total = newText.count
+                // 窗口太长时把左端推近。**裁掉的是屏幕外面那部分**，而右边缘仍然钉住，
+                // 所以屏幕上**看不出任何变化** —— 这一步不带动画是安全的。
+                let truncated = total - windowStart > Self.maximumWindowCharacters
+                if truncated {
+                    windowStart = total - Self.maximumWindowCharacters
+                    slideOffset = availableWidth - Self.width(of: String(newText.dropFirst(windowStart)))
+                    return
+                }
+                let shownNow = String(newText.dropFirst(windowStart))
+                withAnimation(.linear(duration: Self.slideDuration)) {
+                    slideOffset = availableWidth - Self.width(of: shownNow)
+                }
             }
     }
 
-    /// 用同一个字体直接量文字宽度。
-    ///
-    /// 不用 `GeometryReader` + `PreferenceKey` 那一套：那一套读到的尺寸比布局慢
-    /// 一帧，而这一行每 1/30 秒就要判一次对齐 —— 慢一帧就会在临界点上左右横跳。
-    /// 字体是我们自己定的，同步量一次既准又即时。
-    private var measuredWidth: CGFloat {
-        guard !shownText.isEmpty else { return 0 }
-        let font = NSFont.systemFont(ofSize: Self.fontSize, weight: .medium)
-        return (shownText as NSString).size(withAttributes: [.font: font]).width
-    }
-
-    private func advance() {
-        let target = String(text.suffix(Self.windowCharacterCount))
-        guard !target.isEmpty else {
-            shownText = ""
-            return
-        }
-        guard target.hasPrefix(shownText) else {
-            // 被改写，或者内容已滚出窗口：对齐到目标末尾同样长的一段，接着往下走。
-            shownText = String(target.suffix(max(shownText.count, 1)))
-            return
-        }
-        guard target.count > shownText.count else { return }
-        // **落后很多就直接对齐，不逐字爬。**
-        //
-        // 逐字推进（1 字/帧 = 30 字/秒）只跟得上服务端每秒 ~25 字的**增量**。但首次
-        // 展开时 `shownText` 从空开始，而那一刻积压的文本可能已经几十个字 —— 照 30
-        // 字/秒往回爬要好几秒，用户看到的就是「第一次展开只显示左边一点点」。第二次
-        // 展开时 SwiftUI 复用了视图、`shownText` 还留着上次爬完的结果，所以看起来
-        // 「第二、三次就正常了」。
-        //
-        // 逐字平滑的意义在于**接住新到达的字**；落后一大截时没有任何东西需要平滑，
-        // 直接显示才是对的。
-        let gap = target.count - shownText.count
-        if gap > Self.catchUpThresholdCharacterCount {
-            shownText = target
-            return
-        }
-        let step = max(1, Int(Self.charactersPerSecond / Self.framesPerSecond))
-        shownText = String(target.prefix(min(shownText.count + step, target.count)))
+    /// 用同一个字体直接量文字宽度。批判者实测过：SwiftUI 自己渲染的宽度 =
+    /// `ceil(NSString 量出来的)` ±1pt，两者一致，所以拿它算位移是可靠的。
+    private static func width(of string: String) -> CGFloat {
+        guard !string.isEmpty else { return 0 }
+        let font = NSFont.systemFont(ofSize: fontSize, weight: .medium)
+        return (string as NSString).size(withAttributes: [.font: font]).width
     }
 }
 

@@ -278,6 +278,38 @@ final class LongFormRecorderController: ObservableObject {
     /// 用户正在编辑时的草稿。`nil` 表示没在编辑。
     @Published var transcriptDraftText: String?
 
+    /// **当前这句还没定稿的实时文本。**
+    ///
+    /// 展开面板的文字原来只读 `transcriptPlainText`，而那个**只在 `isDefinite` 时
+    /// 才追加** —— `isDefinite` 表示服务端判定这句话说完了（要 800ms 静音 + 处理），
+    /// 所以在面板里看到的是**定稿的句子**，比刘海那一行的实时部分晚约 3 秒。
+    /// 刘海那一行读的是这个字段，所以跟手；两条路读的是**不同的数据**。
+    ///
+    /// 面板现在也读它，两边同源。
+    @Published private(set) var livePartialText: String = ""
+
+    /// 面板里应该显示的全部文字：**（用户改过的正文 或 已落盘正文）+ 当前这句**。
+    ///
+    /// 两层都要在：
+    /// - 草稿存在时用它（用户的编辑优先），否则用已落盘的正文；
+    /// - **实时部分永远加在末尾** —— 展开那一版错在「一旦有草稿就再也不看实时部分」，
+    ///   而展开会立刻建草稿，所以面板永远只显示定稿的句子。
+    var transcriptDisplayText: String {
+        (transcriptDraftText ?? transcriptPlainText) + livePartialText
+    }
+
+    /// 用户在面板里改完了。`edited` 是**屏幕上那份**，末尾带着实时部分 ——
+    /// 把那段剥掉再存：实时部分由 `livePartialText` 负责，存进草稿会在下一次定稿时
+    /// 被重复计入。
+    func applyEditedTranscript(_ edited: String) {
+        var stored = edited
+        let partial = livePartialText
+        if !partial.isEmpty, stored.hasSuffix(partial) {
+            stored.removeLast(partial.count)
+        }
+        transcriptDraftText = stored
+    }
+
     var isEditingTranscript: Bool { transcriptDraftText != nil }
 
     /// 正在收尾（末包已发，等服务端把最后一段判成 definite）。
@@ -311,7 +343,10 @@ final class LongFormRecorderController: ObservableObject {
             collapseTranscriptEditor()
         } else {
             isTranscriptExpanded = true
-            transcriptDraftText = transcriptPlainText
+            // **展开不建草稿。** 建了的话，显示就从「正文 + 实时部分」切成「草稿」，
+            // 而草稿只装定稿的内容 —— 实时部分再也不显示。用户看到的「展开后不实时、
+            // 晚很久」就是这个。草稿只在用户真的动手改的那一刻才建
+            // （见 `applyEditedTranscript`）。
         }
     }
 
@@ -383,6 +418,7 @@ final class LongFormRecorderController: ObservableObject {
         isSessionActive = false
         currentSession = nil
         transcriptPlainText = ""
+        livePartialText = ""
         committedTranscriptTail = ""
         liveTranscriptLine = ""
     }
@@ -530,6 +566,7 @@ final class LongFormRecorderController: ObservableObject {
             committedTranscriptTail = ""
             liveTranscriptLine = ""
             transcriptPlainText = ""
+            livePartialText = ""
             transcriptDraftText = nil
         }
 
@@ -842,6 +879,8 @@ final class LongFormRecorderController: ObservableObject {
                 self.liveTranscriptLine = self.committedTranscriptTail
                 // 全文那份：**不加分隔符**，段与段直接相接 —— 文字是连续的。
                 self.transcriptPlainText += segment.text
+                // 这一句已经进了正文，实时部分就清空（它本来就是这个段的内容）。
+                self.livePartialText = ""
                 // 用户正在编辑时不覆盖他的草稿，只在末尾接上新的内容。
                 if self.transcriptDraftText != nil {
                     self.transcriptDraftText? += segment.text
@@ -849,6 +888,8 @@ final class LongFormRecorderController: ObservableObject {
             } else {
                 transcript.updateLiveLine(segment.text)
                 self.liveTranscriptLine = self.committedTranscriptTail + segment.text
+                // **面板也读实时部分** —— 这就是「展开后能不能实时」的全部差别。
+                self.livePartialText = segment.text
             }
         }
         client.onStateChange = { [weak self] state in
