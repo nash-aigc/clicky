@@ -955,14 +955,15 @@ final class LongFormRecorderController: ObservableObject {
 
         publishDiagnostic("录音结束：\(text.count) 字，\(String(format: "%.1f", session?.recordedSeconds ?? 0)) 秒")
 
-        SoundEffectPlayer.shared.play(.sessionHungUp)
-
-        // 音效已经在 `stopRecording` 里、点下去的那一帧响过了，这里不再响一次。
-        // **转写完成的音效和停止转写的音效必须是两个。**
-        // 停止那一下已经在 `stopRecording` 里响过 `.sessionHungUp` 了；这里是
-        // 「转写完成」—— 用 `.answerFinished`（agent-done 那个），是一声「好了」。
-        // 用户的要求：「用户点击停止撰写的音效和转写完成的音效不能是同一个」。
-        SoundEffectPlayer.shared.play(.answerFinished)
+        // **这里一声都不响。**
+        //
+        // 原来这上面还有一行 `.sessionHungUp` —— 而它上一行就是我写的「音效已经在
+        // `stopRecording` 里响过了，这里不再响一次」。注释和代码互相打脸，结果一次
+        // 停止响了三声（点下去一声、收尾又一声、完成再一声），用户听到的就是「重了」。
+        //
+        // 「好了」那一声挪到**整条链的最末尾**（`completeStop` 的出口），只响一次：
+        // 没开润色时它就是「转写完成」，开了润色时它是「润色完成」—— 两种情况下都
+        // 只在真正结束的那一刻响，绝不会和别的声叠在一起。
 
         // **自定义风格：转写成功后重写一遍。**
         //
@@ -1017,6 +1018,11 @@ final class LongFormRecorderController: ObservableObject {
         isSpeechDetected = false
         elapsedSeconds = 0
         connectionState = .idle
+
+        // **整条链的最后一声，也是唯一的一声「好了」。**
+        // 没开润色时它代表「转写完成」，开了润色时代表「润色完成」—— 用户的要求是
+        // 这两种情况各响一声、且不重叠。
+        SoundEffectPlayer.shared.play(.answerFinished)
     }
 
     private func teardownStorage() {
