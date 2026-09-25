@@ -221,7 +221,22 @@ nonisolated enum NotchSupport {
     /// if both read the same number. The sheet root, the two content headers,
     /// the sidebar's account section and the settings sidebar all use it, so
     /// there is exactly one value to change if the top edge ever moves.
-    static let sheetHeaderTopInset: CGFloat = restingPillAnimationHeadroom + 8
+    /// 展开态内容顶端与屏幕顶端之间的距离 = **刘海高度 + 呼吸间距**。
+    ///
+    /// **原先它是 `restingPillAnimationHeadroom + 8` = 30，比刘海（32）还矮 2pt**，
+    /// 这一个数字同时造成了两个被用户看到的问题（2026-09-25）：
+    ///
+    /// 1. **内容从刘海底下开始画** —— 用户：「要把整体的文字向下再移一点，因为现在
+    ///    刘海把很多文字都压住了。比如在 chatting 这个界面，视频聊天和语音聊天的
+    ///    文字就被刘海压住了……保留一定的间距，或者刚好不被压住」。
+    /// 2. **展开态那条状态带也被它反压矮了** —— 带子的高度是
+    ///    `min(notchBandHeight, sheetHeaderTopInset)`（见 `expandedWingBandHeight`），
+    ///    被这里压到 30 就比刘海矮 2pt。用户：「渲染出来的左右两侧动画高度不对，
+    ///    明显比刘海的高度要低……是不是应该调整到跟刘海高度一样」。
+    ///
+    /// 所以这一个值必须**不低于刘海**，两件事才会一起回到正确：内容让开刘海，
+    /// 带子取 min 之后正好等于刘海高度。40 = 32（本机刘海）+ 8（呼吸间距）。
+    static let sheetHeaderTopInset: CGFloat = 40
 
     /// The left and right breathing room of a content column. The user asked
     /// for the side margins to be as small as they can be, so all four regions
@@ -490,13 +505,13 @@ nonisolated enum NotchSupport {
 
     /// 展开态那条状态带的高度。
     ///
-    /// **比刘海矮一点是有意的**：面板内容从 `sheetHeaderTopInset`（= 22 + 8 = 30）
-    /// 那一条开始画，而刘海是 32 高 —— 直接照刘海的高度铺，这条带子就会压掉页头
-    /// 控件的上沿 2pt。右翼横跨刘海右侧 ~88pt，那一段正落在内容列页头那一排按钮
-    /// （摄像头 / 屏幕 / 三段式）的左端，所以这 2pt 是真的会露出来的。
+    /// 展开态那条状态带的高度：**就是刘海的高度**。
     ///
-    /// 取两者的较小值，两个数各自改动时都不会重新长出这条压边；代价是展开态的翼
-    /// 比收起态矮 2pt，肉眼不可见，而且收起/展开之间横向本来就对齐。
+    /// 取两者的较小值是为了防御 —— 早先 `sheetHeaderTopInset` 只有 30、比刘海还矮，
+    /// 照刘海高度铺会压掉页头控件的上沿 2pt，所以那时它比刘海矮。现在那个值已经
+    /// 抬到刘海之上（见它的说明），`min` 取到的就是刘海本身，用户 2026-09-25 要的
+    /// 「跟刘海高度一样」由此成立；同时这个 min 仍然保留：将来若有人把 inset 调回
+    /// 刘海以下，带子也不会重新长出那条压边。
     static func expandedWingBandHeight(on screen: NSScreen) -> CGFloat {
         min(notchBandHeight(on: screen), sheetHeaderTopInset)
     }
