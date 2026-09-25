@@ -49,7 +49,14 @@ final class DuplexVoiceEngine {
     ///
     /// 取 **1200 ms**：覆盖自然的句中停顿，又不会让"说完了"等太久。
     /// 这是**调节点** —— 觉得还是太紧就往上调，觉得反应慢就往下调。
-    private static let turnEndSilenceMilliseconds = 1200
+    /// **官方快速上手的示例用的是 800。**
+    ///
+    /// 它决定「用户说完 → 服务端开始生成」要等多久，也就是用户感受到的那一段
+    /// 无声延迟。我们原先写的是 1200，比官方多等 400ms —— 用户 2026-09-25 报
+    /// 「声音回复的延迟明显非常大」，这是一处可以直接对上官方的差异。
+    /// 来源：官方快速上手 `realtime_quickstart.py` 的 `session.update`
+    /// （`"turn_detection": {"type": "server_vad", "threshold": 0.5, "silence_duration_ms": 800}`）。
+    private static let turnEndSilenceMilliseconds = 800
 
     private static let uplinkSampleRate = 16_000.0
     /// 下行音频的格式。实测：服务端回的是 24 kHz 单声道 PCM16。
@@ -185,6 +192,14 @@ final class DuplexVoiceEngine {
 
     /// 增量用户转写事件到达的计数（探针）—— 见诊断分支里的说明。
     private var inputTranscriptionDeltaCount = 0
+
+    /// 本轮第一块助手音频到达的时刻（探针用）。
+    private var firstAssistantAudioChunkAt: Date?
+
+    /// 事件流打点用的时间戳（秒，带毫秒）。延迟只能量，不能猜。
+    private static func eventLogTimestamp() -> String {
+        String(format: "%.3f", Date().timeIntervalSince1970)
+    }
 
     // MARK: 用户转写的累积（官方的 `text` 是按句的，跨句要自己攒）
     //
@@ -551,7 +566,7 @@ final class DuplexVoiceEngine {
         // 全部可以从日志直接读出来 —— 不再需要任何推测。
         switch type {
         case "input_audio_buffer.speech_started":
-            print("🎧 [event] speech_started（服务端听到用户开口）")
+            print("🎧 [event t=\(Self.eventLogTimestamp())] speech_started（服务端听到用户开口）")
         case "input_audio_buffer.speech_stopped":
             print("🎧 [event] speech_stopped（服务端判定用户说完）")
         case "input_audio_buffer.committed":
@@ -574,7 +589,7 @@ final class DuplexVoiceEngine {
             inputTranscriptionDeltaCount += 1
         case "response.created":
             let responseID = (event["response"] as? [String: Any])?["id"] as? String ?? "-"
-            print("🎧 [response.created] id=\(responseID.prefix(16))")
+            print("🎧 [response.created t=\(Self.eventLogTimestamp())] id=\(responseID.prefix(16))")
         case "response.done":
             let responseID = (event["response"] as? [String: Any])?["id"] as? String ?? "-"
             print("🎧 [response.done] id=\(responseID.prefix(16))")
@@ -588,8 +603,12 @@ final class DuplexVoiceEngine {
             let transcript = event["transcript"] as? String ?? ""
             print("🧾 [ai-text-done] resp=\(responseID.prefix(10)) 官方全文 \(transcript.count) 字（累积值 \(currentAssistantText.count) 字）")
         case "response.audio.delta":
+            // 只在**第一块**打时间戳：延迟是「什么时候出声」，不是"有多少块"。
             let responseID = event["response_id"] as? String ?? "-"
-            print("🔊 [ai-audio块] resp=\(responseID.prefix(10))")
+            if firstAssistantAudioChunkAt == nil {
+                firstAssistantAudioChunkAt = Date()
+                print("🔊 [ai-audio首块 t=\(Self.eventLogTimestamp())] resp=\(responseID.prefix(10))")
+            }
         case "session.updated":
             print("🎧 [event] session.updated（配置被接受）")
         case "session.created":

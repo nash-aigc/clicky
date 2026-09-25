@@ -912,6 +912,16 @@ struct AnswerCardView: View {
                     .animation(.easeInOut(duration: Self.settleAnimationDuration), value: isFresh)
             }
         }
+        // **不让这个 HStack 被压缩。**
+        //
+        // `HStack` 在放不下时**压缩子视图**，而不是溢出 —— 被压的 `Text` 会在自己
+        // 内部折行，于是尾巴那几个字会**重新排一次版**：这正是用户报的
+        // 「卡片最后几个字还是卡」在渲染侧的形状（审计也把这一条列为已知弱点）。
+        //
+        // 这一行的宽度是断行器**按同一个宽度算出来的**（`lineWidth` 还留了 1pt 余量），
+        // 所以取自然宽度既不会真的溢出、也不会被压。`fixedSize` 只放开横轴：
+        // 纵轴仍按版面走，行高不受影响。
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     /// The card's fill: the theme color, plus the paper theme's ruled lines
