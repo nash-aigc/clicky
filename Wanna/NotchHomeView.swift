@@ -34,6 +34,43 @@ struct NotchHomeView: View {
     @State private var expandedProgressOffsets: Set<Int> = []
 
     @State private var composerFieldIsFocused = false
+
+    // MARK: - 输入框上方那行（2026-09-26 新增）
+    //
+    // 用户的要求：「输入框上方显示按钮：左侧第一个：连续对话（默认状态，主对话）；
+    // 第二个：临时对话；右侧：新建、屏幕、声音」「声音按钮移至输入框上方，其右侧增加
+    // 『音色』按钮，点击后展开弹窗」。
+
+    /// 这一行当前是哪种对话。**连续对话 = 今天的主对话**（唯一有完整链路的那个）；
+    /// 临时对话的浮层在下一阶段接（`TempConversationOverlay`），这一阶段先把
+    /// 选择与默认值立起来。
+    enum ComposerConversationMode: String, CaseIterable, Identifiable {
+        case continuous
+        case temporary
+
+        var id: String { rawValue }
+        var displayName: String {
+            switch self {
+            case .continuous: return "连续对话"
+            case .temporary: return "临时对话"
+            }
+        }
+        var helpText: String {
+            switch self {
+            case .continuous: return "主对话：问题和回答都记进这条会话"
+            case .temporary: return "临时对话：不记进任何会话，关掉就没了"
+            }
+        }
+    }
+
+    @State private var composerConversationMode: ComposerConversationMode = .continuous
+    /// 音色弹窗开着没有。
+    @State private var isVoicePickerPresented = false
+    /// 克隆音色（打开弹窗时拉一次；拉不到就只显示系统音色 + 一行说明）。
+    @State private var customVoicesForPicker: [CustomVoice] = []
+    @State private var voicePickerFailureText: String?
+    /// 试听代次：换一个音色试听就作废上一段（与「音色查看」页同一个做法）。
+    @State private var voicePreviewGeneration = 0
     @State private var composerDraft: String = ""
 
     /// The composer's 展开 button (user's request): the field grows to 30% of
@@ -122,6 +159,14 @@ struct NotchHomeView: View {
             // 两条情况走同一个动作：先翻转设置，再让 manager 停这一条 ——
             // `silenceActiveReplyAudio` 的门禁是「这一条回复还在跑（或还在播）」，
             // 情况 1 下两者都不成立，它是 no-op。
+            // 音色弹窗就在输入框正上方展开（用户：「点击后展开弹窗」）。
+            // 放在 VStack 里而不是做成浮层：它一展开就把上面的流往上推一点，
+            // 而浮层要自己算位置（`VoiceChatSessionView` 那套锚点测量）——
+            // 一个音色列表不值得那套机械。
+            if isVoicePickerPresented {
+                voicePickerPanel
+            }
+
             composerRow
 
             // The last error's verbatim API text. The deleted menu bar panel
@@ -786,6 +831,300 @@ struct NotchHomeView: View {
     /// button that used to sit to the right went the same way on 2026-09-23
     /// (「三个页面都删掉右侧底部的发送按钮」) — Return sends. The shortcut is
     /// still spelled out in the empty-session hero.
+    /// 输入框上方那一行。左 = 两种对话模式；右 = 新建 · 声音 · 音色。
+    ///
+    /// 「屏幕」这一格**这一阶段先不放**：它要真的做到「不勾就不截图」，得给
+    /// `sendTranscriptToVisionChatWithScreenshot` 加一条不带图的路径（那条函数
+    /// 三百多行，中途插参数我不在这轮冒险）。放一个按了没反应的开关，比暂时不放更糟。
+    private var composerControlsRow: some View {
+        HStack(spacing: 6) {
+            ForEach(ComposerConversationMode.allCases) { mode in
+                conversationModeChip(mode)
+            }
+
+            Spacer(minLength: 6)
+
+            composerRowButton(title: "新建", systemImage: "plus",
+                              helpText: "新建主对话（当前这条会自动归档）") {
+                sessionsModel.createSession()
+                composerConversationMode = .continuous
+            }
+            soundChip
+            voiceChip
+        }
+    }
+
+    private func conversationModeChip(_ mode: ComposerConversationMode) -> some View {
+        let isSelected = composerConversationMode == mode
+        return Button(action: {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            composerConversationMode = mode
+        }) {
+            HStack(spacing: 4) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                }
+                Text(mode.displayName)
+                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+            }
+            .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.55))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(isSelected ? 0.10 : 0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(isSelected ? DS.Colors.success.opacity(0.55) : Color.white.opacity(0.08),
+                                  lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(mode.helpText)
+    }
+
+    private func composerRowButton(title: String,
+                                   systemImage: String,
+                                   isHighlighted: Bool = false,
+                                   helpText: String,
+                                   action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: systemImage).font(.system(size: 10.5))
+                Text(title).font(.system(size: 11.5))
+            }
+            .foregroundColor(isHighlighted ? DS.Colors.accent : .white.opacity(0.65))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(isHighlighted ? 0.10 : 0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(helpText)
+    }
+
+    /// 「声音」——就是原来输入框右下角那个静音开关，搬到这一行（用户要求）。
+    /// 状态仍然是同一个 `companionManager.voiceReplyMuted`，没有第二份真相。
+    private var soundChip: some View {
+        composerRowButton(title: "声音",
+                          systemImage: companionManager.voiceReplyMuted
+                              ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                          isHighlighted: !companionManager.voiceReplyMuted,
+                          helpText: companionManager.voiceReplyMuted
+                              ? "已静音：回复只显示文字（点击恢复朗读）"
+                              : "正在朗读回复（点击静音，只显示文字）") {
+            companionManager.voiceReplyMuted.toggle()
+            if companionManager.voiceReplyMuted {
+                companionManager.silenceActiveReplyAudio()
+            }
+        }
+    }
+
+    /// 「音色」——点开选择这一条回复用哪个音色（用户：「点击后展开弹窗，根据当前
+    /// 接入的语音合成服务展示支持的音色」；服务商就是百炼，音色表就是 `VoiceCatalog`）。
+    private var voiceChip: some View {
+        composerRowButton(title: currentVoiceDisplayName,
+                          systemImage: "waveform",
+                          isHighlighted: isVoicePickerPresented,
+                          helpText: "选择回复用哪个音色（默认用设置里配的那个）") {
+            isVoicePickerPresented.toggle()
+            if isVoicePickerPresented { loadCustomVoicesForPickerIfNeeded() }
+        }
+    }
+
+    /// 那一格显示什么字：选了就显示它的名字，没选就显示「音色」。
+    private var currentVoiceDisplayName: String {
+        guard let voiceID = companionManager.replyVoiceOverride else { return "音色" }
+        if let systemVoice = VoiceCatalog.threeStageVoices.first(where: { $0.id == voiceID }) {
+            return systemVoice.displayName
+        }
+        if let nickname = VoiceLibraryStore.nickname(forCustomVoiceID: voiceID) {
+            return nickname
+        }
+        return "音色"
+    }
+
+    private func loadCustomVoicesForPickerIfNeeded() {
+        guard customVoicesForPicker.isEmpty else { return }
+        Task { @MainActor in
+            do {
+                customVoicesForPicker = try await CustomVoiceLibraryClient.listCustomVoices()
+                voicePickerFailureText = nil
+            } catch {
+                voicePickerFailureText = "克隆音色没拉下来：\(error.localizedDescription)"
+            }
+        }
+    }
+
+    /// 音色弹窗。系统音色来自 `VoiceCatalog`（**当前合成模型支持的**那些），
+    /// 克隆音色来自云端列表 —— 与「设置 → 音色查看」读的是同一批数据。
+    private var voicePickerPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text("音色")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer(minLength: 4)
+                Button(action: { isVoicePickerPresented = false }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.55))
+                        .frame(width: 18, height: 18)
+                        .background(Circle().fill(Color.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help("收起音色列表")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+
+            Divider().overlay(Color.white.opacity(0.08))
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    voicePickerSectionLabel("系统音色")
+                    ForEach(VoiceCatalog.threeStageVoices) { voice in
+                        voicePickerRow(voiceID: voice.id,
+                                       model: currentSpeechModelID,
+                                       displayName: voice.displayName)
+                    }
+
+                    voicePickerSectionLabel("克隆音色")
+                    if let voicePickerFailureText {
+                        Text(voicePickerFailureText)
+                            .font(.system(size: 11))
+                            .foregroundColor(.orange.opacity(0.85))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                    } else if customVoicesForPicker.isEmpty {
+                        Text("还没有克隆音色（「设置 → 音色查看 → 声音克隆」可以做一个）")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.40))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                    } else {
+                        ForEach(customVoicesForPicker) { voice in
+                            // `CustomVoice` 只有 id / targetModel / createdAt / status
+                            // —— 官方那边**不存备注**，所以显示名只能取本地昵称，没有再退回 id
+                            //（与「设置 → 音色查看」同一套三级回落）。
+                            voicePickerRow(
+                                voiceID: voice.id,
+                                model: voice.targetModel.isEmpty ? currentSpeechModelID : voice.targetModel,
+                                displayName: VoiceLibraryStore.nickname(forCustomVoiceID: voice.id) ?? voice.id
+                            )
+                        }
+                    }
+
+                    // 「用默认」——把覆盖清掉，回到设置里配的那个。
+                    voicePickerRow(voiceID: nil, displayName: "默认（设置里那一个）")
+                }
+            }
+            .frame(maxHeight: 220)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(DS.Colors.surface2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+    }
+
+    private func voicePickerSectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10.5, weight: .semibold))
+            .foregroundColor(.white.opacity(0.40))
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            .padding(.bottom, 2)
+    }
+
+    /// 试听用的合成模型 = 「模型」页里 👄 那个（与「音色查看」页同一处取值，
+    /// 包括那条 `?? BailianConfiguration.Models.textToSpeech` 回落）。
+    private var currentSpeechModelID: String {
+        ModelConfigurationStore.snapshot().status(of: .speech).resolvedRole?.modelID
+            ?? BailianConfiguration.Models.textToSpeech
+    }
+
+    private func voicePickerRow(voiceID: String?, model: String = "", displayName: String) -> some View {
+        let isSelected = companionManager.replyVoiceOverride == voiceID
+        return HStack(spacing: 6) {
+            Image(systemName: isSelected ? "checkmark" : "circle")
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.25))
+                .frame(width: 12)
+
+            Text(displayName)
+                .font(.system(size: 12))
+                .foregroundColor(.white.opacity(0.85))
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            if let voiceID {
+                Button(action: {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    previewVoice(voiceID, model: model)
+                }) {
+                    Image(systemName: "play.circle")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help("试听")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            companionManager.replyVoiceOverride = voiceID
+        }
+    }
+
+    /// 试听：走「设置 → 音色查看」同一条链 —— `VoicePreviewService` 合成（结果进
+    /// `VoicePreviews/` 缓存）+ `CompanionManager.playVoicePreview` 播放。
+    ///
+    /// 代次计数与那一页同义：**换一个音色试听 = 停掉上一段**，而不是两段叠在一起。
+    /// （自己再写一条播放通路的话，两处会各自漂。）
+    private func previewVoice(_ voiceID: String, model: String) {
+        companionManager.stopVoicePreview()
+        voicePreviewGeneration += 1
+        let generation = voicePreviewGeneration
+        Task { @MainActor in
+            do {
+                let appSettings = AppSettingsStore.snapshot()
+                let audioData = try await VoicePreviewService.previewAudioData(
+                    engine: .threeStage,
+                    voice: voiceID,
+                    model: model.isEmpty ? currentSpeechModelID : model,
+                    speechRate: appSettings.speechPlaybackRate,
+                    speechVolumePercent: appSettings.speechPlaybackVolumePercent,
+                    styleInstruction: "")
+                guard generation == voicePreviewGeneration else { return }
+                try await companionManager.playVoicePreview(wavData: audioData)
+            } catch {
+                guard generation == voicePreviewGeneration else { return }
+                voicePickerFailureText = "试听失败：\(error.localizedDescription)"
+            }
+        }
+    }
+
     private var composerRow: some View {
         MessageComposerField(
             placeholder: "输入问题，回车发送…",
@@ -802,22 +1141,12 @@ struct NotchHomeView: View {
             isResponding: companionManager.voiceState == .processing
                 || companionManager.voiceState == .responding,
             onStop: { companionManager.interruptActiveResponse() },
-            // 右下角常驻的静音开关 —— 它是输入框自己的一部分，不再是上面一行。
-            composerAccessory: ComposerAccessoryButton(
-                systemImageName: companionManager.voiceReplyMuted
-                    ? "speaker.slash.fill" : "speaker.wave.2.fill",
-                tint: companionManager.voiceReplyMuted
-                    ? Color(red: 1.0, green: 0.42, blue: 0.42) : .white,
-                helpText: companionManager.voiceReplyMuted
-                    ? "已静音：回复只显示文字（点击恢复朗读）"
-                    : "正在朗读回复（点击静音，只显示文字）",
-                action: {
-                    companionManager.voiceReplyMuted.toggle()
-                    if companionManager.voiceReplyMuted {
-                        companionManager.silenceActiveReplyAudio()
-                    }
-                }
-            )
+            // **输入框上方那一行**（2026-09-26）：两种对话模式 + 新建 / 声音 / 音色。
+            controlsRow: AnyView(composerControlsRow),
+            // **静音开关搬走了**（2026-09-26）：用户要求「声音按钮移至输入框上方」——
+            // 它现在是上面那行里的「声音」那一格（`soundChip`），状态还是同一个
+            // `companionManager.voiceReplyMuted`。**不在这里留第二颗**：同一件事两个入口，
+            // 迟早会有人只改一处。
         )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)

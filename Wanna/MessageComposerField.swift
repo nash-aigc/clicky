@@ -132,12 +132,27 @@ struct MessageComposerField: View {
     /// 用户输入框的右下角，减少空间占用。现在用户发送提示词后，声音按钮会挡住
     /// 提示词」。原先它是输入框上方独立的一行，而那一行与输入框之间只有 10 pt，
     /// 提示词一长就往那一行底下钻，正好被它盖住。
+    /// **输入框上方那一行**（对话模式、新建、屏幕、声音、音色…）。
+    ///
+    /// 收 `AnyView?` 而不是加一个泛型参数：现在只有「对话」这一页画它，而泛型会把
+    /// 另外两个调用点（Agent / Chatting）也拖上一个类型参数 —— 为一个只有一处用的
+    /// 插槽付这个代价不划算。**排布由这里统一**（上方、左对齐、与输入框留 6pt），
+    /// 行里的按钮由各页自己给，这样三页将来都加的时候不会各排各的。
+    var controlsRow: AnyView? = nil
+
     var composerAccessory: ComposerAccessoryButton? = nil
 
+
+
     var body: some View {
-        HStack(alignment: .bottom, spacing: Self.stopButtonGap) {
-            composerBox
-            stopButton
+        VStack(alignment: .leading, spacing: 6) {
+            if let controlsRow {
+                controlsRow
+            }
+            HStack(alignment: .bottom, spacing: Self.stopButtonGap) {
+                composerBox
+                stopButton
+            }
         }
     }
 

@@ -1278,6 +1278,13 @@ final class CompanionManager: ObservableObject {
         accessibilityCheckTimer = nil
     }
 
+    /// **这一条回复用哪个音色** —— 用户在输入框那行选的（2026-09-26 新增）。
+    ///
+    /// nil = 用「模型」页里配的那个（默认）。存 id 而不是 VoiceOption：
+    /// 音色表会随服务端变，id 才是稳定的那个（`BailianTTSClient` 的
+    /// `voiceOverride` 收的也是 id）。
+    @Published var replyVoiceOverride: String?
+
     func refreshAllPermissions() {
         let previouslyHadAccessibility = hasAccessibilityPermission
         let previouslyHadScreenRecording = hasScreenRecordingPermission
@@ -2713,7 +2720,7 @@ final class CompanionManager: ObservableObject {
                     // (44.1 kHz/1 ch ↔ 48 kHz/9 ch) — synchronous on the main
                     // actor, which is the stutter the user reported as new —
                     // while the first segment still paid the whole start.
-                    let session = try bailianTTSClient.beginStreamingSpeech()
+                    let session = try bailianTTSClient.beginStreamingSpeech(voiceOverride: replyVoiceOverride)
                     streamingSpeechSession = session
                     // The watch task does the two jobs the whole-reply path
                     // does after `speakText` returns: flip into .responding
@@ -3492,7 +3499,7 @@ final class CompanionManager: ObservableObject {
                             // whole-reply path (逐句快答 records its text at the
                             // streaming feed above).
                             spokenAnswerTextForEchoFilter = finalSpokenText
-                            try await bailianTTSClient.speakText(finalSpokenText)
+                            try await bailianTTSClient.speakText(finalSpokenText, voiceOverride: replyVoiceOverride)
                             // speakText returns after player.play() — audio is now playing
                             voiceState = .responding
                             // 计时起点 = 播报开始：整段合成路径在 audio 起播时开窗。
