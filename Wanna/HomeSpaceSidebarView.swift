@@ -430,9 +430,17 @@ struct HomeSpaceSidebarView: View {
             HStack(spacing: 7) {
                 if indented { Spacer().frame(width: 10) }
                 taskStatusGlyph(agent.status)
-                Image(systemName: "asterisk")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(DS.Colors.warning)
+                // **第二个位置 = "调用的哪一个 agent"，只有外部/兜底 agent 才画图标。**
+                // 用户 2026-09-26：「如果是系统 agent，咱们自己设计的 agent，那就不用显示图标，
+                // 那么如果是调用的是 claude code 这种兜底 agent，或者是未来的 Codex / Hermes
+                // 这种 agent，那么就对应显示对应的图标」。现在派出去的都是我们自己的
+                //（图形 / 执行），所以这里是**空的** ✓ —— 将来接外部 agent 时，在
+                // `EphemeralAgent` 上记一个 kind、这里按它选图标即可。
+                if let glyph = agent.externalAgentGlyph {
+                    Image(systemName: glyph)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(DS.Colors.warning)
+                }
                 Text("\(agent.title) · \(agent.bannerLine)")
                     .font(.system(size: 12))
                     .foregroundColor(DS.Colors.textSecondary)
@@ -457,19 +465,28 @@ struct HomeSpaceSidebarView: View {
     /// `repeatForever` 的线性旋转，和状态点的呼吸同一套做法（整区共用一个相位）。
     @ViewBuilder
     private func taskStatusGlyph(_ status: EphemeralAgent.Status) -> some View {
+        // **用户给的规格**（2026-09-26，逐字）：「最左边是任务状态…完成的话就是对勾的形式，
+        // 没有完成的话就是一个转圈的形式」，而且「应该是个圆环，绿色圆环里边加一个对勾」
+        // —— 是**空心圆环 + 对勾**，不是我原来那种实心圆点 ✗。
         switch status {
         case .doneVerified:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 12)).foregroundColor(DS.Colors.success)
-        case .doneUnverified:
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 12)).foregroundColor(DS.Colors.warning)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(DS.Colors.success)
+        case .doneUnverified:
+            // 做完了但没人回读确认过 —— 同样是圆环+对勾，用琥珀色把差别说出来。
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(DS.Colors.warning)
         case .failed:
-            Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 12)).foregroundColor(DS.Colors.destructive)
+            // **失败不是"没完成"里的转圈** —— 它已经停了，转圈会让人以为还在跑 ✗。
+            // 红圆环 + 叉，而右侧的时间照常显示（用户：「主要是用在任务失败…让用户来看」）。
+            Image(systemName: "xmark.circle")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(DS.Colors.destructive)
         case .running:
             Image(systemName: "arrow.triangle.2.circlepath")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(DS.Colors.accent)
                 .rotationEffect(.degrees(isTaskDotBreathing ? 360 : 0))
                 .animation(.linear(duration: 1.1).repeatForever(autoreverses: false),

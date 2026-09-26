@@ -88,6 +88,24 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
         return formatter.string(from: startedAt)
     }
 
+    /// **这一行第二个位置要不要画图标**（用户 2026-09-26：「如果是系统 agent，咱们自己
+    /// 设计的 agent，那就不用显示图标…如果是 claude code 这种兜底 agent，或者是未来的
+    /// Codex / Hermes，那么就对应显示对应的图标」）。
+    ///
+    /// 现在派出去的都是我们自己的（图形 / 执行）→ nil ✓。将来接外部 agent 时，
+    /// 在 `beginTask` 里带上它的 kind，这里按 kind 返回对应的 SF Symbol。
+    var externalAgentKind: String?
+
+    var externalAgentGlyph: String? {
+        switch externalAgentKind {
+        case nil: return nil                       // 自研 agent：不画 ✓
+        case "claudeCode": return "chevron.left.forwardslash.chevron.right"
+        case "codex": return "circle.hexagongrid"
+        case "hermes": return "bird"
+        default: return "gearshape.2"
+        }
+    }
+
     /// **做完多久了**（用户 2026-09-26 参考图里右侧那一列：`2h` / `1m`）。
     /// 没做完的就报"开始多久了" —— 两件事都回答"这件事离现在多远" ✓。
     var relativeTimeText: String {
