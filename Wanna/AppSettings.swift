@@ -641,6 +641,19 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 存的是 `VoiceChatRole.id`；nil = 没选过 = 该模式下的第一个可用角色。
     var cardVoiceRoleIDs: [String: String]?
 
+    /// **卡片的「备注」**（用户 2026-09-26：「第二行显示一些备注」，以及新建时
+    /// 「让用户填写标题、备注」）。
+    ///
+    /// 为什么不写进 `ConversationSession` / `AgentSession`：那两个文件是**用户的对话本身**，
+    /// 解码用的是 `try?`（`loadFromDiskWithMigration`）—— 一个字段类型写错，整份文件就变成
+    /// "没有任何会话"，然后 App 把这个空状态写回去。这个仓库为这个形状付过一次代价
+    ///（见架构文档里那段 200 轮规模测试）。备注是**卡片的装饰**，不值得让它挨着那条路；
+    /// 而"按卡片 id 存一份用户设置"这里已经有先例（上面那两个字典）。
+    ///
+    /// 标题**不在这里**：它本来就存在那两个实体上（`ConversationSession.title` /
+    /// `AgentSession.name`），改名走它们自己的 rename，不另起一份真相。
+    var cardNotes: [String: String]?
+
     /// 这张卡片现在用哪种聊天模式。
     func cardChatMode(forCardID cardID: String, kind: CardKind) -> CardChatMode {
         guard let rawValue = cardChatModeRawValues?[cardID],
@@ -648,6 +661,25 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
             return CardChatMode.defaultMode(for: kind)
         }
         return mode
+    }
+
+    /// 这张卡片的备注（没写过是空串 — 空串与"没写过"在界面上是同一种表现）。
+    func cardNote(forCardID cardID: String) -> String {
+        cardNotes?[cardID] ?? ""
+    }
+
+    /// 复制一份、只换某张卡片的备注。**空串 = 抹掉这一条**，不在磁盘上留一串空键。
+    func withCardNote(_ note: String, forCardID cardID: String) -> AppSettings {
+        var copy = self
+        var notes = copy.cardNotes ?? [:]
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            notes.removeValue(forKey: cardID)
+        } else {
+            notes[cardID] = trimmed
+        }
+        copy.cardNotes = notes
+        return copy
     }
 
     /// 这张卡片在语音 / 视频模式下选中的角色 id（没选过是 nil）。
@@ -1429,6 +1461,7 @@ nonisolated extension AppSettings {
         case defaultSessionID
         case cardChatModeRawValues
         case cardVoiceRoleIDs
+        case cardNotes
         case voiceChatSpeaksReplies
         case reviewAgentReadsProject
         case reviewAgentWritesProject
@@ -1573,6 +1606,8 @@ nonisolated extension AppSettings {
                                                              forKey: .cardChatModeRawValues)
         cardVoiceRoleIDs = try container.decodeIfPresent([String: String].self,
                                                         forKey: .cardVoiceRoleIDs)
+        cardNotes = try container.decodeIfPresent([String: String].self,
+                                                  forKey: .cardNotes)
         voiceChatSpeaksReplies = try container.decodeIfPresent(Bool.self,
                                                               forKey: .voiceChatSpeaksReplies) ?? defaults.voiceChatSpeaksReplies
         // 两个都是"没设过 = 关"（仓规 E1：`Bool?` + `decodeIfPresent`）。

@@ -65,6 +65,20 @@ struct HomeSpaceSidebarView: View {
     /// 哪些「卡片 # 栏」是展开的（纯界面状态，不进任何模型）。
     @State private var expandedTaskColumns: Set<String> = []
 
+    /// 哪几张卡片的**任务区被收起来了**（纯界面状态；默认全部展开）。
+    /// 由卡片最左侧那颗状态按钮切换 —— 见 `statusButton`。
+    @State private var collapsedTaskCards: Set<String> = []
+
+    /// 正在改哪张卡片的备注（纯界面状态）。标题那一路复用 `renamingSessionID` /
+    /// `renamingAgentID`（那一套本来就管着两个列表的改名），备注不属于那两个 store，
+    /// 所以它自己一份。
+    @State private var editingNoteCardID: String?
+    @State private var noteDraft: String = ""
+
+    /// 卡片上两个可编辑的格子 —— 只用于"失焦即提交"（用户点开别处时那一格要落地）。
+    private enum CardEditableField: Hashable { case cardTitle, cardNote }
+    @FocusState private var focusedCardField: CardEditableField?
+
     /// 「历史归档」那一行：归档页面住在设置里（`SettingsPage.archive`），
     /// 所以这里只需要把设置打开并落到那一页 —— 与 `openRecordingSettingsAction`
     /// 同一个形状（闭包而不是让侧栏自己去改上层状态）。
@@ -136,6 +150,13 @@ struct HomeSpaceSidebarView: View {
         // 上，合成出来正好是 surface3 的 #101014 —— 换成不透明的同一个色，
         // 侧栏观感不变，透出来的壁纸没了。
         .background(DS.Colors.surface3)
+        // **失焦即提交**：卡片上那两个格子（标题 / 备注）都靠 Enter 提交，但用户更常见的
+        // 动作是点开别的地方 —— 那一格就此消失，敲的字要是没落地，他会以为记下了。
+        .onChange(of: focusedCardField) { _, newField in
+            guard newField == nil else { return }
+            if editingNoteCardID != nil { commitCardNote() }
+            if renamingSessionID != nil || renamingAgentID != nil { commitRename() }
+        }
     }
 
     // MARK: - 分割线之上的两行按钮
@@ -286,15 +307,7 @@ struct HomeSpaceSidebarView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(cardModel.cards) { card in
-                    cardRow(card)
-                    // 四栏固定序（`TaskColumn.allCases` = 进行中 → 完成 → 失败 → 历史），
-                    // 空的栏不画 —— 用户要的是「按状态」，不是四行空标题。
-                    ForEach(TaskColumn.allCases, id: \.self) { column in
-                        let tasks = card.tasks(in: column)
-                        if !tasks.isEmpty {
-                            taskColumnSection(card: card, column: column, tasks: tasks)
-                        }
-                    }
+                    cardBlock(card)
                 }
 
                 if cardModel.cards.isEmpty {
@@ -308,7 +321,54 @@ struct HomeSpaceSidebarView: View {
         }
     }
 
-    /// 一张卡片：标题 + 状态点 +（仅主循环卡片）「设为默认」。
+    /// **一张卡片 + 它下面那几栏任务，一起装进一个外框里。**
+    ///
+    /// 用户 2026-09-26 的原话：「用户选中之后，下面的一些任务也应该在这个卡片的内部，
+    /// 而不是显示在中间。它应该被卡片包裹住，但其实是被一个外部的方框包裹住，因为卡片的
+    /// 大小是固定的。然后被一个外部的方框包裹住，里边相当于是一个大卡片包裹住，然后里边
+    /// 是这个卡片，这个卡片就是主绘画，下面那些进行中的东西……不同的卡片也是要有的，
+    /// **无论用户是否选中，它都应该有一个外部的边框，让用户知道区分开**。」
+    ///
+    /// 所以这个框**不是选中态的一部分**：它在每一张卡片上都在，说的是"下面这些活是这张
+    /// 卡片所在的 agent 发起的"。框内的卡片面自己还有选中/悬停那一套（那是"我点了哪张"）。
+    ///
+    /// 空的栏不画（用户要的是"按状态"，不是四行空标题）——这一条跟着任务一起搬进来了。
+    @ViewBuilder
+    private func cardBlock(_ card: AgentCardModel.Card) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            cardRow(card)
+
+            if !collapsedTaskCards.contains(card.id) {
+                // 四栏固定序（`TaskColumn.allCases` = 进行中 → 完成 → 失败 → 历史）。
+                ForEach(TaskColumn.allCases, id: \.self) { column in
+                    let tasks = card.tasks(in: column)
+                    if !tasks.isEmpty {
+                        taskColumnSection(card: card, column: column, tasks: tasks)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.black.opacity(0.22))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .padding(.horizontal, 6)
+        .padding(.bottom, 10)
+    }
+
+    /// 一张卡片。**两行**（用户 2026-09-26：「左侧边栏这个卡片应该分两行。第一行是标题，
+    /// 标题可以被修改，默认是 claude code，第一行还有一个收藏按钮，最左侧还有一个状态按钮。
+    /// 第二行显示一些备注。」）：
+    ///
+    /// - 第一行：**最左那颗状态按钮** + 标题（双击可改）+ 类型标记 +「收藏」+「通话」；
+    /// - 第二行：备注（双击可写）。
+    ///
+    /// 两颗按钮（收藏 / 通话）横跨两行居中 —— 通话那颗是 48pt 的方块，本来就比两行字高。
     private func cardRow(_ card: AgentCardModel.Card) -> some View {
         // **三档**：选中（右列正在显示它）> 悬停（可以点）> 普通。
         //
@@ -317,61 +377,34 @@ struct HomeSpaceSidebarView: View {
         // **点出来的那张要明显亮着**（选中态），而不是"两张都淡淡地亮"。
         let isSelectedCard = isCurrent(card)
         let isHoveredCard = hoveredCardID == card.id
-        return HStack(spacing: 8) {
-            Circle()
-                .fill(card.kind == .mainLoop ? DS.Colors.accent : Color(red: 0.55, green: 0.78, blue: 0.55))
-                .frame(width: 6, height: 6)
-                .opacity(1)
+        return HStack(alignment: .center, spacing: 6) {
+            statusButton(card)
 
-            Text(card.title)
-                .font(.system(size: 13.5, weight: .semibold))
-                // 标题也跟着亮 / 暗（见下面那段"选中的那张要明显不同"）：
-                // 只高亮底和边、字还是同一个亮度，两张卡片看着仍然是一对。
-                .foregroundColor(.white)
-                .lineLimit(1)
-
-            if card.kind == .claudeCode {
-                Text("Claude Code")
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundColor(.white.opacity(0.55))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1.5)
-                    .background(Capsule().fill(Color.white.opacity(0.08)))
+            VStack(alignment: .leading, spacing: 2) {
+                cardTitleLine(card)
+                cardNoteLine(card)
             }
 
             Spacer(minLength: 4)
 
-            // **「设为默认」在左，「通话」在最右**（用户 2026-09-26：「把右侧的收藏按钮放在
+            // **「收藏」在左，「通话」在最右**（用户 2026-09-26：「把右侧的收藏按钮放在
             // 通话按钮的左侧，把通话按钮放在右侧」）。只出现在主循环卡片上 —— 用户明确
             // 要求「新建的 Claude Code 类型卡片不可设为默认」，兜底那条线不是「我的主对话」。
             if card.kind == .mainLoop {
-                Button(action: {
-                    SoundEffectPlayer.shared.play(.sidebarButton)
-                    cardModel.setDefault(cardID: card.entityID)
-                }) {
-                    Image(systemName: card.isDefault ? "star.fill" : "star")
-                        .font(.system(size: 10.5))
-                        .foregroundColor(card.isDefault
-                                         ? DS.Colors.success
-                                         : .white.opacity(0.40))
-                        .frame(width: 22, height: 22)
-                        .background(Circle().fill(Color.white.opacity(card.isDefault ? 0.10 : 0.05)))
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help(card.isDefault
-                      ? "这条是默认主对话：屏幕快捷键发出去的问题进它"
-                      : "设为默认：屏幕快捷键发出去的问题进这一条主对话")
+                favouriteButton(card)
             }
 
             // **「通话」**（用户 2026-09-26：「左侧卡片的右侧，分别添加（通话的图标按钮），
             // 点击后=自动切换成（语音：全双工语音模式），也能在设置页面设置（全双工、
             // 三段式，等音色设置）」）。
             //
-            // 它做的三件事：把这张卡片的模式切到**语音**、把引擎备成**全双工语音**、
-            // 然后切到这张卡片（右列随之显示语音页）。**不自动连接** —— 他说的那一下是
-            // 「切换成」，开麦留给他按页头那颗「连接」。引擎与音色都能在「设置 → 角色」
-            // 里改（那一页的聊天节就是干这个的）。
+            // 它做的四件事：把这张卡片的模式切到**语音**、把引擎备成**全双工语音**、
+            // **真的连上这一场**、然后切到这张卡片（右列随之显示语音页）。
+            //
+            // **自动连接是用户 2026-09-26 补的要求**：「我点击之后应该自动切换到语音模式，
+            // 全双工，然后自动通话。你现在没有自动通话，只是选中了，应该自动通话才对。」
+            // 之前这里只备不连，用户还得进语音页再点一次页头那颗「连接」——
+            // 所以现在这一下就是"打这个电话"。引擎与音色都能在「设置 → 角色」里改。
             callButton(card)
         }
         // **一张卡片就该长得像卡片**（用户 2026-09-26：「应该设计成一个卡片的样式吧？
@@ -379,9 +412,12 @@ struct HomeSpaceSidebarView: View {
         // 加高到 40pt 并给它一层底：单行 22pt 的行高在侧栏里既难点中，也读不出
         //「这一块是同一张卡片」—— 下面那四栏是它的内容。
         // **卡片高度翻倍**（用户 2026-09-26：「左侧边栏的两个卡片高度再增加，高度增加两倍，
-        // 方便用户点击」）：40 → 80。左右内边距分开写 —— 右侧只留 4，因为通话按钮要
-        // **尽可能大、贴着卡片的上/下/右边缘**（下一条要求）。
-        .padding(.leading, 10)
+        // 方便用户点击」）：40 → 80，随后又按要求缩到 56。左右内边距分开写 —— 右侧只留 4，
+        // 因为通话按钮要**尽可能大、贴着卡片的上/下/右边缘**。
+        //
+        // **外框（`cardBlock`）已经在卡片外面包了一层**，所以这里只留卡面自己的内边距：
+        // 横向 6 / 纵向 4 由外框给，这里不再重复。
+        .padding(.leading, 6)
         .padding(.trailing, 4)
         .padding(.vertical, 4)
         .frame(height: Self.cardRowHeight, alignment: .leading)
@@ -415,13 +451,180 @@ struct HomeSpaceSidebarView: View {
         .onHover { hovering in
             hoveredCardID = hovering ? card.id : (hoveredCardID == card.id ? nil : hoveredCardID)
         }
-        .padding(.horizontal, 6)
-        .padding(.bottom, 10)
+        .padding(.horizontal, 5)
         .contentShape(Rectangle())
         .onTapGesture {
             SoundEffectPlayer.shared.play(.notchRevealed)
             cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
         }
+    }
+
+    // MARK: - 卡片的第一行：状态按钮 / 标题 / 收藏
+
+    /// **最左那颗状态按钮**（用户 2026-09-26：「最左侧还有一个状态按钮」）。
+    ///
+    /// 它显示这张卡片此刻的状态：**有活在跑**（蓝，呼吸）> **有失败的**（红）> **空闲**（灰）。
+    /// 点它 = 收起/展开**这张卡片下面那几栏任务** —— 状态与"它的活"在一起，是同一件事的两面，
+    /// 所以这一个按钮同时承担"看状态"和"把任务收起来"，而不是再加一颗折叠箭头。
+    private func statusButton(_ card: AgentCardModel.Card) -> some View {
+        let emphasis = card.statusEmphasis
+        let color: Color = {
+            switch emphasis {
+            case .running: return DS.Colors.accent
+            case .failed: return Color(red: 0.95, green: 0.45, blue: 0.42)
+            case .idle: return Color.white.opacity(0.35)
+            }
+        }()
+        let isCollapsed = collapsedTaskCards.contains(card.id)
+        return Button {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            if isCollapsed { collapsedTaskCards.remove(card.id) }
+            else { collapsedTaskCards.insert(card.id) }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.16))
+                    .frame(width: 24, height: 24)
+                Circle()
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+                    // 只有"在跑"才呼吸 —— 静止的状态点闪起来是在喊，而它没什么可喊的。
+                    .opacity(emphasis == .running && isTaskDotBreathing ? 0.35 : 1)
+            }
+            .overlay(Circle().strokeBorder(color.opacity(0.5), lineWidth: 1))
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(statusButtonHelp(card, isCollapsed: isCollapsed))
+    }
+
+    private func statusButtonHelp(_ card: AgentCardModel.Card, isCollapsed: Bool) -> String {
+        let stateText: String
+        switch card.statusEmphasis {
+        case .running: stateText = "\(card.runningTaskCount) 条任务在跑"
+        case .failed: stateText = "有 \(card.failedTaskCount) 条任务失败"
+        case .idle: stateText = "空闲"
+        }
+        return isCollapsed ? "\(stateText) · 点一下展开它的任务" : "\(stateText) · 点一下收起它的任务"
+    }
+
+    /// 第一行的标题 —— **双击可改**（用户：「标题可以被修改，默认是 claude code」）。
+    ///
+    /// 改名复用这一列既有的那套（`renamingSessionID` / `renamingAgentID` + `renameDraft` +
+    /// `commitRename()`）：会话列表和 agent 列表本来就用它，卡片再写一份必然漂。
+    @ViewBuilder
+    private func cardTitleLine(_ card: AgentCardModel.Card) -> some View {
+        if isRenamingCard(card) {
+            TextField("标题", text: $renameDraft)
+                .textFieldStyle(.plain)
+                .font(.system(size: 13.5, weight: .semibold))
+                .foregroundColor(.white)
+                .focused($focusedCardField, equals: .cardTitle)
+                .onSubmit { commitRename() }
+        } else {
+            HStack(spacing: 5) {
+                Text(card.title)
+                    .font(.system(size: 13.5, weight: .semibold))
+                    // 标题也跟着亮 / 暗（见下面那段"选中的那张要明显不同"）：
+                    // 只高亮底和边、字还是同一个亮度，两张卡片看着仍然是一对。
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+
+                if card.kind == .claudeCode {
+                    Text("Claude Code")
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundColor(.white.opacity(0.55))
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1.5)
+                        .background(Capsule().fill(Color.white.opacity(0.08)))
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2) { beginRenaming(card) }
+            .help("双击改标题")
+        }
+    }
+
+    /// 第二行的**备注** —— 也是双击可改（用户：「第二行显示一些备注」）。
+    ///
+    /// 没写过时显示一句灰提示而不是留空：留空的话这一行和"卡片只有一行"看不出区别，
+    /// 用户不会知道这里可以写东西。
+    @ViewBuilder
+    private func cardNoteLine(_ card: AgentCardModel.Card) -> some View {
+        if editingNoteCardID == card.id {
+            TextField("备注", text: $noteDraft)
+                .textFieldStyle(.plain)
+                .font(.system(size: 10.5))
+                .foregroundColor(.white.opacity(0.85))
+                .focused($focusedCardField, equals: .cardNote)
+                .onSubmit { commitCardNote() }
+        } else {
+            Text(card.note.isEmpty ? "双击写备注…" : card.note)
+                .font(.system(size: 10.5))
+                .foregroundColor(.white.opacity(card.note.isEmpty ? 0.28 : 0.55))
+                .lineLimit(1)
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) {
+                    editingNoteCardID = card.id
+                    noteDraft = card.note
+                }
+                .help(card.note.isEmpty ? "双击写一条备注" : "双击改这条备注")
+        }
+    }
+
+    /// 「收藏」（原来那颗「设为默认」的星）。
+    ///
+    /// 用户 2026-09-26 先把它叫「收藏按钮」，随后说清了它的含义：「把右侧的收藏按钮放在
+    /// 通话按钮的左侧」+ 早先那句「新建的 Claude Code 类型卡片不可设为默认」——
+    /// 所以它就是"这条是我的默认主对话"，只有主循环卡片有。
+    private func favouriteButton(_ card: AgentCardModel.Card) -> some View {
+        Button(action: {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            cardModel.setDefault(cardID: card.entityID)
+        }) {
+            Image(systemName: card.isDefault ? "star.fill" : "star")
+                .font(.system(size: 10.5))
+                .foregroundColor(card.isDefault
+                                 ? DS.Colors.success
+                                 : .white.opacity(0.40))
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(Color.white.opacity(card.isDefault ? 0.10 : 0.05)))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(card.isDefault
+              ? "这条是默认主对话：屏幕快捷键发出去的问题进它"
+              : "收藏为默认：屏幕快捷键发出去的问题进这一条主对话")
+    }
+
+    /// 这张卡片正在改标题吗（两个 id 共用一套改名状态，见 `commitRename`）。
+    private func isRenamingCard(_ card: AgentCardModel.Card) -> Bool {
+        guard let entityID = UUID(uuidString: card.entityID) else { return false }
+        return renamingSessionID == entityID || renamingAgentID == entityID
+    }
+
+    /// 开始改这张卡片的标题。**两种卡片各写各的 id**，`commitRename()` 按 id 落到对的 store。
+    private func beginRenaming(_ card: AgentCardModel.Card) {
+        guard let entityID = UUID(uuidString: card.entityID) else { return }
+        renameDraft = card.title
+        switch card.kind {
+        case .mainLoop:
+            renamingSessionID = entityID
+            renamingAgentID = nil
+        case .claudeCode, .review:
+            renamingAgentID = entityID
+            renamingSessionID = nil
+        }
+        focusedCardField = .cardTitle
+    }
+
+    /// 提交备注。**空串 = 抹掉**（`withCardNote` 里就是这么写的）。
+    private func commitCardNote() {
+        guard let cardID = editingNoteCardID else { return }
+        cardModel.setNote(noteDraft, forCardID: cardID)
+        editingNoteCardID = nil
+        noteDraft = ""
     }
 
     /// 这张卡片是不是**右列正在显示的那张** —— 选中态由它决定。
@@ -446,7 +649,9 @@ struct HomeSpaceSidebarView: View {
         return Button {
             SoundEffectPlayer.shared.play(.sidebarButton)
             cardChatPreferences.setMode(.voice, forCardID: card.entityID)
-            voiceChatController.prepareCallForCard(cardID: card.entityID, cardKind: card.kind)
+            // **连上，不只是备好** —— 见上面那段注释里用户的原话。摆正配置与连接写在一起
+            //（`startCallForCard`），顺序反了就按上一个角色的配置去连。
+            voiceChatController.startCallForCard(cardID: card.entityID, cardKind: card.kind)
             cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
         } label: {
             // **正方形 + 圆角、图形更大、贴着上/下/右边缘**（用户 2026-09-26：「卡片里的
@@ -472,7 +677,7 @@ struct HomeSpaceSidebarView: View {
         }
         .buttonStyle(.plain)
         .pointerCursor()
-        .help("跟它通话：切到语音模式（全双工语音）。引擎与音色在「设置 → 角色」里改")
+        .help("跟它通话：切到语音模式（全双工语音）并直接连上。引擎与音色在「设置 → 角色」里改")
     }
 
     // 这里曾经有一个 `isCurrent(_:)`（判断"这张卡片是不是当前正在显示的那张"）——

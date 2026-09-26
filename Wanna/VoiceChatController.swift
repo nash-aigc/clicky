@@ -660,6 +660,26 @@ final class VoiceChatController: ObservableObject {
         selectMode(.duplexVoice)
     }
 
+    /// 侧栏卡片上那颗「通话」按下去的**全部动作**：摆正配置 + 真的连上。
+    ///
+    /// 用户 2026-09-26 的原话是「我点击之后应该自动切换到语音模式，全双工，然后自动通话。
+    /// 你现在没有自动通话，只是选中了，应该自动通话才对」—— 所以这一下必须自己连，
+    /// 而不是等用户进到语音页再点一次页头那颗「连接」。
+    ///
+    /// **顺序不能反**：`prepareCallForCard` 先把角色、聊天类型、引擎摆正（连接读的就是这三样），
+    /// 再连。反过来连上的是上一个角色留下的配置 —— 而页头那颗「连接」之所以没有这个问题，
+    /// 是因为它和这几步写在同一个视图里、用户点之前已经切过去了。
+    ///
+    /// 已经在同一场会话里时不重启：`connectToRole` 自己带那条判断（重复点击不该重连）。
+    @discardableResult
+    func startCallForCard(cardID: String, cardKind: CardKind) -> String {
+        prepareCallForCard(cardID: cardID, cardKind: cardKind)
+        let roleID = CardChatPreferenceModel.shared
+            .resolvedRole(forCardID: cardID, kind: cardKind, mode: .voice).id
+        connectToRole(roleID, cardBinding: CardVoiceBinding(cardID: cardID, cardKind: cardKind))
+        return roleID
+    }
+
     /// **按卡片的模式把聊天类型摆正**（2026-09-26）。
     ///
     /// 为什么不能只是"看看控制器里是什么"：**角色的 `chatChannel` 是跨卡片共享的**
