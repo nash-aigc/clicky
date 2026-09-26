@@ -1376,8 +1376,291 @@ final class LongFormRecorderController: ObservableObject {
     /// 总长"，别凭感觉调。
     private static let retranscribeChunkPacingMilliseconds = 20
 
+    // MARK: - 录音 → Notion 笔记（2026-09-27）
+
+    /// 检测到关键词了吗 —— 刘海左侧那两颗按钮据此出现。
+    @Published private(set) var showsNotionNoteButtons = false
+    /// 用户点了「取消笔记」（或那个唯一按钮）。**取消之后这一场就按普通录音处理**。
+    @Published private(set) var notionNoteCancelled = false
+    /// 已经写进 Notion 了 —— 那个位置换成「已保存笔记 ✓」，点它打开页面。
+    @Published private(set) var notionNoteSaved = false
+    /// 那两个按钮上要显示的错误（保存失败时说出来，不静默）。
+    @Published private(set) var notionNoteFailure: String?
+
+    private var notionKeywordTimer: Timer?
+    /// 保存成功之后等这么久再把整块带子收掉（用户要「在原取消按钮位置显示 5 秒」）。
+    private static let notionNoteSavedLingerSeconds: Double = 5
+    /// 检测节奏：开始后 **2 秒**第一次，之后**每 3 秒**一次（用户第 4 条）。
+    private static let notionKeywordFirstCheckSeconds: Double = 2
+    private static let notionKeywordCheckIntervalSeconds: Double = 3
+    /// 只看开头 / 末尾各多少字（「开头指前 20 个字以内（可能前面有口头语），末尾同理」）。
+    private static let notionKeywordEdgeCharacterCount = 20
+
+    /// 开始跑那条检测循环。**只有开了总闸才起表** —— 关着时连表都没有。
+    private func startNotionKeywordWatch() {
+        guard AppSettingsStore.snapshot().notionNoteEnabled else { return }
+        notionKeywordTimer?.invalidate()
+        showsNotionNoteButtons = false
+        notionNoteCancelled = false
+        notionNoteSaved = false
+        notionNoteFailure = nil
+        // 先 2 秒一次，之后每 3 秒 —— 用一个一次性的表接上重复的表，语义最直白。
+        notionKeywordTimer = Timer.scheduledTimer(
+            withTimeInterval: Self.notionKeywordFirstCheckSeconds, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.checkNotionKeywords()
+                self.notionKeywordTimer = Timer.scheduledTimer(
+                    withTimeInterval: Self.notionKeywordCheckIntervalSeconds, repeats: true) { [weak self] _ in
+                    Task { @MainActor in self?.checkNotionKeywords() }
+                }
+            }
+        }
+    }
+
+    private func stopNotionKeywordWatch() {
+        notionKeywordTimer?.invalidate()
+        notionKeywordTimer = nil
+    }
+
+    /// **只看开头与末尾**（用户：「只检测开头和末尾，中间内容忽略」）。
+    ///
+    /// 比较前把空格与标点全去掉：转写是 AI 出来的，标点常常与嘴里说的不一致
+    ///（用户第 4 条的原话：「检测时去除空格和标点符号，因为内容是 AI 转写的」）。
+    /// 所以「保存 notion」这条关键词去掉空格之后是「保存notion」，两种写法都命中 ✓。
+    nonisolated static func transcriptMentionsNotionKeyword(_ transcriptText: String,
+                                                            keywords: [String],
+                                                            edgeCharacterCount: Int = 20) -> Bool {
+        func normalized(_ text: String) -> String {
+            text.filter { $0.isLetter || $0.isNumber }
+        }
+        let normalizedTranscript = normalized(transcriptText)
+        guard !normalizedTranscript.isEmpty else { return false }
+        let head = String(normalizedTranscript.prefix(edgeCharacterCount))
+        let tail = String(normalizedTranscript.suffix(edgeCharacterCount))
+        for keyword in keywords {
+            let needle = normalized(keyword)
+            guard !needle.isEmpty else { continue }
+            if head.contains(needle) || tail.contains(needle) { return true }
+        }
+        return false
+    }
+
+    private func checkNotionKeywords() {
+        guard AppSettingsStore.snapshot().notionNoteEnabled else { return }
+        guard !showsNotionNoteButtons else { return }
+        // 已经按住了取消/保存就不要再冒出来。
+        guard !notionNoteCancelled, !notionNoteSaved else { return }
+        let keywords = AppSettingsStore.snapshot().notionNoteKeywords
+            .split(whereSeparator: { $0 == "\n" }).map(String.init)
+        let transcript = transcriptPlainText + livePartialText
+        guard Self.transcriptMentionsNotionKeyword(transcript, keywords: keywords,
+                                                   edgeCharacterCount: Self.notionKeywordEdgeCharacterCount) else { return }
+        showsNotionNoteButtons = true
+        publishDiagnostic("检测到 Notion 关键词，刘海左侧显示保存 / 取消")
+    }
+
+    /// 现在**能不能**保存 —— Notion 那边（令牌 + 页面）配好了才有「保存」这一颗。
+    /// 没配好时只显示「取消笔记」（用户第 3 条："若只有一个按钮，则显示取消笔记"）。
+    var canSaveNotionNote: Bool {
+        let settings = AppSettingsStore.snapshot()
+        return !settings.notionNoteToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && NotionNoteClient.normalizedPageID(settings.notionNotePageID) != nil
+    }
+
+    /// 点「已保存笔记」= 打开那一页（用户第 7 条）。
+    func openNotionNotePage() {
+        let settings = AppSettingsStore.snapshot()
+        let configured = settings.notionNoteOpenURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let target = configured.isEmpty
+            ? NotionNoteClient.normalizedPageID(settings.notionNotePageID).map { "https://www.notion.so/\($0.replacingOccurrences(of: "-", with: ""))" }
+            : configured
+        guard let target, let url = URL(string: target) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 「保存」：用户明确点了保存。什么都不点等于这个（用户第 3 条：默认保存）。
+    func confirmNotionNote() {
+        notionNoteCancelled = false
+        publishDiagnostic("用户点了保存笔记")
+    }
+
+    /// 「取消笔记」：这一场按**普通录音**处理，不写 Notion。
+    func cancelNotionNote() {
+        notionNoteCancelled = true
+        showsNotionNoteButtons = false
+        publishDiagnostic("用户取消了笔记，按普通录音处理")
+    }
+
+    /// 把这一场整理成一页笔记写进 Notion。
+    ///
+    /// 两步：**先让模型按用户那套提示词整理**（独立的一套服务商配置），再交给
+    /// `NotionNoteClient` 按形状写进去。整理失败就**只存原文**——用户至少拿到录音，
+    /// 而不是什么都没发生。
+    private func saveNotionNote(rawText: String) async {
+        let settings = AppSettingsStore.snapshot()
+        let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            notionNoteFailure = "这一场没有文字，没写成笔记"
+            return
+        }
+        var summary = "录音笔记"
+        var outline = trimmed
+        var formatted: [NotionNoteClient.RichBlock] = []
+        do {
+            let reply = try await RecordingPolishClient.organizeNotionNote(
+                prompt: settings.notionNotePrompt + "\n\n<transcript>\n" + trimmed + "\n</transcript>",
+                settings: settings)
+            let parsed = Self.parseNotionNoteReply(reply)
+            summary = parsed.summary
+            outline = parsed.outline
+            formatted = Self.richBlocks(fromMarkdown: parsed.formatted)
+            publishDiagnostic("Notion 整理完成：总结 \(summary.count) 字 · 大纲 \(outline.count) 字 · 排版块 \(formatted.count) 个")
+        } catch {
+            publishDiagnostic("Notion 整理失败（只存原文）：\(error.localizedDescription)")
+            outline = trimmed
+        }
+
+        let title = Self.notionNoteTitle(for: Date())
+        let request = NotionNoteClient.SaveRequest(
+            title: title,
+            summary: summary,
+            outline: outline,
+            formattedBlocks: formatted.isEmpty
+                ? [.paragraph([.init(text: trimmed)])]
+                : formatted,
+            rawLines: trimmed.split(separator: "\n").map(String.init).isEmpty
+                ? [trimmed] : trimmed.split(separator: "\n").map(String.init))
+        do {
+            let url = try await NotionNoteClient().save(request)
+            notionNoteSaved = true
+            notionNoteFailure = nil
+            publishDiagnostic("已保存到 Notion：\(url)")
+        } catch {
+            notionNoteFailure = error.localizedDescription
+            publishDiagnostic("Notion 保存失败：\(error.localizedDescription)")
+        }
+    }
+
+    /// `2026年3月27日 06:13` —— 用户给的格式。
+    nonisolated static func notionNoteTitle(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "yyyy年M月d日 HH:mm"
+        return formatter.string(from: date)
+    }
+
+    /// 把模型那三段输出切开。**切不开时不猜**：整段当排版，大纲留一句说明。
+    nonisolated static func parseNotionNoteReply(_ reply: String)
+        -> (summary: String, outline: String, formatted: String) {
+        func section(_ name: String, next: [String]) -> String? {
+            guard let start = reply.range(of: "【\(name)】") else { return nil }
+            let after = reply[start.upperBound...]
+            var end = after.endIndex
+            for marker in next {
+                if let r = after.range(of: "【\(marker)】"), r.lowerBound < end { end = r.lowerBound }
+            }
+            return String(after[..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let summary = section("总结", next: ["大纲", "排版"]) ?? ""
+        let outline = section("大纲", next: ["排版"])
+        let formatted = section("排版", next: [])
+        return (summary.isEmpty ? "录音笔记" : summary,
+                outline ?? reply.trimmingCharacters(in: .whitespacesAndNewlines),
+                formatted ?? reply.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    /// Markdown → Notion 块。**只认用户点名的那几种**，认不出的一律普通段落（不丢内容）。
+    nonisolated static func richBlocks(fromMarkdown markdown: String) -> [NotionNoteClient.RichBlock] {
+        var blocks: [NotionNoteClient.RichBlock] = []
+        for rawLine in markdown.split(separator: "\n", omittingEmptySubsequences: false) {
+            let line = String(rawLine).trimmingCharacters(in: .whitespaces)
+            if line.isEmpty { continue }
+            if line.hasPrefix("### ") { blocks.append(.heading(level: 3, text: String(line.dropFirst(4)))); continue }
+            if line.hasPrefix("## ") { blocks.append(.heading(level: 2, text: String(line.dropFirst(3)))); continue }
+            if line.hasPrefix("# ") { blocks.append(.heading(level: 1, text: String(line.dropFirst(2)))); continue }
+            if line == "---" || line == "***" { blocks.append(.divider); continue }
+            if line.hasPrefix("> ") { blocks.append(.quote(spans(fromInline: String(line.dropFirst(2))))); continue }
+            if line.hasPrefix("- ") || line.hasPrefix("* ") {
+                blocks.append(.bulleted(spans(fromInline: String(line.dropFirst(2))))); continue
+            }
+            if line.hasPrefix("|"), line.hasSuffix("|") {
+                let cells = line.dropFirst().dropLast().split(separator: "|").map {
+                    $0.trimmingCharacters(in: .whitespaces)
+                }
+                // 分隔行（`|---|---|`）丢掉，它不是内容。
+                if cells.allSatisfy({ $0.allSatisfy { $0 == "-" || $0 == ":" } }) { continue }
+                blocks.append(.tableRow(cells)); continue
+            }
+            blocks.append(.paragraph(spans(fromInline: line)))
+        }
+        return blocks
+    }
+
+    /// 行内样式：`**加粗**`、`` `代码` ``、`{红}` 这类**后置颜色标记**（提示词里就是这么要求的）。
+    nonisolated static func spans(fromInline line: String) -> [NotionNoteClient.RichSpan] {
+        var spans: [NotionNoteClient.RichSpan] = []
+        var buffer = ""
+        var bold = false
+        var code = false
+        func flush() {
+            guard !buffer.isEmpty else { return }
+            spans.append(.init(text: buffer, bold: bold, code: code))
+            buffer = ""
+        }
+        var index = line.startIndex
+        while index < line.endIndex {
+            let rest = line[index...]
+            if rest.hasPrefix("**") {
+                flush(); bold.toggle(); index = line.index(index, offsetBy: 2); continue
+            }
+            if rest.hasPrefix("`") {
+                flush(); code.toggle(); index = line.index(index, offsetBy: 1); continue
+            }
+            if rest.hasPrefix("{") {
+                // 颜色标记写在被标记内容的**后面**：`重点内容{红}`。
+                if let close = rest.firstIndex(of: "}") {
+                    let name = String(rest[rest.index(after: index)..<close])
+                    if let color = Self.notionColor(named: name) {
+                        flush()
+                        if var last = spans.popLast() {
+                            last.color = color
+                            spans.append(last)
+                        }
+                        index = line.index(after: close)
+                        continue
+                    }
+                }
+            }
+            buffer.append(line[index])
+            index = line.index(after: index)
+        }
+        flush()
+        return spans.isEmpty ? [.init(text: line)] : spans
+    }
+
+    nonisolated static func notionColor(named name: String) -> String? {
+        switch name {
+        case "红", "红色": return "red"
+        case "蓝", "蓝色": return "blue"
+        case "绿", "绿色": return "green"
+        case "黄", "黄色": return "yellow"
+        case "橙", "橙色": return "orange"
+        case "紫", "紫色": return "purple"
+        case "灰", "灰色": return "gray"
+        case "棕", "棕色": return "brown"
+        case "粉", "粉色": return "pink"
+        default: return nil
+        }
+    }
+
     /// 结束这一场：让面板消失，下次录音从头开始。
     func finishCurrentSession() {
+        stopNotionKeywordWatch()
+        showsNotionNoteButtons = false
+        notionNoteCancelled = false
+        notionNoteSaved = false
+        notionNoteFailure = nil
         isTranscriptExpanded = false
         transcriptDraftText = nil
         isSessionActive = false
@@ -1727,6 +2010,7 @@ final class LongFormRecorderController: ObservableObject {
             // **整场录音期间对外声明「我在录」。** 别的子系统（语音引擎）据此
             phase = .recording
             startInputGainWatch()
+            startNotionKeywordWatch()
             publishDiagnostic("开始录音 \(sessionID) · 档位 \(settings.recordingEffectiveResourceID)"
                           + " · 判重窗口 \(seamSuppressionMilliseconds)ms")
             startTimers()
@@ -2202,16 +2486,38 @@ final class LongFormRecorderController: ObservableObject {
         // 而润色结果既没进剪贴板也没被粘出去。用户看到「转写没生效」就是这个：
         // 日志写着「重写完成，121 字」，粘出来的却还是 143 字的原文。
         let finalText = polished
-        if settings.recordingCopiesToClipboard || settings.recordingPastesAfterStop {
+
+        // **录音 → Notion 笔记**（2026-09-27）。三条判据缺一不可：功能开着、检测到过关键词、
+        // 用户没有取消 ——「若用户未点击，默认保存」就是第三条的反面。
+        stopNotionKeywordWatch()
+        let shouldSaveNotionNote = settings.notionNoteEnabled
+            && showsNotionNoteButtons
+            && !notionNoteCancelled
+
+        if shouldSaveNotionNote {
+            // 用户第 8 条：**原文**进剪贴板、**不粘贴**（他要的是能直接去别处粘贴）。
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+            await saveNotionNote(rawText: text)
+            // 「已保存笔记」在原「取消」的位置显示 5 秒 —— 这 5 秒里那块带子不能收，
+            // 否则用户根本看不到保存的结果（用户第 5 + 7 条合起来就是这个意思）。
+            if notionNoteSaved {
+                try? await Task.sleep(for: .seconds(Self.notionNoteSavedLingerSeconds))
+            }
+        } else if settings.recordingCopiesToClipboard || settings.recordingPastesAfterStop {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(finalText, forType: .string)
         }
 
         let shouldKeepPanel = isEditorOpenAtStopTime
         if !shouldKeepPanel {
-            if settings.recordingPastesAfterStop { pasteIntoFrontmostApplication(finalText) }
+            if settings.recordingPastesAfterStop && !shouldSaveNotionNote {
+                pasteIntoFrontmostApplication(finalText)
+            }
             finishCurrentSession()
         }
+        // 带子收掉之后，那两个按钮的状态也跟着清掉（下一场重新检测）。
+        showsNotionNoteButtons = false
 
         teardownStorage()
         audioLevel = 0

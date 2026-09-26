@@ -119,7 +119,37 @@ nonisolated enum RecordingPolishClient {
                        cameraFrames: [Data],
                        settings: AppSettings) async throws -> String {
         let endpoint = try resolvedEndpoint(settings: settings)
+        return try await send(prompt: prompt, screenshotJPEG: screenshotJPEG,
+                              cameraFrames: cameraFrames, endpoint: endpoint)
+    }
 
+    /// **「录音 → Notion 笔记」的整理**：同一套内核，但用**它自己那一套**地址 / Key / 模型。
+    ///
+    /// 用户的要求：「转写部分使用另一套提示词，独立使用 DeepSeek Flash 设计的提示词整理，
+    /// 不使用录音润色提示词」。所以配置、提示词、温度都不共用 —— 只有"怎么发"共用。
+    static func organizeNotionNote(prompt: String, settings: AppSettings) async throws -> String {
+        let endpoint = try resolvedNotionEndpoint(settings: settings)
+        return try await send(prompt: prompt, screenshotJPEG: nil, cameraFrames: [],
+                              endpoint: endpoint)
+    }
+
+    /// Notion 整理那一步的服务商：用户填了就用自己的，没填**回落到录音润色那一套**
+    ///（再没有就回落到 🧠）—— 因为"没配"时最合理的行为是照旧能用，而不是报错什么都不做。
+    private static func resolvedNotionEndpoint(settings: AppSettings)
+        throws -> (url: URL, apiKey: String, model: String) {
+        let base = settings.notionNoteBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = settings.notionNoteAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let model = settings.notionNoteModelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !base.isEmpty {
+            return (try chatCompletionsURL(fromBase: base), key, model)
+        }
+        return try resolvedEndpoint(settings: settings)
+    }
+
+    private static func send(prompt: String,
+                             screenshotJPEG: Data?,
+                             cameraFrames: [Data],
+                             endpoint: (url: URL, apiKey: String, model: String)) async throws -> String {
         var messages: [[String: Any]] = []
         messages.append(["role": "user", "content": contentParts(
             prompt: prompt, screenshotJPEG: screenshotJPEG, cameraFrames: cameraFrames)])

@@ -65,7 +65,7 @@ final class NotionNoteClient {
             case .heading(let level, let text):
                 let key = "heading_\(min(max(level, 1), 3))"
                 return ["object": "block", "type": key,
-                        "\(key)": ["rich_text": [Self.richText(["text": text])]]]
+                        "\(key)": ["rich_text": [Self.richText(text)]]]
             case .paragraph(let spans):
                 return ["object": "block", "type": "paragraph",
                         "paragraph": ["rich_text": spans.map(\.notionJSON)]]
@@ -88,11 +88,19 @@ final class NotionNoteClient {
                 // 表格在 Notion 里是 `table` + 若干 `table_row`，这里按**一行一段**写入
                 //（见 `chunked`）：一次请求最多两层，表格要三层，所以拆成两次。
                 return ["object": "block", "type": "table_row",
-                        "table_row": ["cells": cells.map { [Self.richText(["text": $0])] }]]
+                        "table_row": ["cells": cells.map { [Self.richText($0)] }]]
             }
         }
 
-        static func richText(_ fields: [String: Any]) -> [String: Any] { fields }
+        /// 纯文本的一段富文本。
+        ///
+        /// ⚠️ **`text` 必须是个对象**（`{"content": "…"}`）—— 写成一整个字符串会被服务端拒掉：
+        /// `body.children[0].toggle.rich_text[0].text should be an object, instead was "..."`
+        ///（2026-09-27 实测；这一条是"看服务端原文"才拿到的，报错的 message 前半句只有
+        /// `body failed validation. Fix one:`）。
+        static func richText(_ content: String) -> [String: Any] {
+            ["type": "text", "text": ["content": content]]
+        }
     }
 
     /// 一段带样式的文字。
@@ -143,20 +151,50 @@ final class NotionNoteClient {
 
         let title = request.title
         // ① 第一条折叠列表：标题 + 总结，里面两块（大纲 / 排版）。
+        //
+        // **表格要单独发**：Notion 一次请求最多两层，而表格是 `table` → `table_row`，
+        // 再套进 `toggle` 就是三层 —— 直接放会 400 `body failed validation`
+        //（2026-09-27 实测：模型在排版里真的会生成表格，所以这条一定会撞上）。
+        // 所以先把不涉表格的块写进 toggle，再往**那条 toggle 的 id** 里追加表格 ——
+        // 那时请求自己的嵌套只有两层（table + rows）✓。
         var firstChildren: [[String: Any]] = [
             ["object": "block", "type": "code",
-             "code": ["rich_text": [RichBlock.richText(["text": request.outline])],
+             "code": ["rich_text": [RichBlock.richText(request.outline)],
                       "language": "plain text"]]
         ]
-        firstChildren += request.formattedBlocks.map(\.notionJSON)
+        // 表格必须包在 `table` 里：把 `table_row` 直接挂到 toggle 下，服务端回
+        // `Only table_row blocks may be appended to a table block`（2026-09-27 实测，
+        // 而且那一次的 message 只有一句 `body failed validation. Fix one:`，
+        // 真正的原因是用 python 复现同一个请求才拿到的）。
+        // **一次请求就够**：`table` 自带 rows 放在 toggle 的 children 里实测成功。
+        var pendingTableRows: [[String: Any]] = []
+        func flushTableRows() {
+            guard !pendingTableRows.isEmpty else { return }
+            firstChildren.append([
+                "object": "block", "type": "table",
+                "table": ["table_width": 1, "has_column_header": false, "has_row_header": false,
+                          "children": pendingTableRows]
+            ])
+            pendingTableRows = []
+        }
+        for block in request.formattedBlocks {
+            if case .tableRow = block {
+                pendingTableRows.append(block.notionJSON)
+                continue
+            }
+            flushTableRows()
+            firstChildren.append(block.notionJSON)
+        }
+        flushTableRows()
+
         try await appendChildren(pageID: pageID, token: token, children: [
-            toggleBlock(title: "\(title) —— \(request.summary)", children: firstChildren)
+            toggleBlock(title: title + " —— " + request.summary, children: firstChildren)
         ])
 
         // ② 第二条折叠列表：标题同名 + 「（原文）」，正文是转写原文。
         let rawChildren: [[String: Any]] = request.rawLines.map {
             ["object": "block", "type": "paragraph",
-             "paragraph": ["rich_text": [RichBlock.richText(["text": $0])]]]
+             "paragraph": ["rich_text": [RichBlock.richText($0)]]]
         }
         try await appendChildren(pageID: pageID, token: token, children: [
             toggleBlock(title: "\(title)（原文）", children: rawChildren)
@@ -169,12 +207,13 @@ final class NotionNoteClient {
     /// 而「toggle + 里面的块」正好两层 ✓。
     private func toggleBlock(title: String, children: [[String: Any]]) -> [String: Any] {
         ["object": "block", "type": "toggle",
-         "toggle": ["rich_text": [RichBlock.richText(["text": title])],
+         "toggle": ["rich_text": [RichBlock.richText(title)],
                     "children": children]]
     }
 
+    @discardableResult
     private func appendChildren(pageID: String, token: String,
-                                children: [[String: Any]]) async throws {
+                                children: [[String: Any]]) async throws -> String? {
         // **追加是 PATCH**（POST 会 400 invalid_request_url，实测）。
         var request = URLRequest(url: URL(string: "\(Self.apiBase)/blocks/\(pageID)/children")!)
         request.httpMethod = "PATCH"
@@ -189,10 +228,17 @@ final class NotionNoteClient {
         }
         guard (200..<300).contains(http.statusCode) else {
             // Notion 的错误体里 `message` 是给人看的那一句（例如"把这一页分享给集成 X"）。
+            // **把服务端原话整段带出来**：`message` 常常只有一句 `body failed validation.`
+            // 而真正的原因在它后面的 `additional_data`/`code` 里 ——
+            // 2026-09-27 就是靠这一手才定位到"表格嵌三层"的（第一次只截了 message，白跑一轮）。
+            let raw = String(data: data, encoding: .utf8) ?? ""
             let message = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
                 .flatMap { $0?["message"] as? String } ?? "未知错误"
-            throw NotionError.http(code: http.statusCode, message: message)
+            throw NotionError.http(code: http.statusCode,
+                                   message: message + " ｜ " + String(raw.prefix(400)))
         }
+        let parsed = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+        return (parsed?["results"] as? [[String: Any]])?.first?["id"] as? String
     }
 
     /// 打开用的链接：优先用户填的那条；没填就用页面 id 拼一个。
