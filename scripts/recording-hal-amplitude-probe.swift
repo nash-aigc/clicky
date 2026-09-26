@@ -156,13 +156,19 @@ final class AmplitudeRecorder {
 
         // 用 int16 非交错：App 里上游就是 PCM16，这样量到的峰值和 App 日志里的
         // `峰值=n/32768` 是同一个尺子，可以直接对比。
+        //
+        // **声道数恒为 1，跟 App 一样**（App 侧那行是为了修「设备报 3 声道 → 格式建不出来
+        // → 整场录音起不来」那个故障，见 `bindAndStartCapture` 里的说明）。
+        // 设备在系统进入语音处理/聚合体状态时会自己从 1ch 变成 3ch / 9ch，而
+        // 3 声道的 `AVAudioFormat` 根本建不出来 —— 探针要是跟着设备走，就会在那种
+        // 状态下报「建 render buffer 失败」，而那**正是**要修的东西，不是要测的东西。
         var clientFormat = AudioStreamBasicDescription(
             mSampleRate: hardwareFormat.mSampleRate,
             mFormatID: kAudioFormatLinearPCM,
             mFormatFlags: kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked
                 | kAudioFormatFlagIsNonInterleaved,
             mBytesPerPacket: 2, mFramesPerPacket: 1, mBytesPerFrame: 2,
-            mChannelsPerFrame: hardwareFormat.mChannelsPerFrame,
+            mChannelsPerFrame: 1,
             mBitsPerChannel: 16, mReserved: 0)
         let setFormatStatus = AudioUnitSetProperty(unit, kAudioUnitProperty_StreamFormat,
                                                   kAudioUnitScope_Output, 1, &clientFormat,

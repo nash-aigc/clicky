@@ -247,9 +247,38 @@ nonisolated final class LongFormAudioCapture {
         // 队列可能只有一个（用户明确选了某个设备）—— 也要补进去，好让
         // `switchToNextCandidateDevice()` 知道「已经试过谁」。
         if candidateInputDevices.isEmpty { candidateInputDevices = [firstDevice] }
-        candidateDeviceIndex = 0
         inputDeviceSwitchCount = 0
-        try bindAndStartCapture(on: firstDevice)
+
+        // **起不来也要往后换。** 原来只有「起来了、但一直给零」会换设备（看门狗那条），
+        // 而**起不来**是直接抛错、整场结束 —— 2026-09-26 用户撞到的正是这一种
+        //（设备报 3 声道 → 客户端格式建不出来 → `AUHAL 失败④` → 连续七次「开始失败」）。
+        // 两个失败面必须共用同一套「顺着候选队列往后试」。
+        //
+        // 用户明确选了设备时队列只有一个（见 `inputDeviceCandidates`），所以这里对
+        // 「他选的那个」仍然是不换的 —— 试一次、起不来就照旧报错。
+        //
+        // 已知代价（写在这里免得下次惊讶）：`AudioOutputUnitStart` 在设备被系统卡死时
+        // 会**阻塞约 10 秒**才返回错误（实测 14:44:10 → 14:44:20），而这一段跑在主线程上
+        //（`start()` 一直如此）。三个候选都撞上就是半分钟 —— 但那是「设备整个死了」的
+        // 极端情形；本次这个格式建不出来的故障是**当秒就返回**的（15:10:02 起七次都在同秒）。
+        var lastStartError: Error = LongFormRecorderError.microphoneUnavailable
+        for candidateIndex in candidateInputDevices.indices {
+            candidateDeviceIndex = candidateIndex
+            let candidate = candidateInputDevices[candidateIndex]
+            do {
+                try bindAndStartCapture(on: candidate)
+                if candidateIndex > 0 {
+                    inputDeviceSwitchCount += candidateIndex
+                    onDiagnostic?("🔁 前 \(candidateIndex) 个设备起不来，已改用"
+                                  + "「\(candidate.name) [id=\(candidate.id)]」")
+                }
+                return
+            } catch {
+                lastStartError = error
+                onDiagnostic?("设备「\(candidate.name) [id=\(candidate.id)]」起不来：\(error)")
+            }
+        }
+        throw lastStartError
     }
 
     /// **在指定设备上**建 AUHAL 并起采 —— `start()` 与换设备共用这一份。
@@ -303,14 +332,33 @@ nonisolated final class LongFormAudioCapture {
         var hardwareFormatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
         AudioUnitGetProperty(unit, kAudioUnitProperty_StreamFormat,
                              kAudioUnitScope_Input, 1, &hardwareFormat, &hardwareFormatSize)
-        // 我们这一侧的格式设在 element 1 的 **Output scope** 上。AUHAL 自带转换器。
+
+        // 我们这一侧的格式设在 element 1 的 **Output scope** 上（AUHAL 自带转换器），
+        // 而且**永远只要 1 个声道** —— 这一行是一个真实故障的修复，别再改回去。
+        //
+        // ## 为什么不能跟着设备的声道数建（2026-09-26 实测）
+        //
+        // 设备会报**多声道**：系统一旦进入语音处理 / 聚合体状态，内置麦自己就从
+        // `1ch` 变成 `3ch`（探针实测：`MacBook Pro麦克风 [id=91]，3 声道`；
+        // 更早那次是 `9ch`）。而**3 声道的 `AVAudioFormat` 根本建不出来**
+        //（非交错格式要求一个合法的声道布局，1~2 声道能推断、3 声道不能），
+        // 于是 `guard let clientAVFormat` 失败 → `AUHAL 失败④` → **整场录音起不来**。
+        // 用户看到的就是「录音又无法使用了」（日志：连续 7 次 `开始失败`）。
+        //
+        // 而我们**本来只要一个声道**：目标是 16kHz 单声道，多声道到了下游那个
+        // `AVAudioConverter` 里也一样要被混成单声道。所以在这里就取单声道，
+        // 顺带把「设备报几个声道」这件事从这条路上彻底去掉 —— 1ch / 2ch / 3ch / 9ch
+        // 走的都是同一段代码。
+        //
+        // 实测（2026-09-26，设备正处于 3 声道状态）：按 1 声道建格式 → `OSStatus=0`、
+        // 起采成功、188 块里零块 0 个、拿到真实样本。
         var clientFormat = AudioStreamBasicDescription(
             mSampleRate: hardwareFormat.mSampleRate,
             mFormatID: kAudioFormatLinearPCM,
             mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked
                 | kAudioFormatFlagIsNonInterleaved,
             mBytesPerPacket: 4, mFramesPerPacket: 1, mBytesPerFrame: 4,
-            mChannelsPerFrame: hardwareFormat.mChannelsPerFrame,
+            mChannelsPerFrame: 1,
             mBitsPerChannel: 32, mReserved: 0)
         AudioUnitSetProperty(unit, kAudioUnitProperty_StreamFormat,
                              kAudioUnitScope_Output, 1, &clientFormat,
