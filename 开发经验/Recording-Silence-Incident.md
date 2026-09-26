@@ -200,7 +200,7 @@ records again. Confirm with §1's two numbers.
 
 If the input is healthy, the remaining candidates are the ASR connection, the
 upload path, or the transcript writer. `开发经验/10-踩过的坑.md` and
-`解决方案/01-语音打断与持续监听.md` cover the known ones.
+`开发经验/01-语音打断与持续监听.md` cover the known ones.
 
 ### Step 5 — If the text is missing but the transcript is not
 
