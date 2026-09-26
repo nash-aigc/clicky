@@ -66,6 +66,8 @@ struct NotchHomeView: View {
     @State private var composerConversationMode: ComposerConversationMode = .continuous
     /// 音色弹窗开着没有。
     @State private var isVoicePickerPresented = false
+    /// 临时对话（阶段 4）：它自己的会话，**不碰主对话的任何状态**。
+    @StateObject private var temporaryConversation = TemporaryConversationModel()
     /// 克隆音色（打开弹窗时拉一次；拉不到就只显示系统音色 + 一行说明）。
     @State private var customVoicesForPicker: [CustomVoice] = []
     @State private var voicePickerFailureText: String?
@@ -234,6 +236,20 @@ struct NotchHomeView: View {
                     }
             }
         )
+        // **临时对话的浮层**：盖住右列，左列照常可点（见 `TemporaryConversationOverlay`
+        // 的头注释 —— 「当前右侧会话内容保持不变」就是这个意思）。
+        .overlay {
+            if composerConversationMode == .temporary {
+                TemporaryConversationOverlay(
+                    model: temporaryConversation,
+                    companionManager: companionManager,
+                    onClose: {
+                        temporaryConversation.discardEverything()
+                        composerConversationMode = .continuous
+                    }
+                )
+            }
+        }
     }
 
     private var isEmptySession: Bool {
@@ -858,6 +874,9 @@ struct NotchHomeView: View {
         let isSelected = composerConversationMode == mode
         return Button(action: {
             SoundEffectPlayer.shared.play(.sidebarButton)
+            // **用完即弃**：进临时对话给一份干净的，离开时把内容扔掉
+            //（用户：「临时对话内容…关掉就没了」）。
+            temporaryConversation.discardEverything()
             composerConversationMode = mode
         }) {
             HStack(spacing: 4) {

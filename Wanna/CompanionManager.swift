@@ -1282,6 +1282,16 @@ final class CompanionManager: ObservableObject {
         accessibilityCheckTimer = nil
     }
 
+    /// 临时对话把回答念出来（阶段 4）。
+    ///
+    /// **它只借「发声」这一条**，别的（会话归属、历史、agent 循环、连续监听）一概不共享 ——
+    /// 共享就会变成「临时对话污染了主对话」这类最难查的问题。走的是同一条 TTS 客户端与
+    /// 同一个音色覆盖（`replyVoiceOverride`），所以两处听起来是同一个声音。
+    func speakTemporaryReply(_ text: String) async {
+        guard !voiceReplyMuted else { return }
+        try? await bailianTTSClient.speakText(text, voiceOverride: replyVoiceOverride)
+    }
+
     /// **这一条回复用哪个音色** —— 用户在输入框那行选的（2026-09-26 新增）。
     ///
     /// nil = 用「模型」页里配的那个（默认）。存 id 而不是 VoiceOption：
