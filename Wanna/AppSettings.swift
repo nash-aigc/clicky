@@ -611,6 +611,63 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         return copy
     }
 
+    // MARK: - 每张卡片的聊天模式与角色（2026-09-26）
+
+    /// **每张卡片各自记住「用哪种方式跟它对话」**：文本 / 图文 / 语音 / 视频。
+    ///
+    /// key 是卡片 id（= 背后那条 `ConversationSession` / `AgentSession` 的 uuidString，
+    /// 与 `defaultSessionID` 同一个形状），值是 `CardChatMode` 的 rawValue。存**原始字符串**
+    /// 而不是枚举：将来多一个模式、或者读到不认识的值时降级成默认模式，而不是让整份
+    /// 设置解不出来（与 `agentPermissionModeRawValue`、`windowExpansionStyle` 同一条规矩）。
+    ///
+    /// 没存过的卡片走 `CardChatMode.defaultMode(for:)` —— 主循环默认图文（就是今天的行为），
+    /// Claude Code / 复盘默认文本。
+    ///
+    /// **已归档卡片留下来的条目不清理**：一条 uuid + 一个 rawValue ≈ 45 字节，而清理它
+    /// 需要设置层知道"哪些卡片还在"（那是 `AgentCardModel` 的事）。为这点空间把两层的
+    /// 依赖反过来不值当。
+    var cardChatModeRawValues: [String: String]?
+
+    /// **每张卡片各自记住选了哪个语音角色**（只在语音 / 视频模式下有意义）。
+    /// 存的是 `VoiceChatRole.id`；nil = 没选过 = 该模式下的第一个可用角色。
+    var cardVoiceRoleIDs: [String: String]?
+
+    /// 这张卡片现在用哪种聊天模式。
+    func cardChatMode(forCardID cardID: String, kind: CardKind) -> CardChatMode {
+        guard let rawValue = cardChatModeRawValues?[cardID],
+              let mode = CardChatMode(rawValue: rawValue) else {
+            return CardChatMode.defaultMode(for: kind)
+        }
+        return mode
+    }
+
+    /// 这张卡片在语音 / 视频模式下选中的角色 id（没选过是 nil）。
+    func cardVoiceRoleID(forCardID cardID: String) -> String? {
+        cardVoiceRoleIDs?[cardID]
+    }
+
+    /// 复制一份、只换某张卡片的聊天模式。
+    func withCardChatMode(_ mode: CardChatMode, forCardID cardID: String) -> AppSettings {
+        var copy = self
+        var modes = copy.cardChatModeRawValues ?? [:]
+        modes[cardID] = mode.rawValue
+        copy.cardChatModeRawValues = modes
+        return copy
+    }
+
+    /// 复制一份、只换某张卡片的语音角色。传 nil = 回到"没选过"。
+    func withCardVoiceRoleID(_ roleID: String?, forCardID cardID: String) -> AppSettings {
+        var copy = self
+        var roles = copy.cardVoiceRoleIDs ?? [:]
+        if let roleID {
+            roles[cardID] = roleID
+        } else {
+            roles.removeValue(forKey: cardID)
+        }
+        copy.cardVoiceRoleIDs = roles
+        return copy
+    }
+
     // MARK: - 听（语音识别）
 
     var transcriptionLanguage: TranscriptionLanguage = .chinese
@@ -1361,6 +1418,8 @@ nonisolated extension AppSettings {
         case extraSystemPromptInstructions
         case customSystemPrompt
         case defaultSessionID
+        case cardChatModeRawValues
+        case cardVoiceRoleIDs
         case reviewAgentReadsProject
         case reviewAgentWritesProject
         case transcriptionLanguage
