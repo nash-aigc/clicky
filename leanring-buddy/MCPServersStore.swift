@@ -5,7 +5,7 @@ import Combine
 
 /// 用户配了哪些 MCP 服务器。
 ///
-/// 落盘在 `~/Library/Application Support/Clicky/MCPServers.json`，**仓库外 + 0600**
+/// 落盘在 `~/Library/Application Support/Wanna/MCPServers.json`，**仓库外 + 0600**
 /// —— 和 `AppSettings.json` / `ModelConfiguration.json` 同一层、同一个理由：
 /// **这份文件里有密钥**（`env` 里的 API key），进仓库就是泄露。
 ///
@@ -24,9 +24,7 @@ nonisolated final class MCPServersStore {
     private var cache: [MCPServerConfig]?
 
     private var fileURL: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory,
-                                               in: .userDomainMask).first!
-        return support.appendingPathComponent("Clicky/MCPServers.json")
+        AppSupportDirectory.folderURLOrHome.appendingPathComponent("MCPServers.json")
     }
 
     func allServers() -> [MCPServerConfig] {

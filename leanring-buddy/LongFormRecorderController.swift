@@ -1077,9 +1077,7 @@ final class LongFormRecorderController: ObservableObject {
     private var diagnosticLogURL: URL?
 
     private static var diagnosticsFileURL: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory,
-                                               in: .userDomainMask).first!
-        return support.appendingPathComponent("Clicky/录音诊断.log")
+        AppSupportDirectory.folderURLOrHome.appendingPathComponent("录音诊断.log")
     }
 
     private func appendDiagnosticToFile(_ line: String) {

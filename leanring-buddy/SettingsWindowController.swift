@@ -46,7 +46,7 @@ final class SettingsWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        settingsWindow.title = "Clicky 设置"
+        settingsWindow.title = "Wanna 设置"
         settingsWindow.minSize = NSSize(width: 780, height: 520)
 
         // The design tokens are a dark palette. Following the system appearance
@@ -61,7 +61,7 @@ final class SettingsWindowController: NSWindowController {
         settingsWindow.isReleasedWhenClosed = false
 
         settingsWindow.contentViewController = NSHostingController(
-            rootView: ClickySettingsRootView(
+            rootView: WannaSettingsRootView(
                 modelSettingsViewModel: modelSettingsViewModel,
                 generalSettingsViewModel: generalSettingsViewModel,
                 pageSelection: pageSelection
@@ -108,7 +108,7 @@ final class SettingsWindowController: NSWindowController {
 
 // MARK: - Root view
 
-private struct ClickySettingsRootView: View {
+private struct WannaSettingsRootView: View {
     @ObservedObject var modelSettingsViewModel: ModelSettingsViewModel
     @ObservedObject var generalSettingsViewModel: GeneralSettingsViewModel
     @ObservedObject var pageSelection: SettingsWindowPageSelection
@@ -131,7 +131,7 @@ private struct ClickySettingsRootView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // HeyClicky 式头部：应用身份卡在导航之上。
+            // HeyWanna 式头部：应用身份卡在导航之上。
             HStack(spacing: 10) {
                 Circle()
                     .fill(DS.Colors.accentGradient)
@@ -143,7 +143,7 @@ private struct ClickySettingsRootView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Clicky")
+                    Text("Wanna")
                         .font(.system(size: 13.5, weight: .semibold))
                         .foregroundColor(DS.Colors.textPrimary)
                     Text("本地语音伴侣")
@@ -162,7 +162,7 @@ private struct ClickySettingsRootView: View {
             .padding(.top, 16)
             .padding(.bottom, 14)
 
-            // 分组导航：组与组之间用大写小标签隔开——HeyClicky 的侧栏是
+            // 分组导航：组与组之间用大写小标签隔开——HeyWanna 的侧栏是
             // 「General / 对话 / 看与操作」三段，不是一列平铺。
             sidebarSection(title: nil, pages: [.general, .interactionStyle, .model, .agent])
             sidebarSection(title: "对话", pages: [.memory, .listen, .speak, .shortcuts, .recording])
@@ -206,12 +206,12 @@ private struct ClickySettingsRootView: View {
         }
     }
 
-    /// "Clicky 1.2 (137)" — the same identification HeyClicky prints in the
+    /// "Wanna 1.2 (137)" — the same identification HeyWanna prints in the
     /// bottom-left of its settings sidebar.
     private var versionLine: String {
         let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         let buildVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
-        return "Clicky \(shortVersion) (\(buildVersion))"
+        return "Wanna \(shortVersion) (\(buildVersion))"
     }
 
     @ViewBuilder

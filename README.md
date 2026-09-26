@@ -1,4 +1,4 @@
-# Clicky
+# Wanna
 
 A macOS companion that lives in the notch. Press a shortcut, speak, and it answers
 out loud — while looking at your screen, pointing at the things it mentions, and
@@ -56,9 +56,9 @@ Then put a copy outside the repository, so a clean checkout can never leave the 
 without a key:
 
 ```bash
-mkdir -p ~/Library/Application\ Support/Clicky
-cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Clicky/BailianSecrets.plist
-chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
+mkdir -p ~/Library/Application\ Support/Wanna
+cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
+chmod 600 ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 ```
 
 The endpoint is the workspace-scoped host (`https://ws-….maas.aliyuncs.com`), **not**
@@ -70,7 +70,7 @@ card, and after that the app's own settings own the configuration.
 ### 2. Build and run
 
 ```bash
-cd /Users/mjm/Documents/SuperAgent/APP/Design/clicky
+cd /Users/mjm/Documents/SuperAgent/APP/Design/wanna
 xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy -configuration Debug build
 ```
 
@@ -81,8 +81,8 @@ runs from, install it to `/Applications`:
 APP_DIR=$(xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy \
   -configuration Debug -showBuildSettings 2>/dev/null \
   | awk -F' = ' '/ BUILT_PRODUCTS_DIR /{print $2}')
-cp -R "$APP_DIR/Clicky.app" /Applications/
-open /Applications/Clicky.app
+cp -R "$APP_DIR/Wanna.app" /Applications/
+open /Applications/Wanna.app
 ```
 
 Building from the Xcode GUI works too — only the relaunch matters, because macOS
@@ -103,7 +103,7 @@ identity is the binary hash.
 
 ### 4. Models
 
-Open the notch, then 设置 → 模型. Clicky needs three roles:
+Open the notch, then 设置 → 模型. Wanna needs three roles:
 
 | Role | What it does | Default |
 |---|---|---|
@@ -164,7 +164,7 @@ AGENTS.md                           # Full architecture reference
 ## Configuration lives outside the repo
 
 Every stored setting is a JSON file under
-`~/Library/Application Support/Clicky/`, written with `0600`:
+`~/Library/Application Support/Wanna/`, written with `0600`:
 
 | File | Holds |
 |---|---|

@@ -1,9 +1,9 @@
 import AVFoundation
 
-/// One-shot UI sound effects — the chime set ported from HeyClicky's own
+/// One-shot UI sound effects — the chime set ported from HeyWanna's own
 /// resources. Raw values are the bundle resource filenames (without extension).
 ///
-/// Playback design copied from HeyClicky's recovered `ClickyChimeWarmer`
+/// Playback design copied from HeyWanna's recovered `ClickyChimeWarmer`
 /// behaviour: every chime gets its own long-lived `AVAudioPlayer` created on
 /// first use and kept alive, so replaying is just `currentTime = 0; play()` —
 /// no per-play allocation, no risk of a player being deallocated mid-sound.
@@ -15,7 +15,7 @@ final class SoundEffectPlayer {
 
     /// Fixed playback volume for every chime. Kept well below full scale so a
     /// chime never shouts over a spoken answer; the two overlap by design
-    /// (HeyClicky behaves the same way) and the chimes are all under a second.
+    /// (HeyWanna behaves the same way) and the chimes are all under a second.
     private static let fixedPlaybackVolume: Float = 0.5
 
     enum SoundEffect: String, CaseIterable {
@@ -100,9 +100,7 @@ final class SoundEffectPlayer {
     /// 往录音诊断日志追加一行。和 `LongFormRecorderController` 写的是同一个文件 ——
     /// 音效和录音的时间线必须**在同一张纸上**才能对照，分两个文件就又要靠对齐时间戳。
     nonisolated static func appendToDiagnosticLog(_ line: String) {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory,
-                                               in: .userDomainMask).first!
-        let url = support.appendingPathComponent("Clicky/录音诊断.log")
+        let url = AppSupportDirectory.folderURLOrHome.appendingPathComponent("录音诊断.log")
         let stamp = ISO8601DateFormatter().string(from: Date())
         guard let data = "[\(stamp)] \(line)\n".data(using: .utf8) else { return }
         if let handle = try? FileHandle(forWritingTo: url) {

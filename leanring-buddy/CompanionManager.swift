@@ -424,7 +424,7 @@ final class CompanionManager: ObservableObject {
     }
 
     /// The agent loop's steps so far, one line each — what the conversation
-    /// view folds into a 「N 条进度」 disclosure (HeyClicky's progress
+    /// view folds into a 「N 条进度」 disclosure (HeyWanna's progress
     /// messages). Live while the job runs; the finished list is recorded on
     /// the history entry so a past turn can expand its own steps again.
     @Published private(set) var liveJobProgressSteps: [String] = []
@@ -678,7 +678,7 @@ final class CompanionManager: ObservableObject {
         // 「必须先有一个浏览器进程活着」这个前提的产物，而原生这条路没有外部进程：
         // 麦克风、播报、理解全在本进程里，会话开始时按需起，会话结束就收回。
         refreshAllPermissions()
-        print("🔑 Clicky start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
+        print("🔑 Wanna start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
         startPermissionPolling()
         bindVoiceStateObservation()
         bindAudioPowerLevel()
@@ -797,7 +797,7 @@ final class CompanionManager: ObservableObject {
             let activeSession = ConversationSessionsStore.activeSession()
             conversationHistory = activeSession.entries
             compressedHistorySummary = activeSession.summary
-            print("💬 Clicky: restored \(conversationHistory.count) exchanges from session 「\(activeSession.title)」")
+            print("💬 Wanna: restored \(conversationHistory.count) exchanges from session 「\(activeSession.title)」")
         }
         // Eagerly touch the Bailian vision client so its TLS warmup handshake
         // completes well before the onboarding demo fires at ~40s into the video.
@@ -865,7 +865,7 @@ final class CompanionManager: ObservableObject {
                 self?.compressedHistorySummary = ""
                 self?.historyCompressionTask?.cancel()
                 self?.historyCompressionTask = nil
-                print("💬 Clicky: conversation memory cleared")
+                print("💬 Wanna: conversation memory cleared")
             }
         }
 
@@ -1101,7 +1101,7 @@ final class CompanionManager: ObservableObject {
     private func startOnboardingMusic() {
         stopOnboardingMusic()
         guard let musicURL = Bundle.main.url(forResource: "ff", withExtension: "mp3") else {
-            print("⚠️ Clicky: ff.mp3 not found in bundle")
+            print("⚠️ Wanna: ff.mp3 not found in bundle")
             return
         }
 
@@ -1116,7 +1116,7 @@ final class CompanionManager: ObservableObject {
                 self?.fadeOutOnboardingMusic()
             }
         } catch {
-            print("⚠️ Clicky: Failed to play onboarding music: \(error)")
+            print("⚠️ Wanna: Failed to play onboarding music: \(error)")
         }
     }
 
@@ -1788,7 +1788,7 @@ final class CompanionManager: ObservableObject {
 
     // MARK: - Companion Prompt
 
-    /// The system prompt Clicky ships with.
+    /// The system prompt Wanna ships with.
     ///
     /// Not `private`, because 对话与记忆 → 「系统提示词」 shows this text in an editor
     /// and offers a 「恢复默认」 button that writes it back. That editor is the only
@@ -1937,7 +1937,7 @@ final class CompanionManager: ObservableObject {
     /// The base is `customSystemPrompt` when the user has edited it in the 系统提示词
     /// editor, and the shipped default when they have not. An override that is
     /// present but blank also falls back to the default, so emptying the editor and
-    /// pressing 保存 gives you Clicky's own prompt back rather than a request with no
+    /// pressing 保存 gives you Wanna's own prompt back rather than a request with no
     /// instructions at all.
     ///
     /// The length line is appended as an explicit *override* rather than spliced
@@ -2161,7 +2161,7 @@ final class CompanionManager: ObservableObject {
     /// action tags or `maximumAutonomousActionSteps` is reached. Only the loop's
     /// last reply is spoken, and the whole job is recorded to history as a single
     /// turn — the user's words against every step's raw reply, tags and all.
-    /// A question typed into the conversation view's text field — HeyClicky's
+    /// A question typed into the conversation view's text field — HeyWanna's
     /// composer accepts both voice and keyboard, and this is the keyboard half.
     /// It rides the exact same pipeline as a spoken question (screenshot,
     /// vision model, agent loop, TTS): the only differences are where the
@@ -3128,7 +3128,7 @@ final class CompanionManager: ObservableObject {
                         allActionDescriptions.append(contentsOf: actionDescriptionsForThisStep)
                         lastActionDescription = allActionDescriptions.joined(separator: "；")
 
-                        // HeyClicky's conversation view folds each executed step into
+                        // HeyWanna's conversation view folds each executed step into
                         // a 「N 条进度」 disclosure while the job runs. Same here: the
                         // live list feeds the disclosure in real time, and the same
                         // lines are recorded on the finished entry so a past turn can
@@ -3360,7 +3360,7 @@ final class CompanionManager: ObservableObject {
                 // condition that never arrives.
                 streamingSpeechSession?.finishStreaming()
 
-                // HeyClicky shows the turn it had to abandon as an
+                // HeyWanna shows the turn it had to abandon as an
                 // "INTERRUPTED BY USER" chip rather than dropping it, and the
                 // same is true here: whatever the job got done before the stop
                 // is the record of what happened. A turn that produced no reply
@@ -3814,13 +3814,13 @@ final class CompanionManager: ObservableObject {
                 // The exchanges are already gone from the window. A failed summary
                 // means they are simply forgotten, which is the behaviour the
                 // setting has when it is off — worth a log line, not an alert.
-                print("⚠️ Clicky: could not compress aged-out conversation; those turns are dropped")
+                print("⚠️ Wanna: could not compress aged-out conversation; those turns are dropped")
                 return
             }
 
             self.compressedHistorySummary = foldedSummary
             self.persistConversationHistoryIfEnabled()
-            print("💬 Clicky: compressed \(entriesToCompress.count) aged-out exchanges into the conversation summary")
+            print("💬 Wanna: compressed \(entriesToCompress.count) aged-out exchanges into the conversation summary")
         }
     }
 
@@ -4062,7 +4062,7 @@ final class CompanionManager: ObservableObject {
     /// Places one whiteboard figure next to a named on-screen element: resolve
     /// the anchor the click path resolves its labels, run the figure agent
     /// with --no-open, and hand the SVG to the board controller. The three
-    /// steps are the combination the tag promises — Clicky locates, the agent
+    /// steps are the combination the tag promises — Wanna locates, the agent
     /// draws, the board displays.
     private func placeFigureBoard(for request: FigureBoardRequest) async -> FigureBoardOutcome {
         // 1. The element's real frame, in Quartz global coordinates. When the
@@ -4317,7 +4317,7 @@ final class CompanionManager: ObservableObject {
         }
 
         // At 40 seconds into the video, trigger the onboarding demo where
-        // Clicky flies to something interesting on screen and comments on it
+        // Wanna flies to something interesting on screen and comments on it
         let demoTriggerTime = CMTime(seconds: 40, preferredTimescale: 600)
         onboardingDemoTimeObserver = player.addBoundaryTimeObserver(
             forTimes: [NSValue(time: demoTriggerTime)],

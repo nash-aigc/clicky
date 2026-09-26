@@ -63,13 +63,9 @@ nonisolated enum VoiceChatPresetStore {
     private static var cached: StoredVoiceChatPresetOverrides?
 
     static var fileURL: URL {
-        let supportDirectory = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first ?? FileManager.default.homeDirectoryForCurrentUser
-        let clickyDirectory = supportDirectory.appendingPathComponent("Clicky", isDirectory: true)
-        try? FileManager.default.createDirectory(at: clickyDirectory, withIntermediateDirectories: true)
-        return clickyDirectory.appendingPathComponent(fileName)
+        let appFolder = AppSupportDirectory.folderURLOrHome
+        try? FileManager.default.createDirectory(at: appFolder, withIntermediateDirectories: true)
+        return appFolder.appendingPathComponent(fileName)
     }
 
     // MARK: - 读

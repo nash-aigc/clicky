@@ -35,8 +35,8 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
     private var sparkleUpdaterController: SPUStandardUpdaterController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        print("🎯 Clicky: Starting...")
-        print("🎯 Clicky: Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")")
+        print("🎯 Wanna: Starting...")
+        print("🎯 Wanna: Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")")
 
         UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 0])
 
@@ -89,17 +89,17 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
             guard loginItemService.status != .enabled else { return }
             do {
                 try loginItemService.register()
-                print("🎯 Clicky: Registered as login item")
+                print("🎯 Wanna: Registered as login item")
             } catch {
-                print("⚠️ Clicky: Failed to register as login item: \(error)")
+                print("⚠️ Wanna: Failed to register as login item: \(error)")
             }
         } else {
             guard loginItemService.status == .enabled else { return }
             do {
                 try loginItemService.unregister()
-                print("🎯 Clicky: Unregistered as login item (turned off in settings)")
+                print("🎯 Wanna: Unregistered as login item (turned off in settings)")
             } catch {
-                print("⚠️ Clicky: Failed to unregister as login item: \(error)")
+                print("⚠️ Wanna: Failed to unregister as login item: \(error)")
             }
         }
     }
@@ -115,7 +115,7 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
         do {
             try updaterController.updater.start()
         } catch {
-            print("⚠️ Clicky: Sparkle updater failed to start: \(error)")
+            print("⚠️ Wanna: Sparkle updater failed to start: \(error)")
         }
     }
 }

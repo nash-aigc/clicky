@@ -291,7 +291,7 @@ struct VoiceChatRoleSettingsView: View {
 
     /// 选一张本地图片当头像。
     ///
-    /// **复制进 Clicky 自己的目录**，而不是记原路径：用户随时可能移动或删掉原文件，
+    /// **复制进 Wanna 自己的目录**，而不是记原路径：用户随时可能移动或删掉原文件，
     /// 记路径的话头像会某天突然变成空白，而且没人知道为什么。
     private func pickAvatarImage(for role: VoiceChatRole) {
         let panel = NSOpenPanel()

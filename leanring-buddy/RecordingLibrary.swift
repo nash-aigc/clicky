@@ -63,7 +63,7 @@ nonisolated struct RecordingSession: Codable, Identifiable, Equatable {
 }
 
 /// 录音历史。索引落在 `Recordings.json`，位置和 `AppSettings.json` 同一层
-/// （`~/Library/Application Support/Clicky/`）。
+/// （`~/Library/Application Support/Wanna/`）。
 ///
 /// 形状照 `ConversationSessionsStore` / `AppSettingsStore`：`nonisolated` +
 /// `NSLock` + 原子写后补 `0600` + 变更通知。这几个 store 长一样不是巧合 ——
@@ -82,9 +82,7 @@ nonisolated final class RecordingLibraryStore {
     private var cachedSessions: [RecordingSession]?
 
     private var indexFileURL: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory,
-                                               in: .userDomainMask).first!
-        return support.appendingPathComponent("Clicky/Recordings.json")
+        AppSupportDirectory.folderURLOrHome.appendingPathComponent("Recordings.json")
     }
 
     /// 用户没指定时的保存目录：桌面。

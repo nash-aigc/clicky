@@ -57,23 +57,12 @@ nonisolated struct VoiceLibrary: Codable, Equatable {
 
 nonisolated enum VoiceLibraryStore {
 
-    /// `~/Library/Application Support/Clicky/VoiceLibrary.json`。
+    /// `~/Library/Application Support/Wanna/VoiceLibrary.json`。
     ///
     /// 和另外几个配置文件同一个目录。里面没有密钥，但「你收藏了哪些音色、
     /// 给你的克隆音色起了什么名字」是个人偏好，所以照样 0600。
     static var libraryFileURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("VoiceLibrary.json")
+        AppSupportDirectory.fileURL(named: "VoiceLibrary.json")
     }
 
     // MARK: - 缓存

@@ -3,7 +3,7 @@
 //  leanring-buddy
 //
 //  Reads and writes the user's app settings
-//  (`~/Library/Application Support/Clicky/AppSettings.json`).
+//  (`~/Library/Application Support/Wanna/AppSettings.json`).
 //
 //  Mirrors `ModelConfigurationStore` exactly — `nonisolated`, one `NSLock` over
 //  a cached value type, atomic write followed by a 0600 permission fix-up, and
@@ -25,24 +25,13 @@ nonisolated extension Notification.Name {
 
 nonisolated enum AppSettingsStore {
 
-    /// `~/Library/Application Support/Clicky/AppSettings.json`.
+    /// `~/Library/Application Support/Wanna/AppSettings.json`.
     ///
     /// Same directory as the model configuration. There are no secrets in this
     /// file, but the 0600 treatment is kept anyway — the conversation history
     /// flag and the free-form prompt instructions are personal too.
     static var settingsFileURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("AppSettings.json")
+        AppSupportDirectory.fileURL(named: "AppSettings.json")
     }
 
     // MARK: - Cached state

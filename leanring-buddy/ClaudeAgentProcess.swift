@@ -7,7 +7,7 @@
 //
 //  The CLI is used in its headless bidirectional mode, which is the direct
 //  equivalent of the reference design's `codex` subprocess + JSON-RPC pipe
-//  (HeyClicky 用 codex，这里用 claude 的 stream-json，协议形态相同——换行分隔
+//  (HeyWanna 用 codex，这里用 claude 的 stream-json，协议形态相同——换行分隔
 //  的 JSON 双向流):
 //
 //      claude -p --input-format stream-json --output-format stream-json \

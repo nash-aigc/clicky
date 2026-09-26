@@ -52,19 +52,7 @@ nonisolated enum AppBundleConfiguration {
     /// Absolute path of the out-of-bundle secrets file, or nil if the Application
     /// Support directory can't be resolved.
     static var applicationSupportSecretsPath: String? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("\(secretsResourceName).plist")
-            .path
+        AppSupportDirectory.fileURL(named: "\(secretsResourceName).plist")?.path
     }
 
     /// Last-resort fallback that does not depend on Xcode copying

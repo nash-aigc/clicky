@@ -15,7 +15,7 @@ import SwiftUI
 
 struct MascotIdentity {
     let imageName: String
-    /// 头像盘的粉彩底色——HeyClicky 恢复出的粉彩色板（#D7E5FF / #E4DDFF /
+    /// 头像盘的粉彩底色——HeyWanna 恢复出的粉彩色板（#D7E5FF / #E4DDFF /
     /// #D3F2E0 / #FFEEC8），每只角色配一块。
     let pastelBackground: NSColor
 }
@@ -96,10 +96,10 @@ struct MascotAvatarDisc: View {
 
 // MARK: - 主页 hero：坐在语音胶囊上的吉祥物
 
-/// HeyClicky 主页的标志构图，按参考截图放大重画：一只大号角色带着淡淡
+/// HeyWanna 主页的标志构图，按参考截图放大重画：一只大号角色带着淡淡
 /// 的绿辉光坐在**亮面蓝白胶囊**上，胶囊里是深藏青的麦克风和提示文字
 /// （原版是 "Hi, how can I help ^_^?" 的那颗）。角色保留非常轻的上下
-/// 浮动——HeyClicky 的 `__isBobbing`。
+/// 浮动——HeyWanna 的 `__isBobbing`。
 struct HomeHeroMascotPill: View {
 
     var body: some View {

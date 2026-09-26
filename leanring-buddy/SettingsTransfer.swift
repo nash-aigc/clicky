@@ -79,9 +79,9 @@ nonisolated enum SettingsTransferError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notASettingsExport:
-            return "这个文件不是 Clicky 导出的设置文件，没有改动任何设置。请在设置页里用「导出设置」生成文件，再拿它来导入。"
+            return "这个文件不是 Wanna 导出的设置文件，没有改动任何设置。请在设置页里用「导出设置」生成文件，再拿它来导入。"
         case .fromNewerFormatVersion(let foundVersion):
-            return "这个文件来自更新的 Clicky（格式版本 \(foundVersion)，本机只认到 \(SettingsTransferDocument.currentFormatVersion)），没有改动任何设置。请先升级 Clicky 再导入。"
+            return "这个文件来自更新的 Wanna（格式版本 \(foundVersion)，本机只认到 \(SettingsTransferDocument.currentFormatVersion)），没有改动任何设置。请先升级 Wanna 再导入。"
         case .importedFileHasNoModelProviders:
             // 这一条拦的是一次**静默**的清空：`ModelConfiguration` 的解码是容错的
             // （见它自己的 `init(from:)`），一个模型条目形状不对的文件会解码成
@@ -167,13 +167,13 @@ nonisolated enum SettingsTransferService {
         )
     }
 
-    /// `Clicky设置-2026-09-23.json` — dated, so exporting twice does not silently
+    /// `Wanna设置-2026-09-23.json` — dated, so exporting twice does not silently
     /// overwrite yesterday's copy in the same folder.
     static func suggestedExportFileName(on date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
-        return "Clicky设置-\(formatter.string(from: date)).json"
+        return "Wanna设置-\(formatter.string(from: date)).json"
     }
 
     /// Writes the bytes and tightens the file to 0600, because it carries the
@@ -281,7 +281,7 @@ struct SettingsTransferPage: View {
                     SettingsCardRowDivider(leadingInset: 14)
                     SettingsRow(
                         label: "写到哪里",
-                        description: "自己选一个位置，文件名默认是 Clicky设置-日期.json。"
+                        description: "自己选一个位置，文件名默认是 Wanna设置-日期.json。"
                     ) {
                         NotchBarActionButton(
                             title: "导出…",
@@ -367,7 +367,7 @@ struct SettingsTransferPage: View {
         NSApp.activate()
 
         let savePanel = NSSavePanel()
-        savePanel.title = "导出 Clicky 设置"
+        savePanel.title = "导出 Wanna 设置"
         savePanel.message = "导出设置页面的全部参数（含模型服务商的 API Key，不含对话内容）"
         savePanel.prompt = "导出"
         savePanel.nameFieldStringValue = SettingsTransferService.suggestedExportFileName(on: Date())
@@ -401,7 +401,7 @@ struct SettingsTransferPage: View {
         NSApp.activate()
 
         let openPanel = NSOpenPanel()
-        openPanel.title = "导入 Clicky 设置"
+        openPanel.title = "导入 Wanna 设置"
         openPanel.message = "选择一个之前用「导出设置」生成的文件"
         openPanel.prompt = "选择"
         openPanel.canChooseFiles = true

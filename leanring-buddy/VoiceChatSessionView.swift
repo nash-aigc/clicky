@@ -1925,7 +1925,7 @@ struct VoiceChatSessionView: View {
             onToggleExpansion: { isComposerExpanded.toggle() },
             onSubmit: submitComposerDraft,
             // 语音聊天的「正在运行」就是会话在跑：VoiceWeb 的回复由它自己的
-            // Chrome 页面合成播放，Clicky 这边没有单条回复的中断指令，能停的
+            // Chrome 页面合成播放，Wanna 这边没有单条回复的中断指令，能停的
             // 只有整场会话 —— 所以这一颗按钮在这页上等于挂断。
             isResponding: controller.connectionPhase != .idle,
             onStop: { controller.disconnectCurrentSession() }

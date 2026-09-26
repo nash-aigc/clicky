@@ -1,4 +1,4 @@
-# Clicky 百炼版 —— 完整复盘与快速部署手册
+# Wanna 百炼版 —— 完整复盘与快速部署手册
 
 > 本文档记录这次改造的全过程：改造前长什么样、改成了什么、每一步踩了什么坑、
 > 怎么解决的、在新电脑上如何最快部署。部署时遇到问题先翻第 4 节的坑清单。
@@ -10,7 +10,7 @@
 ### 改造前：原来的架构
 
 ```
-Clicky ──→ Cloudflare Worker（代理，防密钥泄露）
+Wanna ──→ Cloudflare Worker（代理，防密钥泄露）
               ├─→ Anthropic Claude     （看屏幕回答问题）
               ├─→ ElevenLabs           （朗读回答）
               └─→ AssemblyAI           （语音转文字）
@@ -20,7 +20,7 @@ PostHog ──→ 原来那个实现的分析账号（上传你的语音转写�
 ### 现在的架构（本仓库）
 
 ```
-Clicky ──→ 你在「模型设置」里指定的服务商（直连，无代理）
+Wanna ──→ 你在「模型设置」里指定的服务商（直连，无代理）
               ├─→ 👂 实时语音转文字（websocket）   默认 百炼 qwen3-asr-flash-realtime
               ├─→ 🧠 看屏幕截图回答问题（SSE 流式） 默认 百炼 qwen3-vl-plus
               └─→ 👄 朗读回答                      默认 百炼 qwen-audio-3.1-tts-flash
@@ -28,7 +28,7 @@ Clicky ──→ 你在「模型设置」里指定的服务商（直连，无代
 分析上报：无（PostHog 已彻底移除）
 ```
 
-配置存在 `~/Library/Application Support/Clicky/ModelConfiguration.json`（权限 600，在仓库之外）。
+配置存在 `~/Library/Application Support/Wanna/ModelConfiguration.json`（权限 600，在仓库之外）。
 `BailianSecrets.plist` 仍然有效，但只在**第一次启动、还没有上面那个 JSON 时**用来播种初始配置。
 密钥不进代码、不进仓库。
 
@@ -83,13 +83,13 @@ Clicky ──→ 你在「模型设置」里指定的服务商（直连，无代
 ```
 
 一份放在仓库里（`leanring-buddy/BailianSecrets.plist`，已 gitignore，Xcode 打包用），
-一份放在 `~/Library/Application Support/Clicky/BailianSecrets.plist`（兜底，
+一份放在 `~/Library/Application Support/Wanna/BailianSecrets.plist`（兜底，
 防止 Xcode 没把 loose plist 拷进包里；`AppBundleConfiguration` 会自动找到它）：
 
 ```bash
-mkdir -p ~/Library/Application\ Support/Clicky
-cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Clicky/BailianSecrets.plist
-chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
+mkdir -p ~/Library/Application\ Support/Wanna
+cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
+chmod 600 ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 ```
 
 端点和密钥在百炼控制台「模型服务 → API-KEY」和工作空间管理页拿。
@@ -97,7 +97,7 @@ chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
 
 ### 换模型怎么换（推荐用设置窗口）
 
-点菜单栏面板右上角的**齿轮** → 打开「Clicky 模型设置」独立窗口。里面按三角色列出当前在用的模型：
+点菜单栏面板右上角的**齿轮** → 打开「Wanna 模型设置」独立窗口。里面按三角色列出当前在用的模型：
 
 ```
 当前使用
@@ -125,7 +125,7 @@ chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
 - 删掉一个正在承担角色的服务商时，会弹确认框写明「删除后 X 角色将不可用」，
   并且**不会**把角色偷偷转给另一家（那等于把你的屏幕截图发给别人）。
 
-配置文件 `~/Library/Application Support/Clicky/ModelConfiguration.json` 是纯 JSON，
+配置文件 `~/Library/Application Support/Wanna/ModelConfiguration.json` 是纯 JSON，
 手改也行，但要**重启 app 才生效**（不做文件监听）。
 
 ### 本机现在的初始配置（已写好，开箱即用）
@@ -288,13 +288,13 @@ git clone https://gh-proxy.com/https://github.com/nash-aigc/clicky.git
 cd clicky
 
 # 2) 放密钥（见第 2 节的 plist 模板，两处都放）
-mkdir -p ~/Library/Application\ Support/Clicky
-cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Clicky/BailianSecrets.plist
-chmod 600 ~/Library/Application\ Support/Clicky/BailianSecrets.plist
+mkdir -p ~/Library/Application\ Support/Wanna
+cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
+chmod 600 ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 
 # 3) 通电自检（可选但强烈建议，30 秒确认 key/额度/三路都通）
-BASE=$(python3 -c "import plistlib;print(plistlib.load(open('$HOME/Library/Application Support/Clicky/BailianSecrets.plist','rb'))['BailianWorkspaceBaseURL'].rstrip('/'))")
-KEY=$(python3 -c "import plistlib;print(plistlib.load(open('$HOME/Library/Application Support/Clicky/BailianSecrets.plist','rb'))['BailianAPIKey'])")
+BASE=$(python3 -c "import plistlib;print(plistlib.load(open('$HOME/Library/Application Support/Wanna/BailianSecrets.plist','rb'))['BailianWorkspaceBaseURL'].rstrip('/'))")
+KEY=$(python3 -c "import plistlib;print(plistlib.load(open('$HOME/Library/Application Support/Wanna/BailianSecrets.plist','rb'))['BailianAPIKey'])")
 # 视觉：
 curl -s -w "\nHTTP %{http_code}\n" -X POST "$BASE/compatible-mode/v1/chat/completions" \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
@@ -321,7 +321,7 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST \
    应看到：实时转写 → 蓝色光标旁出文字气泡 → 朗读（当前为赵今麦克隆音色）→
    问"某某按钮在哪"会看到蓝三角飞过去指。
 
-7) 换模型：面板右上角齿轮 → 「Clicky 模型设置」→ 填 URL / API Key / 模型名
+7) 换模型：面板右上角齿轮 → 「Wanna 模型设置」→ 填 URL / API Key / 模型名
    → 「测试连接」确认三路都 ✅ → 「保存」（立即生效，不用重启）。
    第 2 步放的 plist 只负责第一次启动时的初始值。
 ```

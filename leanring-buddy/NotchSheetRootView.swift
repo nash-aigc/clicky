@@ -272,7 +272,7 @@ struct NotchSheetRootView: View {
             // 剥标签，与页面上那个「复制」按钮同一条口径。
             let answer = ActionTagParser.speakableTextFromStreamedReply(entry.assistantResponse)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !answer.isEmpty { lines.append("Clicky：" + answer) }
+            if !answer.isEmpty { lines.append("Wanna：" + answer) }
             return lines.isEmpty ? nil : lines.joined(separator: "\n")
         }
         .joined(separator: "\n\n")
@@ -294,10 +294,10 @@ struct NotchSheetRootView: View {
 
 // MARK: - Settings area
 
-/// The settings pages embedded in the sheet, drawn to HeyClicky's reference
+/// The settings pages embedded in the sheet, drawn to HeyWanna's reference
 /// screenshot: a ~245pt sidebar carrying a large bold 「设置」 title and the page
 /// list grouped under uppercase section labels, with 「返回」 (green) at its
-/// bottom-left, 「退出 Clicky」 at its bottom-right and a divider above the pair;
+/// bottom-left, 「退出 Wanna」 at its bottom-right and a divider above the pair;
 /// the content column opens with the page's title and carries 恢复默认 / 保存 /
 /// 关闭 at that row's right — and **no ✕**, which the user removed on 2026-09-23.
 /// The page views themselves are **reused unchanged** — embedding copies no page.
@@ -330,7 +330,7 @@ struct NotchSettingsArea: View {
     var closeAction: () -> Void
 
     /// The sidebar's grouped page list: (section label, pages). The untitled
-    /// first block is HeyClicky's 「通用 / 模型」 pair, the same grouping the
+    /// first block is HeyWanna's 「通用 / 模型」 pair, the same grouping the
     /// titled window's sidebar uses.
     private static let sidebarSections: [(label: String?, pages: [SettingsPage])] = [
         (label: nil, pages: [.general, .interactionStyle, .model, .agent]),
@@ -443,7 +443,7 @@ struct NotchSettingsArea: View {
 
             Spacer(minLength: 0)
 
-            // 底部一行：顶上一条分隔线，左「返回」右「退出 Clicky」。用户
+            // 底部一行：顶上一条分隔线，左「返回」右「退出 Wanna」。用户
             // 2026-09-23 先定「返回按钮放在设置页面的左下角，退出按钮放在返回
             // 按钮的右侧。去掉版本号」，随后又补了三条：「设置页面左下角也应该
             // 有一条线」「返回按钮跟设置按钮必须样式完全相同，但返回按钮改成绿色，
@@ -456,7 +456,7 @@ struct NotchSettingsArea: View {
             // 是「返回」在这块深色面板里只有一个图标能提示它，染绿之后它和
             // 「设置」在竖直方向正对、颜色又不同，来回一眼就找到。
             //
-            // 版本行（原来是 "Clicky 1.4 (213)"）按同一句要求删掉了；退出按钮
+            // 版本行（原来是 "Wanna 1.4 (213)"）按同一句要求删掉了；退出按钮
             // 留着 —— 菜单栏面板曾是这个应用唯一的退出入口（NSApp.terminate），
             // 面板删掉后它是唯一还露在外面的那个。
             HStack(spacing: 8) {
@@ -483,7 +483,7 @@ struct NotchSettingsArea: View {
                 NotchBarActionButton(
                     title: "重启",
                     systemImage: "arrow.clockwise",
-                    help: "重启 Clicky"
+                    help: "重启 Wanna"
                 ) {
                     let configuration = NSWorkspace.OpenConfiguration()
                     configuration.createsNewApplicationInstance = true
@@ -498,7 +498,7 @@ struct NotchSettingsArea: View {
                 NotchBarActionButton(
                     title: "退出",
                     systemImage: "power",
-                    help: "退出 Clicky"
+                    help: "退出 Wanna"
                 ) {
                     NSApp.terminate(nil)
                 }

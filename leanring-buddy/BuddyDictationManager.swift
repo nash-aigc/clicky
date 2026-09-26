@@ -1939,7 +1939,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         // naming a provider the app no longer uses only biases the recognizer
         // toward words the user is unlikely to say.
         let baseKeyterms = [
-            "Clicky",
+            "Wanna",
             "Bailian",
             "Qwen",
             "DashScope",

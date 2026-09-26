@@ -11,7 +11,7 @@
 //  1. THE SILENCE BETWEEN REPLIES. The app's echo defence while an answer is
 //     actually being read aloud is Apple's voice processing on the shared
 //     playback engine (VoicePlaybackEngine's header) — that is what cancels
-//     Clicky's own voice out of the microphone. But voice processing is only
+//     Wanna's own voice out of the microphone. But voice processing is only
 //     wanted while this engine carries a microphone tap, and it costs macOS
 //     ducking every other application's audio while it runs. So the other half
 //     of the job is here: while the microphone is open and NOTHING is playing,

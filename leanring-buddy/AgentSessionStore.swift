@@ -3,7 +3,7 @@
 //  leanring-buddy
 //
 //  Persists the agent roster to
-//  `~/Library/Application Support/Clicky/AgentSessions.json` (0600).
+//  `~/Library/Application Support/Wanna/AgentSessions.json` (0600).
 //
 //  The shape is a deliberate clone of `ConversationSessionsStore` (same file):
 //  `nonisolated` + one `NSLock` over the cache, atomic write followed by a
@@ -34,20 +34,9 @@ nonisolated extension Notification.Name {
 
 nonisolated enum AgentSessionStore {
 
-    /// `~/Library/Application Support/Clicky/AgentSessions.json`.
+    /// `~/Library/Application Support/Wanna/AgentSessions.json`.
     static var agentsFileURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("AgentSessions.json")
+        AppSupportDirectory.fileURL(named: "AgentSessions.json")
     }
 
     /// Guards `cachedSessions` only. File reads and writes happen outside it.
@@ -234,7 +223,7 @@ nonisolated enum AgentSessionStore {
         }
 
         guard let decodedSessions = try? dateIso8601.decode(StoredAgentSessions.self, from: storedData) else {
-            print("⚠️ Clicky: AgentSessions.json could not be read — starting with an empty agent roster.")
+            print("⚠️ Wanna: AgentSessions.json could not be read — starting with an empty agent roster.")
             return StoredAgentSessions()
         }
 

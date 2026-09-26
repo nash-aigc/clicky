@@ -3,7 +3,7 @@
 //  leanring-buddy
 //
 //  Reads and writes the user's model configuration
-//  (`~/Library/Application Support/Clicky/ModelConfiguration.json`).
+//  (`~/Library/Application Support/Wanna/ModelConfiguration.json`).
 //
 //  Deliberately `nonisolated`: the project builds with
 //  `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and `SWIFT_VERSION = 5.0`, and in
@@ -54,23 +54,12 @@ nonisolated enum ModelConfigurationStore {
 
     // MARK: - Paths
 
-    /// `~/Library/Application Support/Clicky/ModelConfiguration.json`.
+    /// `~/Library/Application Support/Wanna/ModelConfiguration.json`.
     ///
     /// Next to `BailianSecrets.plist` — outside the repository, so the API keys
     /// the user types into the settings window never land in version control.
     static var configurationFileURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("ModelConfiguration.json")
+        AppSupportDirectory.fileURL(named: "ModelConfiguration.json")
     }
 
     // MARK: - Cached state

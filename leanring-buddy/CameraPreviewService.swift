@@ -5,7 +5,7 @@ import Combine
 
 /// 语音聊天用的摄像头。
 ///
-/// Clicky 在此之前**完全没有摄像头代码**（全仓零 `AVCaptureSession`），所以这是一个
+/// Wanna 在此之前**完全没有摄像头代码**（全仓零 `AVCaptureSession`），所以这是一个
 /// 全新的采集路径。两个用途、两种代价，故意分开：
 ///
 /// - **给用户看**：`previewLayer` 交给界面。走 `AVCaptureVideoPreviewLayer` 是
@@ -62,7 +62,7 @@ final class CameraPreviewService: NSObject, ObservableObject {
         let startedAt = Date()
 
         guard await requestCameraAccessIfNeeded() else {
-            unavailabilityReason = "没有摄像头权限。到「系统设置 → 隐私与安全性 → 摄像头」里允许 Clicky。"
+            unavailabilityReason = "没有摄像头权限。到「系统设置 → 隐私与安全性 → 摄像头」里允许 Wanna。"
             return
         }
         print(String(format: "📷 [camera] 授权 %dms", Int(Date().timeIntervalSince(startedAt) * 1000)))

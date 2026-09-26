@@ -35,9 +35,7 @@ nonisolated final class RecordingPolishStyleStore {
     private var cachedStyles: [RecordingPolishStyle]?
 
     private var fileURL: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory,
-                                               in: .userDomainMask).first!
-        return support.appendingPathComponent("Clicky/RecordingPolishStyles.json")
+        AppSupportDirectory.folderURLOrHome.appendingPathComponent("RecordingPolishStyles.json")
     }
 
     func allStyles() -> [RecordingPolishStyle] {

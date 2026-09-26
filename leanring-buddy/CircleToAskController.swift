@@ -5,7 +5,7 @@
 //  「你圈我问」— the user holds the talk shortcut, draws a circle around
 //  something on screen with the mouse cursor while speaking, and the marked
 //  region rides along with the question. Reverse-engineered behaviour of the
-//  closed-source HeyClicky ("hold the keys, circle something on your screen
+//  closed-source HeyWanna ("hold the keys, circle something on your screen
 //  with the cursor, and ask about it"): the human's own circle is what makes
 //  the question's subject pixel-exact — no vision-model estimate involved.
 //
@@ -76,7 +76,7 @@ final class CircleToAskController {
 
         let mask: NSEvent.EventTypeMask = [.leftMouseDown, .leftMouseDragged, .leftMouseUp]
         // Global monitors catch the drag over other apps' windows; the local
-        // one catches drags over Clicky's own panel. Neither needs a fresh
+        // one catches drags over Wanna's own panel. Neither needs a fresh
         // permission — mouse monitoring is not TCC-gated the way keyboard
         // monitoring is.
         let globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] event in

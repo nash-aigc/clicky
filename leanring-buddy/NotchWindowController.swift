@@ -10,7 +10,7 @@
 //  also deleted the whole dwell/hover-growth machinery (30 Hz poll, growth
 //  commit timer, dwell progress ring).
 //
-//  Structure mirrors HeyClicky's recovered `NotchScreenInstance` shape (one
+//  Structure mirrors HeyWanna's recovered `NotchScreenInstance` shape (one
 //  instance per display holding its panel) and `NotchPanelViewState` (the
 //  per-panel visible state). `NotchPanel` is borderless, nonactivating and
 //  keyable, which is what lets the expanded sheet take keyboard focus without

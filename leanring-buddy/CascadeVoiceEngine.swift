@@ -7,7 +7,7 @@ import AppKit
 /// （连接/挂断、转写、记忆、音频设备）不在这里，在 `VoiceChatController` —— 这样
 /// 回合逻辑可以单独读、单独改，也便于将来把全双工那两个引擎并排放在同一层。
 ///
-/// 三个环节全部复用 Clicky 既有的客户端，不新写任何 API 调用：
+/// 三个环节全部复用 Wanna 既有的客户端，不新写任何 API 调用：
 ///
 /// | 环节 | 复用 | 为什么 |
 /// |---|---|---|
@@ -29,7 +29,7 @@ final class CascadeVoiceEngine {
 
     // MARK: - 一个回合的可取消状态
 
-    /// 当前回合。打断时取消它 —— 与 Clicky 的 `currentResponseTask` 同一个协作式
+    /// 当前回合。打断时取消它 —— 与 Wanna 的 `currentResponseTask` 同一个协作式
     /// 取消约定：`Task.sleep` 与 URLSession 流都会在取消时抛出，所以「停下」意味着
     /// 「在下一个 await 停下」，不会出现点了半截的动作。
     private var currentTurnTask: Task<Void, Never>?
@@ -256,7 +256,7 @@ final class CascadeVoiceEngine {
             // 打断走的就是这条路，不是错误。
         } catch let urlError as URLError where urlError.code == .cancelled {
             // 取消中的 URLSession 流是以 `URLError.cancelled` 结束的，不是
-            // `CancellationError` —— Clicky 的语音管线在这里踩过坑（一次打断会
+            // `CancellationError` —— Wanna 的语音管线在这里踩过坑（一次打断会
             // 被当成失败报错）。同一个陷阱，同一处绕开。
         } catch {
             if Task.isCancelled { return }

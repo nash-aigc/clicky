@@ -156,7 +156,7 @@ nonisolated struct ActionParseResult: Sendable {
     let agentRequests: [AgentDispatchRequest]
     /// 主 agent 把这件事派给了哪个 sub agent（`[AGENT:图形]`）。
     ///
-    /// **和 `agentRequests` 是两件不同的事**，别混：那个是把活交给 Clicky 常驻的
+    /// **和 `agentRequests` 是两件不同的事**，别混：那个是把活交给 Wanna 常驻的
     /// Claude Code 会话（后台、跨轮次、有名单）；这个是主 agent 把**这一轮**的活交给
     /// 三个 sub agent 之一，它当场跑完、结果回到这一轮的循环里。
     ///

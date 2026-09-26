@@ -229,7 +229,7 @@ struct HomeSpaceSidebarView: View {
 
     /// What the 「＋」 does here. 对话 and Agent both make something new; the
     /// 语音聊天 roles come from VoiceWeb's own configuration and cannot be
-    /// created by Clicky, so there the button re-reads the list instead — and
+    /// created by Wanna, so there the button re-reads the list instead — and
     /// its tooltip says so, rather than pretending to be a create button.
     private func primaryCreateAction() {
         switch agentSessionManager.selectedSidebarSection {
@@ -282,7 +282,7 @@ struct HomeSpaceSidebarView: View {
                     .frame(width: 5, height: 5)
                     .opacity(isSelected ? 1 : 0)
 
-                // 每个会话一只固定的角色脸——HeyClicky 会话网格的彩点头像
+                // 每个会话一只固定的角色脸——HeyWanna 会话网格的彩点头像
                 MascotAvatarDisc(identity: MascotRoster.identity(forSessionID: row.session.id), diameter: 38)
 
                 if row.session.id == renamingSessionID {

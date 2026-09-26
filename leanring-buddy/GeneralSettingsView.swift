@@ -115,7 +115,7 @@ struct GeneralSettingsView: View {
     /// cannot be undone, so it never happens on a single click.
     @State private var isConfirmingConversationMemoryClear = false
 
-    /// Whether macOS currently lets Clicky post clicks and keystrokes for the
+    /// Whether macOS currently lets Wanna post clicks and keystrokes for the
     /// user. Only 操作 reads it (see `accessibilityPermissionControl`), and it
     /// cannot be asked for in code — macOS requires a person to grant it in its
     /// own dialog — so this is read back on a timer instead.
@@ -182,7 +182,7 @@ struct GeneralSettingsView: View {
             SettingsCard {
                 SettingsRow(
                     label: "开机自启动",
-                    description: "登录 Mac 时自动启动 Clicky。"
+                    description: "登录 Mac 时自动启动 Wanna。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.launchesAtLogin))
                 }
@@ -316,14 +316,14 @@ struct GeneralSettingsView: View {
     /// 卡片样式 lived here alone until 2026-09-23, when the user widened it:
     /// 「把设置页面的"卡片样式"页面调整为"交互样式"，里面包含两个选项：卡片样式 /
     /// 窗口样式」. Two things about what belongs on a page, and this page is where
-    /// they meet: the panel opening and the reply card are both "what a Clicky
+    /// they meet: the panel opening and the reply card are both "what a Wanna
     /// interaction looks like", which is the axis the user organised it along.
     ///
     /// The page was called 交互样式 until later the same day, when the user
     /// shortened it and added a third group in one instruction: 「设置页面的
     /// "交互交互样式"改为"交互"，并增加一个选项，即输入方式，或叫发送方法」. The
-    /// send key is the same axis — it is how the user talks to Clicky, not how
-    /// Clicky looks — so it belongs here rather than on 快捷键 (which is about the
+    /// send key is the same axis — it is how the user talks to Wanna, not how
+    /// Wanna looks — so it belongs here rather than on 快捷键 (which is about the
     /// voice shortcut) or 通用.
     ///
     /// The card picker keeps the live preview below it, and the window-style row
@@ -495,7 +495,7 @@ struct GeneralSettingsView: View {
             SettingsCard {
                 SettingsTextEditorRow(
                     label: "系统提示词",
-                    description: "Clicky 每次提问都带着的那一整段原话，可以原样读、直接改。改完点右下角「保存」生效。觉得它话多、或者光说不动手，改的就是这里。",
+                    description: "Wanna 每次提问都带着的那一整段原话，可以原样读、直接改。改完点右下角「保存」生效。觉得它话多、或者光说不动手，改的就是这里。",
                     text: systemPromptEditorBinding,
                     placeholder: "",
                     minimumHeight: 280
@@ -503,7 +503,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "恢复默认",
-                    description: "把上面这段换回 Clicky 自带的版本。你自己改的内容会丢掉。"
+                    description: "把上面这段换回 Wanna 自带的版本。你自己改的内容会丢掉。"
                 ) {
                     restoreDefaultSystemPromptButton
                 }
@@ -741,7 +741,7 @@ struct GeneralSettingsView: View {
                     label: "热词（专有名词偏置）",
                     description: "识别时会偏向这些词，一行一个。加上你的项目名、人名、产品名能明显减少错字。",
                     text: generalSettingsViewModel.binding(\.extraTranscriptionKeyterms),
-                    placeholder: "一行一个词，例如：\nClicky\n百炼"
+                    placeholder: "一行一个词，例如：\nWanna\n百炼"
                 )
                 SettingsCardRowDivider()
                 SettingsRow(
@@ -765,7 +765,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "录制期间自动静音系统扬声器，避免录入系统声音",
-                    description: "录音时把系统扬声器静音，音乐、视频和其他软件的声音不会录进识别；开始播放回答或录音结束就恢复。录音结束、退出 Clicky 时都会自动解除。"
+                    description: "录音时把系统扬声器静音，音乐、视频和其他软件的声音不会录进识别；开始播放回答或录音结束就恢复。录音结束、退出 Wanna 时都会自动解除。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.mutesSystemSpeakersDuringRecording))
                 }
@@ -804,7 +804,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "回声消除",
-                    description: "让系统把 Clicky 自己正在朗读的声音从麦克风里消掉。开着才分得清「你在说话」和「它在说话」——关掉容易出现它自己打断自己、或者你说了好几句话它才停。代价是说话期间其他软件的声音会略微变轻，关掉即可恢复。"
+                    description: "让系统把 Wanna 自己正在朗读的声音从麦克风里消掉。开着才分得清「你在说话」和「它在说话」——关掉容易出现它自己打断自己、或者你说了好几句话它才停。代价是说话期间其他软件的声音会略微变轻，关掉即可恢复。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.echoCancellationEnabled))
                 }
@@ -834,7 +834,7 @@ struct GeneralSettingsView: View {
     private var engineIdleReleaseDescription: String {
         """
         音频引擎停掉之后，下一次提问要重新启动它——那一步要把系统的整条音频链路重配一遍，实测要 2 秒左右，就是你感觉「第一次出声特别慢」的那一段。\
-        保持得越久，新问题出声越快；代价是保持期间 Clicky 被系统当成「通话软件」，其他软件的声音会被压低（麦克风指示也会一直亮着）。\
+        保持得越久，新问题出声越快；代价是保持期间 Wanna 被系统当成「通话软件」，其他软件的声音会被压低（麦克风指示也会一直亮着）。\
         选「永久」则一直保持、始终最快，需要恢复时按「释放引擎」快捷键即可。
         """
     }
@@ -900,7 +900,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "播报音量",
-                    description: "只影响 Clicky 的朗读，不动系统音量。"
+                    description: "只影响 Wanna 的朗读，不动系统音量。"
                 ) {
                     SettingsSlider(
                         value: generalSettingsViewModel.binding(\.speechPlaybackVolumePercent),
@@ -1078,7 +1078,7 @@ struct GeneralSettingsView: View {
             SettingsGroupLabel("操作电脑")
             SettingsCard {
                 SettingsRow(
-                    label: "允许 Clicky 操作电脑",
+                    label: "允许 Wanna 操作电脑",
                     description: "模型说「帮你点」时真的去点。关掉之后它只能指给你看，碰不到你的电脑。每次动手都会在菜单栏面板里留一行记录。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.allowsComputerControl))
@@ -1105,14 +1105,14 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "辅助功能权限",
-                    description: "上面两个开关打开之后，还得让 macOS 允许 Clicky 替你按键和点击。没有这项权限时，它只能开口告诉你「没权限」，动不了手。"
+                    description: "上面两个开关打开之后，还得让 macOS 允许 Wanna 替你按键和点击。没有这项权限时，它只能开口告诉你「没权限」，动不了手。"
                 ) {
                     accessibilityPermissionControl
                 }
             }
 
             if !hasAccessibilityPermission {
-                SettingsNote(text: "点「去授权」会弹出系统授权窗口；如果窗口里没有 Clicky，点「打开设置」在「隐私与安全性 → 辅助功能」里用「+」把它加进去。加完之后不用重启，这里的字会自己变成「已授权」。")
+                SettingsNote(text: "点「去授权」会弹出系统授权窗口；如果窗口里没有 Wanna，点「打开设置」在「隐私与安全性 → 辅助功能」里用「+」把它加进去。加完之后不用重启，这里的字会自己变成「已授权」。")
             }
 
             SettingsGroupLabel("它能做什么")
@@ -1261,7 +1261,7 @@ struct GeneralSettingsView: View {
             SettingsCard {
                 SettingsRow(
                     label: "怎么打断",
-                    description: "Clicky 在思考、回答或操作电脑时，三种方法随时打断：① 按住说话快捷键不放 —— 立刻停止当前任务，并直接开始听你说新的话；② 按一下快捷键马上松开、不说话 —— 只停止，不发送任何内容；③ 点菜单栏面板里的「停止」按钮 —— 它只在 Clicky 忙的时候自动出现。打断在两步动作之间生效：正在执行中的那一步会做完，之后的不再继续，打断后不会有任何语音或提示。停止是内置行为：没有开关、不用单独设置，任何时刻都有效。"
+                    description: "Wanna 在思考、回答或操作电脑时，三种方法随时打断：① 按住说话快捷键不放 —— 立刻停止当前任务，并直接开始听你说新的话；② 按一下快捷键马上松开、不说话 —— 只停止，不发送任何内容；③ 点菜单栏面板里的「停止」按钮 —— 它只在 Wanna 忙的时候自动出现。打断在两步动作之间生效：正在执行中的那一步会做完，之后的不再继续，打断后不会有任何语音或提示。停止是内置行为：没有开关、不用单独设置，任何时刻都有效。"
                 )
             }
 
@@ -1320,7 +1320,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "全模态 · 屏幕",
-                    description: "连接后把屏幕画面一起送给模型。原生采集只需要「屏幕录制」权限（Clicky 启动时就要过），不再需要点任何系统选择窗口。关掉只发语音。"
+                    description: "连接后把屏幕画面一起送给模型。原生采集只需要「屏幕录制」权限（Wanna 启动时就要过），不再需要点任何系统选择窗口。关掉只发语音。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.voiceWebOmniScreenEnabled))
                 }

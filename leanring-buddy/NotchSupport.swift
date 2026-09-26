@@ -12,7 +12,7 @@
 //  fullscreen app is currently covering a display. No state, no windows.
 //
 //  The numeric sizes (pill growth, sheet dimensions, band height) are this
-//  fork's own design: HeyClicky's reversed docs recovered the *shape names*
+//  fork's own design: HeyWanna's reversed docs recovered the *shape names*
 //  (`HomeSpaceSheetShape` with menuBarBandHeight / stemWidth / cornerRadius /
 //  restingNotchSize / expansionProgress / detachmentProgress / squish) but no
 //  values, so the values here are chosen to look right against the reference
@@ -310,7 +310,7 @@ nonisolated enum NotchSupport {
         contentColumnHeaderRuleY - sheetHeaderTopInset
     }
 
-    /// The expanded sheet's size — HeyClicky's expanded sheet is *large*, a
+    /// The expanded sheet's size — HeyWanna's expanded sheet is *large*, a
     /// real main-window-sized surface (measured off the reference screenshot:
     /// roughly 810×940pt), not a popover. Clamped per screen so small
     /// displays still fit it below the menu bar.
@@ -323,7 +323,7 @@ nonisolated enum NotchSupport {
 
     // MARK: - Sheet height (user-resizable)
 
-    /// HeyClicky's sheet carries a resize grip (`attachedSheetResizeGrip`) and
+    /// HeyWanna's sheet carries a resize grip (`attachedSheetResizeGrip`) and
     /// persists the chosen height (`clicky.homeSpace.attachedSheetSize.v1`).
     /// Same idea here: the height is a user preference, the width stays fixed.
     static let minimumSheetHeight: CGFloat = 520
@@ -382,7 +382,7 @@ nonisolated enum NotchSupport {
 
     /// How much wider than the pill the resting *window* is on each side —
     /// the canvas the flanking activity animation draws on while the
-    /// companion is active (HeyClicky animates both sides of the notch). At
+    /// companion is active (HeyWanna animates both sides of the notch). At
     /// rest the extra area is fully transparent, and the panel ignores mouse
     /// events while resting, so the menu bar items underneath stay clickable.
     static let activeFlankWidth: CGFloat = 150
@@ -775,7 +775,7 @@ nonisolated enum NotchSupport {
     /// The displays currently covered by another process's fullscreen window.
     ///
     /// A fullscreen space hides the menu bar, so a pill drawn at the screen
-    /// top would float over the fullscreen app's content — HeyClicky hides
+    /// top would float over the fullscreen app's content — HeyWanna hides
     /// its pill there (`NotchPanelViewState._isSuppressedForFullscreen`) and
     /// so does this. There is no public "which displays show a fullscreen
     /// space" API, so the heuristic reads the on-screen window list and

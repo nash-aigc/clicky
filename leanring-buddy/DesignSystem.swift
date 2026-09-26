@@ -158,7 +158,7 @@ enum DS {
         /// AI 气泡的描边——暗底上的暗气泡需要这一笔才看得见边界。
         static let assistantBubbleBorder = Color.white.opacity(0.12)
 
-        // ── Pill Button (the light capsule in HeyClicky screenshots) ──
+        // ── Pill Button (the light capsule in HeyWanna screenshots) ──
 
         /// Light gradient top stop for the pill button — the pale capsule the
         /// restyle's primary actions use instead of a blue fill.
@@ -780,7 +780,7 @@ struct DSIconButtonStyle: ButtonStyle {
 
 /// Light pill button — the pale capsule the restyled UI uses for primary
 /// actions (保存 / 新会话 style), matching the light 「Change」 capsule in the
-/// HeyClicky screenshots. Light gradient fill, dark semibold text, hover
+/// HeyWanna screenshots. Light gradient fill, dark semibold text, hover
 /// brightens. `isEnabled: false` flattens the gradient to the disabled
 /// background token.
 struct DSPillButtonStyle: ButtonStyle {

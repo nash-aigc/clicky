@@ -7,7 +7,7 @@
 //  place.
 //
 //  This is the only file that imports MacosUseSDK. Everything upstream of it —
-//  the tags, the parser, the prompt — is ordinary Clicky code, so the dependency
+//  the tags, the parser, the prompt — is ordinary Wanna code, so the dependency
 //  has exactly one seam to move if it ever has to be replaced.
 //
 //  ## The coordinate question, which is the whole risk
@@ -215,7 +215,7 @@ enum MacosUseController {
 
         guard appSettings.allowsComputerControl else {
             return ActionExecutionOutcome(
-                description: "「允许 Clicky 操作电脑」是关着的，这次只说了没动手。",
+                description: "「允许 Wanna 操作电脑」是关着的，这次只说了没动手。",
                 contextForNextTurn: nil
             )
         }
@@ -250,7 +250,7 @@ enum MacosUseController {
             // Without this, the user is told to go press a button in a panel they
             // have no reason to connect with "it can't click" — which is exactly
             // how the first person to use this feature got stuck. Asking here
-            // raises macOS's own alert (which also adds Clicky to the
+            // raises macOS's own alert (which also adds Wanna to the
             // Accessibility list) and, on a later attempt, opens that pane.
             //
             // Only once per launch: the second and later calls in
@@ -262,9 +262,9 @@ enum MacosUseController {
                 hasAskedForAccessibilityThisLaunch = true
                 switch WindowPositionManager.requestAccessibilityPermission() {
                 case .systemPrompt:
-                    description = "还没有辅助功能权限，动不了手 —— 我把系统授权弹窗打开了，点「打开系统设置」把 Clicky 勾上，然后再说一次。"
+                    description = "还没有辅助功能权限，动不了手 —— 我把系统授权弹窗打开了，点「打开系统设置」把 Wanna 勾上，然后再说一次。"
                 case .systemSettings:
-                    description = "还没有辅助功能权限，动不了手 —— 我把「辅助功能」设置页打开了，把 Clicky 勾上，然后再说一次。"
+                    description = "还没有辅助功能权限，动不了手 —— 我把「辅助功能」设置页打开了，把 Wanna 勾上，然后再说一次。"
                 case .alreadyGranted:
                     description = "辅助功能权限刚授权好，再说一次就能动手了。"
                 }
@@ -1656,7 +1656,7 @@ enum MacosUseController {
     /// from `/Applications`, or from a `swiftc` probe directory, and none of those
     /// bears any relation to where the sources are.
     private static let figureAgentScriptPath =
-        NSHomeDirectory() + "/Documents/SuperAgent/APP/Design/clicky/geometry-dsl/figure_agent.py"
+        NSHomeDirectory() + "/Documents/SuperAgent/APP/Design/wanna/geometry-dsl/figure_agent.py"
     private static let figureAgentTimeoutSeconds: TimeInterval = 180
 
     /// Renders the element list as prompt text.

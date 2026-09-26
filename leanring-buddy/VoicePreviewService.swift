@@ -20,7 +20,7 @@
 //                `turn_detection: null` + `conversation.item.create` 发一句纯文字，
 //                收 `response.audio.delta`。首次 3~5 秒，之后走缓存。
 //
-//  缓存落在 `~/Library/Application Support/Clicky/VoicePreviews/`。VoiceWeb 用
+//  缓存落在 `~/Library/Application Support/Wanna/VoicePreviews/`。VoiceWeb 用
 //  SHA1 做 key；这里用**可读的** key（音色/模型/参数拼起来再清洗），因为出问题时
 //  能直接看出哪个文件对应哪次试听，比一串哈希值有用。
 //
@@ -45,17 +45,7 @@ nonisolated enum VoicePreviewService {
     // MARK: - 缓存
 
     private static var previewCacheDirectoryURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("VoicePreviews", isDirectory: true)
+        AppSupportDirectory.fileURL(named: "VoicePreviews")
     }
 
     /// 缓存文件名。可读 + 有长度上限，并且把路径分隔符一类字符洗掉。

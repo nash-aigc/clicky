@@ -180,7 +180,7 @@ final class AgentSessionManager: ObservableObject {
     /// thread under `~/.claude/projects/<slug of the cwd>/<session-id>.jsonl`
     /// (`ClaudeAgentProcess.sessionExistsOnDisk` mirrors that rule), so a cwd
     /// change moves the thread to a directory the CLI has never heard of: the
-    /// process would come back up with an empty memory while Clicky's own
+    /// process would come back up with an empty memory while Wanna's own
     /// transcript still showed the old turns — the panel claiming a history
     /// the model cannot see, and no error anywhere. A new agent per folder is
     /// the only shape in which the folder shown and the memory held agree.

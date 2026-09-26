@@ -96,7 +96,7 @@ final class ReviewRunner {
         day.dateFormat = "MM-dd"
 
         var lines: [String] = []
-        lines.append("# Clicky 复盘报告")
+        lines.append("# Wanna 复盘报告")
         lines.append("")
         lines.append("生成于 \(stamp.string(from: now))　·　采样 \(turns) 轮历史")
         lines.append("")

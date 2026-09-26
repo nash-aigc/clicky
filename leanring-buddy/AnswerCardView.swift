@@ -234,7 +234,7 @@ nonisolated struct CardTextPackedLine {
 /// handing the whole string to a single `Text` — and the two engines disagreed
 /// about where the lines went. Measured 2026-09-23 on the user's own longest
 /// reply (1482 characters, read back from
-/// `~/Library/Application Support/Clicky/ConversationSessions.json`): the flow
+/// `~/Library/Application Support/Wanna/ConversationSessions.json`): the flow
 /// layout packed it into **55 lines** and `Text` laid the same string out in
 /// **62**, so the instant a reply finished the card re-wrapped and grew seven
 /// lines (≈150 pt) under the person reading it.

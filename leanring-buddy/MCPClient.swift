@@ -112,7 +112,7 @@ nonisolated final class MCPClient {
         _ = try await request(method: "initialize", params: [
             "protocolVersion": "2024-11-05",
             "capabilities": [String: Any](),
-            "clientInfo": ["name": "Clicky", "version": "1.0"],
+            "clientInfo": ["name": "Wanna", "version": "1.0"],
         ])
         notify(method: "notifications/initialized")
         isStarted = true

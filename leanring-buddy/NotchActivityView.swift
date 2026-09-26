@@ -3,7 +3,7 @@
 //  leanring-buddy
 //
 //  What the notch pill and the expanded sheet's header draw while the
-//  companion works — the activity phases HeyClicky recovered as
+//  companion works — the activity phases HeyWanna recovered as
 //  `NotchActivityPhase`:
 //
 //    idle         nothing (the pill is exactly the notch and disappears into it)
@@ -1091,7 +1091,7 @@ struct NotchExpandedSheetView: View {
             // 于是边光整层去掉——少一层，也少一次裁剪。
             NotchExpandedSheetStyle.surfaceColor
 
-            // 仿 HeyClicky：会话侧栏通高，顶栏属于内容区，都在
+            // 仿 HeyWanna：会话侧栏通高，顶栏属于内容区，都在
             // NotchSheetRootView 内部。原来这里还要让出边光那 1.5pt，
             // 边光删掉后内容直接铺满。
             NotchSheetRootView(
@@ -1146,7 +1146,7 @@ struct NotchExpandedSheetView: View {
     }
 }
 
-/// The sheet's bottom-edge resize grip (HeyClicky's `attachedSheetResizeGrip`
+/// The sheet's bottom-edge resize grip (HeyWanna's `attachedSheetResizeGrip`
 /// + persisted `attachedSheetSize`): dragging the bottom edge up/down changes
 /// the sheet's height, persists it as a fraction of screen height, and
 /// re-frames the live panel via `.clickyNotchSheetSizeDidChange`.

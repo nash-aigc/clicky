@@ -68,7 +68,7 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
 
     /// 头像：默认用 SF Symbol 名（用户可以从一组内置图标里挑）。
     var avatarSymbolName: String
-    /// 头像：用户自己上传的图片路径（沙盒外的绝对路径，复制进 Clicky 的目录）。
+    /// 头像：用户自己上传的图片路径（沙盒外的绝对路径，复制进 Wanna 的目录）。
     /// **非空时优先于符号** —— 用户特意上传了一张，就该看到那一张。
     var avatarImagePath: String?
 
@@ -111,7 +111,7 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
 
     /// 一个可以聊天的默认提示词。
     ///
-    /// 与 Clicky 语音助手那份系统提示词是两件事：那份是「看着屏幕回答」的短问答
+    /// 与 Wanna 语音助手那份系统提示词是两件事：那份是「看着屏幕回答」的短问答
     /// 人格，这里是**长时间对话**的角色设定，所以它要求口语、简短、不要 emoji，
     /// 与 VoiceWeb 的 `system_prompt` 取向一致。
     static let defaultSystemPrompt = """
@@ -285,20 +285,15 @@ nonisolated enum VoiceChatRoleStore {
     private static var cachedRoles: StoredVoiceChatRoles?
 
     static var rolesFileURL: URL {
-        let supportDirectory = FileManager.default.urls(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask
-        ).first ?? FileManager.default.homeDirectoryForCurrentUser
-
-        let clickyDirectory = supportDirectory.appendingPathComponent("Clicky", isDirectory: true)
+        let appFolder = AppSupportDirectory.folderURLOrHome
         try? FileManager.default.createDirectory(
-            at: clickyDirectory,
+            at: appFolder,
             withIntermediateDirectories: true
         )
-        return clickyDirectory.appendingPathComponent(rolesFileName)
+        return appFolder.appendingPathComponent(rolesFileName)
     }
 
-    /// 上传头像的存放目录 —— 在 Clicky 自己的目录里，而不是记原路径（见编辑页的注释）。
+    /// 上传头像的存放目录 —— 在 Wanna 自己的目录里，而不是记原路径（见编辑页的注释）。
     static var avatarsDirectoryURL: URL {
         rolesFileURL.deletingLastPathComponent().appendingPathComponent("VoiceChatAvatars", isDirectory: true)
     }

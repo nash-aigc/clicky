@@ -2,7 +2,7 @@
 //  NotchHomeView.swift
 //  leanring-buddy
 //
-//  The notch sheet's conversation home, drawn to HeyClicky's reference
+//  The notch sheet's conversation home, drawn to HeyWanna's reference
 //  screenshot: with nothing in the session yet, the hero is *centered* — the
 //  big greeting and the hint line. Once the session has turns, the hero gives
 //  way to the conversation flow.
@@ -15,7 +15,7 @@
 //  field carries its own 展开 button (30% of the column). While a job runs, its
 //  question shows as the outgoing bubble (`pendingQuestionText` — the history
 //  entry is only written when the turn finishes) and its executed steps fold
-//  into a 「N 条进度」 disclosure (HeyClicky's progress messages). A turn the
+//  into a 「N 条进度」 disclosure (HeyWanna's progress messages). A turn the
 //  user stopped shows an 「已被用户打断」 chip; a finished turn shows a duration
 //  + time footer beside its copy button. Every message carries a copy control
 //  of its own and can be selected with the mouse.
@@ -170,7 +170,7 @@ struct NotchHomeView: View {
     }
 
     /// A greeting for the time of day, with the local account's first name —
-    /// HeyClicky's "Afternoon, AA." pattern.
+    /// HeyWanna's "Afternoon, AA." pattern.
     private static func timeBasedGreeting() -> String {
         let dayPart: String
         switch Calendar.current.component(.hour, from: Date()) {
@@ -475,7 +475,7 @@ struct NotchHomeView: View {
         }
     }
 
-    /// HeyClicky's progress messages: the executed steps of a multi-step job,
+    /// HeyWanna's progress messages: the executed steps of a multi-step job,
     /// folded behind a 「N 条进度」 toggle. Visual-only data — these are the
     /// same descriptions the panel's 上一次动手 row shows.
     private func progressDisclosure(
@@ -516,7 +516,7 @@ struct NotchHomeView: View {
     }
 
     /// 两种对话气泡共用的圆角几何：三个角 16pt 圆角，靠近说话人的那个
-    /// 底角收到 5pt。用户气泡收右下、Clicky 气泡收左下，两种气泡的
+    /// 底角收到 5pt。用户气泡收右下、Wanna 气泡收左下，两种气泡的
     /// 圆角、内边距、字号完全一致，只有底色和贴边方向不同——一眼就能
     /// 分清谁在说，又读得像同一套东西。
     private func bubbleShape(isOutgoing: Bool) -> UnevenRoundedRectangle {
@@ -533,7 +533,7 @@ struct NotchHomeView: View {
     private static let bubbleCornerRadius: CGFloat = 14
     private static let bubbleTailCornerRadius: CGFloat = 4
 
-    /// The user's words: a dark bubble on the right, brighter than Clicky's
+    /// The user's words: a dark bubble on the right, brighter than Wanna's
     /// dark card so the two sides are told apart by shade as well as by side.
     /// It replaced the reference page's solid-accent `#0A84FF` fill on
     /// 2026-09-23 at the user's request (「气泡调成暗色，但区分用户和 AI，
@@ -561,7 +561,7 @@ struct NotchHomeView: View {
         }
     }
 
-    /// Clicky's reply: the card themed by 设置 → 交互样式. The default is
+    /// Wanna's reply: the card themed by 设置 → 交互样式. The default is
     /// 「黑」 since 2026-09-23 (the user's 「不需要蓝色，主题应该跟背景颜色一
     /// 致」 changed it from the blue reference default; 蓝 and 宣纸 remain
     /// available in that page), replacing the old translucent dark bubble.
@@ -579,7 +579,7 @@ struct NotchHomeView: View {
         }
     }
 
-    /// HeyClicky's turn footer, in the order the user asked for (2026-09-25):
+    /// HeyWanna's turn footer, in the order the user asked for (2026-09-25):
     /// 「把复制按钮放在最左侧，也就是回复卡片的下面；右边是时间，最右边是耗时，
     /// 按照这个顺序排列」—— **复制 · 时间 · 耗时**，从左到右。
     ///

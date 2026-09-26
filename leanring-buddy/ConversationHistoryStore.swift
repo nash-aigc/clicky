@@ -5,7 +5,7 @@
 //  Persists the conversation so 对话与记忆 → 「重启后保留对话」 can mean what it
 //  says, and holds the running summary that 「历史自动压缩」 produces.
 //
-//  Written to `~/Library/Application Support/Clicky/ConversationHistory.json`
+//  Written to `~/Library/Application Support/Wanna/ConversationHistory.json`
 //  (0600), outside the repo — same reasoning as `ModelConfiguration.json`: it
 //  survives a clean checkout and never needs a `.gitignore` entry.
 //
@@ -50,12 +50,12 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     var recordedWithActionTags: Bool?
 
     /// The agent loop's executed steps, one line each — what the conversation
-    /// view's 「N 条进度」 disclosure expands to (HeyClicky's progress
+    /// view's 「N 条进度」 disclosure expands to (HeyWanna's progress
     /// messages). `nil` on turns that ran no actions.
     var progressSteps: [String]?
 
     /// How long the turn took, in whole seconds, and when it finished — the
-    /// finished turn's footer line (HeyClicky's `CoworkTurnFooter`).
+    /// finished turn's footer line (HeyWanna's `CoworkTurnFooter`).
     var turnDurationSeconds: Int?
     var turnFinishedAt: Date?
 
@@ -70,7 +70,7 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     var replyReceivedAt: Date?
 
     /// True when the user stopped this turn mid-job. The conversation view
-    /// renders an 「已被用户打断」 chip instead of a duration (HeyClicky's
+    /// renders an 「已被用户打断」 chip instead of a duration (HeyWanna's
     /// `CoworkInterruptedChip` / "INTERRUPTED BY USER").
     var wasInterrupted: Bool?
 
@@ -117,23 +117,12 @@ nonisolated extension Notification.Name {
 
 nonisolated enum ConversationHistoryStore {
 
-    /// `~/Library/Application Support/Clicky/ConversationHistory.json`.
+    /// `~/Library/Application Support/Wanna/ConversationHistory.json`.
     ///
     /// Computed rather than stored so it follows the real home directory; the
     /// directory is created on the way in by `save`.
     static var historyFileURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("ConversationHistory.json")
+        AppSupportDirectory.fileURL(named: "ConversationHistory.json")
     }
 
     /// Guards `cachedHistory` only. File reads and writes happen outside it, so a
@@ -252,7 +241,7 @@ nonisolated enum ConversationHistoryStore {
             StoredConversationHistory.self,
             from: storedData
         ) else {
-            print("⚠️ Clicky: ConversationHistory.json could not be read — starting with an empty conversation.")
+            print("⚠️ Wanna: ConversationHistory.json could not be read — starting with an empty conversation.")
             return StoredConversationHistory()
         }
 
@@ -349,20 +338,9 @@ nonisolated extension Notification.Name {
 
 nonisolated enum ConversationSessionsStore {
 
-    /// `~/Library/Application Support/Clicky/ConversationSessions.json`.
+    /// `~/Library/Application Support/Wanna/ConversationSessions.json`.
     static var sessionsFileURL: URL? {
-        guard let applicationSupportDirectory = try? FileManager.default.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        ) else {
-            return nil
-        }
-
-        return applicationSupportDirectory
-            .appendingPathComponent("Clicky", isDirectory: true)
-            .appendingPathComponent("ConversationSessions.json")
+        AppSupportDirectory.fileURL(named: "ConversationSessions.json")
     }
 
     private static let sessionsLock = NSLock()
@@ -743,7 +721,7 @@ nonisolated enum ConversationSessionsStore {
             )
             migratedSessions.sessions = [migratedSession]
             migratedSessions.activeSessionID = migratedSession.id
-            print("💬 Clicky: migrated \(legacyHistory.entries.count) exchanges into the session 「\(migratedSessionTitle)」")
+            print("💬 Wanna: migrated \(legacyHistory.entries.count) exchanges into the session 「\(migratedSessionTitle)」")
 
             try? writeSessionsToDisk(migratedSessions)
             let migratedFileURL = historyFileURL.deletingLastPathComponent()

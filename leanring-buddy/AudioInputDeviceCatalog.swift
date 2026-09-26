@@ -8,7 +8,7 @@ import Foundation
 /// （1 声道）和一个录屏软件的虚拟驱动（2 声道），而 `AVAudioEngine` 默认跟的那个
 /// 「默认设备聚合体」会把它们**合成** —— 合成之后是 3 声道，**交出的是静音**。
 ///
-/// 所以用户要能在设置里看到「现在有哪些设备、哪个是默认、Clicky 实际绑的是谁」。
+/// 所以用户要能在设置里看到「现在有哪些设备、哪个是默认、Wanna 实际绑的是谁」。
 nonisolated struct AudioInputDevice: Identifiable, Sendable, Equatable {
     let id: AudioDeviceID
     /// CoreAudio 的 UID。**存它不存 id** —— `AudioDeviceID` 是会话内的临时编号，

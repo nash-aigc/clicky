@@ -38,7 +38,7 @@ struct NotchArchiveArea: View {
     /// 为空时那一行整块不画，而不是画一颗点了没反应的按钮。
     var backAction: (() -> Void)?
 
-    /// 「退出 Clicky」。整窗接管那一版已经不需要它了（设置页才有），保留成
+    /// 「退出 Wanna」。整窗接管那一版已经不需要它了（设置页才有），保留成
     /// 可选是为了以后别处复用；为空就不画。
     var closeAction: (() -> Void)?
 
@@ -168,7 +168,7 @@ struct NotchArchiveArea: View {
             // 「‹ 返回」 pin 在左下角，和设置页同一处（用户 2026-09-23 给设置页
             // 定的位置：「返回按钮放在设置页面的左下角」）。这个页面是同一套
             // 整窗接管的写法 —— 两个页面的返回键落在同一个地方，用户才不用
-            // 每次重新找。归档页没有「退出 Clicky」，所以这里只有它一颗。
+            // 每次重新找。归档页没有「退出 Wanna」，所以这里只有它一颗。
             if let backAction {
                 Button(action: backAction) {
                     HStack(spacing: 5) {

@@ -785,7 +785,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     /// 「圈选提问」: while holding the talk shortcut, the user can draw a circle
     /// around something on screen with the mouse, and that region rides along
-    /// with the question as extra context — the same behaviour HeyClicky builds
+    /// with the question as extra context — the same behaviour HeyWanna builds
     /// its precision on. Gated separately from 「回答里的位置自动飞过去指」
     /// because the two travel in opposite directions: this is the human
     /// marking the model's subject, not the model marking the user's screen.
@@ -793,7 +793,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
 
     /// 「刘海屏音效」: short one-shot chimes at conversation state transitions
     /// (recording started, transcript sent, answer arriving, an error) and when
-    /// the notch sheet expands. Ported from HeyClicky's own chime set. Off means
+    /// the notch sheet expands. Ported from HeyWanna's own chime set. Off means
     /// every sound effect is silent — spoken answers are unaffected either way.
     var playsNotchSoundEffects: Bool = true
 
@@ -1016,7 +1016,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     var maximumConcurrentAgents: Int = 3
 
     /// Whether agents with a non-idle status show up as floating chips in the
-    /// screen's top-right corner (the HeyClicky HUD form). Off hides the
+    /// screen's top-right corner (the HeyWanna HUD form). Off hides the
     /// controller's panels entirely — the roster in the notch sheet still works.
     var allowsAgentDesktopHUD: Bool = true
 
@@ -1045,7 +1045,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 豆包流式语音识别的 API Key（请求头 `X-Api-Key`）。
     ///
     /// 按用户的要求，它存在 App 自己的设置文件里
-    /// （`~/Library/Application Support/Clicky/AppSettings.json`，`0600`，
+    /// （`~/Library/Application Support/Wanna/AppSettings.json`，`0600`，
     /// **在仓库外**），不建 env 文件、不建仓库内配置文件 —— 所以它不会、也
     /// 不可能被推到 GitHub。这个文件是唯一存放处，`BailianSecrets.plist`
     /// 那种「首次启动的种子」模式这里不需要，因为它不是启动时就必须要的东西：
@@ -1189,7 +1189,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     ///
     /// **它存在的理由是「默认本身可能是指错的」。** 录音已经改成绑具体设备而不是
     /// 那个会变的聚合体（那才是 2026-09-26 那次全静音的根因），但系统默认输入可以被
-    /// 切到任何一个设备上 —— 包括录屏软件的虚拟声道。切到那里，Clicky 会忠实地
+    /// 切到任何一个设备上 —— 包括录屏软件的虚拟声道。切到那里，Wanna 会忠实地
     /// 绑上去、然后录到静音。所以用户要能自己指定。
     var recordingInputDeviceUID: String = ""
 
@@ -1209,7 +1209,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// **文件访问白名单**（方案 `06-权限模型.md` §二）。
     ///
     /// 每一条是一个路径加两个开关，**读和写互不蕴含**；嵌套取最长匹配。
-    /// **空数组 = 文件能力全关** —— 不是「默认给桌面」。一个没配过的 Clicky
+    /// **空数组 = 文件能力全关** —— 不是「默认给桌面」。一个没配过的 Wanna
     /// 不碰用户的任何文件。
     ///
     /// 它和另外两道闸门（`allowsComputerControl` / `allowsKeyboardControl`）

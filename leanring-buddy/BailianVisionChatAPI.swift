@@ -52,7 +52,7 @@ class BailianVisionChatAPI {
     /// Measured 2026-09-21 with the app's real payload (a 1280x827 JPEG screenshot
     /// plus the 4923-character system prompt): `deepseek-flash` answers "屏幕右上角
     /// 有什么？" with 664-868 reasoning tokens before the first word of the answer,
-    /// which is 3.4s of a 4.5s request — the answer itself is 0.3s. Clicky's
+    /// which is 3.4s of a 4.5s request — the answer itself is 0.3s. Wanna's
     /// questions are perception questions answered out loud, so that thinking is
     /// time the user spends watching a spinner and cannot hear.
     ///

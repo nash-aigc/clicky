@@ -195,7 +195,7 @@ manifest 里一条长这样：
 
 | | 不行 | 行 |
 |---|---|---|
-| 位置 | `tools/Notion/notion_save.py` 内嵌 token | 脚本从 `~/Library/Application Support/Clicky/ToolSecrets.json`（**0600**）读 |
+| 位置 | `tools/Notion/notion_save.py` 内嵌 token | 脚本从 `~/Library/Application Support/Wanna/ToolSecrets.json`（**0600**）读 |
 | 为什么 | 仓库是 git 仓库，一次 `git add -A` 就把令牌提交了 | 这是本项目已有的惯例：`BailianSecrets.plist`、`ModelConfiguration.json` 都住那儿 |
 
 另外：**任何工具的输出都不要把 token 回显到 stdout**——stdout 会进模型上下文。

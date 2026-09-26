@@ -2,7 +2,7 @@
 //  AgentHUDController.swift
 //  leanring-buddy
 //
-//  The desktop HUD for running agents — the HeyClicky form (还原文档
+//  The desktop HUD for running agents — the HeyWanna form (还原文档
 //  04-悬浮图标与Agent小组件.md): a small stack of round chips in each
 //  screen's top-right corner, one chip per agent whose status is not idle,
 //  hover-expanding into a preview strip.

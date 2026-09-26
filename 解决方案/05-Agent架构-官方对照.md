@@ -74,7 +74,7 @@
 
 ## 二、对照：仓库现状
 
-| 官方 | Clicky 今天 | 判定 |
+| 官方 | Wanna 今天 | 判定 |
 |---|---|---|
 | `Agent(name, prompt)` —— 任务在调用里 | `[AGENT:图形]` —— **只有名字，没有任务**。子 agent 拿到的是**同一句用户原话**，得自己猜主 agent 想让它干什么 | ✗ |
 | 子 agent 只拿到自己那份 prompt | `subAgentSystemPrompt` = **`mainAgentBasePrompt`** + 技能段。而基础段里有全部 15 个动作标签的手册 | ✗ **最严重** |

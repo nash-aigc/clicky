@@ -146,11 +146,11 @@ Ordered by what to check first. **Do not skip to hypotheses — start at step 1.
 ### Step 1 — Read the two numbers, in the log
 
 ```
-~/Library/Application Support/Clicky/录音诊断.log
+~/Library/Application Support/Wanna/录音诊断.log
 ```
 
 ```bash
-grep -E "输入格式|峰值=|录音结束" ~/Library/Application\ Support/Clicky/录音诊断.log | tail -20
+grep -E "输入格式|峰值=|录音结束" ~/Library/Application\ Support/Wanna/录音诊断.log | tail -20
 ```
 
 | What you see | What it means | Go to |
@@ -193,7 +193,7 @@ system_profiler SPAudioDataType | grep -iE "virtual|aggregate|existential"
 ```
 
 Any virtual driver (this machine has `iShotAudioPlugin` from iShot Pro) is a
-candidate. **The immediate workaround is to relaunch Clicky** — it rebinds and
+candidate. **The immediate workaround is to relaunch Wanna** — it rebinds and
 records again. Confirm with §1's two numbers.
 
 ### Step 4 — Only now consider the code
@@ -242,7 +242,7 @@ Everything else in this subsystem is downstream of that one fact, and it is one
 ## 6b. The real fix — bind to the device, not the aggregate
 
 **Added 2026-09-26, after the requirement was stated plainly: the screen recorder
-is used at high frequency and must run *at the same time* as Clicky.**
+is used at high frequency and must run *at the same time* as Wanna.**
 
 That rules out every "quit the other app" answer and identifies the actual fault.
 `AVAudioEngine.inputNode` follows CoreAudio's **default-device aggregate**

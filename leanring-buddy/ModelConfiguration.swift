@@ -181,7 +181,7 @@ nonisolated struct ProviderProfile: Codable, Sendable, Identifiable, Equatable {
     /// Never set reads as **off**, so thinking stays off for the users who never
     /// open the settings window. Measured 2026-09-21: `deepseek-flash` spends
     /// 664–868 reasoning tokens — 3.4 s of a 4.5 s request — before the first word
-    /// of its answer, and Clicky's questions are perception questions answered out
+    /// of its answer, and Wanna's questions are perception questions answered out
     /// loud, so that is time the user spends watching a spinner and cannot hear.
     /// Off is the default rather than something the user has to discover.
     var allowsVisionReasoning: Bool { visionReasoningEnabled ?? false }

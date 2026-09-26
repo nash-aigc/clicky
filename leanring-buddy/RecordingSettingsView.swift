@@ -14,7 +14,7 @@ import SwiftUI
 ///
 /// ## API Key 存在哪（用户明确要求过）
 ///
-/// 直接写进 App 自己的设置文件：`~/Library/Application Support/Clicky/AppSettings.json`
+/// 直接写进 App 自己的设置文件：`~/Library/Application Support/Wanna/AppSettings.json`
 /// （`0600`，**在仓库之外**）。不建 env 文件、不建仓库内配置文件 —— 所以它不可能
 /// 被推到 GitHub。这一页是它唯一的入口。
 extension GeneralSettingsView {
@@ -139,7 +139,7 @@ extension GeneralSettingsView {
                 label: "热词",
                 description: "人名、地名、项目代号 —— 逗号或换行分隔。识别时会被优先考虑，但不保证百分之百。",
                 text: generalSettingsViewModel.binding(\.recordingHotwords),
-                placeholder: "张三，Clicky，火山引擎"
+                placeholder: "张三，Wanna，火山引擎"
             )
         }
     }
@@ -461,7 +461,7 @@ extension GeneralSettingsView {
             SettingsRow(
                 label: "这一场实际用的",
                 description: "只有录音跑起来之后才有值。它和上面选的不是一回事 —— "
-                    + "设备被拔掉时 Clicky 会落回系统默认并在诊断日志里说明，"
+                    + "设备被拔掉时 Wanna 会落回系统默认并在诊断日志里说明，"
                     + "这里显示的就是那一刻真正用的那个。"
             ) {
                 Text(reportedInputDeviceName)
