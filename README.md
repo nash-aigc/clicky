@@ -157,8 +157,8 @@ Wanna/                              # Swift source
   DesignSystem.swift                   # Colour, radius and style tokens
 Wanna.xcodeproj
 AGENTS.md                           # Full architecture reference
-开发经验/                            # What was learned building this, one doc per subsystem
-解决方案/                            # One doc per solved problem, written as the full story
+开发经验/                            # What was learned building this: per-subsystem docs,
+                                    #   solution write-ups and incident reports, all in one place
 参考资料/                            # Research material kept beside the code, not in git
 ```
 

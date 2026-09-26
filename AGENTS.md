@@ -121,10 +121,28 @@ cd /Users/mjm/Documents/SuperAgent/Wanna && swift scripts/recording-capture-prob
 而这个故障三分钟二十行就能复现（探针里就是）。它一直没被复现，只是因为没人写。
 **发现故障的位置必须从用户手里挪到机器手里。**
 
-已知的根因（探针 ③ 测的就是它）：一个子系统开语音处理（VPIO）时会把硬件 IO 重配成语音处理
-格式，而**这个污染是进程级、且不可还原的** —— 放掉引擎、关掉语音处理、新建引擎都回不去。
-所以长录音只在「本进程从没开过语音处理」时是好的。真正的修法是让采集不走 `AVAudioEngine`
-（它对的是进程级聚合体），改用 AUHAL 直接对设备取流。
+**根因是两层，别再只记一层**（2026-09-26 实测更正，全文见 [`开发经验/15-录音采集与设备自愈.md`](开发经验/15-录音采集与设备自愈.md)）：
+
+1. `AVAudioEngine.start()` 会**静默把输入重绑到系统聚合体**（官方 TN2091）—— 这是「钉设备没用、
+   放掉引擎也没用」的原因。**这一层 AUHAL 能修。**
+2. **别的软件能把麦克风这个设备搞成「对谁都只给数字零」**，之后连 `AudioOutputUnitStart` 都返回
+   `kAudioHardwareNotRunningError`。这一层**跨进程**（全新进程、`ffmpeg` 都只拿到零），
+   **AUHAL 修不了，只能换设备**。
+
+所以现在的做法是**候选设备队列 + 看门狗自愈**（连续 90 块精确全零就换下一个设备、同一场不断）。
+旧结论「污染是进程级、改用 AUHAL 就没事了」**已被推翻，别再照它排查**。
+
+## 修完一定要写进 `开发经验/`（最高优先级）
+
+**任何时候一个问题被修好、一个功能落地、一次排查有结论，就把它写进 [`开发经验/`](开发经验/) ——
+不需要用户提醒，也不需要等用户问。**
+
+- **踩坑** → [`开发经验/10-踩过的坑.md`](开发经验/10-踩过的坑.md)：要写**根因**，不是把现象复述一遍；根因还没查清就写「还没查清 + 已经排除了什么」。
+- **量到的数字** → [`开发经验/09-实测数据.md`](开发经验/09-实测数据.md)：带**日期**和**测法**；没量过的一律写「推测」，不许写成结论。
+- **一条子系统的经验** → 对应那篇（光标 `02` / 语音 `05` / 操作电脑 `11` …）；**一整件事**（用户可见的功能、几轮才落地的方案、一次事故）→ `开发经验/` 根下新开一篇。
+- **文档和代码一起提交。** 过期的文档比没有文档更坏 —— 改了哪个子系统就顺手更新那一篇。
+
+[`开发经验/README.md`](开发经验/README.md) 是索引，也写着这套规矩。
 
 ## Overview
 
@@ -157,7 +175,7 @@ The sidebar has a second half: a 「对话 / Agent」 switcher (`SidebarSection`
 
 ### The 语音聊天 subsystem（全原生，无 Chrome）
 
-**Wanna 自己的语音对话，不依赖任何外部进程、浏览器或页面。** 这条路曾经是「Wanna 驱动外部 VoiceWeb 项目在 Chrome 里的一个页面」（Chrome 实例 + HTTP 桥接 + 页面补丁轮询），2026-09-24 整条废弃：桥接方案无法可靠地自动化屏幕共享（浏览器要求真实用户手势），而且多出一个必须活着的进程树。用户的原话是「完全放弃 Chrome」，只保留 VoiceWeb 的「怎么调 API、数据流怎么转换」。外部项目 `~/Documents/SuperAgent/APP/Test/voice-web` 与本仓库再无关系；历史复盘留在 `解决方案/03-语音聊天外部会话方案.md`（已标注废弃）。
+**Wanna 自己的语音对话，不依赖任何外部进程、浏览器或页面。** 这条路曾经是「Wanna 驱动外部 VoiceWeb 项目在 Chrome 里的一个页面」（Chrome 实例 + HTTP 桥接 + 页面补丁轮询），2026-09-24 整条废弃：桥接方案无法可靠地自动化屏幕共享（浏览器要求真实用户手势），而且多出一个必须活着的进程树。用户的原话是「完全放弃 Chrome」，只保留 VoiceWeb 的「怎么调 API、数据流怎么转换」。外部项目 `~/Documents/SuperAgent/APP/Test/voice-web` 与本仓库再无关系；历史复盘留在 `开发经验/03-语音聊天外部会话方案.md`（已标注废弃）。
 
 **2026-09-24/25 完整重塑成「预设极简化」方案**（用户对上一版的判定是「只不过是一个样式……没有真正实现相互之间的依赖关系」—— 所以这一版的每一处选择都必须**真的接线**）。形状：
 
@@ -203,7 +221,7 @@ The sidebar has a second half: a 「对话 / Agent」 switcher (`SidebarSection`
 
 ### The voice conversation, end to end — the user's requirement model
 
-**This is the definitive statement of how the whole voice loop is meant to behave** (user's words, finalised 2026-09-24; the full requirement-to-implementation mapping lives in `解决方案/02-语音对话完整方案.md`):
+**This is the definitive statement of how the whole voice loop is meant to behave** (user's words, finalised 2026-09-24; the full requirement-to-implementation mapping lives in `开发经验/02-语音对话完整方案.md`):
 
 1. **说话** — press the talk shortcut, speak. The notch expands into Listening, recording and recognition start.
 2. **发送, two ways** — press the shortcut again (`finishContinuousListeningUtteranceByShortcutSend`, bypasses the silence wait), or fall quiet for 「静音多久自动发送」 (default 2 s; the VAD loop's silence countdown requests the final transcript). The shortcut is the reliable "I'm done" because human thinking pauses are unbounded; silence is the auto fallback.
@@ -588,11 +606,13 @@ IMPORTANT: Follow these naming rules strictly. Clarity is the top priority.
 
 ## 开发经验
 
-`开发经验/` in the repo root holds the retrospective of this fork's changes — one document per category, in Chinese, aimed at whoever touches this code next rather than at users. It is the place to look before changing a subsystem: `02-光标与覆盖层.md` for the cursor and overlay, `03-设置与配置.md` for how to add a setting (and the offscreen render probe used to check a settings page without relaunching the app), `04-模型接入.md` for provider routing, `09-实测数据.md` for every measured number with its date and payload, `10-踩过的坑.md` for the bugs and their root causes. `开发经验/README.md` is the index.
+**The retrospective has ONE home: `开发经验/`.** Per-subsystem lessons, whole-problem write-ups and incident reports all live in that one directory — one document per category, in Chinese, aimed at whoever touches this code next rather than at users. (The parallel `解决方案/` and `方案/` directories were merged into it on 2026-09-26; the files were only moved and not edited, so the root carries two sets of numbers — that is why there are two `01-`, three `05-`.)
 
-Add to it rather than duplicating this file: this file states what the app *is*, 开发经验 states what was *learned* building it.
+It is the place to look before changing a subsystem: `02-光标与覆盖层.md` for the cursor and overlay, `03-设置与配置.md` for how to add a setting (and the offscreen render probe used to check a settings page without relaunching the app), `04-模型接入.md` for provider routing, `09-实测数据.md` for every measured number with its date and payload, `10-踩过的坑.md` for the bugs and their root causes, `15-录音采集与设备自愈.md` for the recording/device class. `开发经验/README.md` is the index, and it carries the rule that anything fixed gets written down.
 
-`解决方案/` holds the other register: one document per solved problem, written as the full story of a user-visible feature — requirement, principle, references, strategy, and the debugging trail (2026-09-23: `01-语音打断与持续监听.md`; 2026-09-24: `02-语音对话完整方案.md`, the whole voice loop from shortcut to next turn — the definitive requirement model, every step's behaviour and implementation site, and the troubleshooting reference; `03-语音聊天外部会话方案.md`; and `04-Agent体系/`, the DESIGN work, organised **by executing body rather than by feature** — four dispatch classes (pure-visual / figure / main loop / Claude fallback), with only two of them真正 agents; under `主控循环Agent/` it records the routing model (five exits collapsed to four, the desktop file agent merged into the loop), the per-path file authorization model (read and write as separate grants), the language adaptation (Chinese app names fail to resolve today because the resolver compares against `FileManager.displayName`, which returns English here — measured, with the fix), concurrency's physical ceiling (one cursor, one keyboard focus), and `图形讲解/`, the figure design: why the WebView/GSAP route was rejected with six concrete conflicts, why the geometry compiler must emit the figure data instead of the app parsing SVG (the current splitter was measured merging and dropping elements), the per-step id-set reveal semantics, why narration audio is synthesized per step concurrently rather than split from one file, and how to verify the feature is completely implemented — **nothing under 04 is built yet**). 开发经验 is the per-subsystem what-was-learned; 解决方案 is the per-problem how-it-was-solved.
+Add to it rather than duplicating this file: this file states what the app *is*, 开发经验 states what was *learned* building it. **And the writing is not optional or on request — see the rule near the top of this file.**
+
+Under `04-Agent体系/` (with the parallel `Agent施工/` tree) sits the DESIGN work for the Agent subsystem, organised **by executing body rather than by feature** — four dispatch classes (pure-visual / figure / main loop / Claude fallback), with only two of them真正 agents. It also records the per-path file authorization model (read and write as separate grants), the language adaptation (Chinese app names fail to resolve because the resolver compares against `FileManager.displayName`, which returns English here — measured, with the fix), concurrency's physical ceiling (one cursor, one keyboard focus), and the figure design (why the WebView/GSAP route was rejected, why the geometry compiler must emit the figure data rather than the app parsing SVG). **Nothing under it is built yet.**
 
 ## Self-Update Instructions
 
