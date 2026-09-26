@@ -413,7 +413,7 @@ struct VoiceChatSessionView: View {
                     headerTrailingControls
                 }
                 .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-                .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
+                .frame(height: NotchSupport.contentHeaderControlHeight, alignment: .center)
             }
 
             // ── 分割线**下方**：两行，各是一整套选择 ──────────────────────
@@ -558,7 +558,8 @@ struct VoiceChatSessionView: View {
     /// 的话，界面显示的是一张卡片选的角色、连上去用的却是上一次那个 —— 而这两件事在
     /// 用户眼里是同一件事。
     private func syncChannelToCardChatMode() {
-        guard let cardID else { return }
+        // 不从卡片进来（旧的「语音聊天」分区）就没有模式可同步 —— 那一页归分段控件管。
+        guard cardID != nil else { return }
         let roleID = roleIDForConnect
         if controller.selectedRoleID != roleID {
             controller.selectRole(roleID)
@@ -1887,13 +1888,13 @@ struct VoiceChatSessionView: View {
 
     /// 自绘下拉挂在哪：触发它的那颗按钮**下边缘再往下 6pt**。
     ///
-    /// 页头的实际高度是 `sheetHeaderTopInset + contentColumnHeaderBandHeight`（上边距
+    /// 页头的实际高度是 `sheetHeaderTopInset + contentHeaderControlHeight`（上边距
     /// 是 padding，加在 frame 之外），而那颗按钮在这一条里是垂直居中的，所以按钮底边
-    /// 落在 `sheetHeaderTopInset + contentColumnHeaderBandHeight / 2 + headerControlHeight / 2`。
+    /// 落在 `sheetHeaderTopInset + contentHeaderControlHeight / 2`。
     /// 这个算式写在这里而不是把结果写死：页头带高或按钮高度一改，下拉还贴着按钮。
     private static let modeMenuDropdownTopInset: CGFloat =
         NotchSupport.sheetHeaderTopInset
-        + NotchSupport.contentColumnHeaderBandHeight / 2
+        + NotchSupport.contentHeaderControlHeight / 2
         + headerControlHeight / 2
         + 6
 

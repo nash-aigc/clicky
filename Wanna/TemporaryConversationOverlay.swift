@@ -94,7 +94,7 @@ struct TemporaryConversationOverlay: View {
             .help("关掉临时对话（内容不会保留）")
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-        .frame(height: NotchSupport.contentColumnHeaderBandHeight)
+        .frame(height: NotchSupport.contentHeaderControlHeight)
     }
 
     private var transcript: some View {

@@ -170,11 +170,10 @@ struct AgentSessionView: View {
             openFolderButton
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-        // 页头整体占满 `contentColumnHeaderBandHeight`：这条栏的下边缘必须正好落在
-        // 右列那条贯穿横线上，与对话页 / 语音聊天页同高（用户 2026-09-23：
-        // 「每一个页面的右侧增加一条线…线上面是相关的参数部分」）。原来是内容底边距
-        // 10，换成固定高度后由这条带自己决定内容的位置。
-        .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
+        // **不再按固定高度排**（2026-09-26 晚）：那根线现在画在模式行正下方（`NotchSupport`
+        // 里砍掉了"每页自己那行页头"的 35），所以这一块就是线下面的第一行内容，按自然高度走。
+        // 原来那句 `frame(height: contentColumnHeaderBandHeight)` 是为了让它的下边缘落在线上，
+        // 而线上现在只有模式行了。
         // **顶边距不在这里**：这一行上面现在还有一排模式条，让开刘海的
         // `sheetHeaderTopInset` 属于整块页头（模式条自己带上了它，见 `cardChatModeBar`）。
     }

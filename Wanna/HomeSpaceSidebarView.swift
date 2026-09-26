@@ -47,15 +47,20 @@ struct HomeSpaceSidebarView: View {
     /// 它自己订阅四份数据源的通知并重算整棵树 —— 见 `AgentCardModel`。
     @StateObject private var cardModel = AgentCardModel()
 
-    /// 一张卡片的高度（40 的两倍，用户 2026-09-26：「高度增加两倍，方便用户点击」）。
-    private static let cardRowHeight: CGFloat = 80
+    /// 一张卡片的高度。用户 2026-09-26 先要「增加两倍」（40 → 80），看过之后说
+    /// 「这个高度有点大了，我觉得再缩小个 30%」→ 80 × 0.7 = **56**。
+    private static let cardRowHeight: CGFloat = 56
 
     /// 卡片右侧那颗通话按钮的边长 —— 卡片 80 减去上下各 4 的边距，所以它**贴着**
     /// 卡片的上/下边缘（用户要求"上边缘、下边缘和右边缘尽可能小"）。
-    private static let callButtonSize: CGFloat = 72
+    private static let callButtonSize: CGFloat = 48
 
     /// 每张卡片的聊天模式 —— 卡片右侧那颗「通话」读它（高亮与否），点它写它。
     @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
+
+    /// 鼠标停在哪张卡片上（纯界面状态）。**卡片的"亮"表达的是"可以点"**，
+    /// 不是"这一张是当前的" —— 见 `cardRow` 里那段。
+    @State private var hoveredCardID: String?
 
     /// 哪些「卡片 # 栏」是展开的（纯界面状态，不进任何模型）。
     @State private var expandedTaskColumns: Set<String> = []
@@ -140,21 +145,20 @@ struct HomeSpaceSidebarView: View {
             .frame(height: NotchSupport.contentColumnHeaderRuleY - NotchSupport.sheetHeaderTopInset)
     }
 
-    /// 顶带里的一排：**「＋」在左、「录音」在右**，两颗都靠右对齐（用户 2026-09-26：
-    /// 「把左侧边栏的搜索框删掉，把左侧边栏的添加按钮放在顶部录音按钮的左侧」）。
+    /// 顶带里的一排：**折叠 · 添加 · 录音**，自左向右（用户 2026-09-26：
+    /// 「把左侧边栏的添加按钮跟录音按钮全都变成长方形加圆角，靠左对齐，左边分别是折叠按钮，
+    /// 右侧是录音按钮，然后在这添加的按钮」）。
     ///
-    /// 「录音」的**波形要长一倍**（用户：「把录音按钮里的波形长度增大两倍。注意不是按钮的
-    /// 宽度，是里面波形的长度」）—— 所以是给图标做横向缩放，按钮本身不动。
-    /// 图标用音波而不是圆环：「音波可以做成一个长条，能够占满类似长方形的区域；
-    /// 圆环是圆形…颜色也是白色」。
+    /// 「折叠」那颗（收起侧栏）是**窗口级**的按钮，由 `NotchSheetRootView` 画在面板左上角
+    /// —— 位置本来就在这一排的最左边，所以这里只需要让开它的宽度，让 ＋ 与录音接在它右边。
+    /// 两颗都改成**圆角长方形**（原来 ＋ 是圆形），左对齐。
     private var sidebarRecordingRow: some View {
         HStack(spacing: 8) {
-            Spacer(minLength: 0)
+            // 让开左上角那颗「收起侧栏」（30 宽 + 一点间距）。
+            Spacer(minLength: 0).frame(width: 34)
 
-            // 「＋」= 新建主对话（用户要求「点击新建时，之前的对话自动归档，
-            // 左侧列表保持干净」—— 归档那一步在 `createSession` 里）。
-            sidebarBandIconButton(systemImage: "plus",
-                                  help: "新建主对话（当前这条会自动归档）") {
+            sidebarBandRectangleButton(systemImage: "plus",
+                                       help: "新建主对话（当前这条会自动归档）") {
                 SoundEffectPlayer.shared.play(.sidebarButton)
                 sessionsModel.createSession()
                 agentSessionManager.selectedSidebarSection = .conversations
@@ -183,21 +187,30 @@ struct HomeSpaceSidebarView: View {
             .buttonStyle(.plain)
             .pointerCursor()
             .help("录音历史与设置")
+
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
     }
 
-    /// 顶带里的一颗圆形图标按钮（＋ 用的那一套形状）。
-    private func sidebarBandIconButton(systemImage: String,
-                                       help: String,
-                                       action: @escaping () -> Void) -> some View {
+    /// 顶带里的一颗**圆角长方形**图标按钮（＋ 用的那一套）。
+    private func sidebarBandRectangleButton(systemImage: String,
+                                            help: String,
+                                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundColor(.white.opacity(0.75))
-                .frame(width: NotchSupport.contentHeaderControlHeight,
-                       height: NotchSupport.contentHeaderControlHeight)
-                .background(Circle().fill(Color.white.opacity(0.08)))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white.opacity(0.8))
+                .frame(width: 44, height: NotchSupport.contentHeaderControlHeight - 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.white.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -236,24 +249,24 @@ struct HomeSpaceSidebarView: View {
 
     /// 一张卡片：标题 + 状态点 +（仅主循环卡片）「设为默认」。
     private func cardRow(_ card: AgentCardModel.Card) -> some View {
-        let isCurrentCard = isCurrent(card)
+        let isHoveredCard = hoveredCardID == card.id
         return HStack(spacing: 8) {
             Circle()
                 .fill(card.kind == .mainLoop ? DS.Colors.accent : Color(red: 0.55, green: 0.78, blue: 0.55))
                 .frame(width: 6, height: 6)
-                .opacity(isCurrentCard ? 1 : 0.35)
+                .opacity(isHoveredCard ? 1 : 0.5)
 
             Text(card.title)
                 .font(.system(size: 13.5, weight: .semibold))
                 // 标题也跟着亮 / 暗（见下面那段"选中的那张要明显不同"）：
                 // 只高亮底和边、字还是同一个亮度，两张卡片看着仍然是一对。
-                .foregroundColor(isCurrentCard ? .white : .white.opacity(0.55))
+                .foregroundColor(isHoveredCard ? .white : .white.opacity(0.72))
                 .lineLimit(1)
 
             if card.kind == .claudeCode {
                 Text("Claude Code")
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundColor(.white.opacity(isCurrentCard ? 0.45 : 0.28))
+                    .foregroundColor(.white.opacity(0.35))
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1.5)
                     .background(Capsule().fill(Color.white.opacity(0.08)))
@@ -311,15 +324,26 @@ struct HomeSpaceSidebarView: View {
         // 用来区分」）。原来是 0.10 / 0.05 两档白 —— 在深色底上几乎看不出差别（截图里两张
         // 卡片确实长得一样）。现在拉开成**亮面 + accent 边**对**暗面 + 几乎无边**，
         // 标题与状态点也跟着亮 / 暗。
+        // **亮 = 鼠标停在这儿（可以点），不是"这一张是当前的"。**
+        //
+        // 用户 2026-09-26：「左侧的这两个卡片，我点击的时候它才需要高亮，背景也应该高亮，
+        // 但现在是持续高亮，这是错误的」—— 之前那张常亮的是"当前卡片"（内容列正显示它），
+        // 而他把"卡片一明一暗"（更早那条要求）当成了**点击态**的预览。
+        // 所以底色一律用一个（略暗），只有悬停 / 按下时才亮起来 —— 与这个仓库里其他
+        // 可点元素同一条规矩：hover 必须能看出"这里可以点"。
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(isCurrentCard ? Color.white.opacity(0.14) : Color.black.opacity(0.22))
+                .fill(isHoveredCard ? Color.white.opacity(0.14) : Color.black.opacity(0.22))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .strokeBorder(isCurrentCard ? DS.Colors.accent.opacity(0.45) : Color.white.opacity(0.06),
+                .strokeBorder(isHoveredCard ? DS.Colors.accent.opacity(0.55)
+                                            : Color.white.opacity(0.06),
                               lineWidth: 1)
         )
+        .onHover { hovering in
+            hoveredCardID = hovering ? card.id : (hoveredCardID == card.id ? nil : hoveredCardID)
+        }
         .padding(.horizontal, 6)
         .padding(.bottom, 2)
         .contentShape(Rectangle())
@@ -346,7 +370,7 @@ struct HomeSpaceSidebarView: View {
             // 右边缘尽可能小，让按钮在卡片里尽可能大，方便用户点击」）。
             // 所以它按卡片高度撑满，不再是 20pt 的小圆圈。
             Image(systemName: "phone.fill")
-                .font(.system(size: 22, weight: .medium))
+                .font(.system(size: 24, weight: .medium))
                 .foregroundColor(isCalling ? DS.Colors.success : .white.opacity(0.5))
                 .frame(width: Self.callButtonSize, height: Self.callButtonSize)
                 .background(
@@ -367,15 +391,9 @@ struct HomeSpaceSidebarView: View {
         .help("跟它通话：切到语音模式（全双工语音）。引擎与音色在「设置 → 角色」里改")
     }
 
-    /// 当前的卡片：主循环看「是不是当前活动会话」，两个 agent 卡片看「是不是选中的代理」。
-    private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
-        switch card.kind {
-        case .mainLoop:
-            return sessionsModel.activeSessionID?.uuidString == card.entityID
-        case .claudeCode, .review:
-            return agentSessionManager.selectedAgentID?.uuidString == card.entityID
-        }
-    }
+    // 这里曾经有一个 `isCurrent(_:)`（判断"这张卡片是不是当前正在显示的那张"）——
+    // 2026-09-26 用户要求卡片的亮色表达**点击**而不是"当前"，它就随那个判断一起删了。
+    // 哪张卡片是当前的由右列的内容本身回答，不需要侧栏再标一遍。
 
     /// 一栏任务：可折叠的标题（栏名 + 条数），展开后逐条列出。
     @ViewBuilder

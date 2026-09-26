@@ -307,12 +307,17 @@ nonisolated enum NotchSupport {
     /// 2026-09-26 的卡片化改造里已经删掉了，侧栏顶上现在是搜索框、下面直接是卡片区，
     /// y=75 那儿本来就没有线了。所以这个和今天只是右列自己的页头高度 —— 留成和式是
     /// 为了下一次有人往页头里加东西时，仍然只有一个地方要改。
+    /// **2026-09-26 晚：砍掉最后两项。** 用户看出来的那一版偏低 ——「右侧的分割线有点
+    /// 靠下，它应该在上面那些按钮的下面」—— 根因是它按**两行页头**的时代算的：那时模式行
+    /// 之上还有各页自己的一行页头（`contentColumnHeaderBandHeight` = 35），而这一天下午
+    /// 那一轮把三页的页头**并进了模式行**，35 那一项却留在了和里。
+    ///
+    /// 所以现在只剩三项：让开刘海 + 模式行 + 细缝 = **80**。左列顶上那条空带也按它算高度，
+    /// 两列仍然是同一根线。
     static let contentColumnHeaderRuleY: CGFloat =
         sheetHeaderTopInset
         + cardChatModeBandHeight
         + cardChatModeBandBottomSpacing
-        + sidebarSectionSwitcherButtonHeight
-        + sidebarSectionSwitcherBottomPadding
 
     // MARK: - 「角色 + 四个模式」那一排（2026-09-26）
 
@@ -331,17 +336,9 @@ nonisolated enum NotchSupport {
     /// 模式行与它下面那行页头之间的细缝。
     static let cardChatModeBandBottomSpacing: CGFloat = 6
 
-    /// 右列页头**内容**能用的高度：从 `sheetHeaderTopInset` 的下沿到那条线。
-    ///
-    /// 三页的页头（对话页是顶栏，另两页是它们自己的标题行）都按这个高度排版，内容在
-    /// 这条带子里垂直居中，于是每页的页头都恰好在那条线上结束、正文恰好从线下开始。
-    ///
-    /// **它不含模式行**（模式行有自己的 `cardChatModeBandHeight`）：这一格是"每页自己那行
-    /// 页头"的高度，所以三个内容视图里那句 `frame(height:)` 一个字都不用改，
-    /// 它们只是各自被套进一个 `VStack`，上面多一行模式条而已。
-    static var contentColumnHeaderBandHeight: CGFloat {
-        sidebarSectionSwitcherButtonHeight + sidebarSectionSwitcherBottomPadding
-    }
+    /// **2026-09-26 晚已删除。** 它曾经是"每页自己那行页头"的高度（35），而那一行已经并进
+    /// 模式行 —— 再留一个常量在那里，下一个人就会拿它去算那条线（这正是它偏低的原因）。
+    /// 各页的页头现在按内容自然高度排，正好从线上开始。
 
     // MARK: - 两列的宽度
 
