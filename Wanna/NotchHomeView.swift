@@ -216,24 +216,14 @@ struct NotchHomeView: View {
                 .padding(.vertical, 4)
                 .background(Capsule().fill(Color.white.opacity(0.07)))
             } else {
-                // Same capsule shape, fully transparent — same height, no
-                // content.
+                // 静止时**什么都不占**。
                 //
-                // **必须显式 `opacity(0)`。** 这条占位早先只是「画一个空胶囊」，
-                // 但它的形状和 `if` 分支一模一样，只要父级或将来任何一层给它带上
-                // 背景/材质，它就会当场变成一个可见的空框 —— 而它存在的唯一理由是
-                // 占高度，不是给人看。显式归零之后，无论外层怎么变它都不会显形。
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.clear)
-                        .frame(width: 6, height: 6)
-                    Text(" ")
-                        .font(.system(size: 12, weight: .medium))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .opacity(0)
-                .accessibilityHidden(true)
+                // 这里原来画一个「同高透明胶囊」来固定这一条的高度，理由见上：免得
+                // 语音状态一变、滚动区高度跟着变，整列消息上下抖一下。但它留下的
+                // 是一条**看得见的空带** —— 分割线和第一条消息之间那块空白，用户
+                // 2026-09-26 指着它说「这里应该渲染出文字，而不是保留一个空位」。
+                // 占位是为了消除抖动，代价是永远有一块空白；用户要的是没有空白。
+                EmptyView()
             }
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
