@@ -399,13 +399,16 @@ struct VoiceChatSessionView: View {
             // （「把『连接』按钮放在『语音或视频』的右侧…该按钮没有文字，只有一个图标」）。
             // 这一页本来就是语音 / 视频两个模式的地盘，所以它在这里恒显示。
             if let cardID {
-                // **通话在最右、模式下拉在它左边**（用户 2026-09-26：「把通话按钮放在全双工
-                // 语音按钮的右侧。也就是说，最右侧对齐的分别是通话按钮、全双工模式按钮」）。
-                // 「角色」这一页不画 —— 它搬到输入框那一行去了（见 `voiceComposerControlsRow`）。
+                // **通话紧跟「语音 / 视频」右侧**（用户 2026-09-26 的更正：「通话按钮要放在
+                // 语音、视频按钮的右侧」—— 上一版我把它挪到了模式下拉右边，那是照着另一句
+                // 「放在全双工语音按钮的右侧」做的，他这一句是更正的最终位置）。
+                //
+                // 「角色」由模式条自己画在最右（它在这一排的**最右端**，用户：「放在分隔线右侧、
+                // 分隔线的上面，然后放在「全双工」这个按钮的右侧」）。
                 CardChatModeBar(cardID: cardID,
                                 cardKind: cardKind,
+                                leadingAccessory: AnyView(connectButton),
                                 trailingAccessory: AnyView(headerTrailingControls),
-                                showsRoleChip: false,
                                 onModeSelected: { _ in syncChannelToCardChatMode() },
                                 preferences: cardChatPreferences)
             } else {
@@ -488,9 +491,7 @@ struct VoiceChatSessionView: View {
             // **常驻**改成**点开才显示**，这颗按钮负责展开/收起。
             modeDisclosureButton
 
-            // **通话在它右边、整排最右**（用户：「把通话按钮放在全双工语音按钮的右侧」）。
-            // 语速已经搬到输入框那一行，所以它不在这里。
-            connectButton
+            // 通话在左侧那组（紧跟「视频」），语速在输入框那一行 —— 这一组只剩这三颗。
         }
     }
 
@@ -2201,8 +2202,6 @@ struct VoiceChatSessionView: View {
             }
             .background(headerAnchorReporter(.speed))
 
-            // **角色在最右**（用户：「把角色按钮放在右侧，放在类似语速按钮的位置上，最右侧」）。
-            CardChatRoleChip(cardID: cardID ?? "", cardKind: cardKind, preferences: cardChatPreferences)
         }
     }
 
