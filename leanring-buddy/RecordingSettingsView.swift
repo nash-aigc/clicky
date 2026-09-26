@@ -30,6 +30,7 @@ extension GeneralSettingsView {
             // 其余设置参数依次排在它下面。
             recordingHistorySection
             recordingShortcutSection
+            recordingInputSection
             recordingServiceSection
             recordingStorageSection
             recordingPolishSection
@@ -419,6 +420,79 @@ extension GeneralSettingsView {
                                 range: 1...120)
             }
         }
+    }
+
+    /// 用哪个麦克风。
+    ///
+    /// 用户 2026-09-26：「让用户可以自己设置一个默认驱动设备，让用户可以看到」——
+    /// **「可以设置」和「可以看到」是两件事，这里都做。**
+    ///
+    /// 它存在的理由是实测出来的一次故障：录屏软件的虚拟驱动（2 声道）和内置麦克风
+    /// （1 声道）被 CoreAudio 合成了一个 3 声道的「默认设备聚合体」，而那个形态
+    /// **交出的是纯静音** —— 录了 117 秒、0 字、服务端一直超时重连，全程不报错。
+    /// 录音已经改成绑**具体设备**而不是那个聚合体，但「系统默认」本身可以被切到任何
+    /// 地方（包括那个虚拟声道），所以用户要能自己指定、并且看见现在到底用的是谁。
+    @ViewBuilder
+    private var recordingInputSection: some View {
+        SettingsGroupLabel("麦克风")
+        SettingsCard {
+            SettingsRow(
+                label: "输入设备",
+                description: "「跟系统默认」= 用 macOS 当前默认的那个。"
+                    + "**选具体设备更稳**：默认设备可以被别的软件改（录屏软件的虚拟声道就会出现在列表里），"
+                    + "而改到那种设备上录出来的会是**静音**。"
+            ) {
+                Menu(currentInputDeviceMenuTitle) {
+                    Button("跟系统默认") {
+                        generalSettingsViewModel.draftSettings.recordingInputDeviceUID = ""
+                    }
+                    ForEach(AudioInputDeviceCatalog.allInputDevices()) { device in
+                        Button(device.displayName + (device.isSystemDefault ? "（系统默认）" : "")) {
+                            generalSettingsViewModel.draftSettings.recordingInputDeviceUID = device.uid
+                        }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .frame(width: 240)
+            }
+            SettingsCardRowDivider()
+            // **「现在实际绑的是谁」** —— 和上面那个选择器是两件事：选了不等于绑上了
+            //（设备可能被拔掉、可能被别的进程占着），而用户要看的正是这个。
+            SettingsRow(
+                label: "这一场实际用的",
+                description: "只有录音跑起来之后才有值。**它和上面选的不是一回事** —— "
+                    + "设备被拔掉时 Clicky 会落回系统默认并在诊断日志里说明，"
+                    + "这里显示的就是那一刻真正用的那个。"
+            ) {
+                Text(reportedInputDeviceName)
+                    .font(.system(size: 11.5))
+                    .foregroundColor(DS.Colors.textSecondary)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 240, alignment: .trailing)
+            }
+            if let warning = silentInputWarning {
+                SettingsCardRowDivider()
+                SettingsRow(label: "上一场没录到声音", description: warning)
+            }
+        }
+    }
+
+    /// 选择器上显示的文字。
+    private var currentInputDeviceMenuTitle: String {
+        let uid = generalSettingsViewModel.draftSettings.recordingInputDeviceUID
+        guard !uid.isEmpty else { return "跟系统默认" }
+        return AudioInputDeviceCatalog.device(withUID: uid)?.name ?? "（选的那个现在不在）"
+    }
+
+    /// 最近一场录音实际绑的设备。没录过就是「还没录过」。
+    private var reportedInputDeviceName: String {
+        LongFormRecorderController.shared.lastBoundInputDeviceName ?? "还没录过"
+    }
+
+    /// 最近一场连续静音的告警。没有就是 nil。
+    private var silentInputWarning: String? {
+        LongFormRecorderController.shared.lastSilentInputWarning
     }
 
     @ViewBuilder

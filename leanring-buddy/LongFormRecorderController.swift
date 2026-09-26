@@ -86,7 +86,29 @@ nonisolated final class LongFormAudioCapture {
     /// 所以这里分别记：块数、零块数、以及第一块的真实峰值。
     private var receivedBufferCount = 0
     private var silentBufferCount = 0
+    /// **连续**零块。和累计是两件事：真正的录音里，说话间隙也会有零块，
+    /// 而「一直零下去」只有一种解释。告警判据是这一个。
+    private var consecutiveSilentBufferCount = 0
     private var hasReportedFirstBuffer = false
+
+    /// 起采时绑到的设备名，**记下来给告警用**。
+    ///
+    /// 不在告警那一刻重新查：那时候查到的可能已经不是当初绑的那一个了
+    ///（设备可以中途被拔掉），而告警要回答的正是「我当时绑的是谁」。
+    private var boundInputDeviceName = "（还没绑定）"
+
+    /// 连续多少块没声音就报警。一块约 100ms，100 块 ≈ 10 秒 ——
+    /// 短到来得及反应，长到不会被一句话里的停顿触发。
+    static let silentBufferAlarmThreshold = 100
+
+    /// 连续静音到阈值时喊一次（整场只喊一次）。参数是当时绑的设备名 ——
+    /// 「绑到哪个设备」是分清「绑错了」和「麦克风静音了」的唯一依据。
+    var onSilentInputDetected: ((String) -> Void)?
+
+    /// 绑好设备之后回一句「绑到了谁」。**静态是因为绑定函数是静态的**
+    ///（它没有实例，而起采路径上第一个用到它的地方在实例建好之前）。
+    /// 控制器启动时装上，用来填设置页里「这一场实际用的」那一行。
+    nonisolated(unsafe) static var onBoundInputDeviceName: ((String) -> Void)?
 
     /// 判定「在说话」的电平门槛。**作用在归一化之后的电平上。**
     ///
@@ -147,7 +169,9 @@ nonisolated final class LongFormAudioCapture {
         //
         // **必须在读格式之前设。** 设完再读 `outputFormat`，否则读到的是旧绑定
         // 的格式 —— 而那个格式正是我们不满意的那个。
-        Self.pinInputNodeToRealDefaultDevice(inputNode)
+        let boundName = Self.pinInputNodeToChosenInputDevice(inputNode)
+        boundInputDeviceName = boundName
+        Self.onBoundInputDeviceName?(boundName)
         let declaredFormat = inputNode.outputFormat(forBus: 0)
         // 把取到的格式原样报出去。采样率/声道都可能是 0（没设备 / 没权限 /
         // 被别的进程占着），而它们失败的方式都是静音 —— 不打印就分不出来。
@@ -247,6 +271,21 @@ nonisolated final class LongFormAudioCapture {
         // 分不出静音是哪一种失败，峰值能。
         receivedBufferCount += 1
         if peak == 0 { silentBufferCount += 1 }
+        if peak == 0 { consecutiveSilentBufferCount += 1 } else { consecutiveSilentBufferCount = 0 }
+
+        // **连续静音就说出来 —— 计数器早就在数，只是从来没人看。**
+        //
+        // 实测 2026-09-26：麦克风送来的全是 0 时界面一切正常、文件照写、
+        // 服务端不停超时重连，**117 秒一个字都没有，全程不报任何错**，
+        // 用户唯一的线索是「它不转了」，而那时已经太晚。
+        if consecutiveSilentBufferCount == Self.silentBufferAlarmThreshold {
+            let device = boundInputDeviceName
+            onDiagnostic?("⚠️ 连续 \(consecutiveSilentBufferCount) 块没有任何声音"
+                          + "（约 \(consecutiveSilentBufferCount / 10) 秒）· 设备=\(device)"
+                          + " —— 麦克风很可能是静音的，或者绑到了一个不产出采样的设备上。")
+            onSilentInputDetected?(device)
+        }
+
         if !hasReportedFirstBuffer || receivedBufferCount % 50 == 0 {
             hasReportedFirstBuffer = true
             onDiagnostic?(String(format: "第 %d 块：%d 帧 峰值=%d/32768 (%.3f) 累计零块=%d/%d",
@@ -350,6 +389,17 @@ final class LongFormRecorderController: ObservableObject {
     @Published private(set) var elapsedSeconds: Double = 0
     @Published private(set) var connectionState: VolcengineRealtimeASRClient.ConnectionState = .idle
     @Published private(set) var lastErrorMessage: String?
+
+    // MARK: - 麦克风的实际状态（设置页「麦克风」那一节读这两个）
+
+    /// 最近一场录音**实际绑到**的设备名。nil = 还没录过。
+    ///
+    /// 和设置页里用户「选的那个」是两件事：选了不等于绑上了（设备可能被拔掉、
+    /// 可能被别的进程占着），而用户要看的正是**真正用的那个**。
+    @Published private(set) var lastBoundInputDeviceName: String?
+
+    /// 最近一场连续静音的告警。nil = 没有过。
+    @Published private(set) var lastSilentInputWarning: String?
     @Published private(set) var connectionRotationCount: Int = 0
     /// 当前这一场转录的写入器；空闲时为 nil。刘海跑马灯读它的 `liveLineText`。
     @Published private(set) var transcriptWriter: LongFormTranscriptWriter?
@@ -970,6 +1020,19 @@ final class LongFormRecorderController: ObservableObject {
             publishDiagnostic("拒绝开始：设置里没有 API Key")
             playErrorSound()
             return
+        }
+
+        // 把「绑到了谁」和「连续静音了」接进这一层：设置页读的是控制器上的
+        // 两个 @Published，而不是去问那个音频对象。
+        LongFormAudioCapture.onBoundInputDeviceName = { [weak self] name in
+            Task { @MainActor in self?.lastBoundInputDeviceName = name }
+        }
+        capture.onSilentInputDetected = { [weak self] device in
+            Task { @MainActor in
+                self?.lastSilentInputWarning =
+                    "连续十秒没有任何声音（设备：\(device)）。这一段录下来会是空的 —— "
+                    + "检查麦克风是不是被静音了，或者到上面把输入设备改成具体的那一个。"
+            }
         }
 
         phase = .starting
@@ -1596,16 +1659,46 @@ private nonisolated func realDefaultInputDeviceID() -> AudioDeviceID {
     return status == noErr ? deviceID : 0
 }
 
-/// 把输入节点钉在真实默认输入设备上。失败就什么都不做 —— 退回原来的行为，
-/// **不会比现在更差**：现在就是在用聚合体。
+/// 把输入节点钉在一个**具体的设备**上，并返回它的名字。
+///
+/// ## 为什么必须钉
+///
+/// `AVAudioEngine` 默认跟的是 CoreAudio 的**默认设备聚合体**
+///（`CADefaultDeviceAggregate-<pid>-0`）—— 那是按「此刻有哪些设备」**现组**的，
+/// 声道数会变。实测 2026-09-26：内置麦克风 1 声道 + 录屏软件的虚拟驱动 2 声道
+/// = **聚合体 3 声道，而它交出的是纯静音**（117 秒 0 字，服务端一直超时重连）。
+///
+/// ## 钉哪一个
+///
+/// 用户在「录音」设置页选了就钉那个（`recordingInputDeviceUID`），没选就钉
+/// 系统的默认输入设备。**两种情况都绕开了聚合体** —— 那才是问题所在，
+/// 「选谁」只是让用户能纠正「默认本身指错了」这种情形。
+///
+/// 选的那个设备**被拔掉了**就落回默认，并且**在日志里说出来**：
+/// 静默换设备会让用户以为自己在用外置麦。
 extension LongFormAudioCapture {
-    nonisolated static func pinInputNodeToRealDefaultDevice(_ node: AVAudioInputNode) {
-        guard let unit = node.audioUnit else { return }
-        var deviceID = realDefaultInputDeviceID()
-        guard deviceID != 0 else { return }
+    nonisolated static func pinInputNodeToChosenInputDevice(_ node: AVAudioInputNode) -> String {
+        guard let unit = node.audioUnit else { return "（拿不到 audioUnit）" }
+
+        let chosenUID = AppSettingsStore.snapshot().recordingInputDeviceUID
+        var target: AudioInputDevice?
+        if !chosenUID.isEmpty {
+            target = AudioInputDeviceCatalog.device(withUID: chosenUID)
+            if target == nil {
+                SoundEffectPlayer.appendToDiagnosticLog(
+                    "录音：你选的输入设备（UID \(chosenUID)）现在不在了，这一场改用系统默认。")
+            }
+        }
+        if target == nil, let defaultID = AudioInputDeviceCatalog.allInputDevices().first(where: \.isSystemDefault) {
+            target = defaultID
+        }
+        guard let device = target else { return "（系统里没有任何输入设备）" }
+
+        var deviceID = device.id
         AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice,
                              kAudioUnitScope_Global, 0, &deviceID,
                              UInt32(MemoryLayout<AudioDeviceID>.size))
+        return "\(device.name) [id=\(device.id)]"
     }
 }
 

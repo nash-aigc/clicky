@@ -1180,6 +1180,19 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
             .filter { !$0.isEmpty }
     }
 
+    /// 长录音用哪个输入设备。**空 = 跟系统默认。**
+    ///
+    /// 用户 2026-09-26：「让用户可以自己设置一个默认驱动设备，让用户可以看到」。
+    ///
+    /// 存的是 CoreAudio 的 **UID 不是 id**：`AudioDeviceID` 是会话内的临时编号，
+    /// 重启或重新插拔之后会变，UID 才是那个设备的身份。
+    ///
+    /// **它存在的理由是「默认本身可能是指错的」。** 录音已经改成绑具体设备而不是
+    /// 那个会变的聚合体（那才是 2026-09-26 那次全静音的根因），但系统默认输入可以被
+    /// 切到任何一个设备上 —— 包括录屏软件的虚拟声道。切到那里，Clicky 会忠实地
+    /// 绑上去、然后录到静音。所以用户要能自己指定。
+    var recordingInputDeviceUID: String = ""
+
     /// 鼠标旁边要不要显示 agent 的状态（对号 + 一句话）。
     ///
     /// 用户 2026-09-26：「这个东西应该设置成一个开关…让用户可以选择这个 agent 的状态
@@ -1359,6 +1372,7 @@ nonisolated extension AppSettings {
         case recordingAudioRetentionDays
         case recordingTextRetentionDays
         case fastPathEntries
+        case recordingInputDeviceUID
         case showsAgentStatusAtCursor
         case fileAccessEntries
         case recordingPolishEnabled
@@ -1498,6 +1512,7 @@ nonisolated extension AppSettings {
         recordingAudioRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingAudioRetentionDays) ?? defaults.recordingAudioRetentionDays
         recordingTextRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingTextRetentionDays) ?? defaults.recordingTextRetentionDays
         fastPathEntries = try container.decodeIfPresent([FastPathEntry].self, forKey: .fastPathEntries) ?? defaults.fastPathEntries
+        recordingInputDeviceUID = try container.decodeIfPresent(String.self, forKey: .recordingInputDeviceUID) ?? defaults.recordingInputDeviceUID
         showsAgentStatusAtCursor = try container.decodeIfPresent(Bool.self, forKey: .showsAgentStatusAtCursor) ?? defaults.showsAgentStatusAtCursor
         fileAccessEntries = try container.decodeIfPresent([FileAccessEntry].self, forKey: .fileAccessEntries) ?? defaults.fileAccessEntries
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
