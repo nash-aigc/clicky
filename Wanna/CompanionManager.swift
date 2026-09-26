@@ -677,8 +677,62 @@ final class CompanionManager: ObservableObject {
         // `voiceChatController.startChromeKeepAlive()` —— 那条 Chrome 保活链是
         // 「必须先有一个浏览器进程活着」这个前提的产物，而原生这条路没有外部进程：
         // 麦克风、播报、理解全在本进程里，会话开始时按需起，会话结束就收回。
+        // 先搬旧 bundle id 的 UserDefaults，再读任何东西 —— `refreshAllPermissions()`
+        // 第一句就要读 `hasScreenContentPermission`，它读不到就会把 app 锁死。见
+        // `LegacyDefaultsMigration` 的头注释。
+        LegacyDefaultsMigration.runIfNeeded()
+
         refreshAllPermissions()
         print("🔑 Wanna start — accessibility: \(hasAccessibilityPermission), screen: \(hasScreenRecordingPermission), mic: \(hasMicrophonePermission), screenContent: \(hasScreenContentPermission), onboarded: \(hasCompletedOnboarding)")
+
+        // 两个出口要用的外部命令行工具，启动时查一次。
+        //
+        // 缺了不会立刻坏 —— 坏在你真的说「画个图」（要 node）或建一个 Agent（要 claude）
+        // 的时候，而且那时候给出的理由是指向错误方向的：两条 guard 报的都是「找不到
+        // python3」，而 python3 在、缺的是别的。所以把话说在前面，日志里留一条，
+        // 设置 → 操作 页有同一张表和安装按钮。
+        let locatedTools = ExternalToolchain.locateAll()
+        let missingTools = ExternalToolchain.Tool.allCases.filter { locatedTools[$0] == nil }
+        if missingTools.isEmpty {
+            let summary = ExternalToolchain.Tool.allCases
+                .map { "\($0.displayName)@\(locatedTools[$0] ?? "?")" }
+                .joined(separator: " ")
+            print("🧰 Wanna: 外部工具齐备 — \(summary)")
+        } else {
+            let names = missingTools.map(\.displayName).joined(separator: "、")
+            print("⚠️ Wanna: 缺少外部工具 \(names) —— 图形讲解 / Agent 功能会不可用（设置 → 操作 页可一键安装）")
+            ExternalToolchain.appendToDiagnosticLog("缺少外部工具：\(names)")
+        }
+
+        // **输入监控**（`kTCCServiceListenEvent`）是独立于辅助功能的一项权限 —— 它管的是
+        // "能不能读到你按了什么键"。全局快捷键走的是 `.listenOnly` 的 CGEvent tap，
+        // 没有它就**收不到任何按键**：监听器建得起来、不报错、也不崩，按下去就是没反应。
+        //
+        // 它和屏幕内容那项一样是按 bundle id 记的，2026-09-26 改 id 时一起被清掉了
+        // （实测：授权库里其他 app 有 `kTCCServiceListenEvent`，Wanna 没有）。
+        // 所以这里也补一次自动请求 —— 缺了就弹系统授权，不缺就是空操作。
+        if !CGPreflightListenEventAccess() {
+            print("⌨️ Wanna: 输入监控权限未授予 —— 全局快捷键收不到按键，主动请求一次")
+            CGRequestListenEventAccess()
+        }
+
+        // 屏幕内容权限是**一次性**的：用户批准过 SCShareableContent 选择器之后就记进
+        // `UserDefaults`，此后不再问。而 `UserDefaults` 是按 bundle id 存的 ——
+        // 换一次 bundle id（2026-09-26 改成 com.nash-aigc.wanna）就等于把这个标记清空。
+        //
+        // 清空的后果不是「少一个权限」，是**app 被锁死**：`allPermissionsGranted` 永远
+        // 为 false → `installCompanionPresenceIfReady()` 永远早退 → 刘海面板永远不创建。
+        // 刘海是这个 app 唯一的入口（没有 dock 图标、没有菜单栏图标），所以面板不出现
+        // 时用户连设置页都进不去，没有任何办法把它要回来 —— 2026-09-26 实测踩到，
+        // 现象是「app 在跑、日志全正常、屏幕上 0 个窗口」。
+        //
+        // 所以引导已经完成却缺这个标记时，主动再要一次。真批准过的话选择器不会弹；
+        // 没批准过就补上，刘海随即自己出现。
+        if hasCompletedOnboarding && !hasScreenContentPermission {
+            print("🔑 Wanna: 屏幕内容权限标记缺失（换 bundle id 会清空 UserDefaults）—— 主动补一次")
+            requestScreenContentPermission()
+        }
+
         startPermissionPolling()
         bindVoiceStateObservation()
         bindAudioPowerLevel()

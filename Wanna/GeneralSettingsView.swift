@@ -129,6 +129,10 @@ struct GeneralSettingsView: View {
         .publish(every: 1.5, on: .main, in: .common)
         .autoconnect()
 
+    /// 两个出口依赖的外部命令行工具（node / claude）的安装状态。
+    /// 归 操作 页读 —— 和「辅助功能权限」同一类：不是偏好，是这台机器现在能不能干活。
+    @StateObject private var toolchain = ExternalToolchainModel()
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -1115,6 +1119,25 @@ struct GeneralSettingsView: View {
                 SettingsNote(text: "点「去授权」会弹出系统授权窗口；如果窗口里没有 Wanna，点「打开设置」在「隐私与安全性 → 辅助功能」里用「+」把它加进去。加完之后不用重启，这里的字会自己变成「已授权」。")
             }
 
+            // 和上面那条权限同一类：不是偏好，是这台机器现在能不能干活。
+            // 缺 node 时表现是「说画个图没反应」，缺 claude 时是「Agent 起不来」——
+            // 两种都离原因很远，所以放在这里明说，而不是等用户撞上。
+            SettingsGroupLabel("外部工具")
+            SettingsCard {
+                ForEach(Array(ExternalToolchain.Tool.allCases.enumerated()), id: \.element.id) { index, tool in
+                    if index > 0 { SettingsCardRowDivider() }
+                    SettingsRow(label: tool.displayName, description: tool.purpose) {
+                        toolchainControl(for: tool)
+                    }
+                }
+            }
+
+            if let failure = ExternalToolchain.Tool.allCases.compactMap({ toolchain.failure(for: $0) }).first {
+                SettingsNote(text: "安装没成功。原始输出：\n\(failure)")
+            } else if ExternalToolchain.Tool.allCases.contains(where: { !toolchain.isInstalled($0) }) {
+                SettingsNote(text: "这两个是命令行工具，Wanna 自己不附带。点「安装」会用你机器上的 Homebrew 现装 —— node 走 brew，claude 走 npm 官方包。装完不用重启，这里的字会自己变；也可以照按钮旁边那条命令自己在终端里装。")
+            }
+
             SettingsGroupLabel("它能做什么")
             SettingsCard {
                 SettingsRow(
@@ -1166,6 +1189,54 @@ struct GeneralSettingsView: View {
     /// claiming they never granted anything. The 1.5s cadence matches the one
     /// `CompanionManager` polls permissions at, so the panel and this page can
     /// never disagree about what was granted.
+    /// 一个外部工具的当前状态：装好了显示路径，没装显示安装按钮 + 给它自己敲的命令。
+    ///
+    /// 判断标准是**能不能找到可执行文件**，不是安装命令的退出码 —— 命令退出 0
+    /// 但装到 PATH 之外的情况真的存在，那时候不能变绿。同理，装完要重新查一遍
+    /// 才敢说成功，否则用户拿到的是一个「已安装」但依然不可用的结果。
+    @ViewBuilder
+    private func toolchainControl(for tool: ExternalToolchain.Tool) -> some View {
+        HStack(spacing: 8) {
+            if toolchain.isInstalling(tool) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("安装中…")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(DS.Colors.textSecondary)
+            } else if let path = toolchain.located[tool] {
+                Circle()
+                    .fill(DS.Colors.success)
+                    .frame(width: 6, height: 6)
+                Text(path)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+                    .help(path)
+            } else {
+                Button("安装") {
+                    Task { await toolchain.install(tool) }
+                }
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(DS.Colors.textOnAccent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                        .fill(DS.Colors.accent)
+                )
+                .pointerCursor()
+
+                Text(tool.installCommandLine)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .lineLimit(1)
+                    .textSelection(.enabled)
+            }
+        }
+    }
+
     private var accessibilityPermissionControl: some View {
         HStack(spacing: 8) {
             if hasAccessibilityPermission {

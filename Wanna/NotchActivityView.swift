@@ -282,11 +282,18 @@ struct NotchPillRootView: View {
     var body: some View {
         GeometryReader { geometry in
             let notchHeight = geometry.size.height - NotchSupport.restingPillAnimationHeadroom
-            // The pill stays exactly notch-width; the window is wider by
-            // activeFlankWidth on each side, which is the wings' canvas.
-            // The extra area is transparent at rest, so the pill still fuses
-            // with the hardware notch.
-            let pillWidth = geometry.size.width - NotchSupport.activeFlankWidth * 2
+            // The pill stays exactly notch-width. The window is wider on each
+            // side, and **the two sides are not the same width**: the right one
+            // is only the wings' canvas (`activeFlankWidth`), while the left
+            // one is `restingLeadingFlankWidth` — the larger of that same
+            // canvas and the room the temporary-agent strip needs. Subtracting
+            // `activeFlankWidth` from both sides therefore left the pill wider
+            // than the notch and pushed it left by the difference, so the extra
+            // width stuck out past the left edge of the hardware notch as a
+            // black block (measured 2026-09-26: drawn 251pt at x710 where the
+            // notch is 185pt at x771.5 — 62pt out on the left, 0 on the right).
+            let pillWidth = geometry.size.width
+                - NotchSupport.restingLeadingFlankWidth * 2
             let isActive = panelModel.activityPhase != .idle
 
             ZStack(alignment: .top) {

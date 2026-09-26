@@ -461,9 +461,15 @@ nonisolated enum NotchSupport {
         // 加宽是安全的，而且是这套设计里已有的性质：静止时那块区域**完全透明**，
         // 而面板在静止态 `ignoresMouseEvents = true` —— 所以多出来的地方既不显示
         // 任何东西，也挡不住下面菜单栏的点击（见 `activeFlankWidth` 的注释）。
+        // **两侧必须等宽。** 内容是在窗口里居中的，所以窗口一旦左右不对称，
+        // 胶囊就会被整体推离刘海中心 —— 2026-09-26 实测：左侧为 agent 那一排
+        // 外扩 212pt、右侧只外扩 150pt，窗口中心比刘海中心偏左 31pt，胶囊跟着
+        // 偏 31pt，露在硬件缺口左边。改成两边都用 `restingLeadingFlankWidth`
+        // 之后窗口中心 = 胶囊中心，偏移消失；多出来的右侧在静止态是透明的，
+        // 和左侧一样不显示、也挡不住菜单栏的点击。
         return CGRect(x: pillFrame.minX - restingLeadingFlankWidth,
                       y: pillFrame.minY,
-                      width: pillFrame.width + restingLeadingFlankWidth + activeFlankWidth,
+                      width: pillFrame.width + restingLeadingFlankWidth * 2,
                       height: pillFrame.height)
     }
 

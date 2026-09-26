@@ -218,6 +218,11 @@ struct NotchHomeView: View {
             } else {
                 // Same capsule shape, fully transparent — same height, no
                 // content.
+                //
+                // **必须显式 `opacity(0)`。** 这条占位早先只是「画一个空胶囊」，
+                // 但它的形状和 `if` 分支一模一样，只要父级或将来任何一层给它带上
+                // 背景/材质，它就会当场变成一个可见的空框 —— 而它存在的唯一理由是
+                // 占高度，不是给人看。显式归零之后，无论外层怎么变它都不会显形。
                 HStack(spacing: 6) {
                     Circle()
                         .fill(Color.clear)
@@ -227,6 +232,8 @@ struct NotchHomeView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
+                .opacity(0)
+                .accessibilityHidden(true)
             }
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
@@ -260,16 +267,18 @@ struct NotchHomeView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(entries.enumerated()), id: \.offset) { entryIndex, entry in
-                        // 回答还没写下来的那一条不渲染空卡：它的内容此刻在下面的流式
-                        // 气泡里（`streamingAnswerText`），回合结束写盘后这里自然恢复渲染。
-                        if entryIndex == entries.count - 1,
-                           entry.assistantResponse.isEmpty {
-                            EmptyView()
-                        } else {
-                            turnView(entryIndex, entry)
-                                .id("entry-\(entryIndex)")
-                        }
+                    // 回答还没写下来的那一条**整条不进列表** —— 早先这里是渲染
+                    // 一个 `EmptyView()`，但它照样占掉 `VStack(spacing: 12)` 的一个
+                    // 间隔：内容为空、位置却留着，读起来就是一个悬在那里的空框。
+                    // 滤掉之后索引仍然用**原始**的 entryIndex，`id` 和滚动目标不变。
+                    ForEach(
+                        Array(entries.enumerated()).filter {
+                            !($0.offset == entries.count - 1 && $0.element.assistantResponse.isEmpty)
+                        },
+                        id: \.offset
+                    ) { entryIndex, entry in
+                        turnView(entryIndex, entry)
+                            .id("entry-\(entryIndex)")
                     }
 
                     // The question currently being answered shows as the
