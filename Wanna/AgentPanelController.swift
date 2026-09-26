@@ -2,7 +2,10 @@ import AppKit
 import Combine
 import SwiftUI
 
-/// 点刘海左侧那个 agent 按钮之后弹出来的**只读**面板。
+/// 点屏幕右上角那一排 agent 按钮之后弹出来的**只读**面板。
+///
+/// （那一排 2026-09-26 从刘海左侧搬到了屏幕右上角、菜单栏下面一行；面板跟着它走，
+/// 位置由 `NotchSupport.agentDetailPanelTopRightAnchor` 给。）
 ///
 /// 用户 2026-09-26 的要求，逐条落在这里：
 ///
@@ -116,20 +119,22 @@ final class AgentPanelController {
         panel?.orderFrontRegardless()
     }
 
-    /// 摆在按钮**下面**，左边缘和按钮那一排对齐。
+    /// 摆在那一排按钮**下面**，右边缘和那一排对齐。
     ///
-    /// 贴不到就夹进屏幕里 —— 第 3 个按钮已经很靠左了，面板比按钮宽得多（320 vs 30），
-    /// 不夹的话它会伸到屏幕外面，而用户看到的是「点了没反应」。
+    /// 贴不到就夹进屏幕里 —— 面板 320pt 宽、比一颗按钮（40pt）宽得多，直接右对齐到
+    /// 屏幕右边缘会从右边伸出去，而用户看到的是「点了没反应」。
+    ///
+    /// 右侧的锚点由 `NotchSupport.agentDetailPanelTopRightAnchor` 给（那一排的右端、
+    /// 按钮那一行的下沿），所以面板和按钮永远在同一个角上 —— 那一排 2026-09-26 从刘海
+    /// 左侧搬到屏幕右上角时，这一处跟着换的只有这个锚点。
     private func frame(for size: NSSize) -> NSRect {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first,
-              let notch = NotchSupport.notchRect(on: screen),
-              let trailingX = NotchSupport.agentStripTrailingX(on: screen) else {
+        guard let screen = NotchSupport.agentStripScreen else {
             return NSRect(origin: .zero, size: size)
         }
-        let topEdge = screen.frame.maxY - notch.height - 6
-        var left = trailingX - size.width
-        left = max(screen.frame.minX + 10, min(left, screen.frame.maxX - size.width - 10))
-        return NSRect(x: left, y: topEdge - size.height, width: size.width, height: size.height)
+        let anchor = NotchSupport.agentDetailPanelTopRightAnchor(on: screen)
+        let left = min(max(anchor.x - size.width, screen.frame.minX + 10),
+                       screen.frame.maxX - size.width - 10)
+        return NSRect(x: left, y: anchor.y - size.height, width: size.width, height: size.height)
     }
 
     /// 面板此刻在屏幕上的矩形 —— 给"点外面收起"用（判定在 `NotchWindowController`）。

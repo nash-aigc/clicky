@@ -1,36 +1,28 @@
 import AppKit
 import SwiftUI
 
-/// 刘海左侧那一排**临时 agent** 的按钮，以及按钮下面弹出的卡片。
+/// 屏幕**右上角、菜单栏下面一行**那一排**临时 agent** 的按钮，以及按钮下面弹出的卡片。
 ///
-/// ## 为什么在刘海左侧
+/// ## 为什么在屏幕右上角
 ///
-/// 用户 2026-09-26：「派活过程是一个非常大的问题。所以它应该显示在哪里？既要方便用户
-/// 看见，又要能够点击查看：具体做了什么？做到哪？做到什么程度？」
+/// 用户 2026-09-26：「刘海左侧这个 agent 的小图标，就是状态图标，应该放在右侧，电脑屏幕的
+/// 时间日期这个菜单栏的下面一行……在这个位置上从右到左依次显示各种各样的任务，用户点击之后
+/// 可以展开。这样就不会影响整个窗口或者其他组件的位置」。
 ///
-/// 放刘海左侧是因为**眼睛本来就在那儿** —— 用户刚说完话、按的也是刘海那个位置。
-/// 鼠标右下角那块留给主循环的播报（那是「结果」），左边这块留给「过程」。
+/// 它原来画在刘海面板里（刘海左侧），而刘海那一圈正是两翼动画、录音带、展开面板都要争的地方 ——
+/// 所以那一排被展开的东西盖住过。搬到右上角之后它谁也不挡，而且**不再住在任何别人的窗口里**：
+/// 它有自己的一块透明面板（`AgentStripPanelController`），面板怎么变都和它无关。
 ///
-/// ## 两个位置上的硬要求
+/// ## 位置上的硬要求
 ///
-/// **① 给两翼动画让位。** 刘海的左翼（86pt）在录音/思考/播报时会滑出来，
-/// 按钮贴着刘海放就会被它盖住。所以整排从「刘海左边缘 − 翼宽 − 一段空」开始往左排。
-///
-/// **② 绝对定位，不靠相对位置。** 用户明确要求过：相对位置会跟着刘海内容的宽度跑，
-/// 而那个宽度什么时候变是不可预测的。所以 x 由 `NotchSupport` 从**屏幕坐标**算出来
-/// （和两翼、和摄像头小窗同一套办法）。
+/// **绝对定位，不靠相对位置。** 用户明确要求过：相对位置会跟着容器内容的宽度跑，而那个宽度
+/// 什么时候变是不可预测的。所以整块面板的矩形由 `NotchSupport.agentStripPanelFrame` 从**屏幕
+/// 坐标**算出来，而这个视图在面板里**右对齐、顶对齐**铺满 —— 第 0 颗按钮因此正好落在
+/// `NotchSupport.agentButtonFrame(indexFromTrailingEdge: 0)` 上，画的和点的只有一处算术。
 struct AgentStripView: View {
 
     @ObservedObject var board: AgentActivityBoard
-    /// 那一排的**右端相对刘海中心**的偏移（屏幕坐标，负数 = 在刘海左边）。
-    ///
-    /// 不是"窗口坐标里的绝对 x"：根视图只在启动时建一次，而这一排要同时服务静止窗口
-    ///（673pt）和展开面板（810pt）两个原点不同的窗口 —— 绝对 x 一烘死，展开那一刻
-    /// 整排就平移 68pt（实测按钮画到 x=566，而命中区在 622–662，点不到）。
-    /// 两种窗口都居中在刘海中心上，所以「容器中心 + 这个偏移」在两个窗口里是同一个
-    /// 屏幕位置，和命中矩形永远一致。
-    let trailingXFromNotchCenter: CGFloat
-    /// 按钮高度（= 菜单栏高度），同样由挂载处按屏幕算好。
+    /// 按钮高度（= 菜单栏高度），由挂载处按屏幕算好传进来。
     let buttonHeight: CGFloat
 
     /// 呼吸的相位。**整排共用一个** —— 每个按钮各起一条 `repeatForever` 动画会各自飘、
@@ -38,39 +30,35 @@ struct AgentStripView: View {
     @State private var isBreathing = false
 
 
-    /// 只在册子上最多的那几个：刘海左侧放不下更多（见 `maximumVisibleAgentButtons`）。
+    /// 只在册子上最多的那几个：那个角上放不下更多（见 `maximumVisibleAgentButtons`）。
     private var visibleAgents: [EphemeralAgent] {
         Array(board.agents.prefix(NotchSupport.maximumVisibleAgentButtons))
     }
 
     var body: some View {
-        // **「容器中心 + 相对刘海中心的偏移」** —— 容器就是当前那个窗口的内容
-        //（静止 673pt / 展开 810pt），两种情况下它的中心都在刘海中心上，所以这个
-        // 算法在两个窗口里得到同一个屏幕位置。见 `trailingXFromNotchCenter`。
-        GeometryReader { proxy in
-            strip
-                .offset(x: proxy.size.width / 2 + trailingXFromNotchCenter
-                            - NotchSupport.agentBannerWidth)
-        }
-        // 整块不参与布局也不收点击：位置全靠 offset，点击走全局监听
-        //（静止态的面板 `ignoresMouseEvents = true`，视图根本收不到点击）。
-        // 全局监听那一侧的命中矩形由 `NotchSupport.agentButtonFrame` 给出，
-        // 和这里的摆放是同一套算术 —— 画在哪就点在哪。
-        .allowsHitTesting(false)
-        // 呼吸的起搏器：一次 `repeatForever`，之后只靠 `isBreathing` 这个 Bool 驱动
-        // 每一个按钮的透明度插值。
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                isBreathing = true
+        // **右对齐、顶对齐铺满整块面板。** 面板的右边缘就是第 0 颗按钮的右边缘
+        //（见 `NotchSupport.agentStripPanelFrame`），所以这一列不需要任何 offset ——
+        // 它画在哪儿由面板的位置决定，而面板的位置和命中矩形是同一处算术。
+        //
+        // 不接收点击：面板 `ignoresMouseEvents = true`，视图根本收不到点击；命中的那
+        // 一侧由 `NotchWindowController.handleGlobalClick` 用 `NotchSupport` 的矩形接走。
+        strip
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .allowsHitTesting(false)
+            // 呼吸的起搏器：一次 `repeatForever`，之后只靠 `isBreathing` 这个 Bool 驱动
+            // 每一个按钮的透明度插值。
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                    isBreathing = true
+                }
             }
-        }
     }
 
     private var strip: some View {
-        VStack(alignment: .trailing, spacing: 5) {
+        VStack(alignment: .trailing, spacing: NotchSupport.agentStripRowSpacing) {
             HStack(spacing: NotchSupport.agentButtonSpacing) {
-                // **从右往左**：最新的任务离刘海最近。用户刚说完话，眼睛就在刘海上，
-                // 让他往屏幕左边去找刚刚那件事是反的。
+                // **从右往左**：最新的任务离右上角最近（用户 2026-09-26：「在这个位置上
+                // 从右到左依次显示各种各样的任务」）。
                 ForEach(visibleAgents.reversed()) { agent in
                     button(for: agent)
                 }
@@ -89,9 +77,9 @@ struct AgentStripView: View {
         .frame(width: NotchSupport.agentBannerWidth, alignment: .trailing)
     }
 
-    /// 卡片展开着的那些 —— **同时最多两张**。
+    /// 卡片展开着的那些 —— **同时最多两张**（和 `agentCardFrame` 的命中高度同一套假设）。
     ///
-    /// 三张一起弹会把刘海下面那块占满，而用户的注意力只有一处；最新的两张够表达
+    /// 三张一起弹会把那个角占满，而用户的注意力只有一处；最新的两张够表达
     /// 「刚才发生了什么」。
     /// **面板展开时，卡片让位。**
     ///
@@ -99,7 +87,7 @@ struct AgentStripView: View {
     ///（会话列表整个被遮住，用户找不到自己那条对话 ✗）。这和这个仓库既有的规矩是同一条：
     /// 回答气泡在面板展开时也让位（"the sheet's conversation flow is showing the same text"✓），
     /// 而面板里的侧栏本来就把这些任务列出来了 ✓。
-    /// **芯片（刘海左侧那几个小方块）不动** —— 它们是常驻的状态指示 ✓。
+    /// **芯片（右上角那几个小方块）不动** —— 它们是常驻的状态指示 ✓。
     private var expandedAgents: [EphemeralAgent] {
         // **任务在，卡片就在。**
         //
@@ -107,7 +95,9 @@ struct AgentStripView: View {
         // 所以**任务在跑的时候根本没有卡片**（用户 2026-09-26：「内容现在看不到，
         // 修复一下」就是这个）。而卡片是他要看任务内容的地方（时间 + 正文 + 可展开），
         // 所以它跟着任务活着：任务在 = 卡片在，任务退场 = 卡片一起走。
-        board.showsNotchCards ? Array(visibleAgents.prefix(2)) : []
+        board.showsNotchCards
+            ? Array(visibleAgents.prefix(NotchSupport.maximumVisibleAgentCards))
+            : []
     }
 
     // MARK: - 按钮

@@ -211,7 +211,7 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable, Codable {
     /// **标题行显示的是时间**，不是标题。
     ///
     /// 用户 2026-09-26：「把标题上写时间，任务内容写在正文上」—— 理由是标题在
-    /// 刘海左侧那张卡片里只有 190pt，**永远截断**（「帮我在桌面上新建一个文件…」），
+    /// 那张卡片里只有 190pt，**永远截断**（「帮我在桌面上新建一个文件…」），
     /// 而时间是定长的、一眼能对上是哪一次。任务内容移到正文（最多三行、可展开）。
     var startTimeText: String {
         let formatter = DateFormatter()
@@ -339,7 +339,7 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable, Codable {
 
 /// 桌面上那些临时 agent 的看板。
 ///
-/// **它是界面唯一的真相。** 刘海左侧的按钮、按钮下面弹出的卡片、点击之后那块面板，
+/// **它是界面唯一的真相。** 屏幕右上角的按钮、按钮下面弹出的卡片、点击之后那块面板，
 /// 三处全读这一个对象 —— 三个各自记一份「谁在跑」必然会漂，而漂了以后用户看到的
 /// 是「按钮亮着但面板是空的」。
 @MainActor
@@ -354,7 +354,7 @@ final class AgentActivityBoard: ObservableObject {
     /// 一条任务记录活多久。
     ///
     /// **不是永久留着。** 用户要的是「做完就变成正常按钮」—— 而一块永远排满按钮的
-    /// 刘海左侧，比没有还糟。做完的任务还留在这里，是为了让用户点开看刚才发生了什么；
+    /// 屏幕右上角，比没有还糟。做完的任务还留在这里，是为了让用户点开看刚才发生了什么；
     /// 过了这个时间就整条拿走。
     static let retentionSeconds: Double = 10 * 60
 

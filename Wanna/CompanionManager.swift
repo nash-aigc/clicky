@@ -2887,7 +2887,7 @@ final class CompanionManager: ObservableObject {
 
                 /// 这一轮那个**临时 agent** 的 id。**按需创建，不是每轮都建。**
                 ///
-                /// 一问一答（「屏幕上这句话什么意思」）不该在刘海左侧留一个按钮 ——
+                /// 一问一答（「屏幕上这句话什么意思」）不该在屏幕右上角留一个按钮 ——
                 /// 那一排是给「派出去干的活」用的，而用户的原话是「每一个用户的任务都是
                 /// 一个临时的任务」。所以只有真的干活了（派活、或者执行了动作）才建。
                 var ephemeralAgentID: String?
@@ -3118,7 +3118,7 @@ final class CompanionManager: ObservableObject {
                     let dispatchRequest = ActionTagParser.parse(from: fullResponseText)
                     if let role = dispatchRequest.subAgentRequest {
                         dispatchedRole = role
-                        // 派活 = 这件事交给别人去做了，这一刻它值得在刘海左侧占一个位置。
+                        // 派活 = 这件事交给别人去做了，这一刻它值得在屏幕右上角占一个位置。
                         ephemeralAgentID = AgentActivityBoard.shared.beginTask(
                             request: transcript,
                             groupID: turnGroupID,
