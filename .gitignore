@@ -38,3 +38,14 @@ tools/截图与OCR/ocr
 
 # The running app appends to its own run log, so the newest one is never stable.
 开发经验/运行日志/clicky-冷重开验证-20260924-123505.log
+
+# Python bytecode. Machine-generated, pinned to one interpreter — the file that
+# prompted this entry is `bench_route.cpython-314.pyc`, useless to any other Python —
+# and it stamps in the absolute path its source was compiled at. No amount of editing
+# the source corrects that, because the path comes from `__file__`, not from a literal.
+# It is how the file was caught: this repository moved on 2026-09-26 and the bytecode
+# still read `/Users/mjm/Desktop/clicky/…`, a location that had stopped existing, while
+# its source was perfectly clean. The 分流测速 benchmarks keep their sources and their
+# result files on purpose; the compiled form is not one of them.
+__pycache__/
+*.pyc
