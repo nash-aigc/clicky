@@ -61,10 +61,12 @@ final class CascadeVoiceEngine {
     /// **能力层在这里现算，而不是由调用方传一个音色字符串进来**：界面为了置灰也要
     /// 算同一份东西，两处共用 `VoiceCatalog.capability(...)` 这一个实现，
     /// 于是"看得见的"和"真的用的"结构上不可能分家。
+    /// `speaksReplies`（2026-09-26）：语音页那颗「声音」关掉时传 false —— 这一轮**只出文字**。
     func runTurn(utterance: String,
                  role: VoiceChatRole,
                  preset: VoiceChatPreset,
                  channel: VoiceChatChannel,
+                 speaksReplies: Bool = true,
                  callbacks: CascadeTurnCallbacks) {
         cancelCurrentTurn()
 
@@ -74,6 +76,7 @@ final class CascadeVoiceEngine {
             await self.performTurn(
                 utterance: utterance,
                 role: role,
+                speaksReplies: speaksReplies,
                 preset: preset,
                 capability: capability,
                 callbacks: callbacks
@@ -116,6 +119,7 @@ final class CascadeVoiceEngine {
 
     private func performTurn(utterance: String,
                              role: VoiceChatRole,
+                             speaksReplies: Bool,
                              preset: VoiceChatPreset,
                              capability: VoiceCatalog.VoiceChatCapability,
                              callbacks: CascadeTurnCallbacks) async {
@@ -157,9 +161,15 @@ final class CascadeVoiceEngine {
             //
             // 音色来自能力层：它是**校验过**的那个（跨族音色在这里已经被换成兜底值），
             // 所以引擎不可能把服务端不认的音色填进去。
-            let speechSession = try speechSynthesizer.beginStreamingSpeech(
-                voiceID: capability.effectiveVoiceID
-            )
+            // **「声音」关掉时这一整段不建**（2026-09-26）：只出文字。
+            //
+            // 用户的原话：「如果声音按钮关闭，相当于语音模型只输出文本就可以了。注意是调整
+            // 语音模型的输出，不是调整系统的扬声器」—— 三段式这一路的「说」是我们自己做的
+            //（3.1 TTS），所以"只出文字"就是**不合成、不播放**，而不是把系统音量关掉。
+            // 全双工那一路同理，但改的是模型自己的 `modalities`（见 `DuplexVoiceEngine`）。
+            let speechSession = speaksReplies
+                ? try speechSynthesizer.beginStreamingSpeech(voiceID: capability.effectiveVoiceID)
+                : nil
 
             var streamedReplyText = ""
             var spokenTextAccumulator = ""
@@ -188,7 +198,7 @@ final class CascadeVoiceEngine {
                         let speakableText = ActionTagParser.speakableTextFromStreamedReply(accumulatedText)
                         if speakableText != spokenTextAccumulator {
                             spokenTextAccumulator = speakableText
-                            speechSession.feed(cumulativeSpeakableText: speakableText)
+                            speechSession?.feed(cumulativeSpeakableText: speakableText)
                         }
                         callbacks.onAnswerTextChanged(speakableText)
                     }
@@ -225,7 +235,7 @@ final class CascadeVoiceEngine {
                                 print(String(format: "⏱️ [cascade] 首段入队 +%.0fms", Date().timeIntervalSince(turnStartedAt) * 1000))
                             }
                             spokenTextAccumulator = speakableText
-                            speechSession.feed(cumulativeSpeakableText: speakableText)
+                            speechSession?.feed(cumulativeSpeakableText: speakableText)
                         }
 
                         callbacks.onAnswerTextChanged(speakableText)
@@ -243,11 +253,13 @@ final class CascadeVoiceEngine {
             callbacks.onAnswerTextComplete()
 
             // 收尾：告诉合成器「不会再有新句子了」，把最后一段放出去。
-            speechSession.finishStreaming()
+            speechSession?.finishStreaming()
 
             // 等这一轮真正念完再报告回合结束 —— 否则控制器会立刻认为「闲着」，
             // 而用户还在听。
-            await speechSynthesizer.waitUntilPlaybackFinishes()
+            if speaksReplies {
+                await speechSynthesizer.waitUntilPlaybackFinishes()
+            }
 
             if Task.isCancelled { return }
 

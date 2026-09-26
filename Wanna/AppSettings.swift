@@ -628,6 +628,15 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 依赖反过来不值当。
     var cardChatModeRawValues: [String: String]?
 
+    /// **语音 / 视频模式下「声音」开着吗**（2026-09-26）。
+    ///
+    /// 关掉 = **语音模型只出文字**（用户的原话：「如果声音按钮关闭，相当于语音模型只输出
+    /// 文本就可以了。注意是调整语音模型的输出，不是调整系统的扬声器」）。所以它落到两个引擎上：
+    /// 三段式那一侧是"不合成、不播放"，全双工那一侧是 `modalities: ["text"]`。
+    ///
+    /// 默认开 —— 语音聊天的默认形态就是说话。
+    var voiceChatSpeaksReplies: Bool = true
+
     /// **每张卡片各自记住选了哪个语音角色**（只在语音 / 视频模式下有意义）。
     /// 存的是 `VoiceChatRole.id`；nil = 没选过 = 该模式下的第一个可用角色。
     var cardVoiceRoleIDs: [String: String]?
@@ -1420,6 +1429,7 @@ nonisolated extension AppSettings {
         case defaultSessionID
         case cardChatModeRawValues
         case cardVoiceRoleIDs
+        case voiceChatSpeaksReplies
         case reviewAgentReadsProject
         case reviewAgentWritesProject
         case transcriptionLanguage
@@ -1563,6 +1573,8 @@ nonisolated extension AppSettings {
                                                              forKey: .cardChatModeRawValues)
         cardVoiceRoleIDs = try container.decodeIfPresent([String: String].self,
                                                         forKey: .cardVoiceRoleIDs)
+        voiceChatSpeaksReplies = try container.decodeIfPresent(Bool.self,
+                                                              forKey: .voiceChatSpeaksReplies) ?? defaults.voiceChatSpeaksReplies
         // 两个都是"没设过 = 关"（仓规 E1：`Bool?` + `decodeIfPresent`）。
         reviewAgentReadsProject = try container.decodeIfPresent(Bool.self, forKey: .reviewAgentReadsProject)
         reviewAgentWritesProject = try container.decodeIfPresent(Bool.self, forKey: .reviewAgentWritesProject)

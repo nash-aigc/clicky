@@ -29,9 +29,6 @@ struct NotchSheetRootView: View {
     /// 每张卡片的聊天模式与角色。设置本身住在磁盘上（`AppSettings.json`），这个模型只是
     /// 把它读成视图要的形状 —— 观察它是为了让「切一下模式」立刻重绘右列。
     @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
-    /// 「复制全文」按下后的对勾态，1.4 秒后自己回去。
-    @State private var copyFullConversationDidSucceed = false
-    @State private var copyFullConversationResetTask: Task<Void, Never>?
     var collapseAction: () -> Void
     /// 收起 / 重新展开的两半，专给 Agent 页的「打开」用：选文件夹时面板必须
     /// 让开，选完再放回来（用户 2026-09-23 的第 7 条）。与 `collapseAction`
@@ -67,8 +64,11 @@ struct NotchSheetRootView: View {
 
     private static let sessionSidebarCollapsedDefaultsKey = "wannaSessionSidebarCollapsed"
 
-    /// 侧栏展开时 245（原来写死在这里的那一个数），收起时只剩一条 62 的图标栏。
-    private static let expandedSidebarWidth: CGFloat = 245
+    /// 侧栏展开时的宽度。**值在 `NotchSupport` 里**（它要参与面板总宽的计算，
+    /// 两处各存一份就一定会漂）。
+    private static var expandedSidebarWidth: CGFloat {
+        NotchSupport.expandedSidebarWidth
+    }
 
     init(
         panelModel: NotchPanelModel,
@@ -125,17 +125,6 @@ struct NotchSheetRootView: View {
     private var activeCardChatMode: CardChatMode? {
         guard let cardID = activeCardID else { return nil }
         return cardChatPreferences.mode(forCardID: cardID, kind: activeCardKind)
-    }
-
-    /// 模式条 —— 三页共用同一个视图，所以位置与观感不会分叉。
-    ///
-    /// 它只在**卡片页**上画；`trailingAccessory` 由各页决定自己那一组页头控件
-    ///（语音页是摄像头 / 屏幕 / 语速，对话页是活动动画 + 音色 + 复制全文）。
-    private func cardChatModeBar(trailingAccessory: AnyView? = nil) -> some View {
-        CardChatModeBar(cardID: activeCardID ?? "",
-                        cardKind: activeCardKind,
-                        trailingAccessory: trailingAccessory,
-                        preferences: cardChatPreferences)
     }
 
     var body: some View {
@@ -204,27 +193,17 @@ struct NotchSheetRootView: View {
                             .frame(width: 1)
 
                         VStack(spacing: 0) {
-                            // 顶栏只剩对话页有：Agent 与语音聊天页的内容视图
-                            // 自带标题，用户要求「两个标题保留一个」，并且那条
-                            // 栏上的 ✕ 也不要（点窗口外 / Esc 都能收起）。
-                            //
-                            // **模式行在它上面**（2026-09-26）：三页共用同一排
-                            // `[角色][文本][图文][语音][视频]`，各页自己那行页头在它下面，
-                            // 两行一起落在右列那条横线之上（两格高度都在 `NotchSupport`
-                            // 里，见 `contentColumnHeaderRuleY`）。
+                            // 对话页分割线之上那一行：**只有一排**（`topBar` 本身就是那一排
+                            // 模式条 + 图文特有的音色）。
                             //
                             // 语音 / 视频模式下这整块让给语音页（它自带页头，也自带模式条），
                             // 所以这里只在文本 / 图文模式下画 —— 否则会画出两排模式按钮。
                             if agentSessionManager.selectedSidebarSection == .conversations,
                                let activeChatMode = activeCardChatMode,
                                !activeChatMode.isVoiceLike {
-                                VStack(spacing: 0) {
-                                    cardChatModeBar()
-                                    topBar
-                                }
-                                .padding(.top, NotchSupport.sheetHeaderTopInset)
-                                // 音色弹窗跟着页头走：它就开在「复制全文」那颗按钮下面
-                                //（`VoiceChatSessionView` 那套锚点测量对一个下拉列表不值当）。
+                                topBar
+                                    .padding(.top, NotchSupport.sheetHeaderTopInset)
+                                // 音色弹窗跟着页头走：它就开在右上那颗「音色」下面。
                                 if isVoicePickerPresented {
                                     voicePickerPanel
                                 }
@@ -711,102 +690,22 @@ struct NotchSheetRootView: View {
         }
     }
 
+    /// 对话页分割线之上那一行 —— **只剩模式条**（用户 2026-09-26）。
+    ///
+    /// 他这一条削掉了三件东西：标题（「图文模式下有一个标题，在分合线上面，把这个标题也
+    /// 删掉，也就是右侧不需要显示标题」）、「复制全文」（「把『复制全文』按钮删掉」）、
+    /// 以及那枚活动动画（它和刘海那条带子上的是同一个状态，重复）。
+    ///
+    /// 留下的只有：**共用的模式条**（角色 + 文本/图文/语音/视频），以及**图文模式特有的
+    /// 音色** —— 他说「音色在语音跟视频下面，因为语音跟视频的音色其实显示在分割线下面；
+    /// 但图文的音色显示在上面分割线上面这一行，因为它比较特殊，没有这么多模式」。
+    /// 这一页就是图文 / 文本两种模式，所以音色恒在这一排的最右。
     private var topBar: some View {
-        HStack(spacing: 14) {
-            Text(sessionsModel.activeSession?.title ?? "新对话")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(.white)
-                .lineLimit(1)
-
-            Spacer(minLength: 8)
-
-            // 通话中：状态字（连接中琥珀 / 通话中绿）+ 挂断；活动动画让位 ——
-            // 两个状态源会互相打架。
-            NotchActivityView(
-                phase: panelModel.activityPhase,
-                audioHistoryProvider: audioHistoryProvider
-            )
-            .frame(height: 14)
-
-            voiceChip
-            copyFullConversationButton
-        }
-        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-        // 页头整体占满 `contentColumnHeaderBandHeight`：这条栏的下边缘必须正好落在
-        // 右列那条贯穿横线上（`NotchSupport.contentColumnHeaderRuleY`），否则三个
-        // 内容页各按自己的内容高度收尾，线就成了三页各一条、高度不一的短线。
-        // 原来的 `.padding(.bottom, 2)` 是内容底边距，换成固定高度后由这 35pt
-        // 自己决定内容在中线上方的位置。
-        .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
-        // **顶边距移到外面那个 `VStack` 上了**（2026-09-26）：这一行现在上面还有一排
-        // 模式条（`cardChatModeBar`），让开刘海的 `sheetHeaderTopInset` 属于整块页头，
-        // 不属于这一行 —— 留在这里的话模式条会顶进刘海底下。
+        CardChatModeBar(cardID: activeCardID ?? "",
+                        cardKind: activeCardKind,
+                        trailingAccessory: AnyView(voiceChip),
+                        preferences: cardChatPreferences)
     }
-
-    // MARK: - 复制全文
-
-    /// 「复制全文」—— 把当前会话的**整段上下文**复制到剪贴板。
-    ///
-    /// 它取代的是原来那两个按钮（Ask 页的「全双工语音」与它的音色）。用户 2026-09-25：
-    /// 「把 ASK 页面右上角的『全双工语音』和『全双工语音音色』删掉，这个模式也删掉，
-    /// 完全放弃这个接线和这个模式……把全双工语音这个位置的按钮改成复制全文按钮，
-    /// 用户可以复制所有的上下文」。
-    ///
-    /// 复制的是**整段对话**：每一轮的问与答，按时间顺序拼接。执行器的标签会被剥掉
-    /// （存储的原稿带着 `[POINT:…]` / `[CLICK:…]` 这类标签，粘到别处只是噪声），
-    /// 与页面里那个「复制」按钮同一条口径 —— 所见即所得。
-    private var copyFullConversationButton: some View {
-        Button {
-            copyFullConversationToPasteboard()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: copyFullConversationDidSucceed ? "checkmark" : "doc.on.doc")
-                    .font(.system(size: 11, weight: .medium))
-                Text("复制全文")
-                    .font(.system(size: 12, weight: .medium))
-                    .lineLimit(1)
-            }
-            .foregroundColor(.white.opacity(0.9))
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.08))
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .help("把当前会话的整段上下文（每一轮的问与答）复制到剪贴板")
-    }
-
-    private func copyFullConversationToPasteboard() {
-        let entries = sessionsModel.activeSession?.entries ?? []
-        let conversationText = entries.compactMap { entry -> String? in
-            var lines: [String] = []
-            let question = entry.userTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !question.isEmpty { lines.append("我：" + question) }
-            // 剥标签，与页面上那个「复制」按钮同一条口径。
-            let answer = ActionTagParser.speakableTextFromStreamedReply(entry.assistantResponse)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !answer.isEmpty { lines.append("Wanna：" + answer) }
-            return lines.isEmpty ? nil : lines.joined(separator: "\n")
-        }
-        .joined(separator: "\n\n")
-
-        guard !conversationText.isEmpty else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(conversationText, forType: .string)
-
-        copyFullConversationDidSucceed = true
-        copyFullConversationResetTask?.cancel()
-        copyFullConversationResetTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.4))
-            guard !Task.isCancelled else { return }
-            copyFullConversationDidSucceed = false
-        }
-    }
-
 }
 
 // MARK: - Settings area

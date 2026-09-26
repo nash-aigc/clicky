@@ -84,7 +84,13 @@ struct HomeSpaceSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // **顶部那一条 = 搜索 + 新建 + 录音**（2026-09-26 用户重排）。
+            // **「录音」在最上面那一行、靠右**（用户 2026-09-26：「放在上面，不应该跟搜索、
+            // 添加按钮放在一行…在添加按钮的上面」）。它与窗口那几颗按钮同一条带子 ——
+            // 面板顶边就是屏幕顶边，刘海占着上面 32pt，所以这一行也要让开它。
+            sidebarRecordingRow
+                .padding(.top, NotchSupport.sheetHeaderTopInset - 34)
+
+            // **顶部那一条 = 搜索 + 新建**。
             //
             // 它同时承担另一件事：**让左列的分割线落在与右列同一个 y 上**。所以这一块
             // 的高度不是"内容多高就多高"，而是 `contentColumnHeaderRuleY` 减掉让开刘海
@@ -117,10 +123,12 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - 顶部那一条（搜索 · 新建 · 录音）
 
-    /// 搜索框 + 「＋」（新建主对话）+ 「录音」。
+    /// 搜索框 + 「＋」（新建主对话）。**「录音」不在这行了** —— 用户 2026-09-26：
+    /// 「录音按钮应该放在上面，不应该跟搜索、添加按钮放在一行…也就是在添加按钮的上面」
+    /// （见 `sidebarRecordingRow`）。
     ///
     /// 高度**由那条分割线倒推**：`contentColumnHeaderRuleY - sheetHeaderTopInset`。所以
-    /// 搜索框跟着变高（用户：「左侧输入框高度增大」），三颗都在这条带子里垂直居中。
+    /// 搜索框跟着变高（用户：「左侧输入框高度增大」），两颗都在这条带子里垂直居中。
     private var sidebarHeaderBand: some View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
@@ -151,14 +159,6 @@ struct HomeSpaceSidebarView: View {
                 sessionsModel.createSession()
                 agentSessionManager.selectedSidebarSection = .conversations
             }
-
-            // **「录音」搬到侧栏顶部的右侧、靠右对齐**（用户 2026-09-26：「录音按钮放在
-            // 左侧边栏，顶部的右侧，靠右对齐」）—— 它原先挤在左下角那三行里。
-            sidebarBandIconButton(systemImage: "record.circle",
-                                  help: "录音历史与设置") {
-                SoundEffectPlayer.shared.play(.recordingEditorOpened)
-                openRecordingSettingsAction()
-            }
         }
         .padding(.horizontal, 10)
         // **顶部要留出刘海那条带子**（用户 2026-09-26：「搜索框有点太高了，太靠上边了」）。
@@ -168,7 +168,43 @@ struct HomeSpaceSidebarView: View {
         .frame(height: NotchSupport.contentColumnHeaderRuleY, alignment: .top)
     }
 
-    /// 顶带里的一颗圆形图标按钮（＋ 与 录音 同一套形状）。
+    /// 「录音」那一颗 —— **在搜索行之上、靠右对齐**，与窗口那几颗按钮同一条带子。
+    ///
+    /// 用户 2026-09-26：「录音按钮应该放在上面，不应该跟搜索、添加按钮放在一行，它应该
+    /// 放在上面，类似于侧边栏按钮一样的位置，但靠右对齐，也就是在添加按钮的上面，
+    /// 用长方形加圆角的形式」，图标用音波：「音波可以做成一个长条，能够占满类似长方形的
+    /// 区域；圆环是圆形…颜色也是白色」。
+    ///
+    /// 所以它是一条**扁的长方形**（不是圆圈），靠右缘对齐到与 ＋ 相同的列上。
+    private var sidebarRecordingRow: some View {
+        HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            Button {
+                SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                openRecordingSettingsAction()
+            } label: {
+                Image(systemName: "waveform")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
+                    .frame(width: 58, height: NotchSupport.contentHeaderControlHeight - 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .help("录音历史与设置")
+        }
+        .padding(.horizontal, 10)
+    }
+
+    /// 顶带里的一颗圆形图标按钮（＋ 用的那一套形状）。
     private func sidebarBandIconButton(systemImage: String,
                                        help: String,
                                        action: @escaping () -> Void) -> some View {
@@ -226,13 +262,15 @@ struct HomeSpaceSidebarView: View {
 
             Text(card.title)
                 .font(.system(size: 13.5, weight: .semibold))
-                .foregroundColor(.white)
+                // 标题也跟着亮 / 暗（见下面那段"选中的那张要明显不同"）：
+                // 只高亮底和边、字还是同一个亮度，两张卡片看着仍然是一对。
+                .foregroundColor(isCurrentCard ? .white : .white.opacity(0.55))
                 .lineLimit(1)
 
             if card.kind == .claudeCode {
                 Text("Claude Code")
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundColor(.white.opacity(0.45))
+                    .foregroundColor(.white.opacity(isCurrentCard ? 0.45 : 0.28))
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1.5)
                     .background(Capsule().fill(Color.white.opacity(0.08)))
@@ -240,18 +278,9 @@ struct HomeSpaceSidebarView: View {
 
             Spacer(minLength: 4)
 
-            // **「通话」**（用户 2026-09-26：「左侧卡片的右侧，分别添加（通话的图标按钮），
-            // 点击后=自动切换成（语音：全双工语音模式），也能在设置页面设置（全双工、
-            // 三段式，等音色设置）」）。
-            //
-            // 它做的三件事：把这张卡片的模式切到**语音**、把引擎备成**全双工语音**、
-            // 然后切到这张卡片（右列随之显示语音页）。**不自动连接** —— 他说的那一下是
-            // 「切换成」，开麦留给他按页头那颗「连接」。引擎与音色都能在「设置 → 角色」
-            // 里改（那一页的聊天节就是干这个的）。
-            callButton(card)
-
-            // **「设为默认」只出现在主循环卡片上。** 用户明确要求「新建的 Claude Code
-            // 类型卡片不可设为默认」—— 兜底那条线不是「我的主对话」。
+            // **「设为默认」在左，「通话」在最右**（用户 2026-09-26：「把右侧的收藏按钮放在
+            // 通话按钮的左侧，把通话按钮放在右侧」）。只出现在主循环卡片上 —— 用户明确
+            // 要求「新建的 Claude Code 类型卡片不可设为默认」，兜底那条线不是「我的主对话」。
             if card.kind == .mainLoop {
                 Button(action: {
                     SoundEffectPlayer.shared.play(.sidebarButton)
@@ -262,7 +291,7 @@ struct HomeSpaceSidebarView: View {
                         .foregroundColor(card.isDefault
                                          ? DS.Colors.success
                                          : .white.opacity(0.40))
-                        .frame(width: 20, height: 20)
+                        .frame(width: 22, height: 22)
                         .background(Circle().fill(Color.white.opacity(card.isDefault ? 0.10 : 0.05)))
                 }
                 .buttonStyle(.plain)
@@ -271,6 +300,16 @@ struct HomeSpaceSidebarView: View {
                       ? "这条是默认主对话：屏幕快捷键发出去的问题进它"
                       : "设为默认：屏幕快捷键发出去的问题进这一条主对话")
             }
+
+            // **「通话」**（用户 2026-09-26：「左侧卡片的右侧，分别添加（通话的图标按钮），
+            // 点击后=自动切换成（语音：全双工语音模式），也能在设置页面设置（全双工、
+            // 三段式，等音色设置）」）。
+            //
+            // 它做的三件事：把这张卡片的模式切到**语音**、把引擎备成**全双工语音**、
+            // 然后切到这张卡片（右列随之显示语音页）。**不自动连接** —— 他说的那一下是
+            // 「切换成」，开麦留给他按页头那颗「连接」。引擎与音色都能在「设置 → 角色」
+            // 里改（那一页的聊天节就是干这个的）。
+            callButton(card)
         }
         // **一张卡片就该长得像卡片**（用户 2026-09-26：「应该设计成一个卡片的样式吧？
         // 或者是你把它这个单行的样式高度大一点，现在都是不太方便点击」）。
@@ -279,9 +318,14 @@ struct HomeSpaceSidebarView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 9)
         .frame(maxWidth: .infinity, alignment: .leading)
+        // **选中的那张要与另一张明显不同**（用户 2026-09-26：「现在这两个卡片样式一样，
+        // 应该让它们不一样：用户选中哪张卡片，哪张卡片背景跟边缘高亮，另一张卡片就是暗色，
+        // 用来区分」）。原来是 0.10 / 0.05 两档白 —— 在深色底上几乎看不出差别（截图里两张
+        // 卡片确实长得一样）。现在拉开成**亮面 + accent 边**对**暗面 + 几乎无边**，
+        // 标题与状态点也跟着亮 / 暗。
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.white.opacity(isCurrentCard ? 0.10 : 0.05))
+                .fill(isCurrentCard ? Color.white.opacity(0.14) : Color.black.opacity(0.22))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 9, style: .continuous)

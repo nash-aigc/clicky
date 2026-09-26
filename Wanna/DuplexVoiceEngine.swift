@@ -268,7 +268,17 @@ final class DuplexVoiceEngine {
     ///   - voiceID: 这一场用哪个音色。**必须是能力层校验过的那个**
     ///     （`VoiceCatalog.capability(...).effectiveVoiceID`）：跨族音色会让整条
     ///     `session.update` 被拒，而那句错误完全不提音色（见下面的错误分支）。
-    func start(role: VoiceChatRole, model: String, voiceID: String, systemPrompt: String) async throws {
+    /// `speaksAudio`（2026-09-26）：语音页那颗「声音」关掉时传 false —— **让模型只出文字**。
+    ///
+    /// 用户的原话是「如果声音按钮关闭，相当于语音模型只输出文本就可以了。注意是调整语音模型
+    /// 的输出，不是调整系统的扬声器」—— 所以改的是这里的 `modalities`，不是本地静音。
+    /// 官方文档写明 `modalities` 支持 `["text"]`（仅输出文本）或 `["text","audio"]`
+    ///（这一族与 `RealtimeTextUnderstandingClient` 是同一份协议，那边已经在用 `["text"]`）。
+    func start(role: VoiceChatRole,
+               model: String,
+               voiceID: String,
+               systemPrompt: String,
+               speaksAudio: Bool = true) async throws {
         guard let resolvedSpeechRole = ModelConfigurationStore.snapshot().status(of: .speech).resolvedRole else {
             throw BailianTTSClientError(message: "还没有配置「说」这个角色（设置 → 模型），无法开始全双工语音。")
         }
@@ -331,11 +341,12 @@ final class DuplexVoiceEngine {
             "session": sessionConfiguration(
                 voice: voiceID,
                 model: model,
-                systemPrompt: systemPrompt
+                systemPrompt: systemPrompt,
+                speaksAudio: speaksAudio
             )
         ])
         // 这一行是「音色到底有没有生效」的判据：它必须等于用户在音色面板里点的那个。
-        print("💬 全双工会话：model=\(model) voice=\(voiceID)")
+        print("💬 全双工会话：model=\(model) voice=\(voiceID) 声音=\(speaksAudio ? "开" : "关（只要文字）")")
 
         // **等配置确认再继续**：装 tap、返回调用方（随后就是问候语）都必须发生在
         // 服务端应用完配置**之后** —— 否则问候语的 response.create 会被静默丢弃，
@@ -363,9 +374,13 @@ final class DuplexVoiceEngine {
     ///   这是实测第一句失败的直接原因（片段结束在语音上，没有安静尾巴）。
     /// · `max_history_turns` 只属于这一族（全模态没有这个参数），所以放在这里而不是
     ///   当成通用字段。
-    private func sessionConfiguration(voice: String, model: String, systemPrompt: String) -> [String: Any] {
+    private func sessionConfiguration(voice: String,
+                                      model: String,
+                                      systemPrompt: String,
+                                      speaksAudio: Bool) -> [String: Any] {
         var configuration: [String: Any] = [
-            "modalities": ["text", "audio"],
+            // 关掉「声音」= 只出文字（见 `start` 上那段）：模型不再合成音频。
+            "modalities": speaksAudio ? ["text", "audio"] : ["text"],
             "voice": voice,
             "audio": [
                 "input": ["format": ["type": "pcm", "sample_rate": Int(Self.uplinkSampleRate)]],

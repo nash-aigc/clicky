@@ -122,33 +122,33 @@ struct CardChatModeBar: View {
             preferences.setMode(mode, forCardID: cardID)
             onModeSelected?(mode)
         } label: {
-            HStack(spacing: 4) {
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 9, weight: .bold))
-                }
-                Text(mode.displayName)
-                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
-                    .lineLimit(1)
-                    .fixedSize()
-            }
-            .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.55))
-            .padding(.horizontal, 8)
-            // **高度与页头那排按钮完全相同**（用户：「所有的模式按钮，高度增大，让它们
-            // 完全相同」）—— 取的是同一个常量，不是又写一个数。
-            .frame(height: NotchSupport.contentHeaderControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color.white.opacity(isSelected ? 0.10 : 0.05))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(isSelected
-                                  ? DS.Colors.success.opacity(0.55)
-                                  : Color.white.opacity(0.08),
-                                  lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            // **不再用对号表示选中**（用户 2026-09-26：「用户选中时不要在前面加对号，
+            // 而是通过边缘高亮以及按钮高亮的方式来显示」）。选中 = 底色更亮 + 绿色描边 +
+            // 绿字；未选中 = 几乎透明的底 + 极淡的边。对号还会让被选中的那颗**变宽**，
+            // 于是它右边那几颗的位置会跟着挪 —— 现在四颗宽度恒定，点起来不跳。
+            Text(mode.displayName)
+                .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.55))
+                .padding(.horizontal, 10)
+                // **高度与页头那排按钮完全相同**（用户：「所有的模式按钮，高度增大，让它们
+                // 完全相同」）—— 取的是同一个常量，不是又写一个数。
+                .frame(height: NotchSupport.contentHeaderControlHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelected
+                              ? DS.Colors.success.opacity(0.16)
+                              : Color.white.opacity(0.05))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(isSelected
+                                      ? DS.Colors.success.opacity(0.75)
+                                      : Color.white.opacity(0.08),
+                                      lineWidth: isSelected ? 1.5 : 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .pointerCursor()

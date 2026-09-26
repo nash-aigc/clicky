@@ -382,74 +382,35 @@ struct VoiceChatSessionView: View {
     private var header: some View {
         VStack(spacing: 0) {
 
-            // ── 模式行（2026-09-26）────────────────────────────────────────
-            // 从卡片进来时，最上面这排是共用的 `[角色][文本][图文][语音][视频]` ——
-            // 用户把它钉在了「右侧分割线上面，左侧对齐」，而这一带正是代码里叫
-            // 「分割线**上方**」的那一格（见下面那段注释）。
+            // ── 分割线**上方**：只有一行（用户 2026-09-26 的第 4 条）──────────
+            //   左：`[角色][文本][图文][语音][视频][通话图标]` —— **靠左对齐**
+            //   右：摄像头 · 屏幕 · 语速 —— **靠右对齐**
             //
-            // **它取代了原来那个 `[视频聊天 | 语音聊天]` 分段控件**：那两个按钮本来就是
-            // 这条分流，现在「语音」「视频」两个模式就是它，多出来的是「文本」「图文」——
-            // 点它们会换页（回到这一页时聊天类型又跟着回来）。
+            // 他这一条把原来的两行合成一行：「摄像头、屏幕、语速这些按钮全部显示到分格线的
+            // 上面，也就是说分格线上面只有一行…右侧是摄像头、屏幕、语速、音色」。
+            // 而**音色这一格在这一页不画** —— 「当前连接按钮右侧、分割线上方的音色不需要
+            // 显示，因为下面已经有了」（下面那两行各自带一个音色按钮，而且是按行服务的）。
+            //
+            // 通话按钮：**图标、无文字、只在语音 / 视频模式下出现**，位置在四颗模式右边
+            // （「把『连接』按钮放在『语音或视频』的右侧…该按钮没有文字，只有一个图标」）。
+            // 这一页本来就是语音 / 视频两个模式的地盘，所以它在这里恒显示。
             if let cardID {
                 CardChatModeBar(cardID: cardID,
                                 cardKind: cardKind,
+                                leadingAccessory: AnyView(connectButton),
+                                trailingAccessory: AnyView(headerTrailingControls),
                                 onModeSelected: { _ in syncChannelToCardChatMode() },
                                 preferences: cardChatPreferences)
-            }
-
-            // ── 分割线**上方**（用户 2026-09-24 的第三次重排）──────────────
-            //   左：`[视频聊天 | 语音聊天]` 分段控件 + 当前模式的绿色文字
-            //       （从卡片进来时那一格已经搬到上面那排模式里，这里只剩音色）
-            //   右：摄像头 · 屏幕 · 语速（靠右，依次）
-            //
-            // **语速不受分流影响**（用户明确要求：它是全局的，任何分流都不改它），
-            // 所以它只是位置在这，行为与聊天类型无关。
-            HStack(spacing: 8) {
-                // 不从卡片进来时（旧的「语音聊天」分区）才需要它 —— 那条路上没有模式条。
-                if cardID == nil {
+            } else {
+                // 不从卡片进来（旧的「语音聊天」分区，现在已无入口）：保留原来的分段控件。
+                HStack(spacing: 8) {
                     channelSegmentedControl
+                    Spacer(minLength: 8)
+                    headerTrailingControls
                 }
-
-                // **连接放最左侧**（用户 2026-09-26：「（语音、视频）模式，连接通话的按钮，
-                // 放最左侧，右侧是其他的」）。
-                connectButton
-
-                currentVoiceLabel
-
-                Spacer(minLength: 8)
-
-                // **语音模式自动隐藏摄像头 / 屏幕**（用户：「语音聊天，自动隐藏（屏幕、
-                // 摄像头）的按钮」）：语音那一档永远没有画面，留两颗灰按钮只是占地方。
-                // 判据用的是模式自己的能力位，不是再看一遍聊天类型 —— 一处定义。
-                if showsDeviceToggles {
-                    deviceToggleButton(
-                        title: "摄像头",
-                        systemImage: "video",
-                        isOn: controller.isCameraEnabled,
-                        isSupported: controller.selectedModeSupportsCamera,
-                        unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了摄像头",
-                        help: "摄像头（下次连接生效）"
-                    ) {
-                        controller.setCameraEnabled(!controller.isCameraEnabled)
-                    }
-
-                    deviceToggleButton(
-                        title: "屏幕",
-                        systemImage: "rectangle.on.rectangle",
-                        isOn: controller.isScreenSharingEnabled,
-                        isSupported: controller.selectedModeSupportsScreenSharing,
-                        unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了屏幕",
-                        help: "屏幕（下次连接生效）"
-                    ) {
-                        controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
-                    }
-                }
-
-                speedMenuButton
-                    .background(headerAnchorReporter(.speed))
+                .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+                .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
             }
-            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-            .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
 
             // ── 分割线**下方**：两行，各是一整套选择 ──────────────────────
             //   全双工行：一个模型包办识别/理解/表达
@@ -480,6 +441,42 @@ struct VoiceChatSessionView: View {
         // 而这一页这时正挂在屏幕上。
         .onChange(of: currentCardChatMode) { _, _ in
             syncChannelToCardChatMode()
+        }
+    }
+
+    /// 分割线上方**靠右那一组**：摄像头 · 屏幕 · 语速。
+    ///
+    /// 摄像头 / 屏幕只在吃图的模式（视频）下画 —— 用户 2026-09-26：「语音聊天，自动隐藏
+    /// （屏幕、摄像头）的按钮」。语速是全局的（任何分流都不改它），所以恒显示。
+    @ViewBuilder
+    private var headerTrailingControls: some View {
+        HStack(spacing: 8) {
+            if showsDeviceToggles {
+                deviceToggleButton(
+                    title: "摄像头",
+                    systemImage: "video",
+                    isOn: controller.isCameraEnabled,
+                    isSupported: controller.selectedModeSupportsCamera,
+                    unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了摄像头",
+                    help: "摄像头（下次连接生效）"
+                ) {
+                    controller.setCameraEnabled(!controller.isCameraEnabled)
+                }
+
+                deviceToggleButton(
+                    title: "屏幕",
+                    systemImage: "rectangle.on.rectangle",
+                    isOn: controller.isScreenSharingEnabled,
+                    isSupported: controller.selectedModeSupportsScreenSharing,
+                    unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了屏幕",
+                    help: "屏幕（下次连接生效）"
+                ) {
+                    controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
+                }
+            }
+
+            speedMenuButton
+                .background(headerAnchorReporter(.speed))
         }
     }
 
@@ -530,7 +527,7 @@ struct VoiceChatSessionView: View {
         switch controller.connectionPhase {
         case .connected:
             return AnyView(headerActionButton(
-                title: "挂断",
+                title: nil,
                 systemImage: "phone.down.fill",
                 tint: Color(red: 0.95, green: 0.42, blue: 0.40),
                 help: "断开这一场语音聊天（也可以点刘海右侧那颗红色电话）"
@@ -539,7 +536,7 @@ struct VoiceChatSessionView: View {
             })
         case .connecting:
             return AnyView(headerActionButton(
-                title: "连接中…",
+                title: nil,
                 systemImage: "ellipsis",
                 tint: Color(red: 0.98, green: 0.73, blue: 0.14),
                 help: "正在建立连接",
@@ -548,7 +545,7 @@ struct VoiceChatSessionView: View {
             ))
         case .idle:
             return AnyView(headerActionButton(
-                title: "连接",
+                title: nil,
                 systemImage: "phone.fill",
                 tint: DS.Colors.success,
                 help: "开始这一场语音聊天"
@@ -578,7 +575,9 @@ struct VoiceChatSessionView: View {
 
     /// 页头那颗动作按钮（连接 / 连接中 / 挂断）。形状与 `deviceToggleButton` 同一套
     /// —— 它们并排站在一起，圆角与高度必须是同一个来源。
-    private func headerActionButton(title: String,
+    /// `title` 传 nil = **只要图标**（通话那颗就是：用户 2026-09-26「该按钮没有文字，
+    /// 只有一个图标，让用户知道它是一个通话功能」）。
+    private func headerActionButton(title: String?,
                                     systemImage: String,
                                     tint: Color,
                                     help: String,
@@ -587,10 +586,12 @@ struct VoiceChatSessionView: View {
         Button(action: action) {
             HStack(spacing: 5) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 11, weight: .medium))
-                Text(title)
-                    .font(.system(size: Self.headerControlFontSize, weight: .medium))
-                    .lineLimit(1)
+                    .font(.system(size: title == nil ? 13 : 11, weight: .medium))
+                if let title {
+                    Text(title)
+                        .font(.system(size: Self.headerControlFontSize, weight: .medium))
+                        .lineLimit(1)
+                }
             }
             .foregroundColor(isEnabled ? tint : tint.opacity(0.55))
             .padding(.horizontal, Self.headerControlHorizontalPadding)
@@ -2077,6 +2078,79 @@ struct VoiceChatSessionView: View {
     /// 钮」). Return sends; while the session is down `submitComposerDraft`
     /// declines and the draft is kept, so nothing written before connecting is
     /// swallowed (the placeholder says why).
+    /// 语音 / 视频页输入框上方那一行（2026-09-26）。
+    ///
+    /// 用户：「语音模式跟视频模式，在输入框的上面也应该有连续对话、临时对话新建这样的按钮，
+    /// 也有声音的按钮」。这一页只有两件是它自己必须有的：
+    ///
+    ///   * **新建** —— 换一段对话（与另外两页同一个动作，同一个 `createSession`）；
+    ///   * **声音** —— 关掉就是**语音模型只出文字**（他特意强调「注意是调整语音模型的输出，
+    ///     不是调整系统的扬声器」）。
+    ///
+    /// 「连续对话 / 临时对话」这一对**没有搬过来**：这一页的会话本来就绑在这张卡片上、
+    /// 每一轮都写回它的历史，没有第二个"临时"的去处 —— 摆两颗按不动的按钮比不摆更糟。
+    /// 他要的话再说，那是一个新的子系统（临时语音会话不写历史），不是一行 UI。
+    private var voiceComposerControlsRow: some View {
+        HStack(spacing: 6) {
+            composerChip(title: "新建",
+                         systemImage: "plus",
+                         isOn: false,
+                         help: "新建主对话（当前这条会自动归档）") {
+                // 直接落 store：它自己会**先把当前这条归档**再追加新的（与侧栏那颗「＋」
+                // 同一个动作、同一个函数），并存完发通知 —— `ConversationSessionsModel`
+                // 收到通知就重载，所以界面照样立刻更新。
+                ConversationSessionsStore.createSession()
+            }
+
+            Spacer(minLength: 6)
+
+            Text("针对语音对话")
+                .font(.system(size: 10.5))
+                .foregroundColor(.white.opacity(0.38))
+                .fixedSize()
+
+            // 开 = 正常说话；关 = 只出文字（模型那边 `modalities: ["text"]`）。
+            composerChip(title: "声音",
+                         systemImage: controller.speaksReplies ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                         isOn: controller.speaksReplies,
+                         help: controller.speaksReplies
+                             ? "语音模型正在发声（点击：只要文字，不出声）"
+                             : "语音模型只出文字（点击：恢复发声）") {
+                controller.speaksReplies.toggle()
+            }
+        }
+    }
+
+    /// 一行里的一颗（形状与另外两页那排一致：11.5pt 字、7pt 圆角、亮底 + 描边）。
+    private func composerChip(title: String,
+                              systemImage: String,
+                              isOn: Bool,
+                              help: String,
+                              action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: systemImage).font(.system(size: 10.5))
+                Text(title).font(.system(size: 11.5))
+            }
+            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.65))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(isOn ? 0.10 : 0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(isOn ? DS.Colors.success.opacity(0.5) : Color.white.opacity(0.08),
+                                  lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
+    }
+
     private var composerRow: some View {
         MessageComposerField(
             placeholder: composerPlaceholder,
@@ -2091,7 +2165,8 @@ struct VoiceChatSessionView: View {
             // Wanna 这边没有单条回复的中断指令，能停的
             // 只有整场会话 —— 所以这一颗按钮在这页上等于挂断。
             isResponding: controller.connectionPhase != .idle,
-            onStop: { controller.disconnectCurrentSession() }
+            onStop: { controller.disconnectCurrentSession() },
+            controlsRow: AnyView(voiceComposerControlsRow)
         )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 10)

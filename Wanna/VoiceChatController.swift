@@ -684,6 +684,20 @@ final class VoiceChatController: ObservableObject {
         selectChannel(channel)
     }
 
+    /// **语音 / 视频模式下「声音」开着吗** —— 落到设置里，两个引擎都读它。
+    ///
+    /// 用户：「如果声音按钮关闭，相当于语音模型只输出文本就可以了。注意是调整语音模型的输出，
+    /// 不是调整系统的扬声器」。所以它**不是**本地静音：三段式那一侧是"不合成、不播放"，
+    /// 全双工那一侧是给模型的 `modalities` 只留文字。
+    var speaksReplies: Bool {
+        get { AppSettingsStore.snapshot().voiceChatSpeaksReplies }
+        set {
+            var settings = AppSettingsStore.snapshot()
+            settings.voiceChatSpeaksReplies = newValue
+            try? AppSettingsStore.save(settings)
+        }
+    }
+
     /// 这一轮写回卡片的历史。
     ///
     /// 用户：「聊天记录和会话记录显示在右侧，并添加到主模型或 Claude Code 模型的历史记录中」
@@ -1190,7 +1204,9 @@ final class VoiceChatController: ObservableObject {
                 role: role,
                 model: role.duplexModelID ?? VoiceCatalog.defaultDuplexModel,
                 voiceID: capability.effectiveVoiceID,
-                systemPrompt: role.systemPrompt
+                systemPrompt: role.systemPrompt,
+                // 关掉「声音」= 让模型只出文字（`modalities: ["text"]`）。
+                speaksAudio: speaksReplies
             )
             isSessionLive = true
             isDuplexSessionLive = true
@@ -1710,6 +1726,7 @@ final class VoiceChatController: ObservableObject {
             role: engineRole,
             preset: currentPreset,
             channel: currentChannel,
+            speaksReplies: speaksReplies,
             callbacks: CascadeTurnCallbacks(
                 onAnswerTextChanged: { [weak self] answerSoFar in
                     self?.updateAnswerEntry(answerEntryID, text: answerSoFar)

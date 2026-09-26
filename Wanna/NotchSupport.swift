@@ -343,12 +343,37 @@ nonisolated enum NotchSupport {
         sidebarSectionSwitcherButtonHeight + sidebarSectionSwitcherBottomPadding
     }
 
+    // MARK: - 两列的宽度
+
+    /// 左列（侧栏）的宽度。
+    ///
+    /// 用户 2026-09-26：「左侧卡片的宽度再增加 40%」—— 245 × 1.4 ≈ 343。
+    /// 卡片行右侧现在有两颗按钮（设为默认星 + 通话），245 那点宽度把标题挤得只剩几个字。
+    static let expandedSidebarWidth: CGFloat = 343
+
+    /// 右列的宽度 —— **它是这次加宽的不变量**：侧栏变宽不该让右列变窄。
+    ///
+    /// 右列那一行要放下「角色 + 四个模式 + 通话」和「摄像头 + 屏幕 + 语速 + 音色」，
+    /// 而 810 − 343 = 466 装不下（实测相加约 566pt）。所以整块面板跟着加宽同样的
+    /// 98pt：右列仍是它原来的 565，页头那几排的排布一个数都不用改。
+    static let contentColumnWidth: CGFloat = 565
+
+    /// 面板内两列之间的那条竖线。
+    static let columnDividerWidth: CGFloat = 1
+
     /// The expanded sheet's size — the expanded sheet is *large*, a real
-    /// main-window-sized surface (roughly 810×940pt), not a popover. Clamped
-    /// per screen so small displays still fit it below the menu bar.
+    /// main-window-sized surface, not a popover. Clamped per screen so small
+    /// displays still fit it below the menu bar.
+    ///
+    /// 宽度是**两列相加**（不是写死一个 810）：这样"侧栏加宽"就自动把面板加宽同样的
+    /// 数量，右列的内容一个都不用重排。
+    static var sheetContentWidth: CGFloat {
+        expandedSidebarWidth + columnDividerWidth + contentColumnWidth
+    }
+
     static func expandedSheetSize(on screen: NSScreen) -> CGSize {
         CGSize(
-            width: min(810, screen.frame.width - 40),
+            width: min(sheetContentWidth, screen.frame.width - 40),
             height: expandedSheetHeight(on: screen)
         )
     }
