@@ -1396,9 +1396,6 @@ final class LongFormRecorderController: ObservableObject {
     /// 检测节奏：开始后 **2 秒**第一次，之后**每 3 秒**一次（用户第 4 条）。
     private static let notionKeywordFirstCheckSeconds: Double = 2
     private static let notionKeywordCheckIntervalSeconds: Double = 3
-    /// 只看开头 / 末尾各多少字（「开头指前 20 个字以内（可能前面有口头语），末尾同理」）。
-    private static let notionKeywordEdgeCharacterCount = 20
-
     /// 开始跑那条检测循环。**只有开了总闸才起表** —— 关着时连表都没有。
     private func startNotionKeywordWatch() {
         guard AppSettingsStore.snapshot().notionNoteEnabled else { return }
@@ -1407,6 +1404,11 @@ final class LongFormRecorderController: ObservableObject {
         notionNoteCancelled = false
         notionNoteSaved = false
         notionNoteFailure = nil
+        notionWantsClipboard = false
+        notionClipboardCancelled = false
+        notionScreenCancelled = false
+        notionReferenceScreenshots = []
+        notionScreenMentionsHandled = 0
         // 先 2 秒一次，之后每 3 秒 —— 用一个一次性的表接上重复的表，语义最直白。
         notionKeywordTimer = Timer.scheduledTimer(
             withTimeInterval: Self.notionKeywordFirstCheckSeconds, repeats: false) { [weak self] _ in
@@ -1426,17 +1428,65 @@ final class LongFormRecorderController: ObservableObject {
         notionKeywordTimer = nil
     }
 
-    /// **只看开头与末尾**（用户：「只检测开头和末尾，中间内容忽略」）。
+    /// **「剪贴板」那颗**：这一场不参考剪贴板了。
+    ///
+    /// 用户 2026-09-27：「点击这个按钮之后…就进入正常的 notion 笔记的保存，也就是说用户的
+    /// 录音当做一个笔记，而不当做一个目标、不当做任务来处理」—— 所以取消的是**参考材料**，
+    /// 这一场照旧存成笔记。
+    func cancelNotionClipboardReference() {
+        notionClipboardCancelled = true
+        publishDiagnostic("用户点了「剪贴板」：这一场不参考剪贴板")
+    }
+
+    /// **「屏幕」那颗**：这一场不参考屏幕（已截的图也不再送）。
+    func cancelNotionScreenReference() {
+        notionScreenCancelled = true
+        notionReferenceScreenshots = []
+        publishDiagnostic("用户点了「屏幕」：这一场不参考屏幕内容")
+    }
+
+    /// 点「已保存笔记」= 打开那一页（用户第 7 条）。
+    func openNotionNotePage() {
+        let settings = AppSettingsStore.snapshot()
+        let configured = settings.notionNoteOpenURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let target = configured.isEmpty
+            ? NotionNoteClient.normalizedPageID(settings.notionNotePageID).map {
+                "https://www.notion.so/" + $0.replacingOccurrences(of: "-", with: "")
+              }
+            : configured
+        guard let target, let url = URL(string: target) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 只看**开头与末尾各 100 字**（用户 2026-09-27 放宽后的话：「开头可能是前 100 个字…
+    /// 就是前这么 10 句话，或者前 15 秒钟。都可以」）。
+    private static let notionKeywordEdgeCharacterCount = 100
+
+    /// 参考材料：说了「参考剪贴板 / 复制内容」这类词就把剪贴板拿来当材料。
+    @Published private(set) var notionWantsClipboard = false
+    /// 参考材料：说到「参考屏幕」时**当场**截下来的图（说几次截几张）。
+    @Published private(set) var notionReferenceScreenshots: [Data] = []
+    /// 用户按需取消掉的参考（按钮点了就置真，随后不再采集）。
+    @Published private(set) var notionClipboardCancelled = false
+    @Published private(set) var notionScreenCancelled = false
+
+    /// 该不该在刘海左侧显示第二 / 第三颗按钮。
+    var showsClipboardButton: Bool {
+        showsNotionNoteButtons && notionWantsClipboard && !notionClipboardCancelled && !notionNoteSaved
+    }
+    var showsScreenButton: Bool {
+        showsNotionNoteButtons && !notionReferenceScreenshots.isEmpty
+            && !notionScreenCancelled && !notionNoteSaved
+    }
+
+    /// **开头与末尾**各 100 字里，有没有命中这一组关键词的任意一个。
     ///
     /// 比较前把空格与标点全去掉：转写是 AI 出来的，标点常常与嘴里说的不一致
-    ///（用户第 4 条的原话：「检测时去除空格和标点符号，因为内容是 AI 转写的」）。
-    /// 所以「保存 notion」这条关键词去掉空格之后是「保存notion」，两种写法都命中 ✓。
-    nonisolated static func transcriptMentionsNotionKeyword(_ transcriptText: String,
-                                                            keywords: [String],
-                                                            edgeCharacterCount: Int = 20) -> Bool {
-        func normalized(_ text: String) -> String {
-            text.filter { $0.isLetter || $0.isNumber }
-        }
+    ///（用户第 4 条：「检测时去除空格和标点符号」）。
+    nonisolated static func transcriptMentions(_ keywords: [String],
+                                               in transcriptText: String,
+                                               edgeCharacterCount: Int) -> Bool {
+        func normalized(_ text: String) -> String { text.filter { $0.isLetter || $0.isNumber } }
         let normalizedTranscript = normalized(transcriptText)
         guard !normalizedTranscript.isEmpty else { return false }
         let head = String(normalizedTranscript.prefix(edgeCharacterCount))
@@ -1450,39 +1500,82 @@ final class LongFormRecorderController: ObservableObject {
     }
 
     private func checkNotionKeywords() {
-        guard AppSettingsStore.snapshot().notionNoteEnabled else { return }
-        guard !showsNotionNoteButtons else { return }
-        // 已经按住了取消/保存就不要再冒出来。
-        guard !notionNoteCancelled, !notionNoteSaved else { return }
-        let keywords = AppSettingsStore.snapshot().notionNoteKeywords
-            .split(whereSeparator: { $0 == "\n" }).map(String.init)
+        let settings = AppSettingsStore.snapshot()
+        guard settings.notionNoteEnabled, !notionNoteCancelled, !notionNoteSaved else { return }
         let transcript = transcriptPlainText + livePartialText
-        guard Self.transcriptMentionsNotionKeyword(transcript, keywords: keywords,
-                                                   edgeCharacterCount: Self.notionKeywordEdgeCharacterCount) else { return }
-        showsNotionNoteButtons = true
-        publishDiagnostic("检测到 Notion 关键词，刘海左侧显示保存 / 取消")
+        let window = Self.notionKeywordEdgeCharacterCount
+
+        // ① 总开关：说了「保存笔记」这类词，这件事才存在。
+        if !showsNotionNoteButtons {
+            let noteKeywords = settings.notionNoteKeywords.split(separator: "\n").map(String.init)
+            if Self.transcriptMentions(noteKeywords, in: transcript, edgeCharacterCount: window) {
+                showsNotionNoteButtons = true
+                publishDiagnostic("检测到 Notion 关键词，刘海左侧显示按钮")
+            } else {
+                return   // 总开关没开，后面两组都不看
+            }
+        }
+
+        // ② 参考剪贴板：说了「复制内容 / 选中内容」这类词。
+        if !notionWantsClipboard, !notionClipboardCancelled {
+            let clipboardKeywords = settings.notionClipboardKeywords.split(separator: "\n").map(String.init)
+            if Self.transcriptMentions(clipboardKeywords, in: transcript, edgeCharacterCount: window) {
+                notionWantsClipboard = true
+                publishDiagnostic("检测到「参考剪贴板」，剪贴板内容将作为参考材料")
+            }
+        }
+
+        // ③ 参考屏幕：**说到就当场截一张**（说几次截几张）。这里用的是**刚刚新出现的**
+        //    那段文字 —— 每命中一次就多一张，所以只在文本变长时才可能再截。
+        if !notionScreenCancelled {
+            let screenKeywords = settings.notionScreenKeywords.split(separator: "\n").map(String.init)
+            let mentionCount = Self.transcriptMentionCount(screenKeywords, in: transcript,
+                                                           edgeCharacterCount: window)
+            if mentionCount > notionScreenMentionsHandled {
+                let newMentions = mentionCount - notionScreenMentionsHandled
+                notionScreenMentionsHandled = mentionCount
+                for _ in 0..<newMentions { captureNotionReferenceScreenshot() }
+            }
+        }
     }
 
-    /// 现在**能不能**保存 —— Notion 那边（令牌 + 页面）配好了才有「保存」这一颗。
-    /// 没配好时只显示「取消笔记」（用户第 3 条："若只有一个按钮，则显示取消笔记"）。
-    var canSaveNotionNote: Bool {
-        let settings = AppSettingsStore.snapshot()
-        return !settings.notionNoteToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && NotionNoteClient.normalizedPageID(settings.notionNotePageID) != nil
+    /// 命中次数（不是"有没有命中"）—— 用户说几次「参考屏幕」就要几张图。
+    nonisolated static func transcriptMentionCount(_ keywords: [String],
+                                                   in transcriptText: String,
+                                                   edgeCharacterCount: Int) -> Int {
+        func normalized(_ text: String) -> String { text.filter { $0.isLetter || $0.isNumber } }
+        let normalizedTranscript = normalized(transcriptText)
+        guard !normalizedTranscript.isEmpty else { return 0 }
+        let head = String(normalizedTranscript.prefix(edgeCharacterCount))
+        let tail = String(normalizedTranscript.suffix(edgeCharacterCount))
+        var count = 0
+        for keyword in keywords {
+            let needle = normalized(keyword)
+            guard !needle.isEmpty else { continue }
+            count += head.components(separatedBy: needle).count - 1
+            count += tail.components(separatedBy: needle).count - 1
+        }
+        return count
     }
 
-    /// 点「已保存笔记」= 打开那一页（用户第 7 条）。
-    func openNotionNotePage() {
-        let settings = AppSettingsStore.snapshot()
-        let configured = settings.notionNoteOpenURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        let target = configured.isEmpty
-            ? NotionNoteClient.normalizedPageID(settings.notionNotePageID).map { "https://www.notion.so/\($0.replacingOccurrences(of: "-", with: ""))" }
-            : configured
-        guard let target, let url = URL(string: target) else { return }
-        NSWorkspace.shared.open(url)
+    /// 已经处理过的「参考屏幕」提及次数（避免同一句话反复截图）。
+    private var notionScreenMentionsHandled = 0
+
+    private func captureNotionReferenceScreenshot() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let captures = try? await CompanionScreenCaptureUtility.captureAllScreensAsJPEG() else {
+                self.publishDiagnostic("「参考屏幕」要截图，但这次截不到")
+                return
+            }
+            // 只用主屏那一张：用户说的是"当前的屏幕"，而多屏会一下子塞好几张。
+            guard let primary = captures.first?.imageData else { return }
+            self.notionReferenceScreenshots.append(primary)
+            self.publishDiagnostic("「参考屏幕」：已截第 \(self.notionReferenceScreenshots.count) 张")
+        }
     }
 
-    /// 「保存」：用户明确点了保存。什么都不点等于这个（用户第 3 条：默认保存）。
+    /// 「保存」：用户明确点了保存。什么都不点等于这个（用户第 3 条：默认保存）。    /// 「保存」：用户明确点了保存。什么都不点等于这个（用户第 3 条：默认保存）。
     func confirmNotionNote() {
         notionNoteCancelled = false
         publishDiagnostic("用户点了保存笔记")
@@ -1522,12 +1615,31 @@ final class LongFormRecorderController: ObservableObject {
             notionNoteFailure = "这一场没有文字，没写成笔记"
             return
         }
+        // **参考材料**：只有用户说了「复制内容 / 选中内容」或「参考屏幕」才去读 ——
+        // 没说要读的时候连剪贴板都不碰（用户第 8 条那一族的分寸：不该参考的绝不参考）。
+        var reference = NotionNoteReference()
+        if !notionClipboardCancelled && notionWantsClipboard {
+            reference = NotionNoteReferenceGatherer.readClipboard()
+        }
+        if !notionScreenCancelled {
+            reference.screenScreenshots = notionReferenceScreenshots
+        }
+        publishDiagnostic("Notion 参考材料：\(reference.logLine)")
+        let hasReference = !reference.isEmpty
+
         var summary = "录音笔记"
         var outline = trimmed
         var formatted: [NotionNoteClient.RichBlock] = []
         do {
+            // **两条分支的提示词在这里分家**（见 `NotionNoteReference.buildPrompt`）：
+            // 有材料时用户的话是"指令"，没有材料时用户的话是"要被整理的笔记本身"。
             let reply = try await RecordingPolishClient.organizeNotionNote(
-                prompt: settings.notionNotePrompt + "\n\n<transcript>\n" + trimmed + "\n</transcript>",
+                prompt: NotionNoteReferenceGatherer.buildPrompt(
+                    transcript: trimmed,
+                    reference: reference,
+                    formattingPrompt: settings.notionNotePrompt),
+                screenshotJPEG: reference.clipboardImageJPEG,
+                referenceImages: reference.screenScreenshots,
                 settings: settings)
             let parsed = Self.parseNotionNoteReply(reply)
             summary = parsed.summary
@@ -1538,6 +1650,7 @@ final class LongFormRecorderController: ObservableObject {
             publishDiagnostic("Notion 整理失败（只存原文）：\(error.localizedDescription)")
             outline = trimmed
         }
+        _ = hasReference   // 分支已在提示词里体现；这里留一个显式的名字给读代码的人。
 
         let title = Self.notionNoteTitle(for: Date())
         let request = NotionNoteClient.SaveRequest(

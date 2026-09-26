@@ -114,46 +114,54 @@ struct NotchRecordingBandView: View {
         }
     }
 
-    /// **一颗**按钮（用户 2026-09-27 的更正：「刘海左侧那两颗按钮没画出来【应该是 1 个】，
-    /// 录音时 = 取消按钮，成功后 = 成功保存按钮」）。
+    /// **最多三颗按钮**（用户 2026-09-27 的最终形状），从刘海那侧往左依次：
+    /// ①「取消」（总开关，点了全部取消、按普通录音走）②「剪贴板」（不参考剪贴板）
+    /// ③「屏幕」（不参考屏幕）。
     ///
-    /// - 检测到关键词之后：显示「取消」—— 点它这一场就按普通录音处理，不写 Notion；
-    ///   **不点就是默认保存**（用户第 3 条）。
-    /// - 保存成功之后：原地变成「已保存笔记 ✓」，点它打开那一页（用户第 7 条）。
-    ///
-    /// 所以它同时是"唯一的出口"和"结果回执"，位置不动、宽度不变。
+    /// 宽度从 `NotchSupport.notionNoteButtonSizes` 取 —— 与控制器接点击用的矩形**同一个数**，
+    /// 两边各写一份必然漂（这一条在这个仓库里已经踩过：画的位置和点的位置差 71pt）。
     @ViewBuilder
     private var notionNoteButtons: some View {
-        if recorder.notionNoteSaved {
-            notionNoteButton(title: "已保存笔记", systemImage: "checkmark",
-                             tint: DS.Colors.success) {
+        // 从右到左排：取消在最右（挨着刘海），屏幕在最左。
+        HStack(spacing: NotchSupport.notionNoteButtonSpacing) {
+            if recorder.showsScreenButton {
+                slotButton(index: 2, title: "屏幕", systemImage: "display",
+                           tint: Color(red: 0.95, green: 0.42, blue: 0.40),
+                           help: "不参考屏幕内容") {
+                    recorder.cancelNotionScreenReference()
+                }
+            }
+            if recorder.showsClipboardButton {
+                slotButton(index: 1, title: "剪贴板", systemImage: "doc.on.clipboard",
+                           tint: Color(red: 0.95, green: 0.42, blue: 0.40),
+                           help: "不参考剪贴板内容，这一场照旧存成笔记") {
+                    recorder.cancelNotionClipboardReference()
+                }
+            }
+            slotButton(index: 0,
+                       title: recorder.notionNoteSaved ? "已保存"
+                            : (recorder.isSavingNotionNote ? "保存中" : "取消"),
+                       systemImage: recorder.notionNoteSaved ? "checkmark"
+                            : (recorder.isSavingNotionNote ? "arrow.triangle.2.circlepath" : "xmark"),
+                       tint: recorder.notionNoteSaved ? DS.Colors.success
+                            : Color(red: 0.95, green: 0.42, blue: 0.40),
+                       help: recorder.notionNoteSaved ? "打开那一页" : "取消这条笔记（不点就会存进 Notion）") {
                 recorder.handleNotionNoteButtonTap()
             }
-        } else if recorder.isSavingNotionNote {
-            // 保存中：只报状态，点了也没有别的意思（真正的收尾在那条异步链上）。
-            notionNoteButton(title: "保存中", systemImage: "arrow.triangle.2.circlepath",
-                             tint: DS.Colors.success) {}
-        } else {
-            notionNoteButton(title: "取消", systemImage: "xmark",
-                             tint: Color(red: 0.95, green: 0.42, blue: 0.40)) {
-                recorder.handleNotionNoteButtonTap()
-            }
-            .help("取消这条笔记，这一场按普通录音处理（不点就会存进 Notion）")
         }
     }
 
-    private func notionNoteButton(title: String, systemImage: String, tint: Color,
-                                  action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage).font(.system(size: 11, weight: .semibold))
-                Text(title).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+    /// 一格按钮：宽度与高度都取自 `NotchSupport` 里那份尺寸表。
+    private func slotButton(index: Int, title: String, systemImage: String, tint: Color,
+                            help: String, action: @escaping () -> Void) -> some View {
+        let size = NotchSupport.notionNoteButtonSizes[index]
+        return Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: systemImage).font(.system(size: 10.5, weight: .semibold))
+                Text(title).font(.system(size: 12, weight: .medium)).lineLimit(1)
             }
             .foregroundColor(tint)
-            // **宽度写死**：三种状态的文案长短不同，不钉住按钮会左右跳、命中区也跟着漂
-            //（矩形在 `NotchSupport.notionNoteButtonFrame`，两边是同一个数）。
-            .frame(width: NotchSupport.notionNoteButtonSize.width,
-                   height: NotchSupport.notionNoteButtonSize.height)
+            .frame(width: size.width, height: size.height)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.black.opacity(0.78))
@@ -166,7 +174,7 @@ struct NotchRecordingBandView: View {
         }
         .buttonStyle(.plain)
         .pointerCursor()
-        .help(title)
+        .help(help)
     }
 
     private var band: some View {

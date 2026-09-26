@@ -364,28 +364,42 @@ nonisolated enum NotchSupport {
     /// 所以这两个矩形搬到这里：**两处读同一份**（录音带自己在收起态判、刘海控制器在展开态判），
     /// 各写一份必然漂。宽度取**两翼自己的宽度**（86 / 88），不含刘海 —— 含进去的话，
     /// 点刘海左边那十几个点就会被当成"点左翼"，展开态下"点刘海收起"就失灵了。
-    /// **「Notion 笔记」那颗按钮在屏幕上的矩形**（2026-09-27）。
+    /// **「Notion 笔记」那几颗按钮在屏幕上的矩形**（2026-09-27）。
     ///
-    /// 它画在录音带那块面板里，而那块面板收起态是**点击穿透**的（`ignoresMouseEvents = true`）
-    /// —— 所以画在里面的 SwiftUI 按钮**永远收不到点击**（用户报的「它是取消，但是我无法点击」
-    /// 就是这个）。与两翼同一个解法：**画在哪由视图算，点在哪由控制器的全局监听用屏幕矩形接**，
-    /// 两边读同一个函数。
+    /// 它们画在录音带那块面板里，而那块面板收起态是**点击穿透**的
+    ///（`ignoresMouseEvents = true`）—— 画在里面的 SwiftUI 按钮**永远收不到点击**
+    ///（用户报的「它是取消，但是我无法点击」就是这个）。与两翼同一个解法：**画在哪由视图算，
+    /// 点在哪由控制器的全局监听用屏幕矩形接**，两边读同一个函数。
     ///
-    /// 宽度**写死**：那三种状态（取消 / 保存中 / 已保存笔记）的文案长短不同，
-    /// 不钉住的话按钮会左右跳、命中区也跟着漂。
-    static let notionNoteButtonSize = CGSize(width: 104, height: 30)
+    /// **最多三颗**（用户 2026-09-27 的最终形状），从刘海那侧往左依次是：
+    /// ①「取消」（总开关）、②「剪贴板」、③「屏幕」。宽度写死 —— 三种状态的文案长短不同，
+    /// 不钉住按钮会左右跳、命中区也跟着漂。取消那颗比原来**窄了一半**（用户：
+    /// 「你现在这个取消按钮太大了，太宽了，至少宽度要缩小一半」）。
+    static let notionNoteButtonSizes: [CGSize] = [
+        CGSize(width: 52, height: 30),   // 取消（缩窄）
+        CGSize(width: 66, height: 30),   // 剪贴板
+        CGSize(width: 54, height: 30),   // 屏幕
+    ]
+    /// 两颗之间留的空。
+    static let notionNoteButtonSpacing: CGFloat = 6
 
-    static func notionNoteButtonFrame(on screen: NSScreen) -> CGRect? {
-        guard let notch = notchRect(on: screen) else { return nil }
+    /// 第 `indexFromTrailingEdge` 颗的矩形（0 = 最靠近刘海那颗 = 取消）。
+    /// 视图从右往左排，所以下标越大越靠左。
+    static func notionNoteButtonFrame(on screen: NSScreen,
+                                      indexFromTrailingEdge index: Int) -> CGRect? {
+        guard let notch = notchRect(on: screen), index >= 0, index < notionNoteButtonSizes.count else { return nil }
         let bandWidth = leadingWingWidth + notch.width + trailingWingWidth
         let panelWidth = min(bandWidth * 2, screen.frame.width - 40)
         let panelLeft = screen.frame.minX + notch.minX + notch.width / 2 - panelWidth / 2
         // 与视图里那段 `.padding(.trailing, bandWidth * 1.5 + 10)` 是**同一处算术**：
-        // 带子左边缘 = panelLeft + 0.5 × bandWidth，按钮右边缘再往左 10。
-        let rightEdge = panelLeft + bandWidth * 0.5 - 10
-        let top = screen.frame.maxY - notch.height + (notch.height - notionNoteButtonSize.height) / 2
-        return CGRect(x: rightEdge - notionNoteButtonSize.width, y: top,
-                      width: notionNoteButtonSize.width, height: notionNoteButtonSize.height)
+        // 带子左边缘 = panelLeft + 0.5 × bandWidth，第一颗的右边缘再往左 10。
+        var rightEdge = panelLeft + bandWidth * 0.5 - 10
+        for slot in 0..<index {
+            rightEdge -= (notionNoteButtonSizes[slot].width + notionNoteButtonSpacing)
+        }
+        let size = notionNoteButtonSizes[index]
+        let top = screen.frame.maxY - notch.height + (notch.height - size.height) / 2
+        return CGRect(x: rightEdge - size.width, y: top, width: size.width, height: size.height)
     }
 
     static func recordingWingFrames(on screen: NSScreen) -> (leading: CGRect, trailing: CGRect)? {

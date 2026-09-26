@@ -786,12 +786,22 @@ final class NotchWindowController {
         // 时候，也应该能被点击。」
         // **「Notion 笔记」那颗按钮**：与两翼同一个理由（画在点击穿透的面板里）——
         // 命中的矩形由 `NotchSupport` 从屏幕坐标算，和视图那一处是同一份算术。
-        if LongFormRecorderController.shared.showsNotionNoteButtons,
-           let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }),
-           let buttonFrame = NotchSupport.notionNoteButtonFrame(on: presence.screen),
-           buttonFrame.contains(clickLocation) {
-            LongFormRecorderController.shared.handleNotionNoteButtonTap()
-            return
+        if let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }) {
+            let recorder = LongFormRecorderController.shared
+            // ① 取消（最靠近刘海那颗，也是总开关）② 剪贴板 ③ 屏幕 —— 顺序与视图一致。
+            let slots: [(shown: Bool, index: Int, action: () -> Void)] = [
+                (recorder.showsNotionNoteButtons, 0, { recorder.handleNotionNoteButtonTap() }),
+                (recorder.showsClipboardButton, 1, { recorder.cancelNotionClipboardReference() }),
+                (recorder.showsScreenButton, 2, { recorder.cancelNotionScreenReference() }),
+            ]
+            for slot in slots where slot.shown {
+                if let frame = NotchSupport.notionNoteButtonFrame(on: presence.screen,
+                                                                  indexFromTrailingEdge: slot.index),
+                   frame.contains(clickLocation) {
+                    slot.action()
+                    return
+                }
+            }
         }
 
         // **录音两翼：展开、收起两态都认，而且只认这一处。**

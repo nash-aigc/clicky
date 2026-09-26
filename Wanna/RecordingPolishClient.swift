@@ -127,10 +127,15 @@ nonisolated enum RecordingPolishClient {
     ///
     /// 用户的要求：「转写部分使用另一套提示词，独立使用 DeepSeek Flash 设计的提示词整理，
     /// 不使用录音润色提示词」。所以配置、提示词、温度都不共用 —— 只有"怎么发"共用。
-    static func organizeNotionNote(prompt: String, settings: AppSettings) async throws -> String {
+    static func organizeNotionNote(prompt: String,
+                                   screenshotJPEG: Data? = nil,
+                                   referenceImages: [Data] = [],
+                                   settings: AppSettings) async throws -> String {
         let endpoint = try resolvedNotionEndpoint(settings: settings)
-        return try await send(prompt: prompt, screenshotJPEG: nil, cameraFrames: [],
-                              endpoint: endpoint)
+        // **参考图走既有的多图通道**（`cameraFrames` 那个参数本来就支持一串图）——
+        // 用户说的「剪贴板可能是图片」「说到参考屏幕就截一张」都要送给模型。
+        return try await send(prompt: prompt, screenshotJPEG: screenshotJPEG,
+                              cameraFrames: referenceImages, endpoint: endpoint)
     }
 
     /// Notion 整理那一步的服务商：用户填了就用自己的，没填**回落到录音润色那一套**

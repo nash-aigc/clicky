@@ -1263,8 +1263,33 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 那次整理用的提示词（要它输出两块：大纲 + 排版后的 Markdown）。
     var notionNotePrompt: String = AppSettings.defaultNotionNotePrompt
 
-    /// 触发关键词（一行一个）。检测只在**开头前 20 字**与**末尾 20 字**里做。
+    /// 触发关键词（一行一个）—— **总开关**那一组（「保存笔记」这类）。
+    ///
+    /// 检测窗口在**开头与末尾各 100 字**里做（用户 2026-09-27 放宽后的话：
+    /// 「开头可能是前 100 个字…就是前这么 10 句话，或者前 15 秒钟」）。
     var notionNoteKeywords: String = AppSettings.defaultNotionNoteKeywords
+
+    /// **「参考剪贴板」那一组**：说了这些词（「复制内容」「选中内容」…）就把剪贴板当成参考材料，
+    /// 而不是把转写当笔记本身（用户 2026-09-27 第 2 阶段）。
+    var notionClipboardKeywords: String = AppSettings.defaultNotionClipboardKeywords
+
+    /// **「参考屏幕」那一组**：说到就**当场**截一张图（说几次截几张），作为参考材料。
+    var notionScreenKeywords: String = AppSettings.defaultNotionScreenKeywords
+
+    static let defaultNotionClipboardKeywords = """
+    复制内容
+    复制的内容
+    选中内容
+    选中的内容
+    参考复制
+    参考剪贴板
+    """
+
+    static let defaultNotionScreenKeywords = """
+    参考屏幕
+    屏幕内容
+    参考屏幕内容
+    """
 
     static let defaultNotionNoteKeywords = """
     保存笔记
@@ -1589,6 +1614,8 @@ nonisolated extension AppSettings {
         case notionNoteModelID
         case notionNotePrompt
         case notionNoteKeywords
+        case notionClipboardKeywords
+        case notionScreenKeywords
         case recordingAutoReconnects
         case recordingRotationMinutes
         case recordingCopiesToClipboard
@@ -1756,6 +1783,8 @@ nonisolated extension AppSettings {
         notionNoteModelID = try container.decodeIfPresent(String.self, forKey: .notionNoteModelID) ?? defaults.notionNoteModelID
         notionNotePrompt = try container.decodeIfPresent(String.self, forKey: .notionNotePrompt) ?? defaults.notionNotePrompt
         notionNoteKeywords = try container.decodeIfPresent(String.self, forKey: .notionNoteKeywords) ?? defaults.notionNoteKeywords
+        notionClipboardKeywords = try container.decodeIfPresent(String.self, forKey: .notionClipboardKeywords) ?? defaults.notionClipboardKeywords
+        notionScreenKeywords = try container.decodeIfPresent(String.self, forKey: .notionScreenKeywords) ?? defaults.notionScreenKeywords
         recordingAutoReconnects = try container.decodeIfPresent(Bool.self, forKey: .recordingAutoReconnects) ?? defaults.recordingAutoReconnects
         recordingRotationMinutes = try container.decodeIfPresent(Int.self, forKey: .recordingRotationMinutes) ?? defaults.recordingRotationMinutes
         recordingCopiesToClipboard = try container.decodeIfPresent(Bool.self, forKey: .recordingCopiesToClipboard) ?? defaults.recordingCopiesToClipboard
