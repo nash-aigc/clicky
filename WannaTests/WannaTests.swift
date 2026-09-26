@@ -94,4 +94,32 @@ struct WannaTests {
         #expect(hitRect.width > hitRect.height, "用户要的是长方形（宽 > 高）")
     }
 
+    /// **点那一排小按钮 → 弹出面板**，这条链必须真的通。
+    ///
+    /// 2026-09-26 它两半都是坏的：命中矩形离按钮 98.5pt（几何，上面那条锁着），
+    /// 以及 `AgentPanelController` —— 那个"监听 `manualPanelID` 一变就开面板"的
+    /// 单例 —— **在全仓没有任何引用**。懒汉单例没人碰就没人创建，`init` 里那条订阅
+    /// 从来没装上：`togglePanel` 把 id 写进去了，**没人在听**，于是用户看到的是
+    /// 「点击它之后没有下拉菜单」。
+    ///
+    /// 这条测的就是"有没有人在听"：先让看板 toggle 一次，再看面板有没有认下这个
+    /// agent。**关键在断言时才去碰 `AgentPanelController.shared` 已经是事后** ——
+    /// 它不能把缺失的订阅补上（订阅只在 `init` 里装，而 `manualPanelID` 那次变化
+    /// 早就过去了），所以启动时没装，这里一定是 nil。
+    ///
+    /// 修法是 `CompanionManager.start()` 里那行 `_ = AgentPanelController.shared`。
+    @Test func togglingAnAgentOpensThePanel() async throws {
+        let board = AgentActivityBoard.shared
+        let agentID = board.beginTask(request: "这条测试是假的：只为验证面板会不会开")
+        board.togglePanel(agentID)
+        // **等一拍。** 那条订阅是 `.receive(on: DispatchQueue.main)`，投递发生在
+        // 下一个主队列回合 —— 不等的话断言跑在投递之前，测的就是噪音。
+        try await Task.sleep(nanoseconds: 200_000_000)
+        #expect(AgentPanelController.shared.shownAgentID == agentID,
+                "面板没开 —— AgentPanelController 的订阅没装上（看 CompanionManager.start() 里那行）")
+        // 收尾：判成"核验过"，它会自己退场，不在看板上留东西。
+        board.togglePanel(agentID)
+        board.finishTask(agentID, status: .doneVerified)
+    }
+
 }
