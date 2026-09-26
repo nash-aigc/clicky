@@ -620,6 +620,21 @@ final class NotchWindowController {
             return
         }
 
+        // **点面板外面 = 收起面板。** 用户 2026-09-26：「卡片右上角X删除，通过点击外部
+        // 隐藏卡片即可」—— 所以右上角那颗 ✕ 删了，收起由这一条负责。
+        if AgentActivityBoard.shared.manualPanelID != nil,
+           let panelFrame = AgentPanelController.shared.panelScreenFrame,
+           !panelFrame.contains(clickLocation),
+           !screenPresences.contains(where: { presence in
+               (0..<NotchSupport.maximumVisibleAgentButtons).contains { index in
+                   NotchSupport.agentButtonFrame(on: presence.screen, indexFromNotch: index)?
+                       .contains(clickLocation) ?? false
+               }
+           }) {
+            AgentActivityBoard.shared.manualPanelID = nil
+            return
+        }
+
         if panelModel.isExpanded {
             // 再点一次刘海就是收起（用户 2026-09-23：「用户点击刘海屏的时候它
             // 展开，用户再点击刘海屏的时候它自动缩回去，增加这样一个动画效果」）。

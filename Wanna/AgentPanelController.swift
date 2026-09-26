@@ -132,6 +132,12 @@ final class AgentPanelController {
         return NSRect(x: left, y: topEdge - size.height, width: size.width, height: size.height)
     }
 
+    /// 面板此刻在屏幕上的矩形 —— 给"点外面收起"用（判定在 `NotchWindowController`）。
+    var panelScreenFrame: CGRect? {
+        guard panel?.isVisible == true else { return nil }
+        return panel?.frame
+    }
+
     func hide() {
         panel?.orderOut(nil)
         shownAgentID = nil
@@ -181,18 +187,21 @@ private struct AgentDetailView: View {
     // MARK: - 头
 
     private var header: some View {
-        HStack(spacing: 7) {
-            Circle().fill(statusColor).frame(width: 7, height: 7)
-            Text(agent.title)
-                .font(.system(size: 12.5, weight: .semibold))
+        // **标题行 = 时间**（用户 2026-09-26：「标题还是没有修改成时间」—— 面板这一行
+        // 原来还是被截断的标题）。右边那颗 ✅ / ⏳ / ❌ 是任务结果；**完成时整行底色变绿**
+        //（「✅表示任务完成，标题背景=绿色（如果完成的话），没完成=正常颜色」）。
+        HStack(spacing: 8) {
+            Image(systemName: agent.status == .running ? "hourglass" : (agent.status == .failed ? "xmark.circle.fill" : "checkmark.circle.fill"))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(statusColor)
+            Text(agent.startTimeText)
+                .font(.system(size: 16, weight: .semibold).monospacedDigit())
                 .foregroundColor(DS.Colors.textPrimary)
-                .lineLimit(1)
-            Text(agent.status.displayName)
-                .font(.system(size: 10))
+            Text("任务内容")
+                .font(.system(size: 12, weight: .semibold))
+                .tracking(0.6)
                 .foregroundColor(DS.Colors.textTertiary)
             Spacer(minLength: 6)
-            // **复制 ID 是给用户跟 AI 说话用的** —— 用户的原话：「让用户知道他是哪一个，
-            // 然后方便跟 AI 交流」。所以复制的是 id，不是标题（标题可能重复）。
             Button {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(agent.id, forType: .string)
@@ -204,38 +213,33 @@ private struct AgentDetailView: View {
             } label: {
                 HStack(spacing: 3) {
                     Image(systemName: didCopyID ? "checkmark" : "doc.on.doc")
-                    Text(agent.id).font(.system(size: 10, weight: .medium).monospaced())
+                    Text(agent.id).font(.system(size: 12, weight: .medium).monospaced())
                 }
                 .foregroundColor(didCopyID ? DS.Colors.success : DS.Colors.textSecondary)
             }
             .buttonStyle(.plain)
             .help("复制这个 agent 的 ID")
 
-            // **取消任务**：只在这条任务还没结束（还在跑）时出现。
-            // 它是"手动打断"的唯一入口 —— 用户的模型是「任务只能被手动打断」。
+            // 「取消任务」只在这条还在跑时出现。
             if agent.status == .running {
                 Button {
                     AgentPanelController.cancelRunningJob?()
                 } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "stop.circle")
-                        Text("取消任务").font(.system(size: 10, weight: .medium))
+                        Text("取消任务").font(.system(size: 12, weight: .medium))
                     }
                     .foregroundColor(DS.Colors.destructive)
                 }
                 .buttonStyle(.plain)
                 .help("停掉这条正在跑的任务")
             }
-
-            Button(action: close) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(DS.Colors.textTertiary)
-            }
-            .buttonStyle(.plain)
+            // **右上角的 ✕ 删掉了**（用户 2026-09-26：「卡片右上角X删除，通过点击外部隐藏
+            // 卡片即可」）—— 收起改由「点面板外面」负责，见 `NotchWindowController`。
         }
-        .padding(.horizontal, 11)
-        .padding(.vertical, 9)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 11)
+        .background(agent.status == .doneVerified ? DS.Colors.success.opacity(0.22) : Color.clear)
     }
 
     // MARK: - 三节
@@ -245,7 +249,7 @@ private struct AgentDetailView: View {
             sectionLabel("你说的是")
             // 完整原话 —— 标题是截断的，而用户回头核对时要知道自己当时到底说了什么。
             Text(agent.request)
-                .font(.system(size: 11.5))
+                .font(.system(size: 14.5))
                 .foregroundColor(DS.Colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -266,7 +270,7 @@ private struct AgentDetailView: View {
                             .foregroundColor(DS.Colors.textTertiary)
                             .frame(width: 14, alignment: .trailing)
                         Text(step)
-                            .font(.system(size: 11.5))
+                            .font(.system(size: 13.5))
                             .foregroundColor(DS.Colors.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -304,6 +308,32 @@ private struct AgentDetailView: View {
                     }
                 }
             }
+
+            // **最后一行：任务结果。** 用户 2026-09-26：「只写了工具调用，下面没有说明
+            //（任务是否完成或失败）…用代码的方式，在最后一行显示下状态」。状态本来就有
+            //（`agent.status`），这里只是把它说出来 —— 三种做完的结果分别对应
+            // 「成功 / 没做成 / 还在跑」，用户不用去猜。
+            HStack(spacing: 5) {
+                Text("任务结果")
+                    .font(.system(size: 12, weight: .semibold))
+                    .tracking(0.6)
+                    .foregroundColor(DS.Colors.textTertiary)
+                Text(resultText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(statusColor)
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    /// 结果那一行说什么。**「完成（未核验）」是刻意保留的**：它表示"做完了，但我没有
+    /// 回读确认" —— 用户可能需要自己看一眼，而"成功"会让他放心地不看。
+    private var resultText: String {
+        switch agent.status {
+        case .running: return "⏳ 还在跑"
+        case .doneVerified: return "✅ 成功（已核验）"
+        case .doneUnverified: return "✅ 已执行（未核验）"
+        case .failed: return "❌ 没做成"
         }
     }
 

@@ -190,10 +190,10 @@ struct AgentStripView: View {
             // 190pt，永远被截断（「帮我在桌面上新建一个文件…」），时间定长、一眼对得上。
             HStack(spacing: 5) {
                 Text(agent.startTimeText)
-                    .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
+                    .font(.system(size: 15, weight: .semibold).monospacedDigit())
                     .foregroundColor(DS.Colors.textSecondary)
                 Text("任务内容")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .tracking(0.5)
                     .foregroundColor(DS.Colors.textTertiary)
                 Spacer(minLength: 4)
@@ -204,14 +204,14 @@ struct AgentStripView: View {
             // **正文 = 任务内容本身。** 默认三行，点一下展开/收起
             //（用户：「如果任务内容非常多，就显示三行，用户点击可以折叠或展开」）。
             Text(agent.request)
-                .font(.system(size: 11))
+                .font(.system(size: 14.5))
                 .foregroundColor(DS.Colors.textPrimary)
                 .lineLimit(agent.isCardExpanded ? nil : 3)
                 .fixedSize(horizontal: false, vertical: true)
                 .multilineTextAlignment(.leading)
             if agent.isCardExpanded {
                 Text(agent.bannerLine)
-                    .font(.system(size: 10))
+                    .font(.system(size: 12.5))
                     .foregroundColor(DS.Colors.textTertiary)
             }
         }
