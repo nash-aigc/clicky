@@ -135,6 +135,12 @@ struct NotchSheetRootView: View {
                                 // 分阶段加载：第一拍只建侧栏的骨架（切换器、搜索、
                                 // 底部按钮），列表留空 —— 列表是随会话数增长的那部分。
                                 showsSectionList: panelModel.isSheetContentReady,
+                                // 「历史归档」：归档页面住在设置里，侧栏这一行只是把设置
+                                // 打开并落到那一页。（参数顺序跟着声明走，memberwise init。）
+                                openArchiveAction: {
+                                    selectedSettingsPage = .archive
+                                    showsSettings = true
+                                },
                                 openRecordingSettingsAction: {
                                     // 先落页、再开门 —— 顺序不能反：`NotchSettingsArea` 是在
                                     // `showsSettings` 变真的那一刻被插进树的，它读的是当时的

@@ -43,6 +43,18 @@ struct HomeSpaceSidebarView: View {
     /// 状态点呼吸的相位。**整区共用一个** —— 每颗点各起一条动画会各自飘，看起来像坏了。
     @State private var isTaskDotBreathing = false
 
+    /// **卡片区**（2026-09-26 新设计）：卡片 = Agent 主体，任务按状态四栏。
+    /// 它自己订阅四份数据源的通知并重算整棵树 —— 见 `AgentCardModel`。
+    @StateObject private var cardModel = AgentCardModel()
+
+    /// 哪些「卡片 # 栏」是展开的（纯界面状态，不进任何模型）。
+    @State private var expandedTaskColumns: Set<String> = []
+
+    /// 「历史归档」那一行：归档页面住在设置里（`SettingsPage.archive`），
+    /// 所以这里只需要把设置打开并落到那一页 —— 与 `openRecordingSettingsAction`
+    /// 同一个形状（闭包而不是让侧栏自己去改上层状态）。
+    var openArchiveAction: () -> Void = {}
+
     /// 「录音」快捷入口：点一下直接跳到设置里的录音页。
     ///
     /// 用户 2026-09-25：「主页面设置按钮的右侧显示一个录音按钮，点击后自动跳转到
@@ -69,40 +81,20 @@ struct HomeSpaceSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // 顶部是三个分区的切换器，紧跟一条分割线；分割线下面是搜索与
-            // 「＋」，然后是列表，最底下才是「归档 / 设置」。
+            // **顶部 = 卡片区**（2026-09-26 用户重新设计）。
             //
-            // 这个顺序是用户 2026-09-23 定的：「把对话、Agent、语音聊天这三个
-            // 按钮放在左侧顶部这条分割线的上面，用按钮的形式显示。分割线下面
-            // 是搜索和添加」「把左侧顶部的归档和设置按钮移动到左侧最下面」。
-            // 读法因此从左到右、从上到下都成立 —— 上面选去哪一栏，下面管整个
-            // 应用。
-            sidebarSectionSwitcher
-
-            Divider()
-                .overlay(Color.white.opacity(0.08))
-
-            // 三个分区共用同一行「搜索 + ＋」（用户要求三个页面顺序一致）。
-            searchRow
-
-            // **没有归属的任务**（会话被删/换了）单独一区，免得它们消失得无影无踪 ——
-            // 有归属的都在各自的主会话行下面（见 `taskGroups(forSessionID:)`）。
-            orphanTaskSection
-
-            // 分阶段加载：第一拍只建上面那几行骨架，列表留到第二拍
-            //（见 `showsSectionList`）。`Spacer` 仍在，所以底部那一行不会跳。
-            if showsSectionList {
-                switch agentSessionManager.selectedSidebarSection {
-                case .conversations:
-                    sessionList
-                case .agents:
-                    agentList
-                case .voiceChat:
-                    voiceChatRoleList
-                }
-            }
+            // 原来的「对话 / Agent / 语音聊天」三按钮切换器没有了：用户要的是
+            // 「顶部：卡片列表，显示当前正在使用的卡片（主循环卡片）」，而卡片
+            // 底下按**任务状态**分四栏（进行中 / 任务完成 / 任务失败 / 历史任务）。
+            // 卡片 = 一个 Agent 主体（见 `AgentCardModel` 与 `CardKind`），所以
+            // 「对话」和「Agent」两个分区被它一并取代；「语音聊天」是角色列表、
+            // 不是任务，所以它退成底部的「角色」那一行。
+            cardArea
 
             Spacer(minLength: 0)
+
+            // 分割线下方 = 「历史归档」与「角色」两条去别处的路。
+            diversionRows
 
             bottomActionRow
         }
@@ -111,6 +103,270 @@ struct HomeSpaceSidebarView: View {
         // 上，合成出来正好是 surface3 的 #101014 —— 换成不透明的同一个色，
         // 侧栏观感不变，透出来的壁纸没了。
         .background(DS.Colors.surface3)
+    }
+
+    // MARK: - 卡片区（2026-09-26）
+
+    /// 搜索框 + 卡片列表。搜索接到 `cardModel.searchQuery`（卡片标题或它的任务命中）。
+    private var cardArea: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            cardSearchRow
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(cardModel.cards) { card in
+                        cardRow(card)
+                        // 四栏固定序（`TaskColumn.allCases` = 进行中 → 完成 → 失败 → 历史），
+                        // 空的栏不画 —— 用户要的是「按状态」，不是四行空标题。
+                        ForEach(TaskColumn.allCases, id: \.self) { column in
+                            let tasks = card.tasks(in: column)
+                            if !tasks.isEmpty {
+                                taskColumnSection(card: card, column: column, tasks: tasks)
+                            }
+                        }
+                    }
+
+                    if cardModel.cards.isEmpty {
+                        Text(cardModel.searchQuery.isEmpty ? "还没有卡片" : "没有匹配的卡片")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.35))
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 18)
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+    }
+
+    /// 卡片区的搜索 + 「＋」（＋ = 新建主对话；用户要求「点击新建时，之前的对话
+    /// 自动归档，左侧列表保持干净」—— 归档那一步在 `createSession` 里）。
+    private var cardSearchRow: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.4))
+                TextField("搜索卡片或任务", text: $cardModel.searchQuery)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+            )
+
+            Button(action: {
+                SoundEffectPlayer.shared.play(.sidebarButton)
+                sessionsModel.createSession()
+                agentSessionManager.selectedSidebarSection = .conversations
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.75))
+                    .frame(width: 26, height: 26)
+                    .background(Circle().fill(Color.white.opacity(0.08)))
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .help("新建主对话（当前这条会自动归档）")
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+    }
+
+    /// 一张卡片：标题 + 状态点 +（仅主循环卡片）「设为默认」。
+    private func cardRow(_ card: AgentCardModel.Card) -> some View {
+        let isCurrentCard = isCurrent(card)
+        return HStack(spacing: 8) {
+            Circle()
+                .fill(card.kind == .mainLoop ? DS.Colors.accent : Color(red: 0.55, green: 0.78, blue: 0.55))
+                .frame(width: 6, height: 6)
+                .opacity(isCurrentCard ? 1 : 0.35)
+
+            Text(card.title)
+                .font(.system(size: 13.5, weight: .semibold))
+                .foregroundColor(.white)
+                .lineLimit(1)
+
+            if card.kind == .claudeCode {
+                Text("Claude Code")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundColor(.white.opacity(0.45))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .background(Capsule().fill(Color.white.opacity(0.08)))
+            }
+
+            Spacer(minLength: 4)
+
+            // **「设为默认」只出现在主循环卡片上。** 用户明确要求「新建的 Claude Code
+            // 类型卡片不可设为默认」—— 兜底那条线不是「我的主对话」。
+            if card.kind == .mainLoop {
+                Button(action: {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    cardModel.setDefault(cardID: card.entityID)
+                }) {
+                    Image(systemName: card.isDefault ? "star.fill" : "star")
+                        .font(.system(size: 10.5))
+                        .foregroundColor(card.isDefault
+                                         ? DS.Colors.success
+                                         : .white.opacity(0.40))
+                        .frame(width: 20, height: 20)
+                        .background(Circle().fill(Color.white.opacity(card.isDefault ? 0.10 : 0.05)))
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help(card.isDefault
+                      ? "这条是默认主对话：屏幕快捷键发出去的问题进它"
+                      : "设为默认：屏幕快捷键发出去的问题进这一条主对话")
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            SoundEffectPlayer.shared.play(.notchRevealed)
+            cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
+        }
+    }
+
+    /// 当前的卡片：主循环看「是不是当前活动会话」，Claude Code 看「是不是选中的代理」。
+    private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
+        switch card.kind {
+        case .mainLoop:
+            return sessionsModel.activeSessionID?.uuidString == card.entityID
+        case .claudeCode:
+            return agentSessionManager.selectedAgentID?.uuidString == card.entityID
+        }
+    }
+
+    /// 一栏任务：可折叠的标题（栏名 + 条数），展开后逐条列出。
+    @ViewBuilder
+    private func taskColumnSection(card: AgentCardModel.Card,
+                                   column: TaskColumn,
+                                   tasks: [AgentCardModel.CardTask]) -> some View {
+        let expansionKey = "\(card.id)#\(column.rawValue)"
+        let isExpanded = expandedTaskColumns.contains(expansionKey)
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: {
+                SoundEffectPlayer.shared.play(.sidebarButton)
+                if isExpanded { expandedTaskColumns.remove(expansionKey) }
+                else { expandedTaskColumns.insert(expansionKey) }
+            }) {
+                HStack(spacing: 5) {
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 8.5, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.35))
+                        .frame(width: 10)
+                    Text(column.displayName)
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundColor(.white.opacity(0.62))
+                    Text("\(tasks.count)")
+                        .font(.system(size: 10.5).monospacedDigit())
+                        .foregroundColor(.white.opacity(0.35))
+                    Spacer(minLength: 0)
+                }
+                .padding(.leading, 20)
+                .padding(.trailing, 10)
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+
+            if isExpanded {
+                ForEach(tasks) { task in
+                    cardTaskRow(task)
+                }
+            }
+        }
+    }
+
+    /// 一条任务。**兜底过来的带一枚标记** —— 用户要靠它一眼看出「这条是我的 Agent
+    /// 做不了、被交出去的」，而复盘看的正是这些。
+    private func cardTaskRow(_ task: AgentCardModel.CardTask) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(statusColor(task.status))
+                .frame(width: 5, height: 5)
+
+            Text(task.title)
+                .font(.system(size: 11.5))
+                .foregroundColor(.white.opacity(0.78))
+                .lineLimit(1)
+
+            if task.wasHandedOff {
+                Text("兜底 · Claude Code")
+                    .font(.system(size: 9))
+                    .foregroundColor(Color(red: 0.62, green: 0.80, blue: 0.62))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Capsule().fill(Color(red: 0.30, green: 0.55, blue: 0.36).opacity(0.25)))
+            }
+
+            Spacer(minLength: 4)
+
+            Text(task.relativeTimeText)
+                .font(.system(size: 10).monospacedDigit())
+                .foregroundColor(.white.opacity(0.30))
+        }
+        .padding(.leading, 34)
+        .padding(.trailing, 10)
+        .padding(.vertical, 3)
+    }
+
+    private func statusColor(_ status: EphemeralAgent.Status) -> Color {
+        switch status {
+        case .running: return DS.Colors.accent
+        case .doneVerified: return DS.Colors.success
+        case .doneUnverified: return Color(red: 0.95, green: 0.78, blue: 0.35)
+        case .failed: return Color(red: 0.95, green: 0.45, blue: 0.42)
+        }
+    }
+
+    /// 分割线下方那两条：历史归档、角色。
+    private var diversionRows: some View {
+        VStack(spacing: 0) {
+            Divider()
+                .overlay(Color.white.opacity(0.08))
+
+            // **「历史归档」回到侧栏了。** 它 2026-09-24 曾被用户要求搬进设置
+            //（「把窗口下面左侧边栏的『归档』按钮移动到设置页面」），2026-09-26 他又
+            // 要求侧栏里「分割线下方为历史归档」。两者不冲突：入口在这儿，页面还是
+            // 设置里的那一页（`SettingsPage.archive`）—— 所以这里只切设置页，
+            // 不复活当年删掉的整窗接管那套。
+            NotchBarActionButton(
+                title: "历史归档",
+                systemImage: "archivebox",
+                isHighlighted: false,
+                help: "以前的主对话与它们的任务"
+            ) {
+                SoundEffectPlayer.shared.play(.notchRevealed)
+                openArchiveAction()
+            }
+
+            NotchBarActionButton(
+                title: "角色",
+                systemImage: "person.crop.circle",
+                isHighlighted: false,
+                help: "语音 / 视频聊天用的角色预设"
+            ) {
+                SoundEffectPlayer.shared.play(.notchRevealed)
+                showsSettings = false
+                agentSessionManager.selectedSidebarSection = .voiceChat
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 8)
     }
 
     // MARK: - Section switcher

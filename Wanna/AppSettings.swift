@@ -565,6 +565,23 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// editor stays about the base prompt and those two settings keep working.
     var customSystemPrompt: String?
 
+    /// **「设为默认」的目标会话。** 屏幕快捷键发出去的问题进这一条主循环会话
+    ///（用户 2026-09-26：「卡片右侧增加『设为默认』按钮，点击后将该主对话设为默认，
+    /// 屏幕快捷键发送的问题自动进入该默认会话」）。
+    ///
+    /// 存的是**会话 id 的字符串**（不是 UUID）—— 与 `EphemeralAgent.cardID` 同一个形状，
+    /// 卡片区拿它跟 `ConversationSession.id.uuidString` 直接比，不需要中途转换。
+    /// nil = 用户没设过：那就还用「当前活动会话」，与今天的行为一致。
+    var defaultSessionID: String?
+
+    /// 复制一份、只换默认会话 —— `AppSettingsStore.save` 收的是整份值，
+    /// 调用方不该在手上去拼一份新的（漏字段就是把设置悄悄改回默认）。
+    func withDefaultSessionID(_ sessionID: String?) -> AppSettings {
+        var copy = self
+        copy.defaultSessionID = sessionID
+        return copy
+    }
+
     // MARK: - 听（语音识别）
 
     var transcriptionLanguage: TranscriptionLanguage = .chinese
@@ -1314,6 +1331,7 @@ nonisolated extension AppSettings {
         case composerSendShortcut
         case extraSystemPromptInstructions
         case customSystemPrompt
+        case defaultSessionID
         case transcriptionLanguage
         case extraTranscriptionKeyterms
         case finalTranscriptGracePeriodSeconds
@@ -1445,6 +1463,8 @@ nonisolated extension AppSettings {
         // "use the built-in prompt". A fallback here would turn every existing
         // settings file into one that ships a frozen copy of today's prompt.
         customSystemPrompt = try container.decodeIfPresent(String.self, forKey: .customSystemPrompt)
+        // 老文件没有这个键 = 用户没设过默认会话 —— 与 nil 同义，不是错误。
+        defaultSessionID = try container.decodeIfPresent(String.self, forKey: .defaultSessionID)
         transcriptionLanguage = try container.decodeIfPresent(TranscriptionLanguage.self, forKey: .transcriptionLanguage) ?? defaults.transcriptionLanguage
         extraTranscriptionKeyterms = try container.decodeIfPresent(String.self, forKey: .extraTranscriptionKeyterms) ?? defaults.extraTranscriptionKeyterms
         finalTranscriptGracePeriodSeconds = try container.decodeIfPresent(Double.self, forKey: .finalTranscriptGracePeriodSeconds) ?? defaults.finalTranscriptGracePeriodSeconds
