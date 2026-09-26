@@ -451,6 +451,18 @@ nonisolated enum ConversationSessionsStore {
             entries: []
         )
         mutate { storedSessions in
+            // **新建即归档**（用户 2026-09-26：「用户点击新建时，之前的对话自动归档，
+            // 左侧列表保持干净，仅显示一个主会话」）。
+            //
+            // 用软删（`archivedAt`）而不是删除：归档页照旧能把它捞回来，磁盘上一条不丢
+            // —— 与侧栏那个「删除」走的是同一条路（`deleteSession` 也是盖章）。
+            //
+            // **遍历所有还活着的会话**，不是只归档"当前那一条"：侧栏应该只剩一个主会话，
+            // 而历史上可能因为旧版本的语义攒下不止一条活着的。
+            for index in storedSessions.sessions.indices
+            where storedSessions.sessions[index].archivedAt == nil {
+                storedSessions.sessions[index].archivedAt = now
+            }
             storedSessions.sessions.append(newSession)
             storedSessions.activeSessionID = newSession.id
         }
