@@ -1007,7 +1007,13 @@ struct NotchHomeView: View {
                                    action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                Image(systemName: systemImage).font(.system(size: 10.5))
+                // **图标占一个固定宽度**（用户 2026-09-27：「这个声音按钮无论点击与否，
+                // 它的宽度不应该变化，现在就是点击前后宽度有变化」）——
+                // `speaker.wave.2.fill` 与 `speaker.slash.fill` 字形宽度不同，不钉住的话
+                // 每点一次整颗按钮就宽一点/窄一点，右边那一排跟着一起挪。
+                Image(systemName: systemImage)
+                    .font(.system(size: 10.5))
+                    .frame(width: 13)
                 Text(title).font(.system(size: 11.5))
             }
             .foregroundColor(isHighlighted ? composerHighlightColor : .white.opacity(0.65))

@@ -268,6 +268,8 @@ struct VoiceChatSessionView: View {
             if !controller.isAnyPreviewFullScreen {
                 transcriptFlow
             }
+            // 语速面板就压在输入框上沿之上（与图文 / 文本那一页同一个位置关系）。
+            speedPanelIfOpen
             composerRow
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -309,14 +311,6 @@ struct VoiceChatSessionView: View {
                 presetDropdown(activePresetRow),
                 anchor: .preset(for: activePresetRow),
                 panelWidth: Self.presetDropdownWidth,
-                keepsColumnMargins: false
-            )
-        }
-        if isSpeedMenuOpen {
-            positionFloatingPanel(
-                speedMenuDropdown,
-                anchor: .speed,
-                panelWidth: Self.speedMenuDropdownWidth,
                 keepsColumnMargins: false
             )
         }
@@ -2199,6 +2193,17 @@ struct VoiceChatSessionView: View {
 
             Spacer(minLength: 6)
 
+            // **「针对连续对话 / 针对临时对话」这一格语音 / 视频也要有**
+            //（用户 2026-09-27：「这个语音、视频这两个模式下，输入框的右上角，它应该有一个
+            // 备注叫针对什么对话……结果图文模式应该是一样的才对」）—— 文案、位置、字号与
+            // 图文 / 文本那一页完全相同，两边读的是同一个 `voiceConversationMode`。
+            Text(controller.isTemporaryVoiceConversation ? "针对临时对话" : "针对连续对话")
+                .font(.system(size: 10.5))
+                .foregroundColor(controller.isTemporaryVoiceConversation
+                                 ? Color(red: 0.96, green: 0.72, blue: 0.32).opacity(0.75)
+                                 : .white.opacity(0.38))
+                .fixedSize()
+
             // 开 = 正常说话；关 = 只出文字（模型那边 `modalities: ["text"]`）。
             composerChip(title: "声音",
                          systemImage: controller.speaksReplies ? "speaker.wave.2.fill" : "speaker.slash.fill",
@@ -2216,15 +2221,16 @@ struct VoiceChatSessionView: View {
             // 语音跟视频这两个模式下，语速应该调一下，应该显示语速 6 或语速 7 或语速 8
             // 这个东西」）—— 与文本 / 图文那一排的 `SpeechSpeedChip` 一致，都用
             // `SpeechSpeedLevels` 那一份表。
-            composerChip(title: "语速 \(SpeechSpeedLevels.currentLevel(forRate: AppSettingsStore.snapshot().speechPlaybackRate))",
-                         systemImage: "gauge.with.needle",
-                         isOn: isSpeedMenuOpen,
-                         help: "十档语速，直接改全局「说（播报）」的语速") {
-                isSpeedMenuOpen.toggle()
-                activePresetRow = nil
-                activeVoiceRow = nil
-            }
-            .background(headerAnchorReporter(.speed))
+            // **与图文 / 文本那一页同一个组件**（用户 2026-09-27：「语音模式或视频模式，
+            // 它的这个输入框的右上角这个语速的按钮，它应该是一个类似于下拉菜单的那个按钮…
+            // 把它做成一个图文模式和文本模式那样的按钮」）。
+            //
+            // 换掉的是原来那颗手写的 `composerChip(title: "语速 …")` + 浮层面板：浮层那条路
+            // 把面板定位到了 **y≈3606**（`.speed` 锚点量错了坐标系），面板整个画在窗口外面 ——
+            // 用户看到的「点击之后自动崩溃」就是它。`SpeechSpeedChip` 那条路是**内联画在
+            // 输入框上方**（见下面的 `speedPanelIfOpen`），没有锚点、没有浮层，四个模式共用
+            // 同一个组件，样式与行为因此不可能分家。
+            SpeechSpeedChip(isPanelOpen: $isSpeedMenuOpen)
 
         }
     }
@@ -2279,7 +2285,12 @@ struct VoiceChatSessionView: View {
                               action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                Image(systemName: systemImage).font(.system(size: 10.5))
+                // **图标固定宽度**（用户 2026-09-27：「这个声音按钮无论点击与否，它的宽度
+                // 不应该变化」）—— `speaker.wave.2.fill` 与 `speaker.slash.fill` 字形宽度不同，
+                // 不钉住的话每点一次这一格就宽一点/窄一点。
+                Image(systemName: systemImage)
+                    .font(.system(size: 10.5))
+                    .frame(width: 13)
                 Text(title).font(.system(size: 11.5))
             }
             .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.65))
@@ -2299,6 +2310,21 @@ struct VoiceChatSessionView: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .help(help)
+    }
+
+    /// 语速面板：**内联画在输入框上方**，与图文 / 文本那一页逐字相同的写法
+    ///（`NotchHomeView.speedPanelIfOpen`）—— 两个页面共用 `SpeechSpeedChip.panel`，
+    /// 所以四个模式的语速按钮与面板是同一套东西。
+    @ViewBuilder
+    private var speedPanelIfOpen: some View {
+        if isSpeedMenuOpen {
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                SpeechSpeedChip.panel(isPanelOpen: $isSpeedMenuOpen)
+            }
+            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+            .padding(.bottom, 6)
+        }
     }
 
     private var composerRow: some View {
