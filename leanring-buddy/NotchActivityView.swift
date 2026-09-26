@@ -845,7 +845,31 @@ struct NotchPanelRootSwitchingView: View {
     var wingBandWidth: CGFloat = 0
     var restingPillWidth: CGFloat = 0
 
+    /// 那一排 agent 按钮的右边缘在**窗口坐标**里的 x。
+    ///
+    /// 从**刘海的左边缘**往回退：刘海的中心在窗口里的位置是
+    /// `notchCenterXInWindow`（由控制器算好传进来），刘海半宽是 `restingPillWidth / 2`，
+    /// 再退掉左翼的宽度和那一段空。**全部是绝对量** —— 不依赖任何容器的相对位置，
+    /// 因为刘海内容的宽度什么时候变是不可预测的（用户明确要求过这一点）。
+    private var agentStripTrailingXInWindow: CGFloat {
+        let pillLeading = notchCenterXInWindow - restingPillWidth / 2
+        return pillLeading - NotchSupport.leadingWingWidth - NotchSupport.agentStripGapFromWing
+    }
+
     var body: some View {
+        panelContent
+            // **压在两种状态的上面。** 放在根这一层而不是某一支里，是因为展开态那块
+            // 面板会盖住屏幕中央（810pt 宽居中），而 agent 按钮在它的左上角外面 ——
+            // 放进展开分支里就会被它盖住。这和状态带当初遇到的问题一模一样
+            //（见 `NotchExpandedWingBand` 的注释）。
+            .overlay(alignment: .topLeading) {
+                AgentStripView(board: AgentActivityBoard.shared,
+                               trailingXInWindow: agentStripTrailingXInWindow)
+            }
+    }
+
+    @ViewBuilder
+    private var panelContent: some View {
         if panelModel.isExpanded {
             NotchExpandedSheetView(
                 panelModel: panelModel,

@@ -458,8 +458,37 @@ nonisolated enum NotchSupport {
     /// transparent at rest. Nil on screens without a notch.
     static func restingWindowFrame(on screen: NSScreen) -> CGRect? {
         guard let pillFrame = restingPillFrame(on: screen) else { return nil }
-        return pillFrame.insetBy(dx: -activeFlankWidth, dy: 0)
+        // **左侧比右侧宽**：右侧只要装两翼动画的画布，左侧还要装临时 agent 那一排按钮。
+        //
+        // 加宽是安全的，而且是这套设计里已有的性质：静止时那块区域**完全透明**，
+        // 而面板在静止态 `ignoresMouseEvents = true` —— 所以多出来的地方既不显示
+        // 任何东西，也挡不住下面菜单栏的点击（见 `activeFlankWidth` 的注释）。
+        return CGRect(x: pillFrame.minX - restingLeadingFlankWidth,
+                      y: pillFrame.minY,
+                      width: pillFrame.width + restingLeadingFlankWidth + activeFlankWidth,
+                      height: pillFrame.height)
     }
+
+    /// 静止窗口**左侧**多出来的宽度。
+    ///
+    /// 取「两翼画布」和「agent 那一排需要的宽度」里大的那个 —— 少了这一条，
+    /// 第 3 个按钮就会落到窗口外面，**画不出来也点不到**，而且不会有任何报错。
+    static var restingLeadingFlankWidth: CGFloat {
+        let agentStripWidth = leadingWingWidth + agentStripGapFromWing
+            + CGFloat(maximumVisibleAgentButtons) * agentButtonWidth
+            + CGFloat(maximumVisibleAgentButtons - 1) * agentButtonSpacing
+            + agentStripOuterMargin
+        return max(activeFlankWidth, agentStripWidth)
+    }
+
+    /// 刘海左侧最多同时显示几个 agent 按钮。
+    ///
+    /// **有上限是必须的。** 没有上限的话，用一天下来那一排会长到屏幕外面去，
+    /// 而对面的按钮一个也点不到。超出的那些**不是丢了** —— 它们还在看板里，
+    /// 点最左边那个「更多」能翻到（面板里列全部）。
+    static let maximumVisibleAgentButtons = 3
+    /// 那一排最左端还要留的边。
+    static let agentStripOuterMargin: CGFloat = 14
 
     // MARK: - Wing geometry (shared by the drawing and the click target)
 
@@ -471,6 +500,58 @@ nonisolated enum NotchSupport {
     /// 只是点不准。
     static let leadingWingWidth: CGFloat = 86
     static let trailingWingWidth: CGFloat = 88
+
+    // MARK: - 临时 agent 的那一排按钮（刘海左侧）
+
+    /// 一个 agent 按钮的尺寸。
+    static let agentButtonWidth: CGFloat = 30
+    static let agentButtonHeight: CGFloat = 22
+    /// 两个按钮之间。
+    static let agentButtonSpacing: CGFloat = 6
+    /// 这一排与**两翼动画区**之间留的空。
+    ///
+    /// **这一段不能省。** 刘海的左翼（`leadingWingWidth` = 86）是会被推出来的 ——
+    /// 录音、思考、播报时它从刘海左侧滑出。agent 按钮如果直接贴着刘海放，
+    /// 翼一出来就把它盖住了。用户的原话：「你要把这个动画的位置去除，然后在动画的
+    /// 左侧显示这些 agent 的东西」。
+    static let agentStripGapFromWing: CGFloat = 10
+
+    /// 这一排的**右端**在屏幕上的 x —— 也就是最靠近刘海的那个按钮的右边缘。
+    ///
+    /// **从屏幕坐标算，不从任何 SwiftUI 容器的相对位置算。** 用户明确要求
+    ///（「用绝对路径来定位，就是说根据这个屏幕的左边缘来进行定位，而不是用相对…
+    /// 因为相对的话可能这个刘海它左侧边那个内容，那你这个位置就又往后偏移了」）——
+    /// 相对定位会跟着刘海内容的宽度跑，而刘海内容什么时候变宽是不可预测的。
+    ///
+    /// 从**刘海自己的左边缘**往回退：刘海宽 → 左翼宽 → 那一段空。
+    nonisolated static func agentStripTrailingX(on screen: NSScreen) -> CGFloat? {
+        guard let notch = notchRect(on: screen) else { return nil }
+        return screen.frame.minX + notch.minX
+            - leadingWingWidth - agentStripGapFromWing
+    }
+
+    /// 第 `indexFromNotch` 个按钮（0 = 最靠近刘海的那个）的屏幕矩形。
+    ///
+    /// **从右往左排**：最新的任务离刘海最近 —— 用户刚说完话，眼睛就在刘海上，
+    /// 而旧任务让他去左边找是合理的。
+    nonisolated static func agentButtonFrame(on screen: NSScreen,
+                                             indexFromNotch: Int) -> CGRect? {
+        guard let trailingX = agentStripTrailingX(on: screen),
+              let notch = notchRect(on: screen) else { return nil }
+        let right = trailingX - CGFloat(indexFromNotch) * (agentButtonWidth + agentButtonSpacing)
+        let left = right - agentButtonWidth
+        // 撞到屏幕左边缘就不放了 —— 一个跑到屏幕外面的按钮，点不到也看不见，
+        // 而它会安静地占着一个位置让别的按钮也排不开。
+        guard left >= screen.frame.minX + 8 else { return nil }
+        return CGRect(x: left,
+                      y: screen.frame.maxY - notch.height + (notch.height - agentButtonHeight) / 2,
+                      width: agentButtonWidth,
+                      height: agentButtonHeight)
+    }
+
+    /// 按钮下面那张卡片的宽度。**比按钮宽得多** —— 要放得下一行字。
+    static let agentBannerWidth: CGFloat = 190
+    static let agentBannerMaximumHeight: CGFloat = 46
 
     // MARK: - 摄像头小窗的摆放
 

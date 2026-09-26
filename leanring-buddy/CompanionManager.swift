@@ -2588,6 +2588,13 @@ final class CompanionManager: ObservableObject {
                 // 要不要给「任务完成」的对号（方案第 4 步），而循环内的变量那时候已经
                 // 出作用域了。和上面几个累加器同一个理由。
                 var dispatchedRole: SubAgentRole?
+
+                /// 这一轮那个**临时 agent** 的 id。**按需创建，不是每轮都建。**
+                ///
+                /// 一问一答（「屏幕上这句话什么意思」）不该在刘海左侧留一个按钮 ——
+                /// 那一排是给「派出去干的活」用的，而用户的原话是「每一个用户的任务都是
+                /// 一个临时的任务」。所以只有真的干活了（派活、或者执行了动作）才建。
+                var ephemeralAgentID: String?
                 var unexecutedActionCountFromPreviousStep = 0
 
                 var stepCount = 0
@@ -2777,6 +2784,12 @@ final class CompanionManager: ObservableObject {
                     // 收尾时 `parseResult.spokenText` 是从 `fullResponseText` 算出来的。
                     if let role = ActionTagParser.parse(from: fullResponseText).subAgentRequest {
                         dispatchedRole = role
+                        // 派活 = 这件事交给别人去做了，这一刻它值得在刘海左侧占一个位置。
+                        ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript)
+                        AgentActivityBoard.shared.appendStep(
+                            "交给\(role.displayName) agent 去做", to: ephemeralAgentID!)
+                        AgentActivityBoard.shared.appendToolCall(
+                            "[AGENT:\(role.displayName)]", to: ephemeralAgentID!)
                         let subAgentSystemPrompt = Self.subAgentSystemPrompt(for: role, settings: appSettings)
                         SoundEffectPlayer.appendToDiagnosticLog("主 agent 派活 → \(role.displayName) agent"
                             + "（它的提示词 \(subAgentSystemPrompt.count) 字符 = 基础 + 技能 "
@@ -2791,6 +2804,10 @@ final class CompanionManager: ObservableObject {
                         )
                         fullResponseText = subAgentReply.text
                         SoundEffectPlayer.appendToDiagnosticLog("  \(role.displayName) agent 回复 \(fullResponseText.count) 字符")
+                        if let id = ephemeralAgentID {
+                            AgentActivityBoard.shared.appendStep(
+                                "\(role.displayName) agent 回了 \(fullResponseText.count) 字", to: id)
+                        }
 
                         // **结果回主循环做确认**（方案 §01 ⑤、§07）。
                         //
@@ -2957,6 +2974,15 @@ final class CompanionManager: ObservableObject {
                     // well above the number of actions a realistic job needs.
                     var actionDescriptionsForThisStep: [String] = []
                     if let firstAction = parseResult.actions.first, !Task.isCancelled {
+                        // **执行了动作 = 也是一个任务**（不一定要派活）。用户问
+                        // 「帮我点一下」时主 agent 可能自己就把标签写了。
+                        if ephemeralAgentID == nil {
+                            ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript)
+                        }
+                        if let id = ephemeralAgentID {
+                            AgentActivityBoard.shared.appendToolCall(
+                                Self.describeActionForBoard(firstAction), to: id)
+                        }
                         let outcome = await MacosUseController.execute(
                             firstAction,
                             among: screenCaptures
@@ -3088,6 +3114,13 @@ final class CompanionManager: ObservableObject {
                     } else {
                         showTaskCompletionNotice(lastStreamedDisplayText)
                     }
+                }
+                // 收掉那个临时 agent：状态定下来，卡片再弹一次让用户看到结果。
+                if let id = ephemeralAgentID {
+                    let status: EphemeralAgent.Status = Task.isCancelled
+                        ? .failed
+                        : (lastErrorMessage != nil ? .failed : .doneUnverified)
+                    AgentActivityBoard.shared.finishTask(id, status: status)
                 }
 
                 // Record the whole job as ONE conversation turn against the user's
@@ -4092,6 +4125,30 @@ final class CompanionManager: ObservableObject {
             }
         }
         return lines
+    }
+
+    /// 把一个动作翻译成**给人看的一行**（面板里工具调用那一列，折叠着）。
+    ///
+    /// 不复用 `lastActionDescription`：那一份是给模型看的（带坐标、带失败原因），
+    /// 而这一份用户要能一眼扫过去 —— 坐标对他没有意义，动作名和他的原话才有。
+    private static func describeActionForBoard(_ action: CompanionAction) -> String {
+        switch action {
+        case .click(let at): return "点击「\(at.elementLabel ?? "未命名")」"
+        case .rightClick(let at): return "右键「\(at.elementLabel ?? "未命名")」"
+        case .doubleClick(let at): return "双击「\(at.elementLabel ?? "未命名")」"
+        case .scroll(_, let direction, let amountInSteps):
+            return "滚动\(direction == .down ? "向下" : "向上") \(amountInSteps) 格"
+        case .typeText(let text): return "打字「\(text.prefix(30))」"
+        case .pressKey(let keyName, let modifierNames):
+            let modifiers = modifierNames.joined(separator: "+")
+            return "按键 \(modifiers.isEmpty ? "" : modifiers + "+")\(keyName)"
+        case .selectText(let startMarker, _): return "选中「\(startMarker.prefix(20))」到…"
+        case .openApplication(let named): return "打开 \(named)"
+        case .wait(let seconds): return "等 \(seconds) 秒"
+        case .readAccessibilityTree: return "读了一遍界面"
+        case .runDesktopFileAgent(let task): return "文件助手：\(task.prefix(30))"
+        case .runFigureAgent(let task): return "画图：\(task.prefix(30))"
+        }
     }
 
     private static func mcpArguments(fromJSON json: String) -> [String: Any]? {
