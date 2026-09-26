@@ -504,15 +504,7 @@ struct VoiceChatSessionView: View {
             .padding(.horizontal, Self.headerControlHorizontalPadding)
             .frame(height: Self.headerControlHeight)
             .fixedSize(horizontal: true, vertical: false)
-            .background(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .fill(DS.Colors.success.opacity(0.14))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .strokeBorder(DS.Colors.success.opacity(0.45), lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -549,15 +541,6 @@ struct VoiceChatSessionView: View {
                 controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                .fill(Color.white.opacity(0.08))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
     }
 
     /// 那半颗：亮着 = 这一路开着（绿底），点一下单独开关它。
@@ -571,14 +554,14 @@ struct VoiceChatSessionView: View {
             SoundEffectPlayer.shared.play(.deviceToggle)
             action()
         } label: {
+            // **表格里的一格**：只有字、选中只剩颜色（这一排与左侧那张表、与模式行同一套）。
             Text(title)
-                .font(.system(size: Self.headerControlFontSize, weight: .medium))
+                .font(.system(size: 13, weight: isOn ? .semibold : .regular))
                 .lineLimit(1)
-                .foregroundColor(isSupported ? (isOn ? tint : .white.opacity(0.85))
+                .foregroundColor(isSupported ? (isOn ? tint : .white.opacity(0.88))
                                              : Color.white.opacity(0.3))
                 .padding(.horizontal, Self.headerControlHorizontalPadding)
                 .frame(height: Self.headerControlHeight)
-                .background(isOn && isSupported ? tint.opacity(0.16) : Color.clear)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -707,15 +690,7 @@ struct VoiceChatSessionView: View {
             .padding(.horizontal, Self.headerControlHorizontalPadding)
             .frame(height: Self.headerControlHeight)
             .fixedSize(horizontal: true, vertical: false)
-            .background(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .fill(isEnabled ? tint.opacity(0.18) : Color.white.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .strokeBorder(isEnabled ? tint.opacity(0.5) : Color.clear, lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!isEnabled)
@@ -855,15 +830,7 @@ struct VoiceChatSessionView: View {
             .foregroundStyle(isSelected ? DS.Colors.success : DS.Colors.textSecondary)
             .padding(.horizontal, 10)
             .frame(height: Self.headerControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .fill(isSelected ? DS.Colors.success.opacity(0.16) : Color.white.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .strokeBorder(isSelected ? DS.Colors.success.opacity(0.5) : Color.clear, lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -891,18 +858,10 @@ struct VoiceChatSessionView: View {
                     .font(.system(size: 8, weight: .semibold))
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
-            .foregroundColor(.white.opacity(0.85))
+            .foregroundColor(.white.opacity(isOpen ? 1.0 : 0.85))
             .padding(.horizontal, 10)
             .frame(height: Self.headerControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .fill(Color.white.opacity(isOpen ? 0.16 : 0.08))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .strokeBorder(isOpen ? Color.white.opacity(0.22) : Color.clear, lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -1080,18 +1039,10 @@ struct VoiceChatSessionView: View {
                     .font(.system(size: 8, weight: .semibold))
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
-            .foregroundColor(isEnabled ? .white.opacity(0.85) : DS.Colors.textTertiary)
+            .foregroundColor(isEnabled ? .white.opacity(isOpen ? 1.0 : 0.85) : DS.Colors.textTertiary)
             .padding(.horizontal, 10)
             .frame(height: Self.headerControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .fill(Color.white.opacity(isOpen ? 0.16 : (isEnabled ? 0.08 : 0.04)))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .strokeBorder(isOpen ? Color.white.opacity(0.22) : Color.clear, lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()

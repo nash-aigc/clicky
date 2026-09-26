@@ -227,10 +227,11 @@ struct NotchSheetRootView: View {
                                !activeChatMode.isVoiceLike {
                                 topBar
                                     .padding(.top, NotchSupport.sheetHeaderTopInset)
-                                // 音色弹窗跟着页头走：它就开在右上那颗「音色」下面。
-                                if isVoicePickerPresented {
-                                    voicePickerPanel
-                                }
+                                // **音色面板不在这里**（2026-09-26 深夜改）：它原来作为
+                                // VStack 的一个兄弟挂在模式行下面，于是**把正文整个挤下去**
+                                //（用户：「音色，应该是弹窗，现在不是，他把正文挤到下面了」）。
+                                // 现在它和角色面板一起画在右列那一层的浮层里 —— 见下面那个
+                                // `overlay`，两个下拉同一套几何（贴右上、在模式行下面）。
                             }
                             // 侧栏顶部的「对话 / Agent」切换器决定右列显示哪一
                             // 个内容视图——两个视图共享同一个 sheet，不嵌套。
@@ -300,12 +301,17 @@ struct NotchSheetRootView: View {
                         // 弹窗位置不对。角色按钮现在在最右侧，弹窗应该也在最右侧，现在却在最左侧」）。
                         // 它原来跟着 `.topLeading` 走 —— 那是"角色在模式条最左"时代的锚点。
                         .overlay(alignment: .topTrailing) {
+                          // **三个浮层必须包在一个 ZStack 里。** 直接并列写三个 `if`，
+                          // 它们会被当成**竖着排**的一串，后一个接在前一个下面 ——
+                          // 实测（2026-09-26 深夜）：角色面板因此掉到了正文中间。
+                          // 浮层的第一条规矩：不参与布局。
+                          ZStack(alignment: .topTrailing) {
                             // **点外面就收起**（用户 2026-09-26：「角色按钮的下拉菜单，用户点击
                             // 菜单卡片以外的内容时，菜单应该自动折叠，现在没有折叠」）。
                             //
-                            // 做法是一层透明的背板垫在清单**下面**：点它 = 点到面板外面。
+                            // 做法是一层透明的背板垫在面板**下面**：点它 = 点到面板外面。
                             // 底下的两列因此在这一刻收不到点击（这正是弹出菜单该有的行为 ——
-                            // 第一下是"关掉菜单"），而清单本身在它上面，照常可点。
+                            // 第一下是"关掉菜单"），而面板本身在它上面，照常可点。
                             if cardChatPreferences.openRoleListCardID != nil || isVoicePickerPresented {
                                 Color.clear
                                     .contentShape(Rectangle())
@@ -313,6 +319,13 @@ struct NotchSheetRootView: View {
                                         cardChatPreferences.openRoleListCardID = nil
                                         isVoicePickerPresented = false
                                     }
+                            }
+                            if isVoicePickerPresented {
+                                // 与角色面板同一套几何：贴右上、开在模式行下面那一格。
+                                voicePickerPanel
+                                    .padding(.trailing, NotchSupport.contentColumnHorizontalMargin)
+                                    .padding(.top, NotchSupport.sheetHeaderTopInset
+                                              + NotchSupport.cardChatModeBandHeight)
                             }
                             if isAddCardFormOpen {
                                 AddCardFormView(
@@ -342,6 +355,7 @@ struct NotchSheetRootView: View {
                                     .padding(.top, NotchSupport.sheetHeaderTopInset
                                               + NotchSupport.cardChatModeBandHeight)
                             }
+                          }
                         }
                     }
                     // **那条贯穿的横线画在这里 —— 横跨左右两列**（2026-09-26）。
@@ -481,7 +495,8 @@ struct NotchSheetRootView: View {
         NotchBarActionButton(
             systemImage: "sidebar.left",
             isHighlighted: isSessionSidebarCollapsed,
-            help: isSessionSidebarCollapsed ? "展开侧栏" : "收起侧栏（只留图标）"
+            help: isSessionSidebarCollapsed ? "展开侧栏" : "收起侧栏（只留图标）",
+            usesMinimalStyle: true
         ) {
             setSessionSidebarCollapsed(!isSessionSidebarCollapsed)
         }
@@ -492,7 +507,8 @@ struct NotchSheetRootView: View {
     private var hideSheetButton: some View {
         NotchBarActionButton(
             systemImage: "chevron.up",
-            help: "把窗口收回刘海"
+            help: "把窗口收回刘海",
+            usesMinimalStyle: true
         ) {
             collapseAction()
         }
@@ -508,7 +524,8 @@ struct NotchSheetRootView: View {
                 ? "arrow.down.right.and.arrow.up.left"
                 : "arrow.up.left.and.arrow.down.right",
             isHighlighted: isFullscreen,
-            help: isFullscreen ? "收缩回刘海下方的小窗" : "展开到全屏"
+            help: isFullscreen ? "收缩回刘海下方的小窗" : "展开到全屏",
+            usesMinimalStyle: true
         ) {
             toggleFullScreenAction()
         }
@@ -684,7 +701,6 @@ struct NotchSheetRootView: View {
             }
             .frame(maxHeight: 260)
         }
-        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
     }
 
     private func voicePickerSectionLabel(_ text: String) -> some View {

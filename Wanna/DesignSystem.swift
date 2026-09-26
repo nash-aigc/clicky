@@ -910,6 +910,11 @@ struct NotchBarActionButton: View {
     var help: String
     var action: () -> Void
 
+    /// **极简档**（用户 2026-09-26 深夜：「右上角的几个按钮，展开等等，也应该是极简风格」）：
+    /// 去掉底色和圆角，只剩图标 + 颜色 —— 与左侧那张表、与模式行同一套语言。
+    /// 默认关着，所以设置页的「返回 / 退出 Wanna」不受影响（那里的胶囊是另一套语义）。
+    var usesMinimalStyle: Bool = false
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
@@ -932,9 +937,13 @@ struct NotchBarActionButton: View {
             .padding(.horizontal, title == nil ? 0 : 12)
             .background(
                 RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
-                    .fill(tint.opacity(isHighlighted ? 0.14 : 0.07))
+                    .fill(usesMinimalStyle ? Color.clear
+                                           : tint.opacity(isHighlighted ? 0.14 : 0.07))
             )
-            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+            .contentShape(usesMinimalStyle
+                          ? AnyShape(Rectangle())
+                          : AnyShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium,
+                                                      style: .continuous)))
         }
         .buttonStyle(.plain)
         .pointerCursor()
