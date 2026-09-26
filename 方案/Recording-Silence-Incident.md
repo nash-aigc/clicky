@@ -239,6 +239,40 @@ Everything else in this subsystem is downstream of that one fact, and it is one
 
 ---
 
+## 6b. The real fix — bind to the device, not the aggregate
+
+**Added 2026-09-26, after the requirement was stated plainly: the screen recorder
+is used at high frequency and must run *at the same time* as Clicky.**
+
+That rules out every "quit the other app" answer and identifies the actual fault.
+`AVAudioEngine.inputNode` follows CoreAudio's **default-device aggregate**
+(`CADefaultDeviceAggregate-<pid>-0`), which macOS assembles from whatever devices
+exist at that moment, once per process. Its channel count therefore varies:
+
+| Devices present | Aggregate | Result |
+|---|---|---|
+| microphone alone | 1 channel | works |
+| microphone + a recorder's 2-channel virtual driver | **3 channels** | **pure silence** |
+
+Measured: the healthy runs bound `[id=144]` at 1 channel; the silent run bound
+`[id=207]` at **3 channels with peak identically 0**.
+
+**The fix** is to pin `kAudioOutputUnitProperty_CurrentDevice` on the input node
+to `kAudioHardwarePropertyDefaultInputDevice` — the *real* device — before the
+format is read. The format then equals that device's, whatever aggregates exist
+beside it.
+
+**Verified under the failing condition**: with iShot Pro running, its helper, and
+its 2-channel virtual driver all present in the device list, the engine now
+reports `MacBook Pro麦克风 [id=88]` — 1 channel, peak 237, 24 characters
+transcribed.
+
+**If this recurs**, the first thing to read is the `设备=` field. A named device
+means this is not the cause; `CADefaultDeviceAggregate-*` means the pinning did
+not take effect.
+
+---
+
 ## 7. What is fixed, and what is not
 
 **Fixed (this incident):**

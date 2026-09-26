@@ -122,6 +122,32 @@ nonisolated final class LongFormAudioCapture {
                                          interleaved: false)!
 
         let inputNode = engine.inputNode
+
+        // **显式绑定到「真正的默认输入设备」，不让引擎自己去组聚合体。**
+        //
+        // ## 为什么这一步是必须的，不是优化
+        //
+        // `AVAudioEngine` 默认走的是 CoreAudio 的**默认设备聚合体**
+        //（`CADefaultDeviceAggregate-<pid>-0`）—— 那是 macOS 按「此刻有哪些设备」
+        // **动态组出来的**，每个进程一份。于是它的**声道数会变**：
+        //
+        //     麦克风 1 声道                    → 聚合体 1 声道 → 正常
+        //     麦克风 1 + 录屏软件的虚拟设备 2   → 聚合体 3 声道 → **全是静音**
+        //
+        // 实测（2026-09-26）：能用的两次都是 `[id=144]`、1 声道；坏的那次是
+        // `[id=207]`、**3 声道、峰值恒为 0**，转写 0 字、连接反复超时重连。
+        //
+        // 而这不是「偶尔」：**用户的录屏软件是高频使用的，他会一边录屏一边用
+        // Clicky 说话**。那正是两个软件必须同时成立的场景 —— 所以不能靠
+        // 「关掉录屏软件」，只能让 Clicky 不去碰那个聚合体。
+        //
+        // 绑到 `kAudioHardwarePropertyDefaultInputDevice` 拿到的那**真实设备**
+        // 之后，格式恒等于那个设备的格式（内置麦克风就是 1 声道），
+        // 旁边有多少虚拟设备都不影响它。
+        //
+        // **必须在读格式之前设。** 设完再读 `outputFormat`，否则读到的是旧绑定
+        // 的格式 —— 而那个格式正是我们不满意的那个。
+        Self.pinInputNodeToRealDefaultDevice(inputNode)
         let declaredFormat = inputNode.outputFormat(forBus: 0)
         // 把取到的格式原样报出去。采样率/声道都可能是 0（没设备 / 没权限 /
         // 被别的进程占着），而它们失败的方式都是静音 —— 不打印就分不出来。
@@ -1554,6 +1580,32 @@ private extension RecordingAudioWriter {
     func tryAppend(_ pcm: Data) {
         do { try append(pcm) }
         catch { NSLog("[LongForm] 写音频失败：\(error)") }
+    }
+}
+
+/// 这个系统此刻**真正的**默认输入设备（不是那个动态聚合体）。
+private nonisolated func realDefaultInputDeviceID() -> AudioDeviceID {
+    var deviceID = AudioDeviceID(0)
+    var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+    var address = AudioObjectPropertyAddress(
+        mSelector: kAudioHardwarePropertyDefaultInputDevice,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain)
+    let status = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                            &address, 0, nil, &size, &deviceID)
+    return status == noErr ? deviceID : 0
+}
+
+/// 把输入节点钉在真实默认输入设备上。失败就什么都不做 —— 退回原来的行为，
+/// **不会比现在更差**：现在就是在用聚合体。
+extension LongFormAudioCapture {
+    nonisolated static func pinInputNodeToRealDefaultDevice(_ node: AVAudioInputNode) {
+        guard let unit = node.audioUnit else { return }
+        var deviceID = realDefaultInputDeviceID()
+        guard deviceID != 0 else { return }
+        AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice,
+                             kAudioUnitScope_Global, 0, &deviceID,
+                             UInt32(MemoryLayout<AudioDeviceID>.size))
     }
 }
 
