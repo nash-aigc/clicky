@@ -69,6 +69,21 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
     /// 全部放在这一组上」。一组 = 一轮提问里派出去的所有活儿（id 由那一轮生成）。
     var groupID: String?
 
+    /// **标题行显示的是时间**，不是标题。
+    ///
+    /// 用户 2026-09-26：「把标题上写时间，任务内容写在正文上」—— 理由是标题在
+    /// 刘海左侧那张卡片里只有 190pt，**永远截断**（「帮我在桌面上新建一个文件…」），
+    /// 而时间是定长的、一眼能对上是哪一次。任务内容移到正文（最多三行、可展开）。
+    var startTimeText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: startedAt)
+    }
+
+    /// 卡片展开着没有（点一下切换）。**放在看板上而不是视图里** —— 因为命中判定
+    /// 在 `NotchWindowController` 里、画在 `AgentStripView` 里，两边必须读同一份。
+    var isCardExpanded = false
+
     init(id: String = EphemeralAgent.makeID(),
          title: String,
          request: String,
@@ -244,6 +259,13 @@ final class AgentActivityBoard: ObservableObject {
 
     /// 用户点了按钮：展开/收起那块面板。**和「卡片自动收」是两条路** ——
     /// 用户手动点开的不许被定时收掉。
+    /// 点卡片：展开/收起它的正文（用户：「如果任务内容非常多，就显示三行，用户点击可以
+    /// 折叠或展开」）。
+    func toggleCardExpansion(_ agentID: String) {
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        agents[index].isCardExpanded.toggle()
+    }
+
     func togglePanel(_ agentID: String) {
         manualPanelID = (manualPanelID == agentID) ? nil : agentID
     }

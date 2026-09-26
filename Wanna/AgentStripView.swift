@@ -93,7 +93,13 @@ struct AgentStripView: View {
     /// 三张一起弹会把刘海下面那块占满，而用户的注意力只有一处；最新的两张够表达
     /// 「刚才发生了什么」。
     private var expandedAgents: [EphemeralAgent] {
-        Array(visibleAgents.filter { board.expandedIDs.contains($0.id) }.prefix(2))
+        // **任务在，卡片就在。**
+        //
+        // 原来这里筛的是 `expandedIDs` —— 那是「刚做完、给你看一眼结果」的两秒提示，
+        // 所以**任务在跑的时候根本没有卡片**（用户 2026-09-26：「内容现在看不到，
+        // 修复一下」就是这个）。而卡片是他要看任务内容的地方（时间 + 正文 + 可展开），
+        // 所以它跟着任务活着：任务在 = 卡片在，任务退场 = 卡片一起走。
+        Array(visibleAgents.prefix(2))
     }
 
     // MARK: - 按钮
@@ -179,18 +185,38 @@ struct AgentStripView: View {
     /// 形状照用户说的：「类似于录音按钮下面刘海边一块一行的小文字…这个卡片的下面有
     /// 圆角，左边有圆角，右边有圆角」—— 四角都圆，和刘海那条带同一个语汇。
     private func banner(for agent: EphemeralAgent) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(agent.title)
-                .font(.system(size: 11, weight: .semibold))
+        VStack(alignment: .leading, spacing: 3) {
+            // **标题行 = 时间。** 用户 2026-09-26：「把标题上写时间」—— 标题在这里只有
+            // 190pt，永远被截断（「帮我在桌面上新建一个文件…」），时间定长、一眼对得上。
+            HStack(spacing: 5) {
+                Text(agent.startTimeText)
+                    .font(.system(size: 10.5, weight: .semibold).monospacedDigit())
+                    .foregroundColor(DS.Colors.textSecondary)
+                Text("任务内容")
+                    .font(.system(size: 9, weight: .semibold))
+                    .tracking(0.5)
+                    .foregroundColor(DS.Colors.textTertiary)
+                Spacer(minLength: 4)
+                Image(systemName: agent.isCardExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(DS.Colors.textTertiary)
+            }
+            // **正文 = 任务内容本身。** 默认三行，点一下展开/收起
+            //（用户：「如果任务内容非常多，就显示三行，用户点击可以折叠或展开」）。
+            Text(agent.request)
+                .font(.system(size: 11))
                 .foregroundColor(DS.Colors.textPrimary)
-                .lineLimit(1)
-            Text(agent.bannerLine)
-                .font(.system(size: 10))
-                .foregroundColor(DS.Colors.textTertiary)
-                .lineLimit(1)
+                .lineLimit(agent.isCardExpanded ? nil : 3)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
+            if agent.isCardExpanded {
+                Text(agent.bannerLine)
+                    .font(.system(size: 10))
+                    .foregroundColor(DS.Colors.textTertiary)
+            }
         }
         .padding(.horizontal, 9)
-        .padding(.vertical, 5)
+        .padding(.vertical, 6)
         .frame(width: NotchSupport.agentBannerWidth, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 9, style: .continuous)

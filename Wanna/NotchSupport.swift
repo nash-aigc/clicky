@@ -596,6 +596,27 @@ nonisolated enum NotchSupport {
                       height: height)
     }
 
+    /// 卡片**收起时**的高度 —— 也是它的命中高度。
+    ///
+    /// 命中判定只能用一个定值：卡片展开后高度随内容变，而"点的"那边拿不到视图的实测高度
+    ///（这个仓库在"画的和点的各算一遍"上被打过三次）。取收起时的 74pt 是安全的：
+    /// 展开态的前 74pt 里**一定**是标题行 + 前三行正文，点它收起也对。
+    static let agentCardHitHeight: CGFloat = 74
+
+    /// 第一张卡片的屏幕矩形（卡片就排在按钮那一排下面）。
+    ///
+    /// 用户 2026-09-26 要求卡片能点（「用户点击可以折叠或展开」），所以它必须和按钮一样
+    /// **从屏幕坐标算出来**，不能只靠视图自己的摆放。
+    nonisolated static func agentCardFrame(on screen: NSScreen) -> CGRect? {
+        guard let trailingX = agentStripTrailingX(on: screen),
+              let notch = notchRect(on: screen) else { return nil }
+        let top = screen.frame.maxY - notch.height - agentButtonSpacing
+        return CGRect(x: trailingX - agentBannerWidth,
+                      y: top - agentCardHitHeight,
+                      width: agentBannerWidth,
+                      height: agentCardHitHeight)
+    }
+
     /// 按钮下面那张卡片的宽度。**比按钮宽得多** —— 要放得下一行字。
     static let agentBannerWidth: CGFloat = 190
     static let agentBannerMaximumHeight: CGFloat = 46

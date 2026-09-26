@@ -606,6 +606,20 @@ final class NotchWindowController {
             return
         }
 
+        // **卡片本身也能点**：展开/收起它的正文（用户：「用户点击可以折叠或展开」）。
+        // 判在按钮之后：两者不重叠（卡片在按钮下面），顺序不影响结果，但写死了以后
+        // 按钮命中区放大也不会吃掉它。
+        if !panelModel.isFullscreenSuppressed,
+           let cardFrame = screenPresences.compactMap({ NotchSupport.agentCardFrame(on: $0.screen) }).first,
+           cardFrame.contains(clickLocation) {
+            let agents = AgentActivityBoard.shared.agents
+            let bannerShowing = agents.first { AgentActivityBoard.shared.expandedIDs.contains($0.id) }
+            if let target = bannerShowing {
+                AgentActivityBoard.shared.toggleCardExpansion(target.id)
+            }
+            return
+        }
+
         if panelModel.isExpanded {
             // 再点一次刘海就是收起（用户 2026-09-23：「用户点击刘海屏的时候它
             // 展开，用户再点击刘海屏的时候它自动缩回去，增加这样一个动画效果」）。
