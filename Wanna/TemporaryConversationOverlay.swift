@@ -70,18 +70,10 @@ struct TemporaryConversationOverlay: View {
 
             Spacer(minLength: 6)
 
-            toggleChip(title: "屏幕", systemImage: "rectangle.on.rectangle",
-                       isOn: model.sendsScreenshot,
-                       helpOn: "每次发送都带上截图",
-                       helpOff: "不截屏，纯文字对话") {
-                model.sendsScreenshot.toggle()
-            }
-            toggleChip(title: "语音", systemImage: "speaker.wave.2",
-                       isOn: model.speaksReply,
-                       helpOn: "回答用语音念出来",
-                       helpOff: "只显示文字，不念") {
-                model.speaksReply.toggle()
-            }
+            // **「屏幕」「语音」不在这里**（用户 2026-09-26：「临时对话的时候，右侧的
+            // 新建、屏幕和声音它应该显示在输入框的上面，也就是不变」）——
+            // 它们留在输入框正上方那行，由那一行按当前模式路由到这一份会话上。
+            // 按钮的位置永远不动，动的只是中间那段记录。
 
             Button(action: onClose) {
                 Image(systemName: "xmark")
@@ -96,36 +88,6 @@ struct TemporaryConversationOverlay: View {
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .frame(height: NotchSupport.contentColumnHeaderBandHeight)
-    }
-
-    private func toggleChip(title: String,
-                            systemImage: String,
-                            isOn: Bool,
-                            helpOn: String,
-                            helpOff: String,
-                            action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: isOn ? "checkmark" : systemImage)
-                    .font(.system(size: 9.5, weight: .semibold))
-                Text(title).font(.system(size: 11.5))
-            }
-            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.55))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color.white.opacity(isOn ? 0.10 : 0.05))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(isOn ? DS.Colors.success.opacity(0.55) : Color.white.opacity(0.08),
-                                  lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .help(isOn ? helpOn : helpOff)
     }
 
     private var transcript: some View {

@@ -848,15 +848,28 @@ struct NotchHomeView: View {
                 conversationModeChip(mode)
             }
 
-            Spacer(minLength: 6)
-
+            // **「新建」紧挨着「临时对话」**（用户 2026-09-26：「临时对话右侧挨着应该是
+            // 新建按钮，你现在把新建按钮靠右对齐了」）—— 它属于左边这组"换一段对话"，
+            // 不属于右边那组"这一次对话怎么看"。
             composerRowButton(title: "新建", systemImage: "plus",
                               helpText: "新建主对话（当前这条会自动归档）") {
                 sessionsModel.createSession()
                 composerConversationMode = .continuous
             }
+
+            // **这两颗设置只作用于哪一种对话，必须先写出来。**
+            // 用户：「在新建按钮的右侧添加一个『针对……』，会让用户知道其实这个设置
+            // 只针对于当前这个状态」—— 临时对话的「语音」关掉**不影响**主对话，
+            // 不写清楚，用户会以为它是个全局开关。
+            Text(composerConversationMode == .continuous ? "针对连续对话" : "针对临时对话")
+                .font(.system(size: 10.5))
+                .foregroundColor(.white.opacity(0.38))
+                .fixedSize()
+
             screenshotChip
             soundChip
+
+            Spacer(minLength: 0)
         }
     }
 
@@ -922,32 +935,6 @@ struct NotchHomeView: View {
         .help(helpText)
     }
 
-    /// 输入框内部左下角那颗：临时对话的第二种入口。**默认不高亮**（用户要求）。
-    private var temporaryConversationChip: some View {
-        let isOn = composerConversationMode == .temporary
-        return Button(action: {
-            SoundEffectPlayer.shared.play(.sidebarButton)
-            temporaryConversation.discardEverything()
-            composerConversationMode = isOn ? .continuous : .temporary
-        }) {
-            HStack(spacing: 4) {
-                Image(systemName: isOn ? "checkmark" : "bolt.horizontal")
-                    .font(.system(size: 9, weight: .semibold))
-                Text("临时对话").font(.system(size: 11))
-            }
-            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.45))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.white.opacity(isOn ? 0.10 : 0.04))
-            )
-        }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .help(isOn ? "回到连续对话（主对话）" : "开一段临时对话：不记进任何会话，关掉就没了")
-    }
-
     /// 「屏幕」：勾着时每次发送都带上截图（2026-09-26 接线完成）。**默认勾**。
     ///
     /// 关掉它之后这一轮真的不带图（`CompanionManager.submitTypedQuestion` →
@@ -955,21 +942,42 @@ struct NotchHomeView: View {
     /// 也不消费预截图）。写这一格时先做了「不勾就不截」那条链路再放按钮 ——
     /// 一个按下去没反应的开关比没有更糟。
     private var screenshotChip: some View {
-        composerRowButton(title: "屏幕",
-                          systemImage: sendsScreenshotWithQuestion
-                              ? "checkmark" : "rectangle.slash",
-                          isHighlighted: sendsScreenshotWithQuestion,
-                          helpText: sendsScreenshotWithQuestion
-                              ? "每次发送都会带上截图（点击：这一轮不看屏幕）"
-                              : "这一轮不看屏幕，纯文字提问（点击：恢复带截图）") {
-            sendsScreenshotWithQuestion.toggle()
+        // **两种对话各记各的**（用户：「临时对话，它的屏幕跟声音跟语音这两个是独立的…
+        // 它并不影响主循环的对话」）。连续对话默认勾、临时对话默认不勾。
+        let isOn = composerConversationMode == .continuous
+            ? sendsScreenshotWithQuestion
+            : temporaryConversation.sendsScreenshot
+        return composerRowButton(title: "屏幕",
+                                 systemImage: isOn ? "checkmark" : "rectangle.slash",
+                                 isHighlighted: isOn,
+                                 helpText: isOn
+                                     ? "每次发送都会带上截图（点击：不看屏幕）"
+                                     : "不看屏幕，纯文字提问（点击：恢复带截图）") {
+            if composerConversationMode == .continuous {
+                sendsScreenshotWithQuestion.toggle()
+            } else {
+                temporaryConversation.sendsScreenshot.toggle()
+            }
         }
     }
 
     /// 「声音」——就是原来输入框右下角那个静音开关，搬到这一行（用户要求）。
     /// 状态仍然是同一个 `companionManager.voiceReplyMuted`，没有第二份真相。
     private var soundChip: some View {
-        composerRowButton(title: "声音",
+        // 连续对话用的是全局那个静音开关（`voiceReplyMuted`，播报的总闸）；
+        // 临时对话用它自己那份。两者互不影响。
+        if composerConversationMode == .temporary {
+            return AnyView(composerRowButton(title: "声音",
+                                             systemImage: temporaryConversation.speaksReply
+                                                 ? "speaker.wave.2.fill" : "speaker.slash.fill",
+                                             isHighlighted: temporaryConversation.speaksReply,
+                                             helpText: temporaryConversation.speaksReply
+                                                 ? "临时对话的回答会念出来（点击：只显示文字）"
+                                                 : "临时对话只显示文字（点击：念出来）") {
+                temporaryConversation.speaksReply.toggle()
+            })
+        }
+        return AnyView(composerRowButton(title: "声音",
                           systemImage: companionManager.voiceReplyMuted
                               ? "speaker.slash.fill" : "speaker.wave.2.fill",
                           isHighlighted: !companionManager.voiceReplyMuted,
@@ -980,7 +988,7 @@ struct NotchHomeView: View {
             if companionManager.voiceReplyMuted {
                 companionManager.silenceActiveReplyAudio()
             }
-        }
+        })
     }
 
     private var composerRow: some View {
@@ -1001,10 +1009,9 @@ struct NotchHomeView: View {
             onStop: { companionManager.interruptActiveResponse() },
             // **输入框上方那一行**（2026-09-26）：两种对话模式 + 新建 / 屏幕 / 声音 / 音色。
             controlsRow: AnyView(composerControlsRow),
-            // 输入框内部左下角那颗「临时对话」小按钮（用户：「输入框内部最下方一行，
-            // 最左侧显示『临时对话』按钮，默认不点击」）—— 与上方那颗是同一个状态的
-            // 第二种入口：点了就切过去，再点回来。
-            bottomLeadingAccessory: AnyView(temporaryConversationChip),
+            // **输入框内部那颗「临时对话」按钮删掉了**（用户 2026-09-26：
+            // 「输入框的内部左下角你有一个临时对话，把这个按钮删掉，因为它功能重复了」）
+            // —— 上方那行已经有同一颗了。
             // **静音开关搬走了**（2026-09-26）：用户要求「声音按钮移至输入框上方」——
             // 它现在是上面那行里的「声音」那一格（`soundChip`），状态还是同一个
             // `companionManager.voiceReplyMuted`。**不在这里留第二颗**：同一件事两个入口，

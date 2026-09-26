@@ -179,7 +179,11 @@ struct HomeSpaceSidebarView: View {
             .help("新建主对话（当前这条会自动归档）")
         }
         .padding(.horizontal, 10)
-        .padding(.top, 10)
+        // **顶部要留出刘海那条带子**（用户 2026-09-26：「搜索框有点太高了，太靠上边了」）。
+        // 面板的顶边就是屏幕的顶边，刘海本身占着上面 32pt —— 不留这一条，搜索框就
+        // 顶进刘海底下、看着像贴在天花板上。用的还是内容列那三个页头用的同一个常量
+        // （`sheetHeaderTopInset`），三处对齐同一个数。
+        .padding(.top, NotchSupport.sheetHeaderTopInset)
         .padding(.bottom, 8)
     }
 
@@ -230,8 +234,24 @@ struct HomeSpaceSidebarView: View {
                       : "设为默认：屏幕快捷键发出去的问题进这一条主对话")
             }
         }
+        // **一张卡片就该长得像卡片**（用户 2026-09-26：「应该设计成一个卡片的样式吧？
+        // 或者是你把它这个单行的样式高度大一点，现在都是不太方便点击」）。
+        // 加高到 40pt 并给它一层底：单行 22pt 的行高在侧栏里既难点中，也读不出
+        //「这一块是同一张卡片」—— 下面那四栏是它的内容。
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.white.opacity(isCurrentCard ? 0.10 : 0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(isCurrentCard ? DS.Colors.accent.opacity(0.45) : Color.white.opacity(0.06),
+                              lineWidth: 1)
+        )
+        .padding(.horizontal, 6)
+        .padding(.bottom, 2)
         .contentShape(Rectangle())
         .onTapGesture {
             SoundEffectPlayer.shared.play(.notchRevealed)
@@ -338,21 +358,6 @@ struct HomeSpaceSidebarView: View {
         VStack(spacing: 0) {
             Divider()
                 .overlay(Color.white.opacity(0.08))
-
-            // **「历史归档」回到侧栏了。** 它 2026-09-24 曾被用户要求搬进设置
-            //（「把窗口下面左侧边栏的『归档』按钮移动到设置页面」），2026-09-26 他又
-            // 要求侧栏里「分割线下方为历史归档」。两者不冲突：入口在这儿，页面还是
-            // 设置里的那一页（`SettingsPage.archive`）—— 所以这里只切设置页，
-            // 不复活当年删掉的整窗接管那套。
-            NotchBarActionButton(
-                title: "历史归档",
-                systemImage: "archivebox",
-                isHighlighted: false,
-                help: "以前的主对话与它们的任务"
-            ) {
-                SoundEffectPlayer.shared.play(.notchRevealed)
-                openArchiveAction()
-            }
 
             NotchBarActionButton(
                 title: "角色",
@@ -572,8 +577,18 @@ struct HomeSpaceSidebarView: View {
     ///
     /// 顶上那条分隔线是随下移一起加的：这一行下面是 `Spacer`，列表短的时候
     /// 还好，长的时候最后一行会直接贴到按钮上，分不清哪是列表哪是操作。
+    /// 左下角这三行：**设置 → 历史归档 → 录音**，自上而下。
+    ///
+    /// 用户 2026-09-26 定的顺序（「这个历史归档应该放在左下角，左下边设置，然后是历史
+    /// 归档，然后是录音，应该是这样一个逻辑」）。原来是「设置 / 录音」并排一行、归档
+    /// 在它们上面 —— 并排读起来是"两个平级的入口"，而他要的是**一条竖着的清单**：
+    /// 先设置，再归档，再录音。所以三行同宽、左对齐，一行一件事。
+    ///
+    /// 归档那一行仍然只是把设置打开并落到归档页（`SettingsPage.archive`）：
+    /// 用户 2026-09-24 曾要求把它搬进设置，2026-09-26 又要求侧栏里给出入口 ——
+    /// 两者不冲突，入口在这儿，页面还是那一页，当年删掉的整窗接管不复活。
     private var bottomActionRow: some View {
-        HStack(spacing: 8) {
+        VStack(spacing: 2) {
             NotchBarActionButton(
                 title: "设置",
                 systemImage: "gearshape",
@@ -584,7 +599,16 @@ struct HomeSpaceSidebarView: View {
                 showsSettings = true
             }
 
-            // 「录音」紧挨着设置右边 —— 一步跳到录音页，不用先进设置再找。
+            NotchBarActionButton(
+                title: "历史归档",
+                systemImage: "archivebox",
+                isHighlighted: false,
+                help: "以前的主对话与它们的任务"
+            ) {
+                SoundEffectPlayer.shared.play(.notchRevealed)
+                openArchiveAction()
+            }
+
             NotchBarActionButton(
                 title: "录音",
                 systemImage: "record.circle",
@@ -594,17 +618,9 @@ struct HomeSpaceSidebarView: View {
                 SoundEffectPlayer.shared.play(.recordingEditorOpened)
                 openRecordingSettingsAction()
             }
-
-            Spacer(minLength: 8)
-
-            // 「归档」**不在这里了**（用户 2026-09-24：「把窗口下面左侧边栏的
-            // 「归档」按钮移动到设置页面，用户点击设置，在「导出导入」的下面添加
-            // 一个按钮叫「归档」」）。它现在是 `SettingsPage.archive`，设置侧栏
-            // 的「导入导出」组里那一行；整窗接管那条旧路连同 `showsArchive`
-            // 一起删掉了 —— 侧栏这颗按钮是它唯一的入口，按钮没了它就成了死状态。
         }
         .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.top, 8)
         .padding(.bottom, 12)
         .overlay(alignment: .top) {
             Divider()

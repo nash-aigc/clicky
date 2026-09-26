@@ -140,13 +140,6 @@ struct MessageComposerField: View {
     /// 行里的按钮由各页自己给，这样三页将来都加的时候不会各排各的。
     var controlsRow: AnyView? = nil
 
-    /// **输入框内部最下面一行、最左侧**的东西（用户 2026-09-26：「输入框内部最下方一行，
-    /// 最左侧显示「临时对话」按钮，默认不点击」）。
-    ///
-    /// 与右下角那一组（✕ / 附加按钮）各占一角：并排是不会有字的时侯抢同一个角落，
-    /// 而左右分开则连"抢"的可能都没有。
-    var bottomLeadingAccessory: AnyView? = nil
-
     var composerAccessory: ComposerAccessoryButton? = nil
 
 
@@ -196,14 +189,6 @@ struct MessageComposerField: View {
         // overlay is the version that cannot leak into the value.
         .overlay(alignment: .topLeading) { placeholderLabel }
         .overlay(alignment: .topTrailing) { expandButton }
-        // 左下角：调用方给的「临时对话」那一类小按钮（没有就不占位）。
-        .overlay(alignment: .bottomLeading) {
-            if let bottomLeadingAccessory {
-                bottomLeadingAccessory
-                    .padding(.leading, 6)
-                    .padding(.bottom, 6)
-            }
-        }
         // 右下角是一组，不是单个：✕ 只在有字时出现，附加按钮（静音）常驻。
         // 并排放才不会有字的时候两者抢同一个角落。
         .overlay(alignment: .bottomTrailing) {
