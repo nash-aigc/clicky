@@ -22,8 +22,20 @@ import SwiftUI
 struct AgentStripView: View {
 
     @ObservedObject var board: AgentActivityBoard
-    /// 这一排的**右边缘**在窗口坐标里的 x。挂载处算好传进来 —— 这个视图不认识屏幕。
-    let trailingXInWindow: CGFloat
+    /// 那一排的**右端相对刘海中心**的偏移（屏幕坐标，负数 = 在刘海左边）。
+    ///
+    /// 不是"窗口坐标里的绝对 x"：根视图只在启动时建一次，而这一排要同时服务静止窗口
+    ///（673pt）和展开面板（810pt）两个原点不同的窗口 —— 绝对 x 一烘死，展开那一刻
+    /// 整排就平移 68pt（实测按钮画到 x=566，而命中区在 622–662，点不到）。
+    /// 两种窗口都居中在刘海中心上，所以「容器中心 + 这个偏移」在两个窗口里是同一个
+    /// 屏幕位置，和命中矩形永远一致。
+    let trailingXFromNotchCenter: CGFloat
+    /// 按钮高度（= 菜单栏高度），同样由挂载处按屏幕算好。
+    let buttonHeight: CGFloat
+
+    /// 呼吸的相位。**整排共用一个** —— 每个按钮各起一条 `repeatForever` 动画会各自飘、
+    /// 彼此不同步，看起来像坏了。
+    @State private var isBreathing = false
 
     /// 只在册子上最多的那几个：刘海左侧放不下更多（见 `maximumVisibleAgentButtons`）。
     private var visibleAgents: [EphemeralAgent] {
@@ -31,6 +43,29 @@ struct AgentStripView: View {
     }
 
     var body: some View {
+        // **「容器中心 + 相对刘海中心的偏移」** —— 容器就是当前那个窗口的内容
+        //（静止 673pt / 展开 810pt），两种情况下它的中心都在刘海中心上，所以这个
+        // 算法在两个窗口里得到同一个屏幕位置。见 `trailingXFromNotchCenter`。
+        GeometryReader { proxy in
+            strip
+                .offset(x: proxy.size.width / 2 + trailingXFromNotchCenter
+                            - NotchSupport.agentBannerWidth)
+        }
+        // 整块不参与布局也不收点击：位置全靠 offset，点击走全局监听
+        //（静止态的面板 `ignoresMouseEvents = true`，视图根本收不到点击）。
+        // 全局监听那一侧的命中矩形由 `NotchSupport.agentButtonFrame` 给出，
+        // 和这里的摆放是同一套算术 —— 画在哪就点在哪。
+        .allowsHitTesting(false)
+        // 呼吸的起搏器：一次 `repeatForever`，之后只靠 `isBreathing` 这个 Bool 驱动
+        // 每一个按钮的透明度插值。
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                isBreathing = true
+            }
+        }
+    }
+
+    private var strip: some View {
         VStack(alignment: .trailing, spacing: 5) {
             HStack(spacing: NotchSupport.agentButtonSpacing) {
                 // **从右往左**：最新的任务离刘海最近。用户刚说完话，眼睛就在刘海上，
@@ -45,16 +80,12 @@ struct AgentStripView: View {
             //
             // 用户的要求是「它就把这个卡片也显示，可以显示在下面，让它们别重叠」——
             // 竖着排是唯一同时满足「在按钮下面」和「不重叠」的排法：横着排的话，
-            // 卡片比按钮宽得多（190 vs 30），两张就会压在一起。
+            // 卡片比按钮宽得多（190 vs 40），两张就会压在一起。
             ForEach(expandedAgents) { agent in
                 banner(for: agent)
             }
         }
         .frame(width: NotchSupport.agentBannerWidth, alignment: .trailing)
-        .offset(x: trailingXInWindow - NotchSupport.agentBannerWidth)
-        // 整块不参与布局也不收点击：位置全靠 offset，点击走全局监听
-        //（静止态的面板 `ignoresMouseEvents = true`，视图根本收不到点击）。
-        .allowsHitTesting(false)
     }
 
     /// 卡片展开着的那些 —— **同时最多两张**。
@@ -68,28 +99,68 @@ struct AgentStripView: View {
     // MARK: - 按钮
 
     private func button(for agent: EphemeralAgent) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(agent.status == .running ? DS.Colors.surface3 : DS.Colors.surface2)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(agent.status == .running
-                                      ? DS.Colors.accent.opacity(0.65)
-                                      : DS.Colors.borderSubtle,
-                                      lineWidth: 1)
-                )
-            HStack(spacing: 3) {
-                // 状态点：跑着的是呼吸的，完了的是静态的。**颜色是唯一的判据** ——
-                // 按钮只有 30pt 宽，放不下字。
-                Circle()
-                    .fill(statusColor(for: agent))
-                    .frame(width: 5, height: 5)
-                Text(agent.id)
-                    .font(.system(size: 9, weight: .semibold).monospaced())
-                    .foregroundColor(DS.Colors.textSecondary)
-            }
+        // **形状：上边两个直角、下面两个圆角。** 用户 2026-09-26：「按钮的样式应该是
+        // 一个长方形，但左下角、右下角有圆角」。复用刘海那条带自己的 `PillShape` ——
+        // 同一个语汇，不另写一份路径。
+        //
+        // **高度 = 菜单栏高度**（用户：「按钮的高度应该显示到整个菜单栏的高度一样」），
+        // 由控制器按屏幕算好传进来。
+        let isUnsettled = agent.status == .running || agent.status == .failed
+        let cornerRadius = Self.buttonCornerRadius
+        let background: some View = PillShape(bottomCornerRadius: cornerRadius)
+            .fill(fillColor(for: agent))
+        // `PillShape` 是 `Shape` 不是 `InsettableShape`，所以这里只能用 `stroke`
+        //（边框压在中线上，1pt 的线看不出差别），不能用 `strokeBorder`。
+        let border: some View = PillShape(bottomCornerRadius: cornerRadius)
+            .stroke(strokeColor(for: agent), lineWidth: 1)
+        let content: some View = HStack(spacing: 4) {
+            Circle()
+                .fill(statusColor(for: agent))
+                .frame(width: 6, height: 6)
+            // **一行放下** —— 40pt 宽装得下 4 个字符；原来 30pt 宽时它会折成两行，
+            // 屏幕上看着像「enc / 5」那种乱码（用户报过）。
+            Text(agent.id)
+                .font(.system(size: 9, weight: .semibold).monospaced())
+                .foregroundColor(DS.Colors.textSecondary)
+                .lineLimit(1)
+                .fixedSize()
         }
-        .frame(width: NotchSupport.agentButtonWidth, height: NotchSupport.agentButtonHeight)
+        // **拆成几段写是有原因的**：一整条链子（ZStack + 三元 + overlay + frame +
+        // opacity + animation）会让编译器的类型推断超时，报「failed to produce
+        // diagnostic for expression」。分段 + 显式类型之后它才编得过。
+        //
+        // **呼吸只给「还在跑」和「没做成」。** 用户 2026-09-26：「如果任务失败或者任务
+        // 没有完成，它应该有一个呼吸的效果，或者通过颜色变化，让用户能够知道」。
+        // 做完的两种不呼吸 —— 它们马上会自己退场（见 `AgentActivityBoard.finishTask`），
+        // 而会呼吸的东西是在喊「看我」，对已经结束的事那是假的。
+        //
+        // 相位是**整排共用一个** `@State`：每个按钮各起一条 `repeatForever` 会各自飘、
+        // 彼此不同步，看起来像坏了。
+        return ZStack {
+            background
+            border
+            content
+        }
+        .frame(width: NotchSupport.agentButtonWidth, height: buttonHeight)
+        .opacity(isUnsettled && isBreathing ? 0.55 : 1.0)
+        .animation(isUnsettled ? .easeInOut(duration: 0.9) : .default, value: isBreathing)
+    }
+
+    private func fillColor(for agent: EphemeralAgent) -> Color {
+        agent.status == .running ? DS.Colors.surface3 : DS.Colors.surface2
+    }
+
+    /// 按钮下面那条边的圆角。刘海那条带是 6，卡片是 9 —— 按钮取中间，看起来才像
+    /// 同一套东西里的一员。
+    private static let buttonCornerRadius: CGFloat = 7
+
+    private func strokeColor(for agent: EphemeralAgent) -> Color {
+        switch agent.status {
+        case .running: return DS.Colors.accent.opacity(0.65)
+        // 没做成的要**看得出来** —— 颜色是唯一的判据（按钮里只有 6pt 的圆点 + 4 个字符）。
+        case .failed: return DS.Colors.destructive.opacity(0.7)
+        case .doneVerified, .doneUnverified: return DS.Colors.borderSubtle
+        }
     }
 
     private func statusColor(for agent: EphemeralAgent) -> Color {

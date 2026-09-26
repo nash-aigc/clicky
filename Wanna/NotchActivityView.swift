@@ -641,7 +641,11 @@ private struct NotchHangUpGlyph: View {
 
 /// A rectangle rounded only at the bottom — the pill hangs from the screen's
 /// top edge, so its top corners must stay square to fuse with the notch.
-private struct PillShape: Shape {
+/// 刘海那条带的形状：**上边两个角是直角、下面两个角是圆角**。
+///
+/// 它是刘海语汇里共用的一块形状：刘海自己的黑条、展开态的状态带、以及刘海左侧那一排
+/// 临时 agent 按钮都画成它（用户对按钮的要求正是「长方形，左下角右下角有圆角」）。
+struct PillShape: Shape {
     var bottomCornerRadius: CGFloat
 
     /// Without this the radius would SNAP between its resting and active
@@ -858,16 +862,15 @@ struct NotchPanelRootSwitchingView: View {
     /// 不关心这件事的调用方（预览、测试）不用传。
     var sheetDidAppear: () -> Void = {}
 
-    /// 那一排 agent 按钮的右边缘在**窗口坐标**里的 x。
+    /// 那一排 agent 按钮的位置与尺寸。
     ///
-    /// 从**刘海的左边缘**往回退：刘海的中心在窗口里的位置是
-    /// `notchCenterXInWindow`（由控制器算好传进来），刘海半宽是 `restingPillWidth / 2`，
-    /// 再退掉左翼的宽度和那一段空。**全部是绝对量** —— 不依赖任何容器的相对位置，
-    /// 因为刘海内容的宽度什么时候变是不可预测的（用户明确要求过这一点）。
-    private var agentStripTrailingXInWindow: CGFloat {
-        let pillLeading = notchCenterXInWindow - restingPillWidth / 2
-        return pillLeading - NotchSupport.leadingWingWidth - NotchSupport.agentStripGapFromWing
-    }
+    /// **位置是「相对刘海中心的偏移」，不是窗口坐标里的绝对 x。** 理由是坐标系：
+    /// 根视图只在启动时建一次，而那一排要同时服务两个窗口（静止 673pt / 展开 810pt，
+    /// 原点差 68pt）。绝对 x 一烘死，展开那一刻整排就会平移 68pt —— 实测按钮被画到
+    /// x=566 而命中区在 622–662，用户点不到。两种窗口都居中在刘海中心上，所以
+    /// 「中心 + 偏移」在两个窗口里是同一个屏幕位置。
+    var agentStripTrailingXFromNotchCenter: CGFloat = 0
+    var agentButtonHeight: CGFloat = 32
 
     var body: some View {
         panelContent
@@ -877,7 +880,8 @@ struct NotchPanelRootSwitchingView: View {
             //（见 `NotchExpandedWingBand` 的注释）。
             .overlay(alignment: .topLeading) {
                 AgentStripView(board: AgentActivityBoard.shared,
-                               trailingXInWindow: agentStripTrailingXInWindow)
+                               trailingXFromNotchCenter: agentStripTrailingXFromNotchCenter,
+                               buttonHeight: agentButtonHeight)
             }
     }
 

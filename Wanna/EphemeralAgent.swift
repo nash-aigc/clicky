@@ -163,7 +163,38 @@ final class AgentActivityBoard: ObservableObject {
             + "\(agents[index].toolCalls.count) 次工具调用，\(agents[index].steps.count) 条步骤")
         expandedIDs.insert(agentID)
         scheduleCollapse(of: agentID)
+        scheduleRetirement(of: agentID, status: status)
     }
+
+    /// 做完的按钮**自己退场**（用户 2026-09-26：「任务完成之后应该自动退出」）。
+    ///
+    /// 两种"做完"留的时间不同：**核验过**的可以很快走（绿点已经说完了一切），
+    /// **未核验**的多留一会儿 —— 那是"你自己看一眼"的状态。
+    ///
+    /// **「没做成」不退。** 用户要的正是"失败或者没完成时有一个呼吸的效果让用户知道"，
+    /// 而一个呼吸着的按钮自己消失等于把问题藏起来；它由保留期或用户点开看过之后收走。
+    ///
+    /// **面板正开着的那一个不拿** —— 和 `pruneExpired` 同一条规矩：用户正在看它，
+    /// 把它从底下抽走是最糟的一种。
+    private func scheduleRetirement(of agentID: String, status: EphemeralAgent.Status) {
+        guard status != .failed else { return }
+        let generation = (retirementGenerations[agentID] ?? 0) + 1
+        retirementGenerations[agentID] = generation
+        let holdSeconds = status == .doneVerified
+            ? Self.verifiedRetirementSeconds
+            : Self.unverifiedRetirementSeconds
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: UInt64(holdSeconds * 1_000_000_000))
+            guard self.retirementGenerations[agentID] == generation else { return }
+            guard self.manualPanelID != agentID else { return }
+            self.agents.removeAll { $0.id == agentID }
+            self.expandedIDs.remove(agentID)
+        }
+    }
+
+    /// 核验过的留 4 秒、未核验的留 12 秒，然后按钮自己走。
+    static let verifiedRetirementSeconds: Double = 4.0
+    static let unverifiedRetirementSeconds: Double = 12.0
 
     /// 用户点了按钮：展开/收起那块面板。**和「卡片自动收」是两条路** ——
     /// 用户手动点开的不许被定时收掉。
@@ -177,6 +208,9 @@ final class AgentActivityBoard: ObservableObject {
     // MARK: - 内部
 
     private var collapseGenerations: [String: Int] = [:]
+    /// 退场的代次。**和卡片收起各一套**：它们是两件事（卡片收 2 秒、按钮走 4/12 秒），
+    /// 共用一套代次的话，一次卡片收起会把"按钮该走了"那个计划作废掉。
+    private var retirementGenerations: [String: Int] = [:]
 
     private func scheduleCollapse(of agentID: String) {
         let generation = (collapseGenerations[agentID] ?? 0) + 1

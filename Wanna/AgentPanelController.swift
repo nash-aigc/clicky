@@ -35,7 +35,22 @@ final class AgentPanelController {
                 guard let self else { return }
                 if let agentID { self.show(agentID: agentID) } else { self.hide() }
             }
+        // **面板开着的时候，里面的数据也要跟着走。**
+        //
+        // 原来只在 `manualPanelID` 变化时重建一次，于是"点开一个正在跑的任务、
+        // 看着它跑"会永远停在点开那一刻的样子 —— 用户报的就是这个：
+        // 「任务确实完成了，但是这个按钮跟任务的状态没有同步」。
+        // 现在看板一变就按同一个 id 重新取一次、重建同一块视图。
+        // 任务被退场（做完自动走）时 `show` 找不到它，会顺手把面板也收掉。
+        panelContentObservation = AgentActivityBoard.shared.$agents
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard let self, let shownAgentID = self.shownAgentID else { return }
+                self.show(agentID: shownAgentID)
+            }
     }
+
+    private var panelContentObservation: AnyCancellable?
 
     private var panel: NSPanel?
     private var hostingView: NSHostingView<AgentDetailView>?

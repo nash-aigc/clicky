@@ -34,7 +34,10 @@ struct NotchRecordingBandView: View {
     /// 刘海自己的**底角是圆的**（约 10pt）。两翼如果正好从刘海边缘起画，那个圆弧
     /// 处就会露出桌面的背景 —— 用户实测截图里两处缝隙都能看到。所以每侧各压进
     /// 这么多把圆角盖掉，中间那段相应变窄，**整条带的总宽不变**。
-    private static let notchCornerOverlap: CGFloat = 14
+    /// 这条带在刘海左右**多压出来的**宽度（画的时候要用，而刘海左侧那一排临时 agent
+    /// 按钮「让位让够了没有」也是按它算的）—— 所以数字住在 `NotchSupport`，这里只是引用，
+    /// 两处不能再各写一个。
+    private static let notchCornerOverlap: CGFloat = NotchSupport.recordingBandLeadingOverlap
 
     /// 小窗标题栏的高度。控制器算它的命中矩形时要用 —— 画的和点的必须是同一个数。
     static let titleBarHeight: CGFloat = 26

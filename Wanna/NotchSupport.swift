@@ -508,17 +508,38 @@ nonisolated enum NotchSupport {
     // MARK: - 临时 agent 的那一排按钮（刘海左侧）
 
     /// 一个 agent 按钮的尺寸。
-    static let agentButtonWidth: CGFloat = 30
-    static let agentButtonHeight: CGFloat = 22
+    ///
+    /// **高度 = 菜单栏的高度**（用户 2026-09-26：「按钮的高度应该显示到整个菜单栏的
+    /// 高度一样」）—— 在有刘海的机器上那就是 `safeAreaInsets.top`（本机实测 32），
+    /// 也正是刘海那一条的高度。所以它跟屏幕有关，是个函数不是常量。
+    ///
+    /// **宽度从 30 加到 40**：30 的时候 id（4 个字符、9pt 等宽）在一行里放不下，
+    /// 会折成两行 —— 屏幕上看着像「enc / 5」这种乱码（用户报过）。40×32 同时满足
+    /// 用户要的「长方形」（宽 > 高）。
+    static let agentButtonWidth: CGFloat = 40
+    nonisolated static func agentButtonHeight(on screen: NSScreen) -> CGFloat {
+        notchRect(on: screen)?.height ?? 32
+    }
     /// 两个按钮之间。
     static let agentButtonSpacing: CGFloat = 6
-    /// 这一排与**两翼动画区**之间留的空。
+    /// 这一排与**刘海左侧那些会展开的东西**之间留的空。
     ///
-    /// **这一段不能省。** 刘海的左翼（`leadingWingWidth` = 86）是会被推出来的 ——
-    /// 录音、思考、播报时它从刘海左侧滑出。agent 按钮如果直接贴着刘海放，
-    /// 翼一出来就把它盖住了。用户的原话：「你要把这个动画的位置去除，然后在动画的
-    /// 左侧显示这些 agent 的东西」。
+    /// **判据是"最宽的那一次左侧展开"，不是"翼宽"。** 刘海的左翼（86）在录音/思考/
+    /// 播报时会滑出来，而**录音那条带比它还宽** —— 它还要往外压
+    /// `recordingBandLeadingOverlap`（14pt 的圆角重叠），一共 100pt。用户 2026-09-26
+    /// 的原话：「展开时，这个小按钮如果要显示，就必须在展开位置的左侧，否则一旦展开，
+    /// 这个小按钮就看不见了。所以你要测量一下录音时、包括提问屏幕内容时，展开之后的
+    /// 宽度是多少」。
+    ///
+    /// 实测（本机 1728×1117、刘海 185 宽）：录音展开时左侧占 100pt，所以这一排的右端
+    /// 退到刘海左边缘以外 `86 + 14 + 10 = 110pt` 处。
     static let agentStripGapFromWing: CGFloat = 10
+
+    /// 录音那条带在刘海左侧**多压出来的**宽度。
+    ///
+    /// 它同时被 `NotchRecordingOverlay` 用来画那条带（那边原来自己写了一个私有的
+    /// 同名常量）—— 两处必须同一个数，否则"让位让够了没有"这件事就又变成两份算术。
+    static let recordingBandLeadingOverlap: CGFloat = 14
 
     /// 这一排的**右端**在屏幕上的 x —— 也就是最靠近刘海的那个按钮的右边缘。
     ///
@@ -527,11 +548,30 @@ nonisolated enum NotchSupport {
     /// 因为相对的话可能这个刘海它左侧边那个内容，那你这个位置就又往后偏移了」）——
     /// 相对定位会跟着刘海内容的宽度跑，而刘海内容什么时候变宽是不可预测的。
     ///
-    /// 从**刘海自己的左边缘**往回退：刘海宽 → 左翼宽 → 那一段空。
+    /// 从**刘海自己的左边缘**往回退：刘海宽 → 左翼宽 → 录音那条带多压的宽 → 那一段空。
+    /// 退的是**最宽的那一次展开**（录音，见 `recordingBandLeadingOverlap`）。
     nonisolated static func agentStripTrailingX(on screen: NSScreen) -> CGFloat? {
         guard let notch = notchRect(on: screen) else { return nil }
         return screen.frame.minX + notch.minX
-            - leadingWingWidth - agentStripGapFromWing
+            - leadingWingWidth - recordingBandLeadingOverlap - agentStripGapFromWing
+    }
+
+    /// 那一排的右端**相对刘海中心**的偏移（屏幕坐标，负数 = 在刘海左边）——
+    /// 视图就用这个量定位，而不是"窗口坐标里的绝对 x"。
+    ///
+    /// **为什么是相对中心：根视图只在启动时建一次**（`rebuildScreenPresences`），
+    /// 所以传进去的窗口坐标会被烘死，而那一排要同时服务两个窗口 —— 静止时画在那块
+    /// 673pt 的窗口里（原点 x=527），展开时画在 810pt 的面板里（原点 x=459）。
+    /// 用"窗口坐标"定位，展开那一刻它就会跟着窗口原点整体平移 68pt（实测：
+    /// 按钮被画到 x=566，而命中区在 622–662）。
+    ///
+    /// **两种窗口都居中在刘海中心上**（静止窗口 = 胶囊 ± 等宽外扩；展开面板 =
+    /// 屏幕居中，而刘海本来就在屏幕中间），所以"中心 + 偏移"在两个窗口里得到的是
+    /// 同一个屏幕位置 —— 画的和点的因此永远一致。
+    nonisolated static func agentStripTrailingXFromNotchCenter(on screen: NSScreen) -> CGFloat? {
+        guard let trailingX = agentStripTrailingX(on: screen),
+              let notch = notchRect(on: screen) else { return nil }
+        return trailingX - (screen.frame.minX + notch.midX)
     }
 
     /// 第 `indexFromNotch` 个按钮（0 = 最靠近刘海的那个）的屏幕矩形。
@@ -540,17 +580,20 @@ nonisolated enum NotchSupport {
     /// 而旧任务让他去左边找是合理的。
     nonisolated static func agentButtonFrame(on screen: NSScreen,
                                              indexFromNotch: Int) -> CGRect? {
-        guard let trailingX = agentStripTrailingX(on: screen),
-              let notch = notchRect(on: screen) else { return nil }
+        guard let trailingX = agentStripTrailingX(on: screen) else { return nil }
         let right = trailingX - CGFloat(indexFromNotch) * (agentButtonWidth + agentButtonSpacing)
         let left = right - agentButtonWidth
         // 撞到屏幕左边缘就不放了 —— 一个跑到屏幕外面的按钮，点不到也看不见，
         // 而它会安静地占着一个位置让别的按钮也排不开。
         guard left >= screen.frame.minX + 8 else { return nil }
+        // **顶对齐**：视图是挂在 `.overlay(alignment: .topLeading)` 上的，也就是从
+        // 屏幕最上面那一行开始画。命中矩形必须贴同一条边 —— 原来是"竖直居中在刘海带里"，
+        // 比画出来的位置低 5pt，点按钮上半部分会落空。
+        let height = agentButtonHeight(on: screen)
         return CGRect(x: left,
-                      y: screen.frame.maxY - notch.height + (notch.height - agentButtonHeight) / 2,
+                      y: screen.frame.maxY - height,
                       width: agentButtonWidth,
-                      height: agentButtonHeight)
+                      height: height)
     }
 
     /// 按钮下面那张卡片的宽度。**比按钮宽得多** —— 要放得下一行字。
