@@ -378,6 +378,12 @@ final class TaskListPanelController {
 
     var isShown: Bool { panel?.isVisible == true }
 
+    /// 面板此刻在屏幕上的矩形 —— 给"点外面收起"用（判定在 `NotchWindowController`）。
+    var panelScreenFrame: CGRect? {
+        guard panel?.isVisible == true else { return nil }
+        return panel?.frame
+    }
+
     func toggle() { isShown ? hide() : show() }
 
     func show() {

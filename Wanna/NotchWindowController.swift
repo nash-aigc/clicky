@@ -620,6 +620,16 @@ final class NotchWindowController {
             return
         }
 
+        // **点外面 = 收起面板。** 两个面板都归这一条管：
+        //  · 任务详情面板（用户：「卡片右上角X删除，通过点击外部隐藏卡片即可」）
+        //  · 快捷键弹出的任务清单（用户 2026-09-26：「任务清单，点击卡片外部=自动隐藏」）
+        if TaskListPanelController.shared.isShown,
+           let listFrame = TaskListPanelController.shared.panelScreenFrame,
+           !listFrame.contains(clickLocation) {
+            TaskListPanelController.shared.hide()
+            return
+        }
+
         // **点面板外面 = 收起面板。** 用户 2026-09-26：「卡片右上角X删除，通过点击外部
         // 隐藏卡片即可」—— 所以右上角那颗 ✕ 删了，收起由这一条负责。
         if AgentActivityBoard.shared.manualPanelID != nil,
