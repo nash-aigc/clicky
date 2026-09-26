@@ -159,20 +159,23 @@ struct HomeSpaceSidebarView: View {
             // 折叠第 2。折叠那颗以前是**窗口级**画在面板左上角的，现在搬进这一行：
             // 它就该和这些按钮排在一起，而不是浮在它们上面（浮着的那颗已经删掉，
             // 右侧那颗窗口级的「收起侧栏」还在，两颗动作本来相同）。
-            HStack(spacing: 8) {
-                sidebarTopButton(title: "设置", systemImage: "gearshape", isOn: showsSettings) {
-                    SoundEffectPlayer.shared.play(.sidebarButton)
-                    showsSettings = true
-                }
-                sidebarTopButton(title: nil, systemImage: "sidebar.left", isOn: false) {
+            HStack(spacing: 6) {
+                // **折叠在最左，设置第 2**（用户 2026-09-26：「左侧顶部第一行最左侧应为折叠
+                // 按钮（当前写错了），第二个是设置」—— 上一轮他说"设置放在折叠的左侧"，
+                // 这一轮更正回来了）。
+                sidebarTopButton(title: "折叠", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     toggleSidebarCollapseAction()
                 }
-                sidebarTopButton(title: "历史", systemImage: "archivebox", isOn: false) {
+                sidebarTopButton(title: "设置", isOn: showsSettings) {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    showsSettings = true
+                }
+                sidebarTopButton(title: "历史", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     openArchiveAction()
                 }
-                sidebarTopButton(title: "添加", systemImage: "plus", isOn: false) {
+                sidebarTopButton(title: "添加", isOn: false) {
                     SoundEffectPlayer.shared.play(.sidebarButton)
                     sessionsModel.createSession()
                     agentSessionManager.selectedSidebarSection = .conversations
@@ -184,18 +187,18 @@ struct HomeSpaceSidebarView: View {
             // 「角色」是他这一轮点名要回来的（上一轮他删过一次）：它对应**设置里的角色页**
             //（「对应的关系就是在设置页面里面这个角色」）—— 也就是设计角色的地方；
             // 语音 / 视频模式下**选用**哪个角色在卡片页头上，两条路各管一件事。
-            HStack(spacing: 8) {
-                sidebarTopButton(title: "角色", systemImage: "person.crop.circle", isOn: false) {
+            HStack(spacing: 6) {
+                sidebarTopButton(title: "角色", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     showsSettings = false
                     openRoleSettingsAction()
                 }
-                sidebarTopButton(title: "复盘", systemImage: "chart.line.uptrend.xyaxis", isOn: false) {
+                sidebarTopButton(title: "复盘", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     showsSettings = false
                     cardModel.openReviewAgent(agentSessionManager: agentSessionManager)
                 }
-                sidebarTopButton(title: "录音", systemImage: "waveform", isOn: false) {
+                sidebarTopButton(title: "录音", isOn: false) {
                     SoundEffectPlayer.shared.play(.recordingEditorOpened)
                     openRecordingSettingsAction()
                 }
@@ -208,23 +211,20 @@ struct HomeSpaceSidebarView: View {
     /// 上面那两行里的一颗：**等宽、等高**（`.frame(maxWidth: .infinity)` 让同一行的几颗
     /// 平分宽度），高度取 `contentHeaderControlHeight` —— 与右列那一排完全相同（用户：
     /// 「这三个按钮的高度都要再增大一点，跟右侧这个展开的按钮相同就可以了」）。
-    private func sidebarTopButton(title: String?,
-                                  systemImage: String,
+    private func sidebarTopButton(title: String,
                                   isOn: Bool,
                                   action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 12, weight: .medium))
-                if let title {
-                    Text(title)
-                        .font(.system(size: 11.5))
-                        .lineLimit(1)
-                }
-            }
-            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.8))
-            .frame(maxWidth: .infinity)
-            .frame(height: Self.topButtonHeight)
+            // **只有名称、没有图标**（用户 2026-09-26：「左侧边栏的按钮全部显示为名称，
+            // 不使用图标，以便压缩宽度」）—— 两个字的标签比"图标 + 间距 + 文字"窄一截，
+            // 侧栏缩到 240 之后靠它才放得下四颗。
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.82))
+                .frame(maxWidth: .infinity)
+                .frame(height: Self.topButtonHeight)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.white.opacity(isOn ? 0.12 : 0.07))
@@ -238,7 +238,7 @@ struct HomeSpaceSidebarView: View {
         }
         .buttonStyle(.plain)
         .pointerCursor()
-        .help(title ?? "收起侧栏")
+        .help(title == "折叠" ? "收起侧栏（只留一条图标栏）" : title)
     }
 
     // MARK: - 卡片区（2026-09-26）
@@ -262,7 +262,7 @@ struct HomeSpaceSidebarView: View {
                 if cardModel.cards.isEmpty {
                     Text(cardModel.searchQuery.isEmpty ? "还没有卡片" : "没有匹配的卡片")
                         .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.35))
+                        .foregroundColor(.white.opacity(0.55))
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.vertical, 18)
                 }
@@ -272,24 +272,30 @@ struct HomeSpaceSidebarView: View {
 
     /// 一张卡片：标题 + 状态点 +（仅主循环卡片）「设为默认」。
     private func cardRow(_ card: AgentCardModel.Card) -> some View {
+        // **三档**：选中（右列正在显示它）> 悬停（可以点）> 普通。
+        //
+        // 用户 2026-09-26 的两句话合起来才是完整需求：先是「我点击的时候它才需要高亮…
+        // 但现在是持续高亮，这是错误的」，随后是「点击时没有高亮选中效果」—— 所以他要的是
+        // **点出来的那张要明显亮着**（选中态），而不是"两张都淡淡地亮"。
+        let isSelectedCard = isCurrent(card)
         let isHoveredCard = hoveredCardID == card.id
         return HStack(spacing: 8) {
             Circle()
                 .fill(card.kind == .mainLoop ? DS.Colors.accent : Color(red: 0.55, green: 0.78, blue: 0.55))
                 .frame(width: 6, height: 6)
-                .opacity(isHoveredCard ? 1 : 0.5)
+                .opacity(1)
 
             Text(card.title)
                 .font(.system(size: 13.5, weight: .semibold))
                 // 标题也跟着亮 / 暗（见下面那段"选中的那张要明显不同"）：
                 // 只高亮底和边、字还是同一个亮度，两张卡片看着仍然是一对。
-                .foregroundColor(isHoveredCard ? .white : .white.opacity(0.72))
+                .foregroundColor(.white)
                 .lineLimit(1)
 
             if card.kind == .claudeCode {
                 Text("Claude Code")
                     .font(.system(size: 9.5, weight: .medium))
-                    .foregroundColor(.white.opacity(0.35))
+                    .foregroundColor(.white.opacity(0.55))
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1.5)
                     .background(Capsule().fill(Color.white.opacity(0.08)))
@@ -347,23 +353,27 @@ struct HomeSpaceSidebarView: View {
         // 用来区分」）。原来是 0.10 / 0.05 两档白 —— 在深色底上几乎看不出差别（截图里两张
         // 卡片确实长得一样）。现在拉开成**亮面 + accent 边**对**暗面 + 几乎无边**，
         // 标题与状态点也跟着亮 / 暗。
-        // **亮 = 鼠标停在这儿（可以点），不是"这一张是当前的"。**
+        // **一张卡片要看得清、也要看得出"我点了哪张"**（用户 2026-09-26：「当前颜色太浅，
+        // 看不清」「点击时没有高亮选中效果」「样式偏丑」）。
         //
-        // 用户 2026-09-26：「左侧的这两个卡片，我点击的时候它才需要高亮，背景也应该高亮，
-        // 但现在是持续高亮，这是错误的」—— 之前那张常亮的是"当前卡片"（内容列正显示它），
-        // 而他把"卡片一明一暗"（更早那条要求）当成了**点击态**的预览。
-        // 所以底色一律用一个（略暗），只有悬停 / 按下时才亮起来 —— 与这个仓库里其他
-        // 可点元素同一条规矩：hover 必须能看出"这里可以点"。
+        // 三档的取值都拉开：普通用一块**比侧栏地面亮的卡面**（`surface1`，不是压暗的黑），
+        // 悬停再亮一档，**选中用 accent 底 + accent 边** —— 一眼能分出"我点的是这张"。
         .background(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(isHoveredCard ? Color.white.opacity(0.14) : Color.black.opacity(0.22))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(isSelectedCard
+                      ? DS.Colors.accent.opacity(0.22)
+                      : (isHoveredCard ? DS.Colors.surface2
+                                       : DS.Colors.surface1.opacity(0.85)))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .strokeBorder(isHoveredCard ? DS.Colors.accent.opacity(0.55)
-                                            : Color.white.opacity(0.06),
-                              lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(isSelectedCard
+                              ? DS.Colors.accent.opacity(0.85)
+                              : (isHoveredCard ? Color.white.opacity(0.16)
+                                               : Color.white.opacity(0.07)),
+                              lineWidth: isSelectedCard ? 1.5 : 1)
         )
+        .shadow(color: .black.opacity(isSelectedCard ? 0.35 : 0), radius: 8, y: 2)
         .onHover { hovering in
             hoveredCardID = hovering ? card.id : (hoveredCardID == card.id ? nil : hoveredCardID)
         }
@@ -373,6 +383,20 @@ struct HomeSpaceSidebarView: View {
         .onTapGesture {
             SoundEffectPlayer.shared.play(.notchRevealed)
             cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
+        }
+    }
+
+    /// 这张卡片是不是**右列正在显示的那张** —— 选中态由它决定。
+    ///
+    /// 上一轮我把这个判定连同它的高亮一起删了（当时把"常亮"理解成多余的），而用户这一轮
+    /// 说「点击时没有高亮选中效果」—— 所以它回来了：**点出来的那张就该一直亮着**，
+    /// 这既是"我点了哪张"的回执，也是"右列在显示谁"的指示。
+    private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
+        switch card.kind {
+        case .mainLoop:
+            return sessionsModel.activeSessionID?.uuidString == card.entityID
+        case .claudeCode, .review:
+            return agentSessionManager.selectedAgentID?.uuidString == card.entityID
         }
     }
 
@@ -434,14 +458,14 @@ struct HomeSpaceSidebarView: View {
                 HStack(spacing: 5) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 8.5, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.35))
+                        .foregroundColor(.white.opacity(0.55))
                         .frame(width: 10)
                     Text(column.displayName)
                         .font(.system(size: 11.5, weight: .medium))
                         .foregroundColor(.white.opacity(0.62))
                     Text("\(tasks.count)")
                         .font(.system(size: 10.5).monospacedDigit())
-                        .foregroundColor(.white.opacity(0.35))
+                        .foregroundColor(.white.opacity(0.55))
                     Spacer(minLength: 0)
                 }
                 .padding(.leading, 20)
