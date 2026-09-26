@@ -1,12 +1,12 @@
 # 14 - Agent 子系统：本机 Claude Code 当多 Agent 运行时
 
-> 写于 2026-09-22。参照项目：`/Users/mjm/Desktop/HeyClicky-Reversed/README/03-多Agent运行时.md`（它用 codex 子进程 + JSON-RPC）。本项目的等价形态是 **claude CLI 的 stream-json 常驻子进程**，不需要自己实现 JSON-RPC。
+> 写于 2026-09-22。本项目的形态是 **claude CLI 的 stream-json 常驻子进程**，不需要自己实现 JSON-RPC。
 
 ## 一、架构一页话
 
 一个 Agent = **一条 `AgentSession` 记录 + 一个 claude CLI 子进程**。会话记录的 `id`（UUID）**同时**就是 CLI 的 `--session-id`——线程身份和我们的记录身份是同一个，不需要映射表。
 
-| HeyClicky（codex） | 本项目 |
+| 参考实现（codex） | 本项目 |
 |---|---|
 | codex 子进程 + stdin/stdout JSON-RPC | `claude -p --input-format stream-json --output-format stream-json --verbose --include-partial-messages` 常驻子进程，换行分隔 JSON |
 | `thread/start` | 首次启动带 `--session-id <UUID>` |
