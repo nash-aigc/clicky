@@ -1,0 +1,14 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 16 exchanges from session 「屏幕上有什么」
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790426825.519
+⏱️ [expand] 内容就位 +64ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +143ms
+⏱️ [hitch] main thread busy for 283ms
+⏱️ [hitch] main thread busy for 65ms

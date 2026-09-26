@@ -1,0 +1,31 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 10 exchanges from session 「你看一下，我这个可以删掉吗？」
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790412869.775
+⏱️ [expand] 内容就位 +50ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +107ms
+🔬 [card] 冷启动完整排版：38 字 → 36 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：17 字 → 17 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：47 字 → 43 unit / 2 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：93 字 → 92 unit / 4 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：38 字 → 36 unit / 2 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：17 字 → 17 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：47 字 → 43 unit / 2 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：93 字 → 92 unit / 4 行，耗时 1.9ms
+🔬 [card] 冷启动完整排版：4 字 → 4 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：45 字 → 43 unit / 2 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：120 字 → 110 unit / 5 行，耗时 2.2ms
+⏱️ [hitch] main thread busy for 379ms
+2026-09-26 16:54:39.430 Wanna[19633:1909624] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 53ms

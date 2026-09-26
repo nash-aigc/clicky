@@ -1,0 +1,36 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+🎛 [settings] 读盘成功 模式表=[:]
+💬 Wanna: restored 2 exchanges from session 「屏幕上有什么」
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790426131.816
+⏱️ [expand] 内容就位 +66ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +110ms
+🔬 [card] 冷启动完整排版：52 字 → 41 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：135 字 → 100 unit / 4 行，耗时 1.7ms
+🔬 [card] 冷启动完整排版：52 字 → 41 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：135 字 → 100 unit / 4 行，耗时 1.8ms
+⏱️ [hitch] main thread busy for 234ms
+⏱️ [hitch] main thread busy for 104ms
+🔬 [card] 冷启动完整排版：52 字 → 41 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：135 字 → 100 unit / 4 行，耗时 1.8ms
+⏱️ [hitch] main thread busy for 86ms
+🎛 [mode] 写入 card=B70E8847 mode=voice 之前=[:]
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🎛 [mode] 写完 之后=["B70E8847-EFC5-4B64-8FCC-9184ADED071F": "voice"]
+⏱️ [hitch] main thread busy for 98ms
+⏱️ [hitch] main thread busy for 94ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+⏱️ [hitch] main thread busy for 147ms
+⏱️ [hitch] main thread busy for 76ms

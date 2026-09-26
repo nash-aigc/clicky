@@ -1,0 +1,15 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+🔊 SystemSpeakerMuteCoordinator: recovered speakers left muted by a previous run
+💬 Wanna: restored 16 exchanges from session 「屏幕上有什么」
+2026-09-26 20:44:53.871 Wanna[41344:2684718] [Recording] 按保留天数清理了 1 个文件
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790426705.028
+⏱️ [expand] 内容就位 +64ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +142ms
+⏱️ [hitch] main thread busy for 304ms
+⏱️ [hitch] main thread busy for 86ms

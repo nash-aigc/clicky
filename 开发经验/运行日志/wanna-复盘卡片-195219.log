@@ -1,0 +1,129 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 5 exchanges from session 「你好」
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423547.391
+⏱️ [expand] 内容就位 +67ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +116ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.3ms
+⏱️ [hitch] main thread busy for 291ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 42ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.2ms
+⏱️ [hitch] main thread busy for 187ms
+⏱️ [hitch] main thread busy for 67ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.1ms
+⏱️ [hitch] main thread busy for 191ms
+⏱️ [hitch] main thread busy for 49ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.0ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.1ms
+⏱️ [hitch] main thread busy for 104ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.2ms
+⏱️ [hitch] main thread busy for 203ms
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423572.178
+⏱️ [expand] 内容就位 +20ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +50ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.0ms
+⏱️ [hitch] main thread busy for 79ms
+⏱️ [hitch] main thread busy for 211ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423626.620
+⏱️ [expand] 内容就位 +30ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +66ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.1ms
+⏱️ [hitch] main thread busy for 97ms
+⏱️ [hitch] main thread busy for 232ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423640.557
+⏱️ [expand] 内容就位 +19ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +50ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.1ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 0.8ms
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [hitch] main thread busy for 227ms
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423672.392
+⏱️ [expand] 内容就位 +24ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +37ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423682.615
+⏱️ [expand] 内容就位 +28ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790423716.249
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +25ms
+⏱️ [hitch] main thread busy for 138ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.2ms
+⏱️ [hitch] main thread busy for 239ms
+⏱️ [hitch] main thread busy for 51ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.0ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 0.9ms
+⏱️ [hitch] main thread busy for 195ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 84ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.2ms
+⏱️ [hitch] main thread busy for 195ms

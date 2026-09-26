@@ -1,0 +1,34 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 5 exchanges from session 「你好」
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790421498.993
+⏱️ [expand] 内容就位 +55ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +107ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：51 字 → 43 unit / 2 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：79 字 → 70 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：57 字 → 57 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：120 字 → 111 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：177 字 → 161 unit / 6 行，耗时 3.3ms
+⏱️ [hitch] main thread busy for 340ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 100ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+2026-09-26 19:18:40.960 Wanna[11482:2370633] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-26 19:18:40.964 Wanna[11482:2370633] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 56ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：12 字 → 12 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 53ms

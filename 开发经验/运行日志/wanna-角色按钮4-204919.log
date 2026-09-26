@@ -1,0 +1,40 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 16 exchanges from session 「屏幕上有什么」
+2026-09-26 20:49:20.137 Wanna[48229:2703011] [Recording] 按保留天数清理了 1 个文件
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790426971.409
+⏱️ [expand] 内容就位 +69ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +141ms
+⏱️ [hitch] main thread busy for 301ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [hitch] main thread busy for 231ms
+⏱️ [expand] 重内容就位 +16464ms
+⏱️ [hitch] main thread busy for 113ms
+⏱️ [hitch] main thread busy for 199ms
+⏱️ [expand] 重内容就位 +24778ms
+⏱️ [hitch] main thread busy for 110ms
+🎛 [mode] card=B70E8847 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：66 字 → 60 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：52 字 → 40 unit / 2 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：143 字 → 140 unit / 6 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：99 字 → 98 unit / 4 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：189 字 → 182 unit / 7 行，耗时 3.3ms
+🔬 [card] 冷启动完整排版：66 字 → 60 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：52 字 → 40 unit / 2 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：143 字 → 140 unit / 6 行，耗时 2.7ms
+🔬 [card] 冷启动完整排版：99 字 → 98 unit / 4 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：189 字 → 182 unit / 7 行，耗时 3.5ms
+🔬 [card] 冷启动完整排版：54 字 → 53 unit / 2 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：81 字 → 80 unit / 4 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：103 字 → 97 unit / 4 行，耗时 1.9ms
+🔬 [card] 冷启动完整排版：70 字 → 68 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：50 字 → 44 unit / 2 行，耗时 0.9ms
+⏱️ [hitch] main thread busy for 464ms
+⏱️ [hitch] main thread busy for 82ms
