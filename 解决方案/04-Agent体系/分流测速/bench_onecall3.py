@@ -136,7 +136,7 @@ def main():
     ms = sorted(r["ms"] for r in rows)
     print(f"\n== 汇总 == 最终决策 {hits}/{n} · 中位 {ms[len(ms)//2]}ms · "
           f"总成本 ${sum(r['cost'] for r in rows):.6f}（{n} 次调用·每次三问）")
-    dest = "/Users/mjm/Desktop/clicky/解决方案/04-Agent体系/分流测速/一次三问结果.json"
+    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/clicky/解决方案/04-Agent体系/分流测速/一次三问结果.json"
     json.dump({"rows": rows, "score": {"hit": f"{hits}/{n}",
                                        "median_ms": ms[len(ms) // 2] if ms else 0,
                                        "total_cost_usd": sum(r["cost"] for r in rows)}},

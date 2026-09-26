@@ -18,7 +18,7 @@
 
 ```bash
 # ① 问构建系统 app 落在哪 —— 不要写死 DerivedData 里那段哈希，每台机器都不一样
-cd /Users/mjm/Desktop/clicky
+cd /Users/mjm/Documents/SuperAgent/APP/Design/clicky
 APP_DIR=$(xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy \
   -configuration Debug -showBuildSettings 2>/dev/null \
   | awk -F' = ' '/ BUILT_PRODUCTS_DIR /{print $2}')
@@ -26,13 +26,13 @@ APP_DIR=$(xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy \
 # ② 最快的语法检查（不碰签名、不碰 TCC）
 #    -I "$APP_DIR" 不能省：MacosUseController.swift 真的 import MacosUseSDK，
 #    而那个模块的 .swiftmodule 就在构建产物目录里。
-cd /Users/mjm/Desktop/clicky/leanring-buddy
+cd /Users/mjm/Documents/SuperAgent/APP/Design/clicky/leanring-buddy
 xcrun swiftc -typecheck -sdk $(xcrun --show-sdk-path --sdk macosx) -I "$APP_DIR" \
   -target arm64-apple-macos14.2 -swift-version 5 -default-isolation MainActor \
   $(ls *.swift | grep -v leanring_buddyApp.swift)
 
 # ③ 完整构建
-cd /Users/mjm/Desktop/clicky
+cd /Users/mjm/Documents/SuperAgent/APP/Design/clicky
 xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy -configuration Debug build
 
 # ④ 关掉旧进程，再启动新的
@@ -97,6 +97,26 @@ ls -lt ~/Library/Logs/DiagnosticReports/ | head -5
 - **一个计时器只覆盖它包住的那几行。** 用它去否定一个候选之前，先确认它包住的是这个候选的全部——本仓库有一次因为计时器漏掉了同段代码里的三行，把真凶排除了，多花了三轮。
 
 完整方法、案例时间线、反模式清单、以及三个可复用探针的位置，见 [`开发经验/00-问题根因排查法.md`](开发经验/00-问题根因排查法.md)。**遇到问题先读它。**
+
+### 改录音/音频采集之前，先跑那条探针（2026-09-26 新增）
+
+```bash
+cd /Users/mjm/Documents/SuperAgent/APP/Design/clicky && swift scripts/recording-capture-probe.swift
+```
+
+**退出码非 0 = 故障已复现，这时候不要动 App 代码**，先去改采集本身。
+
+这条规矩是拿十次真实损失换来的。「录音又坏了」连续发生过十次，每一次都是用户在真实使用里撞出来的
+—— 因为**静音是一种看不见的失败**：时长正确、文件写好了、没有报错、没有崩溃，只是全是零。
+所有「看起来在正常运行」的信号它都有，所以它只在用户开口说完一整句之后才由服务端超时暴露。
+
+而这个故障三分钟二十行就能复现（探针里就是）。它一直没被复现，只是因为没人写。
+**发现故障的位置必须从用户手里挪到机器手里。**
+
+已知的根因（探针 ③ 测的就是它）：一个子系统开语音处理（VPIO）时会把硬件 IO 重配成语音处理
+格式，而**这个污染是进程级、且不可还原的** —— 放掉引擎、关掉语音处理、新建引擎都回不去。
+所以长录音只在「本进程从没开过语音处理」时是好的。真正的修法是让采集不走 `AVAudioEngine`
+（它对的是进程级聚合体），改用 AUHAL 直接对设备取流。
 
 ## Overview
 
@@ -446,7 +466,7 @@ The model can do more than point — `[CLICK:]`, `[RIGHT_CLICK:]`, `[DOUBLE_CLIC
 
 ```bash
 # Build
-cd /Users/mjm/Desktop/clicky
+cd /Users/mjm/Documents/SuperAgent/APP/Design/clicky
 xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy -configuration Debug build
 
 # Known non-blocking warnings: Swift 6 concurrency warnings,

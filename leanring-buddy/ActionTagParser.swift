@@ -162,6 +162,15 @@ nonisolated struct ActionParseResult: Sendable {
     ///
     /// 同样**不进 `actions`**：派活本身不碰屏幕，不该触发「截图 → 续写」那个循环。
     let subAgentRequest: SubAgentRole?
+    /// `[AGENT:名字:要做什么]` 里那个「要做什么」。
+    ///
+    /// **它是子 agent 那一轮的用户消息。** 没有它，子 agent 拿到的是**同一句用户原话**，
+    /// 得自己再猜一遍主 agent 想让它干什么 —— 而「主 agent 决定做什么」这件事实际上
+    /// 就等于没有被决定。官方把任务放在调用里（`Agent(subagent_type, prompt)`），
+    /// 并且明说子 agent 就靠这个 prompt 拿全部信息。
+    ///
+    /// nil = 模型没写任务，调用方回落。
+    let subAgentTask: String?
     /// 每一个 `[MCP:服务器.工具:{json}]`。
     ///
     /// **不进 `actions`**：一次 MCP 调用不碰屏幕，不该触发「截图 → 续写」那个循环 ——
@@ -186,6 +195,7 @@ nonisolated struct ActionParseResult: Sendable {
         shapeRequests: [AnnotationShapeRequest] = [],
         agentRequests: [AgentDispatchRequest] = [],
         subAgentRequest: SubAgentRole? = nil,
+        subAgentTask: String? = nil,
         mcpRequests: [MCPToolRequest] = [],
         figureBoardRequests: [FigureBoardRequest] = []
     ) {
@@ -195,6 +205,7 @@ nonisolated struct ActionParseResult: Sendable {
         self.shapeRequests = shapeRequests
         self.agentRequests = agentRequests
         self.subAgentRequest = subAgentRequest
+        self.subAgentTask = subAgentTask
         self.mcpRequests = mcpRequests
         self.figureBoardRequests = figureBoardRequests
     }
@@ -353,7 +364,22 @@ nonisolated enum ActionTagParser {
     /// 而这一条要求紧跟一个冒号。
     ///
     /// Capture groups: 1 = sub agent 的名字（图形 / 执行 / 文本）。
-    private static let subAgentPattern = #"\[AGENT:\s*([^\]:]+?)\s*\]"#
+    /// `[AGENT:名字]` 或 `[AGENT:名字:要做什么]`。
+    ///
+    /// **第二个参数是 2026-09-26 加的，而且它不是便利。** 加之前这个标签**只能装「谁」**，
+    /// 而主 agent 想说的话里大部分是「做什么」。实测（`ConversationSessions.json`，
+    /// 「帮我点一下计算器里的 7」那一轮）主 agent 的回复是：
+    ///
+    ///     我不能自己去点，得派执行 agent 去按。
+    ///     我正在让执行 agent 在计算器里点那个 7。
+    ///
+    /// **两句话都在讲派活，一个标签都没有。** 日志排除了「写了没认出」：那条路径会打
+    /// 「认不出的 agent 名字」，而它没有出现。所以模型是把整件事写进了散文 ——
+    /// 一个只能写「执行」、写不下「在计算器里点 7」的标签，对它要表达的内容来说太窄了。
+    ///
+    /// 官方那一边是 `Agent(subagent_type, prompt)`：**名字和任务都是调用的参数**，所以
+    /// 子 agent 不必回头猜。这里补上的是同一件事。
+    private static let subAgentPattern = #"\[AGENT:\s*([^\]:]+?)\s*(?::([^\]]*))?\]"#
 
     // MARK: - MCP 标签的扫描
 
@@ -446,6 +472,7 @@ nonisolated enum ActionTagParser {
         var shapeRequests: [AnnotationShapeRequest] = []
         var agentRequests: [AgentDispatchRequest] = []
         var subAgentRequest: SubAgentRole?
+        var subAgentTask: String?
         var mcpRequests: [MCPToolRequest] = []
         var figureBoardRequests: [FigureBoardRequest] = []
 
@@ -664,7 +691,15 @@ nonisolated enum ActionTagParser {
             }
             // 只认第一个：一句话派两件事，第二件没人接，而屏幕上会显示一个
             // 「已派活」的错觉。
-            if subAgentRequest == nil { subAgentRequest = role }
+            if subAgentRequest == nil {
+                subAgentRequest = role
+                // 任务写在标签里就带过去；没写就是 nil，由调用方决定回落到什么
+                // （今天是用户原话）。**不在这里编一个默认值** —— 解析器只该回答
+                // 「模型写了什么」。
+                let rawTask = capture(2, of: match, in: responseText)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                subAgentTask = (rawTask?.isEmpty == false) ? rawTask : nil
+            }
         }
 
         forEachMatch(in: responseText, pattern: agentSpawnPattern) { match, tagRange in
@@ -697,6 +732,7 @@ nonisolated enum ActionTagParser {
             shapeRequests: shapeRequests,
             agentRequests: agentRequests,
             subAgentRequest: subAgentRequest,
+            subAgentTask: subAgentTask,
             mcpRequests: mcpRequests,
             figureBoardRequests: figureBoardRequests
         )

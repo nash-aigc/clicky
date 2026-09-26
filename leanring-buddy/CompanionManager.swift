@@ -691,6 +691,21 @@ final class CompanionManager: ObservableObject {
             self?.bailianTTSClient.voicePlaybackEngine
         }
 
+        // **长录音起采之前，把共享语音引擎放掉。**
+        //
+        // 开着语音处理（回声消除）的那个引擎会把整个硬件 IO 重新配置成语音处理格式，
+        // 别的引擎就只能捡到那个格式、拿不到音频。实测复现（独立探针）：机器上只有
+        // 录音引擎时它声明 1 声道、正常；先起一个开 VPIO 的引擎之后，同一个录音引擎
+        // 声明 **3 声道、峰值 0.0007**（对面那个引擎 0.077）。
+        //
+        // 而这是必然会撞上的组合 —— 共享引擎为「下一问快」刻意留着
+        //（`audioEngineIdleReleaseMinutes` 默认 3 分钟），所以用户只要在三分钟内
+        // 说过话，录音就是静音的。录音和语音对话本来就是两个互不相干的子系统，
+        // 录长音时用户也不在对话 —— 放掉它，硬件就干净了。
+        LongFormAudioCapture.releaseSharedAudioEngine = { [weak self] in
+            self?.bailianTTSClient.releaseAudioEngineNow()
+        }
+
         // 「播报中」和 pipecat 的 BotStartedSpeaking / BotStoppedSpeaking 是同一个
         // 状态：播报期间，转写文字要够多才算用户开口（官方
         // MinWordsUserTurnStartStrategy），否则识别器往静音里吐的一个「。」
@@ -1856,9 +1871,9 @@ final class CompanionManager: ObservableObject {
     operating the computer:
     you can act on the machine, not only talk about it. these tags do things:
 
-    [CLICK:x,y:label] — left click there
-    [RIGHT_CLICK:x,y:label] — right click there
-    [DOUBLE_CLICK:x,y:label] — double click there
+    [CLICK:x,y:label] — left click there. **the label is required** — see the paragraph on naming below
+    [RIGHT_CLICK:x,y:label] — right click there. same rule: the label is required
+    [DOUBLE_CLICK:x,y:label] — double click there. same rule: the label is required
     [SCROLL:x,y:up|down:N] — scroll N lines at that spot, N being 1 to 30
     [TYPE:some text] — type that text into whatever has the keyboard focus. for multi-line content (a list, a Markdown table, a letter) put the WHOLE thing in one tag and write \\n where a line break should go, like [TYPE:姓名\\n年龄\\n城市] — each \\n is typed as a real press of the Return key. do not split the lines across several [TYPE:] tags, and do not write the words "newline" or "换行" in place of it.
     [PRESS:return] or [PRESS:cmd+a] — press a key, or hold modifiers and press a key. write the modifiers first (cmd, shift, opt, ctrl, fn), then the key. a lone modifier presses that key by itself.
@@ -1891,7 +1906,7 @@ final class CompanionManager: ObservableObject {
 
     a multi-step job runs as a loop, not a single reply: after your tags execute, a fresh screenshot arrives automatically with an "(automatic continuation)" message — the user has not spoken again — and you decide what to do next from what actually happened on screen. the loop enforces ONE action tag per reply: even if you write several, only the first executes and the continuation message tells you the rest were not executed, so re-emit them one at a time. this is deliberate — apps and pages take seconds to load, and an action followed by a look at what that action actually did is what makes the whole job stable, where four actions fired in a burst all land on screens that never finished loading. pace yourself with [WAIT:seconds] whenever the screenshot shows something still loading or animating. when the job is done, emit no action tags at all and report the result in one short sentence.
 
-    you do not need pixel precision, but you must name what you are clicking, and the name has to be the element's own words. write [CLICK:x,y:发送] and not [CLICK:x,y:那个发送按钮]: the label is looked up in the interface of the app in front, and a click whose label matches a control goes to that control's centre — matching by meaning is not something the lookup can do. when the label matches, your coordinates are only used to choose between two controls that carry the same words, and are otherwise ignored. when the label is missing or matches nothing, the click falls back to your estimated coordinates — and those are routinely off by a quarter of the screen's width, in either direction, so an unnamed click is a click that misses. read the words off the control and copy them exactly, including any punctuation, and open the app first with [OPEN:…] if it is not the one in front. ask for [AX_TREE] only when you genuinely cannot see the target at all, or when the job needs several exact positions you cannot make out — not as a precaution before every action.
+    what puts a click on target is the label, not the coordinates. you must name what you are clicking, and the name has to be the element's own words. write [CLICK:x,y:发送] and not [CLICK:x,y:那个发送按钮]: the label is looked up in the interface of the app in front, and a click whose label matches a control goes to that control's centre — matching by meaning is not something the lookup can do. when the label matches, your coordinates are only used to choose between two controls that carry the same words, and are otherwise ignored. **a click with no label at all is refused outright and nothing happens** — the machine tells you so on your next step, and you re-send it with the control's own words. that is not a punishment: an unnamed click can only fall back to your estimated coordinates, which are routinely off by a quarter of the screen's width in either direction, so it would land somewhere else and you would go on believing it worked. the one exception is a target that genuinely has no words — a canvas, a blank area, part of an image; send the same unlabelled tag a second time and it goes through. read the words off the control and copy them exactly, including any punctuation, and open the app first with [OPEN:…] if it is not the one in front. ask for [AX_TREE] only when you genuinely cannot see the target at all, or when the job needs several exact positions you cannot make out — not as a precaution before every action.
 
     typing and key presses land in whatever app is in front, so if the user means a different one, open it first with [OPEN:…] and say so.
 
@@ -2601,6 +2616,14 @@ final class CompanionManager: ObservableObject {
                 var ephemeralAgentID: String?
                 var unexecutedActionCountFromPreviousStep = 0
 
+                /// 这条任务里**已经拒过一次「没写名字的点击」**。
+                ///
+                /// 一条任务只拒一次：第一次拒是教学（让模型看到「你没写名字，所以
+                /// 什么也没发生」），第二次放行是留路 —— 有些目标确实没有文字
+                ///（画布、空白区、图片里的一块），拒两次就等于那个功能永远做不成。
+                /// 闸门本身在 `MacosUseController.performClickAction`。
+                var hasRefusedUnnamedClickThisJob = false
+
                 var stepCount = 0
                 while true {
                     stepCount += 1
@@ -2786,24 +2809,38 @@ final class CompanionManager: ObservableObject {
                     // 是方案第 4 步「回传与通知」的题目（对号 + 摘要 + 停 2–3 秒），
                     // 在这里先做一遍等于把那一节写两处。气泡最终照样会显示这段话 ——
                     // 收尾时 `parseResult.spokenText` 是从 `fullResponseText` 算出来的。
-                    if let role = ActionTagParser.parse(from: fullResponseText).subAgentRequest {
+                    let dispatchRequest = ActionTagParser.parse(from: fullResponseText)
+                    if let role = dispatchRequest.subAgentRequest {
                         dispatchedRole = role
                         // 派活 = 这件事交给别人去做了，这一刻它值得在刘海左侧占一个位置。
                         ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript)
                         AgentActivityBoard.shared.appendStep(
                             "交给\(role.displayName) agent 去做", to: ephemeralAgentID!)
                         AgentActivityBoard.shared.appendToolCall(
-                            "[AGENT:\(role.displayName)]", to: ephemeralAgentID!)
+                            "[AGENT:\(role.displayName):\(dispatchRequest.subAgentTask ?? "（没写任务）")]",
+                            to: ephemeralAgentID!)
                         let subAgentSystemPrompt = Self.subAgentSystemPrompt(for: role, settings: appSettings)
+                        // **派活这一轮的用户消息是标签里那个任务，不是用户原话。**
+                        //
+                        // 官方那边 `Agent(subagent_type, prompt)` 的任务是调用的参数，
+                        // 子 agent 靠它拿到全部信息（`omitClaudeMd` 那一节：「take
+                        // everything they need from the delegation prompt」）。主 agent
+                        // 已经决定过要做什么了，让子 agent 拿同一句用户原话再猜一遍，
+                        // 等于那个决定没有发生过。
+                        //
+                        // 模型没写任务时回落成用户原话 —— 那是模型漏了，不是机制。
+                        let subAgentUserPrompt = dispatchRequest.subAgentTask ?? userPromptForThisTurn
                         SoundEffectPlayer.appendToDiagnosticLog("主 agent 派活 → \(role.displayName) agent"
                             + "（它的提示词 \(subAgentSystemPrompt.count) 字符 = 基础 + 技能 "
-                            + "\(Self.skillPrompt(for: role).count)）")
+                            + "\(Self.skillPrompt(for: role).count)；"
+                            + "交给它的任务 \(dispatchRequest.subAgentTask?.count ?? 0) 字符"
+                            + "\(dispatchRequest.subAgentTask == nil ? "（模型没写，回落用户原话）" : "")）")
                         let subAgentReply = try await visionChatAPI.analyzeImageStreaming(
                             images: labeledImages,
                             systemPrompt: subAgentSystemPrompt,
                             conversationHistory: stepHistory,
                             conversationSummary: compressedHistorySummary,
-                            userPrompt: userPromptForThisTurn,
+                            userPrompt: subAgentUserPrompt,
                             onTextChunk: { _ in }
                         )
                         fullResponseText = subAgentReply.text
@@ -2989,9 +3026,16 @@ final class CompanionManager: ObservableObject {
                         }
                         let outcome = await MacosUseController.execute(
                             firstAction,
-                            among: screenCaptures
+                            among: screenCaptures,
+                            allowsUnnamedClick: hasRefusedUnnamedClickThisJob
                         )
                         actionDescriptionsForThisStep.append(outcome.description)
+
+                        if outcome.refusedForMissingLabel {
+                            hasRefusedUnnamedClickThisJob = true
+                            SoundEffectPlayer.appendToDiagnosticLog(
+                                "无名点击被拦（这一条任务第一次）：\(outcome.description)")
+                        }
 
                         if let contextForNextTurn = outcome.contextForNextTurn {
                             pendingAccessibilityContext = contextForNextTurn

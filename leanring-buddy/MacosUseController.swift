@@ -53,6 +53,19 @@ nonisolated struct ActionExecutionOutcome: Sendable {
     /// rather than folded into the spoken answer because it is a list of your
     /// screen's contents, and reading it aloud would be absurd.
     let contextForNextTurn: String?
+    /// 这一次**因为模型没写元素名字**而没有执行。
+    ///
+    /// 调用方据此决定下一次还允不允许无名点击 —— 一条任务里只拒一次，见
+    /// `CompanionManager` 里那个 `hasRefusedUnnamedClickThisJob`。
+    let refusedForMissingLabel: Bool
+
+    init(description: String,
+         contextForNextTurn: String?,
+         refusedForMissingLabel: Bool = false) {
+        self.description = description
+        self.contextForNextTurn = contextForNextTurn
+        self.refusedForMissingLabel = refusedForMissingLabel
+    }
 }
 
 enum MacosUseController {
@@ -195,7 +208,8 @@ enum MacosUseController {
     /// action has to travel.
     static func execute(
         _ action: CompanionAction,
-        among screenCaptures: [CompanionScreenCapture]
+        among screenCaptures: [CompanionScreenCapture],
+        allowsUnnamedClick: Bool = true
     ) async -> ActionExecutionOutcome {
         let appSettings = AppSettingsStore.snapshot()
 
@@ -278,7 +292,8 @@ enum MacosUseController {
                 named: "点击",
                 at: reportedCoordinate,
                 among: screenCaptures,
-                kind: .left
+                kind: .left,
+                allowsUnnamedClick: allowsUnnamedClick
             )
 
         case .rightClick(let reportedCoordinate):
@@ -286,7 +301,8 @@ enum MacosUseController {
                 named: "右键点击",
                 at: reportedCoordinate,
                 among: screenCaptures,
-                kind: .right
+                kind: .right,
+                allowsUnnamedClick: allowsUnnamedClick
             )
 
         case .doubleClick(let reportedCoordinate):
@@ -294,7 +310,8 @@ enum MacosUseController {
                 named: "双击",
                 at: reportedCoordinate,
                 among: screenCaptures,
-                kind: .double
+                kind: .double,
+                allowsUnnamedClick: allowsUnnamedClick
             )
 
         case .scroll(let reportedCoordinate, let direction, let amountInSteps):
@@ -382,9 +399,10 @@ enum MacosUseController {
         named actionName: String,
         at reportedCoordinate: ModelReportedCoordinate,
         among screenCaptures: [CompanionScreenCapture],
-        kind: ClickKind
+        kind: ClickKind,
+        allowsUnnamedClick: Bool
     ) async -> ActionExecutionOutcome {
-        guard let clickPoint = await resolvedClickPoint(
+        guard let resolution = await resolvedClickPoint(
             for: reportedCoordinate,
             among: screenCaptures
         ) else {
@@ -393,6 +411,47 @@ enum MacosUseController {
                 contextForNextTurn: nil
             )
         }
+
+        // **没写名字的点击不许静默执行。**
+        //
+        // 实测（2026-09-26，`录音诊断.log` 里全部 7 次点击解析）：**6 次是「模型没写」**，
+        // 于是全部退回估算坐标 —— 而那正是用户报的「让他点的按钮没有一个点成功的，
+        // 全都点歪了」。估算误差实测是 ±25% 屏宽，点出去必然落在别处。
+        //
+        // 提示词里早就写着「必须写出控件自己的字」，但那是一句**软的**要求：模型不写，
+        // 这里照样执行，而且没有任何地方把「你没写」这件事告诉它。所以模型没有机会
+        // 知道自己错了 —— 它只会看到「点了」，然后对用户复述一个没发生的结果。
+        //
+        // 现在改成官方的形状（同 `runMCPRequests` 那道闸）：**做不到 + 失败回到模型眼前。**
+        // 拒绝走 `contextForNextTurn`，和 MCP 结果、屏幕读取同一个通道。
+        //
+        // 一条任务只拒一次（`allowsUnnamedClick`）：有些目标确实没有文字（画布、空白区），
+        // 而拒绝两次就等于那个功能永远做不成。第一次拒是教学，第二次放行是留路。
+        if !resolution.wasResolvedByName, !allowsUnnamedClick {
+            return ActionExecutionOutcome(
+                description: "\(actionName)没有执行 —— 你没写点的是哪个控件。",
+                contextForNextTurn: """
+                <action_refused>
+                你上一次的 \(actionName) 没有执行，因为标签里没有元素名字：
+                你写的是 [CLICK:x,y] 这种形状，而必须是 [CLICK:x,y:控件的字]。
+
+                没有名字就只剩你自己估的坐标，而实测那个估算误差是 ±25% 屏幕宽度 ——
+                点出去必然落在别处。所以这一步被拦下来了，什么也没发生。
+
+                下一轮这样写：看一眼那个控件上真实的字，原样抄进来。
+                - [CLICK:812,644:发送]   ← 对
+                - [CLICK:812,644:那个发送按钮]  ← 错，名字必须是控件自己的字
+                - [CLICK:812,644]        ← 错，这样会被拦
+
+                确实没有字的目标（画布、空白区、图片里的一块）就照原样再写一次，
+                第二次会放行。
+                </action_refused>
+                """,
+                refusedForMissingLabel: true
+            )
+        }
+
+        let clickPoint = resolution.point
 
         do {
             switch kind {
@@ -774,10 +833,21 @@ enum MacosUseController {
     /// a list returns the container, and the centre of a window is not what anyone
     /// asked for — so a container is left alone and the model's own estimate is
     /// used, which is what the app did before any of this existed.
+    /// 一次点击落点的解析结果：**落在哪**，以及**是不是按名字查到的**。
+    ///
+    /// 第二个字段是给闸门用的，不是给日志用的 —— 日志有 `noteClickResolution`
+    /// 那一行更细的记录。这里要回答的只是一个是非题：这一次点的是「模型认出来的
+    /// 那个控件」，还是「模型自己估的那个坐标」。
+    private struct ClickResolution {
+        let point: CGPoint
+        /// 按标签在无障碍树里查到了真实控件。
+        let wasResolvedByName: Bool
+    }
+
     private static func resolvedClickPoint(
         for reportedCoordinate: ModelReportedCoordinate,
         among screenCaptures: [CompanionScreenCapture]
-    ) async -> CGPoint? {
+    ) async -> ClickResolution? {
         guard let screenCapture = screenCapture(for: reportedCoordinate, among: screenCaptures) else {
             return nil
         }
@@ -804,7 +874,8 @@ enum MacosUseController {
                                          named: namedFrame,
                                          final: CGPoint(x: namedFrame.midX, y: namedFrame.midY),
                                          via: "按名字")
-                return CGPoint(x: namedFrame.midX, y: namedFrame.midY)
+                return ClickResolution(point: CGPoint(x: namedFrame.midX, y: namedFrame.midY),
+                                       wasResolvedByName: true)
             }
         }
 
@@ -820,13 +891,13 @@ enum MacosUseController {
               snappedFrame.height <= maximumSnappableElementHeight else {
             Self.noteClickResolution(label: reportedCoordinate.elementLabel, estimate: estimatedPoint,
                                      named: nil, final: estimatedPoint, via: "退回估算（没查到名字）")
-            return estimatedPoint
+            return ClickResolution(point: estimatedPoint, wasResolvedByName: false)
         }
 
         let snappedPoint = CGPoint(x: snappedFrame.midX, y: snappedFrame.midY)
         Self.noteClickResolution(label: reportedCoordinate.elementLabel, estimate: estimatedPoint,
                                  named: snappedFrame, final: snappedPoint, via: "退到估算点下面的元素")
-        return snappedPoint
+        return ClickResolution(point: snappedPoint, wasResolvedByName: false)
     }
 
     /// 一次点击到底落在哪 —— **这条路上唯一的可核对记录**。
@@ -885,12 +956,13 @@ enum MacosUseController {
         among screenCaptures: [CompanionScreenCapture]
     ) async -> (appKitLocation: CGPoint, displayFrame: CGRect)? {
         guard let namedScreenCapture = screenCapture(for: reportedCoordinate, among: screenCaptures),
-              let quartzPoint = await resolvedClickPoint(
+              let resolution = await resolvedClickPoint(
                   for: reportedCoordinate,
                   among: screenCaptures
               ) else {
             return nil
         }
+        let quartzPoint = resolution.point
 
         let displayContainingPoint = screenCaptures.first(where: {
             CGDisplayBounds($0.displayID).contains(quartzPoint)

@@ -471,8 +471,32 @@ struct NotchSettingsArea: View {
 
                 Spacer(minLength: 8)
 
+                // 「重启」放在「退出」左边（用户 2026-09-26：「把这个退出按钮左侧添加
+                // 一个重启……你就写退出、重启两个按钮就可以了」）。
+                //
+                // **必须先起新实例再退旧的**，顺序反了就没有第二次机会 —— `terminate`
+                // 之后这个进程里不会再有任何一行代码执行。
+                //
+                // `createsNewApplicationInstance`：这是个 `LSUIElement` 的单实例应用，
+                // 不带这个开关时 `openApplication` 只会把请求交给**正在退出的自己**，
+                // 结果就是退出去、没回来（用户按了重启，应用却消失了）。
                 NotchBarActionButton(
-                    title: "退出 Clicky",
+                    title: "重启",
+                    systemImage: "arrow.clockwise",
+                    help: "重启 Clicky"
+                ) {
+                    let configuration = NSWorkspace.OpenConfiguration()
+                    configuration.createsNewApplicationInstance = true
+                    NSWorkspace.shared.openApplication(
+                        at: Bundle.main.bundleURL,
+                        configuration: configuration
+                    ) { _, _ in
+                        DispatchQueue.main.async { NSApp.terminate(nil) }
+                    }
+                }
+
+                NotchBarActionButton(
+                    title: "退出",
                     systemImage: "power",
                     help: "退出 Clicky"
                 ) {

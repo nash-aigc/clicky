@@ -1335,14 +1335,6 @@ final class VoicePlaybackEngine {
     ) -> Bool {
         guard wanted else { return false }
 
-        // TEMPORARY PROBE (2026-09-24): before/after the toggle, because the
-        // property and the IO can disagree. `isVoiceProcessingEnabled` is what
-        // this function used to trust; the input node's own format is what the
-        // microphone tap actually reads. If the format does not change shape
-        // across these two lines, voice processing did not reconfigure the IO
-        // and there is no canceller, whatever the property says.
-        print("🔊 [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=vpToggleBefore \(Self.voiceProcessingProbeDescription(for: inputNode))")
-
         do {
             try inputNode.setVoiceProcessingEnabled(true)
         } catch {

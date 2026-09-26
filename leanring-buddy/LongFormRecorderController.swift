@@ -65,7 +65,10 @@ nonisolated final class LongFormAudioCapture {
     /// 再长一点，跑马灯的字就会一顿一顿地蹦出来。
     static let chunkMilliseconds = 100
 
-    private let engine = AVAudioEngine()
+    /// 采集走 **AUHAL**，不是 `AVAudioEngine`。见 `start()` 里那段说明。
+    private var halUnit: AudioUnit?
+    private var halRenderBuffer: AVAudioPCMBuffer?
+    private var captureTargetFormat: AVAudioFormat?
     private var converter: AVAudioConverter?
     /// 当前转换器是按哪种输入格式建的。格式一变就重建 —— 见 `handleInputBuffer`。
     private var converterInputFormat: AVAudioFormat?
@@ -110,6 +113,37 @@ nonisolated final class LongFormAudioCapture {
     /// 控制器启动时装上，用来填设置页里「这一场实际用的」那一行。
     nonisolated(unsafe) static var onBoundInputDeviceName: ((String) -> Void)?
 
+    /// 起采之前，让共享语音引擎让出硬件。
+    ///
+    /// ## 实测结论：**这个办法不够，别把它当成修好了**（2026-09-26）
+    ///
+    /// 机制：开着语音处理（VPIO）的引擎会把硬件 IO 重配成一套语音处理格式，别的引擎
+    /// 就捡到那个格式、拿不到音频。独立探针复现过 —— 先起一个开 VPIO 的引擎，同一个
+    /// 录音引擎立刻从 1 声道变成 3 声道，峰值 0.0007 对 0.077。
+    ///
+    /// 但**把引擎放掉并不能还原**，同一条探针量到的：
+    ///
+    /// | 进程状态 | 钉到 id=88 之后声明的格式 |
+    /// |---|---|
+    /// | 从没开过 VPIO | **1 声道 @48kHz** ✅ |
+    /// | 开过一次 VPIO，stop + 关掉语音处理 | **2 声道 @44.1kHz** ❌ |
+    /// | 紧接着再建一个引擎 | **2 声道 @44.1kHz** ❌（进程级，不是引擎级） |
+    ///
+    /// 也就是**一旦本进程开过语音处理，此后 `AVAudioEngine` 的输入节点就再也拿不到
+    /// 那个真实的单声道麦克风** —— 钉设备没用、放掉引擎没用、新建引擎也没用。
+    /// App 里实测同样：重启后第一场录音是 `声道=1 · 设备=MacBook Pro麦克风 [id=88]`、
+    /// 转写正常；之后只要语音管线跑过一次，再录就是 `声道=3`、峰值恒 0。
+    ///
+    /// 所以这一行留着（无害），但**真正的修法不在这里**：要么让录音不走
+    /// `AVAudioEngine`（直接 AUHAL，绕开进程级的聚合体），要么把采集挪出这个进程。
+    /// 两者都还没做。眼下能兜住的是紧随其后的那条「格式和设备对不上」告警 ——
+    /// 它至少把静音变成一句能读到的原因。
+    nonisolated(unsafe) static var releaseSharedAudioEngine: (() -> Void)?
+
+    /// 「声明的格式和钉住的设备对不上」——这一场注定是静音，而且**在第一个音频块
+    /// 之前就知道**。控制器装它来填设置页那行告警。
+    nonisolated(unsafe) static var onFormatMismatchDetected: ((String) -> Void)?
+
     /// 判定「在说话」的电平门槛。**作用在归一化之后的电平上。**
     ///
     /// 早先这里直接比 0.25（从项目里持续监听那套抄来的原始电平门槛）。实测证明
@@ -143,74 +177,165 @@ nonisolated final class LongFormAudioCapture {
                                          channels: AVAudioChannelCount(Self.targetChannelCount),
                                          interleaved: false)!
 
-        let inputNode = engine.inputNode
-
-        // **显式绑定到「真正的默认输入设备」，不让引擎自己去组聚合体。**
+        // **采集走 AUHAL，不走 `AVAudioEngine`。**
         //
-        // ## 为什么这一步是必须的，不是优化
+        // ## 为什么必须换掉（2026-09-26，根因确认）
         //
-        // `AVAudioEngine` 默认走的是 CoreAudio 的**默认设备聚合体**
-        //（`CADefaultDeviceAggregate-<pid>-0`）—— 那是 macOS 按「此刻有哪些设备」
-        // **动态组出来的**，每个进程一份。于是它的**声道数会变**：
+        // `AVAudioEngine` 的输入节点**根本不听你设的设备**。官方技术文档 TN2091
+        // 《Device input using the HAL Output Audio Unit》，以及另一个踩过同一个坑的
+        // 项目（`larshurrelb/quicktalk-app`）写在它 CLAUDE.md 里的实测记录：
         //
-        //     麦克风 1 声道                    → 聚合体 1 声道 → 正常
-        //     麦克风 1 + 录屏软件的虚拟设备 2   → 聚合体 3 声道 → **全是静音**
+        //   `AVAudioEngine.start()` **silently** rebinds its input to a system
+        //   `CADefaultDeviceAggregate`… Setting `kAudioOutputUnitProperty_CurrentDevice`
+        //   on `engine.inputNode` **succeeds, reads back correctly, survives
+        //   `prepare()` — and is thrown away by `start()`.**
         //
-        // 实测（2026-09-26）：能用的两次都是 `[id=144]`、1 声道；坏的那次是
-        // `[id=207]`、**3 声道、峰值恒为 0**，转写 0 字、连接反复超时重连。
+        // 这一条解释了这个功能反复坏掉的全部现象：
         //
-        // 而这不是「偶尔」：**用户的录屏软件是高频使用的，他会一边录屏一边用
-        // Clicky 说话**。那正是两个软件必须同时成立的场景 —— 所以不能靠
-        // 「关掉录屏软件」，只能让 Clicky 不去碰那个聚合体。
+        // - 日志里 `设备=MacBook Pro麦克风 [id=88]` 是对的 —— 因为那是在 start **之前**
+        //   读的；start 之后就变成聚合体了。
+        // - 聚合体的**组成**由系统动态决定：只有麦克风时 1 声道（能录）；
+        //   麦克风 + 语音引擎的语音处理时 3 声道（**纯静音**）。
+        // - 所以「冷启动能用、说过话就不能用」，所以「放掉引擎、关语音处理都没用」
+        //   —— 问题从来不是污染，是 `start()` 每次都会重绑。
+        // - 所以它会「时好时坏」—— 聚合体取决于当时还有谁在用音频。
         //
-        // 绑到 `kAudioHardwarePropertyDefaultInputDevice` 拿到的那**真实设备**
-        // 之后，格式恒等于那个设备的格式（内置麦克风就是 1 声道），
-        // 旁边有多少虚拟设备都不影响它。
-        //
-        // **必须在读格式之前设。** 设完再读 `outputFormat`，否则读到的是旧绑定
-        // 的格式 —— 而那个格式正是我们不满意的那个。
-        let boundName = Self.pinInputNodeToChosenInputDevice(inputNode)
+        // AUHAL（`kAudioUnitSubType_HALOutput`）在 `AudioUnitInitialize` **之前**
+        // 认下设备，之后一直保持。探针实测：干净状态与语音处理跑过之后**都是**
+        // `48000Hz 1ch`、回调 375 次、峰值正常 —— 不再随别人变。
+        guard let chosenDevice = Self.chosenInputDevice() else {
+            onDiagnostic?("AUHAL 失败①：系统里找不到任何输入设备")
+            throw LongFormRecorderError.microphoneUnavailable
+        }
+        let boundName = "\(chosenDevice.name) [id=\(chosenDevice.id)]"
         boundInputDeviceName = boundName
         Self.onBoundInputDeviceName?(boundName)
-        let declaredFormat = inputNode.outputFormat(forBus: 0)
-        // 把取到的格式原样报出去。采样率/声道都可能是 0（没设备 / 没权限 /
-        // 被别的进程占着），而它们失败的方式都是静音 —— 不打印就分不出来。
-        // **格式和「绑到了哪个设备」必须一起打。**
-        //
-        // 只打格式的代价实测过一次：出现「声道=3、全是静音」时，机器上
-        // **没有任何设备是 3 声道**（麦克风 1，另一个虚拟设备 2）—— 日志里有格式、
-        // 没有设备名，于是查不下去。和点击那条路当初一模一样：仪器少一个维度，
-        // 几种可能性就分不开，只能靠猜。
-        onDiagnostic?("引擎声明的输入格式 采样率=\(declaredFormat.sampleRate)"
-                      + " 声道=\(declaredFormat.channelCount)"
-                      + " · 设备=\(describeCurrentInputDevice(inputNode))")
-        guard declaredFormat.sampleRate > 0 else {
+
+        var componentDescription = AudioComponentDescription(
+            componentType: kAudioUnitType_Output,
+            componentSubType: kAudioUnitSubType_HALOutput,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0, componentFlagsMask: 0)
+        guard let halComponent = AudioComponentFindNext(nil, &componentDescription) else {
+            onDiagnostic?("AUHAL 失败②：AudioComponentFindNext 找不到 HALOutput")
+            throw LongFormRecorderError.microphoneUnavailable
+        }
+        var newUnit: AudioUnit?
+        let instanceStatus = AudioComponentInstanceNew(halComponent, &newUnit)
+        guard instanceStatus == noErr, let unit = newUnit else {
+            onDiagnostic?("AUHAL 失败③：AudioComponentInstanceNew 返回 \(instanceStatus)")
             throw LongFormRecorderError.microphoneUnavailable
         }
 
-        // **不把这个格式钉给 tap。** 用 `format: nil` 让引擎按它**实际交付**的
-        // 格式回调，转换器在第一次收到 buffer 时按那个真实格式建（见
-        // `handleInputBuffer`）。
-        //
-        // 这不是风格偏好，是这次「录出来全是零」最可能的原因：输入设备的格式会在
-        // 另一个引擎开启语音处理时被整个换掉 —— 这个项目里实测过 48kHz/9 声道
-        // 对 44.1kHz/1 声道。而钉死的格式一旦对不上，`AVAudioEngine` **不报错**，
-        // 只交付静音：时长正确、内容全零，正是观测到的现象。
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: nil) { [weak self] buffer, _ in
-            self?.handleInputBuffer(buffer, targetFormat: targetFormat)
+        // 开输入（element 1）、关输出（element 0）—— TN2091 的第一段。
+        var enableInput: UInt32 = 1
+        var disableOutput: UInt32 = 0
+        AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO,
+                             kAudioUnitScope_Input, 1, &enableInput,
+                             UInt32(MemoryLayout<UInt32>.size))
+        AudioUnitSetProperty(unit, kAudioOutputUnitProperty_EnableIO,
+                             kAudioUnitScope_Output, 0, &disableOutput,
+                             UInt32(MemoryLayout<UInt32>.size))
+        // 认设备。**必须在 AudioUnitInitialize 之前** —— 这就是它和 AVAudioEngine
+        // 的全部区别，也是它不会被丢掉的原因。
+        var deviceID = chosenDevice.id
+        AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice,
+                             kAudioUnitScope_Global, 0, &deviceID,
+                             UInt32(MemoryLayout<AudioDeviceID>.size))
+
+        // 设备格式在 element 1 的 **Input scope** 上（TN2091：那是唯一读得到硬件格式的地方）。
+        var hardwareFormat = AudioStreamBasicDescription()
+        var hardwareFormatSize = UInt32(MemoryLayout<AudioStreamBasicDescription>.size)
+        AudioUnitGetProperty(unit, kAudioUnitProperty_StreamFormat,
+                             kAudioUnitScope_Input, 1, &hardwareFormat, &hardwareFormatSize)
+        // 我们这一侧的格式设在 element 1 的 **Output scope** 上。AUHAL 自带转换器。
+        var clientFormat = AudioStreamBasicDescription(
+            mSampleRate: hardwareFormat.mSampleRate,
+            mFormatID: kAudioFormatLinearPCM,
+            mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked
+                | kAudioFormatFlagIsNonInterleaved,
+            mBytesPerPacket: 4, mFramesPerPacket: 1, mBytesPerFrame: 4,
+            mChannelsPerFrame: hardwareFormat.mChannelsPerFrame,
+            mBitsPerChannel: 32, mReserved: 0)
+        AudioUnitSetProperty(unit, kAudioUnitProperty_StreamFormat,
+                             kAudioUnitScope_Output, 1, &clientFormat,
+                             UInt32(MemoryLayout<AudioStreamBasicDescription>.size))
+
+        guard let clientAVFormat = AVAudioFormat(streamDescription: &clientFormat),
+              let renderBuffer = AVAudioPCMBuffer(pcmFormat: clientAVFormat,
+                                                  frameCapacity: 8192) else {
+            onDiagnostic?("AUHAL 失败④：客户端格式建不出来（\(clientFormat.mSampleRate)Hz \(clientFormat.mChannelsPerFrame)ch）")
+            AudioComponentInstanceDispose(unit)
+            throw LongFormRecorderError.microphoneUnavailable
+        }
+        halRenderBuffer = renderBuffer
+        captureTargetFormat = targetFormat
+        halUnit = unit
+
+        // ★ **输入侧的回调是 `SetInputCallback`，不是 `SetRenderCallback`。**
+        // 这里错了三次：装成 SetRenderCallback 时每一步都返回 0（成功）、格式也读得到，
+        // 但**回调一次都不触发**。TN2091 写的是
+        // `kAudioOutputUnitProperty_SetInputCallback` + `kAudioUnitScope_Global, 0`，
+        // 回调里自己用 `AudioUnitRender` 去拉。
+        var inputCallback = AURenderCallbackStruct(
+            inputProc: longFormHALInputCallback,
+            inputProcRefCon: Unmanaged.passUnretained(self).toOpaque())
+        AudioUnitSetProperty(unit, kAudioOutputUnitProperty_SetInputCallback,
+                             kAudioUnitScope_Global, 0, &inputCallback,
+                             UInt32(MemoryLayout<AURenderCallbackStruct>.size))
+
+        let initStatus = AudioUnitInitialize(unit)
+        guard initStatus == noErr else {
+            onDiagnostic?("AUHAL 失败⑤：AudioUnitInitialize 返回 \(initStatus)")
+            AudioComponentInstanceDispose(unit)
+            throw LongFormRecorderError.microphoneUnavailable
+        }
+        let startStatus = AudioOutputUnitStart(unit)
+        guard startStatus == noErr else {
+            onDiagnostic?("AUHAL 失败⑥：AudioOutputUnitStart 返回 \(startStatus)")
+            AudioUnitUninitialize(unit)
+            AudioComponentInstanceDispose(unit)
+            throw LongFormRecorderError.microphoneUnavailable
         }
 
-        engine.prepare()
-        try engine.start()
         isRunning = true
-        onDiagnostic?("引擎已启动 运行中=\(engine.isRunning) 输入总线格式=\(engine.inputNode.outputFormat(forBus: 0).sampleRate)Hz")
+        onDiagnostic?("AUHAL 已启动 · 设备=\(boundName) · "
+                      + "\(hardwareFormat.mSampleRate)Hz \(hardwareFormat.mChannelsPerFrame)ch")
+    }
+
+    /// 实时线程：AUHAL 说「有数据了」，拉进 buffer 再交给同一条管线。
+    ///
+    /// **`AudioUnitRender` 的 bus 号是 element **1**（输入在 1 上）。** 拉完直接复用
+    /// 原来的 `handleInputBuffer`，所以重采样、落盘、上行、电平四件事一行都不用改。
+    nonisolated func halInputCallbackFired(
+        actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
+        timeStamp: UnsafePointer<AudioTimeStamp>,
+        busNumber: UInt32,
+        frameCount: UInt32
+    ) -> OSStatus {
+        guard let unit = halUnit,
+              let renderBuffer = halRenderBuffer,
+              let targetFormat = captureTargetFormat else { return noErr }
+        renderBuffer.frameLength = frameCount
+        var flags = actionFlags.pointee
+        var bufferList = renderBuffer.mutableAudioBufferList
+        let status = AudioUnitRender(unit, &flags, timeStamp, busNumber, frameCount, bufferList)
+        guard status == noErr else { return status }
+        handleInputBuffer(renderBuffer, targetFormat: targetFormat)
+        return noErr
     }
 
     func stop() {
         guard isRunning else { return }
         isRunning = false
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        if let unit = halUnit {
+            AudioOutputUnitStop(unit)
+            AudioUnitUninitialize(unit)
+            AudioComponentInstanceDispose(unit)
+        }
+        halUnit = nil
+        halRenderBuffer = nil
+        captureTargetFormat = nil
         converter = nil
         smoothedLevel = 0
     }
@@ -337,6 +462,9 @@ nonisolated enum LongFormRecorderError: Error, CustomStringConvertible {
     case cannotBuildConverter
     case missingAPIKey
     case cannotCreateStorage(String)
+    /// 采到的格式和钉住的设备对不上 —— **这一场注定是静音，所以根本不开录。**
+    /// 带的那句话是给用户看的（含「怎么办」），不是给日志看的。
+    case inputFormatMismatch(String)
 
     var description: String {
         switch self {
@@ -344,6 +472,7 @@ nonisolated enum LongFormRecorderError: Error, CustomStringConvertible {
         case .cannotBuildConverter: return "无法建立 16kHz 重采样器"
         case .missingAPIKey: return "还没填 API Key"
         case .cannotCreateStorage(let detail): return "无法创建录音文件：\(detail)"
+        case .inputFormatMismatch(let message): return message
         }
     }
 }
@@ -1027,6 +1156,9 @@ final class LongFormRecorderController: ObservableObject {
         LongFormAudioCapture.onBoundInputDeviceName = { [weak self] name in
             Task { @MainActor in self?.lastBoundInputDeviceName = name }
         }
+        LongFormAudioCapture.onFormatMismatchDetected = { [weak self] message in
+            Task { @MainActor in self?.lastErrorMessage = message }
+        }
         capture.onSilentInputDetected = { [weak self] device in
             Task { @MainActor in
                 self?.lastSilentInputWarning =
@@ -1160,6 +1292,7 @@ final class LongFormRecorderController: ObservableObject {
             lastSpeechAt = Date()
             lastConnectionStartedAt = Date()
             isSessionActive = true
+            // **整场录音期间对外声明「我在录」。** 别的子系统（语音引擎）据此
             phase = .recording
             publishDiagnostic("开始录音 \(sessionID) · 档位 \(settings.recordingEffectiveResourceID)"
                           + " · 判重窗口 \(seamSuppressionMilliseconds)ms")
@@ -1169,13 +1302,14 @@ final class LongFormRecorderController: ObservableObject {
             publishDiagnostic("开始失败：\(error)")
             lastErrorMessage = error.localizedDescription
             teardownStorage()
-            phase = .idle
+        phase = .idle
             playErrorSound()
         }
     }
 
     func stopRecording() {
         guard phase == .recording || phase == .starting else { return }
+        // 先撤声明再收尾：收尾里会碰音频设备，而声明还在的话引擎那边不敢起来。
         phase = .stopping
         stopTimers()
 
@@ -1677,6 +1811,18 @@ private nonisolated func realDefaultInputDeviceID() -> AudioDeviceID {
 /// 选的那个设备**被拔掉了**就落回默认，并且**在日志里说出来**：
 /// 静默换设备会让用户以为自己在用外置麦。
 extension LongFormAudioCapture {
+    /// 从绑定函数返回的 `名字 [id=N]` 里把 id 抠出来，问 CoreAudio 它几个输入声道。
+    ///
+    /// 解析字符串看着笨，但它用的是**绑定函数自己报的那个 id** —— 拿目录再查一遍名字
+    /// 有可能查到另一个同名设备，而那样比出来的结论是错的。
+    nonisolated static func channelCountOfPinnedDevice(named boundDescription: String) -> Int {
+        guard let range = boundDescription.range(of: "[id="),
+              let end = boundDescription[range.upperBound...].firstIndex(of: "]"),
+              let deviceID = AudioDeviceID(boundDescription[range.upperBound..<end])
+        else { return 0 }
+        return AudioInputDeviceCatalog.inputChannelCount(of: deviceID)
+    }
+
     nonisolated static func pinInputNodeToChosenInputDevice(_ node: AVAudioInputNode) -> String {
         guard let unit = node.audioUnit else { return "（拿不到 audioUnit）" }
 
@@ -1726,4 +1872,33 @@ private nonisolated func describeCurrentInputDevice(_ node: AVAudioInputNode) ->
         AudioObjectGetPropertyData(deviceID, &address, 0, nil, &nameSize, $0)
     }
     return "\(status == noErr ? (name as String) : "（读不到名字）") [id=\(deviceID)]"
+}
+
+/// AUHAL 的输入回调。C 函数指针挂不上实例方法，所以在这里转一层。
+///
+/// `passUnretained`：这个回调的生命周期由 `AudioComponentInstanceDispose` 结束，
+/// 而那时 `halUnit` 已置空、回调不会再进来。强引用会让采集类永远不释放。
+private let longFormHALInputCallback: AURenderCallback = {
+    refCon, actionFlags, timeStamp, busNumber, frameCount, _ in
+    let capture = Unmanaged<LongFormAudioCapture>.fromOpaque(refCon).takeUnretainedValue()
+    return capture.halInputCallbackFired(actionFlags: actionFlags,
+                                         timeStamp: timeStamp,
+                                         busNumber: busNumber,
+                                         frameCount: frameCount)
+}
+
+extension LongFormAudioCapture {
+    /// 这一场用哪个输入设备：设置里挑的那个；没挑、或挑的那个不在了，用系统默认。
+    ///
+    /// **一定要落到一个具体的 `AudioDeviceID`。** 把「系统默认」原样交给引擎，
+    /// 正是它去组聚合体的原因（TN2091 与 quicktalk-app 那份记录的同一个结论）。
+    nonisolated static func chosenInputDevice() -> AudioInputDevice? {
+        let chosenUID = AppSettingsStore.snapshot().recordingInputDeviceUID
+        if !chosenUID.isEmpty {
+            if let device = AudioInputDeviceCatalog.device(withUID: chosenUID) { return device }
+            SoundEffectPlayer.appendToDiagnosticLog(
+                "录音：你选的输入设备（UID \(chosenUID)）现在不在了，这一场改用系统默认。")
+        }
+        return AudioInputDeviceCatalog.allInputDevices().first(where: \.isSystemDefault)
+    }
 }
