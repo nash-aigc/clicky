@@ -411,7 +411,7 @@ final class NotchWindowController {
         // collapses it, and a click elsewhere never expands. Global monitors
         // observe without consuming, so the click still reaches its window.
         globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            self?.handleGlobalClick(at: NSEvent.mouseLocation, from: event)
+            self?.handleGlobalClick(at: Self.screenLocation(of: event), from: event)
         }
 
         // A global monitor explicitly does NOT see events destined for this
@@ -419,7 +419,7 @@ final class NotchWindowController {
         // on it only ever surfaces here, on the local monitor. The event is
         // returned untouched; the handler only reads the location.
         localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            self?.handleGlobalClick(at: NSEvent.mouseLocation, from: event)
+            self?.handleGlobalClick(at: Self.screenLocation(of: event), from: event)
             return event
         }
 
@@ -594,11 +594,50 @@ final class NotchWindowController {
     /// 就是它的身份。真实连击（双击）是两个事件、两个时间戳，不会被这条误伤。
     private var lastHandledClickSignature: String?
 
+    /// **这一下点击发生在屏幕的哪里** —— 取自**事件自己**，不是"此刻鼠标在哪"。
+    ///
+    /// 原来两处监听都传 `NSEvent.mouseLocation`（当前指针位置）。对慢慢点下去的人来说两者
+    /// 一样，所以一直没暴露；但它按定义是错的：事件排队、别的进程/辅助功能工具挪动指针、
+    /// 或者宿主把指针还原（自动化工具就是这么干的）之后，判定用的那一点就不是被点的那一点 ——
+    /// 表现为「点了没反应」，而且**只在展开态那种"命中区很小、又夹在别的分支之间"的地方**
+    /// 露出来。`event.window` 不为空时（点在我们自己的窗口上）直接换算到屏幕坐标；
+    /// 为空时（点别的 App）才回落到当前指针位置。
+    private static func screenLocation(of event: NSEvent) -> NSPoint {
+        if let window = event.window {
+            let converted = window.convertPoint(toScreen: event.locationInWindow)
+            return converted
+        }
+        return NSEvent.mouseLocation
+    }
+
     private func handleGlobalClick(at clickLocation: NSPoint,
                                   from event: NSEvent) {
+        // TEMP PROBE (remove before commit)
+        // **全局监听送来的、落在我自己“正在收点击的面板”上的那一下，交给本地监听处理。**
+        //
+        // 实测（2026-09-26 晚，录音两翼）：同一次点击，两个监听都收到了 ——
+        //   · 全局那个 `event.window == nil`，回落成「此刻鼠标在哪」，而那一刻指针已被
+        //     自动化工具还原到屏幕中心 → 判到 (864,1101)，落在刘海里；
+        //   · 本地那个带着窗口与窗口内坐标 → 判到 (1011,1101)，正是右翼。
+        // 先到的全局那一下把「点右翼停止录音」当成了「点刘海收起面板」，而
+        // `lastHandledClickSignature` 又把随后那次准确的处理挤掉了 —— 两件事叠起来就是
+        // 用户看到的「窗口打开时录音两翼点不动」。
+        //
+        // 判据用「面板收不收鼠标事件」而不是"展开与否"：收起态的 pill `ignoresMouseEvents`
+        // 为真，那一带的点击会穿到别的 App，本地监听根本收不到 —— 那种情况必须由全局监听管。
+        if event.window == nil,
+           screenPresences.contains(where: { presence in
+               !presence.panel.ignoresMouseEvents && presence.panel.frame.contains(clickLocation)
+           }) {
+            return
+        }
+        // ⚠️ **这一条必须排在下面那段签名去重之前。** 去重是「同一次点击只处理一次」，
+        // 而被跳过的那一次要是先写了签名，随后那次**坐标准确**的本地投递就会被挤掉 ——
+        // 那正是这个 bug 从「判错位置」变成「完全没反应」的原因（第一版修复就踩在这里）。
         let clickSignature = "\(event.timestamp)-\(event.type.rawValue)"
         if clickSignature == lastHandledClickSignature { return }
         lastHandledClickSignature = clickSignature
+
 
         // **临时 agent 那一排**（屏幕右上角、菜单栏下面一行）—— 判在最前面。
         //
@@ -662,6 +701,21 @@ final class NotchWindowController {
            !panelFrame.contains(clickLocation) {
             AgentActivityBoard.shared.manualPanelID = nil
             return
+        }
+
+        if LongFormRecorderController.shared.phase != .idle
+            || LongFormRecorderController.shared.isSessionActive,
+           let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }),
+           let wings = NotchSupport.recordingWingFrames(on: presence.screen) {
+            if wings.leading.contains(clickLocation) {
+                SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                LongFormRecorderController.shared.toggleTranscriptEditor()
+                return
+            }
+            if wings.trailing.contains(clickLocation) {
+                LongFormRecorderController.shared.handleWingButtonTap()
+                return
+            }
         }
 
         if panelModel.isExpanded {
@@ -732,26 +786,17 @@ final class NotchWindowController {
         // 时候，也应该能被点击。」
         // **录音两翼：展开、收起两态都认，而且只认这一处。**
         //
+        // ⚠️ **它必须排在下面 `if panelModel.isExpanded { … }` 之前。** 那一段处理完
+        // 「点刘海收起 / 点面板外面收起」之后有一句**无条件的 `return`** —— 展开态下代码
+        // 根本走不到后面的两翼判定，所以之前"给展开态补一个分支"也一直没生效
+        //（2026-09-26 实测：展开态的点击进得来、坐标也对，然后再没有下文）。
+        // 两翼在刘海的左右两侧，与"点在面板里还是面板外"是两回事，先判它不影响下面任何一条。
+        //
         // 原来这里带 `panelModel.isExpanded`，而收起态交给录音带自己那个全局监听 ——
         // 于是"窗口开着时点不动"（用户 2026-09-26：「窗口打开的状态下，如果用户录音，那么
         // 刘海屏的左侧跟右侧按钮应该具备功能，现在还是不具备功能」）。
         // 现在**两个状态都走这里**，录音带那边那个监听整个删掉 —— 一条路，不会两处各接一半；
         // 而点击穿透到别的 App 时（录音带 `ignoresMouseEvents`），这里的全局监听照样收得到。
-        if LongFormRecorderController.shared.phase != .idle
-            || LongFormRecorderController.shared.isSessionActive,
-           let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }),
-           let wings = NotchSupport.recordingWingFrames(on: presence.screen) {
-            if wings.leading.contains(clickLocation) {
-                SoundEffectPlayer.shared.play(.recordingEditorOpened)
-                LongFormRecorderController.shared.toggleTranscriptEditor()
-                return
-            }
-            if wings.trailing.contains(clickLocation) {
-                LongFormRecorderController.shared.handleWingButtonTap()
-                return
-            }
-        }
-
         if panelModel.externalSessionOverride == .externalChatting,
            screenPresences.contains(where: { presence in
                guard let wingFrame = NotchSupport.restingTrailingWingFrame(on: presence.screen) else { return false }
