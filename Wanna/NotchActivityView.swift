@@ -282,18 +282,17 @@ struct NotchPillRootView: View {
     var body: some View {
         GeometryReader { geometry in
             let notchHeight = geometry.size.height - NotchSupport.restingPillAnimationHeadroom
-            // The pill stays exactly notch-width. The window is wider on each
-            // side, and **the two sides are not the same width**: the right one
-            // is only the wings' canvas (`activeFlankWidth`), while the left
-            // one is `restingLeadingFlankWidth` — the larger of that same
-            // canvas and the room the temporary-agent strip needs. Subtracting
-            // `activeFlankWidth` from both sides therefore left the pill wider
-            // than the notch and pushed it left by the difference, so the extra
-            // width stuck out past the left edge of the hardware notch as a
-            // black block (measured 2026-09-26: drawn 251pt at x710 where the
-            // notch is 185pt at x771.5 — 62pt out on the left, 0 on the right).
+            // The pill stays exactly notch-width: the window is the pill widened
+            // by the same `activeFlankWidth` on BOTH sides, so subtracting it
+            // twice gives the pill back. (**Both sides equal** is the invariant
+            // — an asymmetric window pushes the pill off the notch's centre.
+            // Measured 2026-09-26, when the left flank was deliberately wider
+            // for the temporary-agent strip: the pill was drawn 251pt at x710
+            // where the notch is 185pt at x771.5 — 62pt sticking out on the
+            // left, 0 on the right. That strip moved to the screen's top-right
+            // corner the same day and the window is symmetric again.)
             let pillWidth = geometry.size.width
-                - NotchSupport.restingLeadingFlankWidth * 2
+                - NotchSupport.activeFlankWidth * 2
             let isActive = panelModel.activityPhase != .idle
 
             ZStack(alignment: .top) {
@@ -862,27 +861,8 @@ struct NotchPanelRootSwitchingView: View {
     /// 不关心这件事的调用方（预览、测试）不用传。
     var sheetDidAppear: () -> Void = {}
 
-    /// 那一排 agent 按钮的位置与尺寸。
-    ///
-    /// **位置是「相对刘海中心的偏移」，不是窗口坐标里的绝对 x。** 理由是坐标系：
-    /// 根视图只在启动时建一次，而那一排要同时服务两个窗口（静止 673pt / 展开 810pt，
-    /// 原点差 68pt）。绝对 x 一烘死，展开那一刻整排就会平移 68pt —— 实测按钮被画到
-    /// x=566 而命中区在 622–662，用户点不到。两种窗口都居中在刘海中心上，所以
-    /// 「中心 + 偏移」在两个窗口里是同一个屏幕位置。
-    var agentStripTrailingXFromNotchCenter: CGFloat = 0
-    var agentButtonHeight: CGFloat = 32
-
     var body: some View {
         panelContent
-            // **压在两种状态的上面。** 放在根这一层而不是某一支里，是因为展开态那块
-            // 面板会盖住屏幕中央（810pt 宽居中），而 agent 按钮在它的左上角外面 ——
-            // 放进展开分支里就会被它盖住。这和状态带当初遇到的问题一模一样
-            //（见 `NotchExpandedWingBand` 的注释）。
-            .overlay(alignment: .topLeading) {
-                AgentStripView(board: AgentActivityBoard.shared,
-                               trailingXFromNotchCenter: agentStripTrailingXFromNotchCenter,
-                               buttonHeight: agentButtonHeight)
-            }
     }
 
     @ViewBuilder

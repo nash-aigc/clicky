@@ -241,11 +241,22 @@ final class NotchWindowController {
             presence.panel.orderOut(nil)
         }
         screenPresences = []
+        // 临时 agent 那一排也撤掉：它的点击是这两个监听接的（`handleGlobalClick`），
+        // 监听一撤，留在屏幕上的按钮就变成了点不动的装饰。
+        AgentStripPanelController.shared.teardown()
         removeMonitors()
         hasPlayedBootChime = false
     }
 
     private func rebuildScreenPresences() {
+        // **临时 agent 那一排也跟着这套生命周期走。**
+        //
+        // 它画在屏幕右上角、不在这块面板里，但它的点击是这个控制器的全局监听接的
+        //（见 `handleGlobalClick`），所以「什么时候有这一排」必须和「什么时候有监听」
+        // 是同一个时刻。`rebuildScreenPresences` 正是"屏幕拓扑变了 → 把顶栏这一带
+        // 重排一遍"的那个漏斗：启动、权限到位、屏幕参数变化、设置变更都从这里过。
+        AgentStripPanelController.shared.install()
+
         let notchedScreens = NSScreen.screens.filter { NotchSupport.hasNotch($0) }
 
         // Keep existing panels for screens that still qualify; remove panels
@@ -309,13 +320,7 @@ final class NotchWindowController {
                 // 而这句闭包只会在之后被调用，那时按屏查表就行。
                 sheetDidAppear: { [weak self] in
                     self?.revealExpandedSheetIfPending(on: screen)
-                },
-                // **这一排的位置和高度都从屏幕坐标算**，然后把「相对刘海中心的偏移」
-                // 传给视图 —— 视图画的、和下面 `handleGlobalClick` 点的，因此永远一致，
-                // 而且在静止窗口与展开面板里都落在同一个屏幕位置上。
-                agentStripTrailingXFromNotchCenter:
-                    NotchSupport.agentStripTrailingXFromNotchCenter(on: screen) ?? 0,
-                agentButtonHeight: NotchSupport.agentButtonHeight(on: screen)
+                }
             )
             let hostingView = NSHostingView(rootView: rootView)
             hostingView.frame = NSRect(origin: .zero, size: panel.contentView!.bounds.size)
@@ -581,36 +586,38 @@ final class NotchWindowController {
     }
 
     private func handleGlobalClick(at clickLocation: NSPoint) {
-        // **刘海左侧那一排临时 agent 的按钮** —— 判在最前面，**展开态也一样有效**。
+        // **临时 agent 那一排**（屏幕右上角、菜单栏下面一行）—— 判在最前面。
         //
-        // 它们画在刘海面板的左上角，两种状态下都在屏幕最上面那一行（展开态那块面板
-        // 在 `.topLeading` 上给它让了位，而页头那一带三列都没有可点的东西）。判在
-        // 「再点刘海就收起」之前，展开时点它才不会先被那一条吃掉。
+        // 那一排画在它自己那块透明面板里（`AgentStripPanelController`），面板
+        // `ignoresMouseEvents = true`，所以点击穿过它落到别处、只有这里的全局监听看得见 ——
+        // 命中的矩形由 `NotchSupport` 从**屏幕坐标**算，和视图那一列（右对齐铺满面板）是
+        // 同一处算术：画在哪就点在哪。
         //
-        // 命中矩形由 `NotchSupport` 从**屏幕坐标**算，视图的摆放是**同一个函数**
-        // 换算到窗口坐标的 —— 画在哪就点在哪。2026-09-26 之前这两处是两套算术
-        //（视图读的是给展开态窗口算的那个中心），差 98.5pt，用户点它没有任何反应。
-        if !panelModel.isFullscreenSuppressed,
-           let agentIndex = screenPresences.compactMap({ presence -> Int? in
-               for index in 0..<NotchSupport.maximumVisibleAgentButtons {
-                   guard let frame = NotchSupport.agentButtonFrame(on: presence.screen,
-                                                                   indexFromNotch: index) else { break }
-                   if frame.contains(clickLocation) { return index }
-               }
-               return nil
-           }).first {
-            let agents = AgentActivityBoard.shared.agents
-            if agentIndex < agents.count {
-                AgentActivityBoard.shared.togglePanel(agents[agentIndex].id)
+        // 判在「再点刘海就收起」之前：两者在屏幕上相隔很远、本来不会互相抢，写死顺序是为了
+        // 以后谁把哪一块放大都不会吃掉对方的点击。
+        //
+        // **不看 `isFullscreenSuppressed`**：那个闸门管的是"别的进程全屏时刘海要不要让位"，
+        // 而这一排是常驻的状态指示（和桌面 HUD 同一条规矩），别的 App 全屏时用户仍然要看得见
+        // 任务在跑、点得到它。
+        if let stripScreen = NotchSupport.agentStripScreen {
+            for index in 0..<NotchSupport.maximumVisibleAgentButtons {
+                guard let frame = NotchSupport.agentButtonFrame(on: stripScreen,
+                                                                indexFromTrailingEdge: index) else { break }
+                if frame.contains(clickLocation) {
+                    let agents = AgentActivityBoard.shared.agents
+                    if index < agents.count {
+                        AgentActivityBoard.shared.togglePanel(agents[index].id)
+                    }
+                    return
+                }
             }
-            return
         }
 
         // **卡片本身也能点**：展开/收起它的正文（用户：「用户点击可以折叠或展开」）。
         // 判在按钮之后：两者不重叠（卡片在按钮下面），顺序不影响结果，但写死了以后
         // 按钮命中区放大也不会吃掉它。
-        if !panelModel.isFullscreenSuppressed,
-           let cardFrame = screenPresences.compactMap({ NotchSupport.agentCardFrame(on: $0.screen) }).first,
+        if let stripScreen = NotchSupport.agentStripScreen,
+           let cardFrame = NotchSupport.agentCardFrame(on: stripScreen),
            cardFrame.contains(clickLocation) {
             let agents = AgentActivityBoard.shared.agents
             let bannerShowing = agents.first { AgentActivityBoard.shared.expandedIDs.contains($0.id) }
@@ -632,15 +639,13 @@ final class NotchWindowController {
 
         // **点面板外面 = 收起面板。** 用户 2026-09-26：「卡片右上角X删除，通过点击外部
         // 隐藏卡片即可」—— 所以右上角那颗 ✕ 删了，收起由这一条负责。
+        //
+        // 那一排按钮和卡片**不需要在这里再排除一次**：点在它们身上的那一刻，上面两个
+        // 分支已经 `return` 了（而且它们无论面板开着没有都会先判），所以走到这一行时
+        // 点击必定不在那一排上。
         if AgentActivityBoard.shared.manualPanelID != nil,
            let panelFrame = AgentPanelController.shared.panelScreenFrame,
-           !panelFrame.contains(clickLocation),
-           !screenPresences.contains(where: { presence in
-               (0..<NotchSupport.maximumVisibleAgentButtons).contains { index in
-                   NotchSupport.agentButtonFrame(on: presence.screen, indexFromNotch: index)?
-                       .contains(clickLocation) ?? false
-               }
-           }) {
+           !panelFrame.contains(clickLocation) {
             AgentActivityBoard.shared.manualPanelID = nil
             return
         }

@@ -572,43 +572,29 @@ nonisolated enum NotchSupport {
     /// transparent at rest. Nil on screens without a notch.
     static func restingWindowFrame(on screen: NSScreen) -> CGRect? {
         guard let pillFrame = restingPillFrame(on: screen) else { return nil }
-        // **左侧比右侧宽**：右侧只要装两翼动画的画布，左侧还要装临时 agent 那一排按钮。
-        //
-        // 加宽是安全的，而且是这套设计里已有的性质：静止时那块区域**完全透明**，
-        // 而面板在静止态 `ignoresMouseEvents = true` —— 所以多出来的地方既不显示
-        // 任何东西，也挡不住下面菜单栏的点击（见 `activeFlankWidth` 的注释）。
         // **两侧必须等宽。** 内容是在窗口里居中的，所以窗口一旦左右不对称，
         // 胶囊就会被整体推离刘海中心 —— 2026-09-26 实测：左侧为 agent 那一排
         // 外扩 212pt、右侧只外扩 150pt，窗口中心比刘海中心偏左 31pt，胶囊跟着
-        // 偏 31pt，露在硬件缺口左边。改成两边都用 `restingLeadingFlankWidth`
-        // 之后窗口中心 = 胶囊中心，偏移消失；多出来的右侧在静止态是透明的，
-        // 和左侧一样不显示、也挡不住菜单栏的点击。
-        return CGRect(x: pillFrame.minX - restingLeadingFlankWidth,
+        // 偏 31pt，露在硬件缺口左边。两边都取 `activeFlankWidth` 之后窗口中心 =
+        // 胶囊中心，偏移消失；多出来的地方在静止态是透明的，既不显示任何东西，
+        // 也挡不住下面菜单栏的点击（面板静止时 `ignoresMouseEvents = true`）。
+        //
+        // **为什么不再有这个不等宽的理由**：那一排临时 agent 的按钮 2026-09-26
+        // 搬去了屏幕右上角（`agentStripPanelFrame`），它不再画在这个窗口里 ——
+        // 当初把左侧外扩到 `restingLeadingFlankWidth` 正是为了给它腾地方，现在
+        // 那块地方没有东西了。
+        return CGRect(x: pillFrame.minX - activeFlankWidth,
                       y: pillFrame.minY,
-                      width: pillFrame.width + restingLeadingFlankWidth * 2,
+                      width: pillFrame.width + activeFlankWidth * 2,
                       height: pillFrame.height)
     }
 
-    /// 静止窗口**左侧**多出来的宽度。
+    /// 屏幕右上角那一排最多同时显示几个 agent 按钮。
     ///
-    /// 取「两翼画布」和「agent 那一排需要的宽度」里大的那个 —— 少了这一条，
-    /// 第 3 个按钮就会落到窗口外面，**画不出来也点不到**，而且不会有任何报错。
-    static var restingLeadingFlankWidth: CGFloat {
-        let agentStripWidth = leadingWingWidth + agentStripGapFromWing
-            + CGFloat(maximumVisibleAgentButtons) * agentButtonWidth
-            + CGFloat(maximumVisibleAgentButtons - 1) * agentButtonSpacing
-            + agentStripOuterMargin
-        return max(activeFlankWidth, agentStripWidth)
-    }
-
-    /// 刘海左侧最多同时显示几个 agent 按钮。
-    ///
-    /// **有上限是必须的。** 没有上限的话，用一天下来那一排会长到屏幕外面去，
-    /// 而对面的按钮一个也点不到。超出的那些**不是丢了** —— 它们还在看板里，
-    /// 点最左边那个「更多」能翻到（面板里列全部）。
+    /// **有上限是必须的。** 没有上限的话，用一天下来那一排会从右往左长到屏幕外面去，
+    /// 而最边上的按钮一个也点不到。超出的那些**不是丢了** —— 它们还在看板里，
+    /// 详情面板（`AgentPanelController`）和侧栏的卡片区列的是全部。
     static let maximumVisibleAgentButtons = 3
-    /// 那一排最左端还要留的边。
-    static let agentStripOuterMargin: CGFloat = 14
 
     // MARK: - Wing geometry (shared by the drawing and the click target)
 
@@ -621,93 +607,100 @@ nonisolated enum NotchSupport {
     static let leadingWingWidth: CGFloat = 86
     static let trailingWingWidth: CGFloat = 88
 
-    // MARK: - 临时 agent 的那一排按钮（刘海左侧）
+    /// 录音那条带在刘海左侧**多压出来的**宽度。
+    ///
+    /// 它同时被 `NotchRecordingOverlay` 用来画那条带（那边原来自己写了一个私有的
+    /// 同名常量）—— 两处必须同一个数，否则这条带画多宽就又变成两份算术。
+    static let recordingBandLeadingOverlap: CGFloat = 14
+
+    // MARK: - 临时 agent 的那一排（屏幕右上角，菜单栏下面一行）
+    //
+    // 用户 2026-09-26：「刘海左侧这个 agent 的小图标，就是状态图标，应该放在右侧，
+    // 电脑屏幕的时间日期这个菜单栏的下面……在这个位置上从右到左依次显示各种各样的任务，
+    // 用户点击之后可以展开。这样就不会影响整个窗口或者其他组件的位置」。
+    //
+    // **为什么位置从刘海左侧搬到这里**：那一排画在刘海面板里，而刘海面板的窗口宽度
+    // 是有限的、静止态还只有 54pt 高，所以按钮被面板/展开的东西盖住过一次；更要紧的是
+    // 它占的是"刘海周围"那块地方 —— 而那正是两翼动画、录音带、展开面板都要用的地方。
+    // 搬到屏幕右上角之后，它谁也不挡（那一块只有菜单栏，而它在菜单栏**下面**一行），
+    // 而且**不再住在任何别的窗口里**：它有自己的一块透明面板（`AgentStripPanelController`），
+    // 所以面板怎么变都跟它无关。
+    //
+    // 画的和点的仍然只有一处算术：面板的矩形、按钮的命中矩形、卡片的命中矩形全部由
+    // 下面这几个函数给出，视图里那一列是**右对齐铺满面板**的。单元测试锁住这件事。
+
+    /// 那一排画在**哪块屏**上：有菜单栏的那一块（主屏）。
+    ///
+    /// 菜单栏在主显示器上，也就是 `NSScreen.screens[0]`（原点 `(0, 0)`）。
+    /// **不能用 `NSScreen.main`** —— 那个是"当前有键盘焦点的那块屏"，用户点一下别的
+    /// 显示器它就变了，而这一排不该跟着跳（`NotchWindowController` 里挑屏用的是
+    /// `hasNotch`，同一类判据）。
+    static var agentStripScreen: NSScreen? {
+        NSScreen.screens.first { $0.frame.origin == .zero } ?? NSScreen.screens.first
+    }
+
+    /// 菜单栏的高度（本机 32）—— 那一排就贴它的下沿。
+    ///
+    /// 有刘海的屏幕上 `safeAreaInsets.top` 报的就是菜单栏那一条的高度（本机实测 32，
+    /// 和 `auxiliaryTopLeftArea` 的高度一致，见 `notchRect`）；没有刘海的屏幕上它
+    /// 恒为 0，那就问 `visibleFrame` 让出来的那一条。两种屏幕都拿得到真值，而不用
+    /// 写死一个 32 —— 写死的那一个在别人的机器上就是错的。
+    nonisolated static func menuBarHeight(on screen: NSScreen) -> CGFloat {
+        if screen.safeAreaInsets.top > 0 { return screen.safeAreaInsets.top }
+        return max(0, screen.frame.maxY - screen.visibleFrame.maxY)
+    }
 
     /// 一个 agent 按钮的尺寸。
     ///
     /// **高度 = 菜单栏的高度**（用户 2026-09-26：「按钮的高度应该显示到整个菜单栏的
-    /// 高度一样」）—— 在有刘海的机器上那就是 `safeAreaInsets.top`（本机实测 32），
-    /// 也正是刘海那一条的高度。所以它跟屏幕有关，是个函数不是常量。
+    /// 高度一样」）—— 它贴在菜单栏下沿，所以高度就是那一条的高度。跟屏幕有关，是个
+    /// 函数不是常量。
     ///
     /// **宽度从 30 加到 40**：30 的时候 id（4 个字符、9pt 等宽）在一行里放不下，
     /// 会折成两行 —— 屏幕上看着像「enc / 5」这种乱码（用户报过）。40×32 同时满足
     /// 用户要的「长方形」（宽 > 高）。
     static let agentButtonWidth: CGFloat = 40
     nonisolated static func agentButtonHeight(on screen: NSScreen) -> CGFloat {
-        notchRect(on: screen)?.height ?? 32
+        menuBarHeight(on: screen)
     }
     /// 两个按钮之间。
     static let agentButtonSpacing: CGFloat = 6
-    /// 这一排与**刘海左侧那些会展开的东西**之间留的空。
+    /// 按钮那一行与卡片之间、以及两张卡片之间的距离。
     ///
-    /// **判据是"最宽的那一次左侧展开"，不是"翼宽"。** 刘海的左翼（86）在录音/思考/
-    /// 播报时会滑出来，而**录音那条带比它还宽** —— 它还要往外压
-    /// `recordingBandLeadingOverlap`（14pt 的圆角重叠），一共 100pt。用户 2026-09-26
-    /// 的原话：「展开时，这个小按钮如果要显示，就必须在展开位置的左侧，否则一旦展开，
-    /// 这个小按钮就看不见了。所以你要测量一下录音时、包括提问屏幕内容时，展开之后的
-    /// 宽度是多少」。
-    ///
-    /// 实测（本机 1728×1117、刘海 185 宽）：录音展开时左侧占 100pt，所以这一排的右端
-    /// 退到刘海左边缘以外 `86 + 14 + 10 = 110pt` 处。
-    static let agentStripGapFromWing: CGFloat = 10
+    /// **必须和视图里的 `VStack(spacing:)` 是同一个数** —— 卡片的命中矩形
+    ///（`agentCardFrame`）就是按这个间距从按钮那一行往下推出来的，两边各写一个
+    /// 数字的话，改了一边就会「画在这、点在那」，而且屏幕上完全看不出来。
+    static let agentStripRowSpacing: CGFloat = 5
+    /// 那一排最右端离屏幕右边缘留多少。
+    static let agentStripOuterMargin: CGFloat = 14
 
-    /// 录音那条带在刘海左侧**多压出来的**宽度。
+    /// 那一排的**右端**在屏幕上的 x —— 也就是最右边那颗按钮的右边缘。
     ///
-    /// 它同时被 `NotchRecordingOverlay` 用来画那条带（那边原来自己写了一个私有的
-    /// 同名常量）—— 两处必须同一个数，否则"让位让够了没有"这件事就又变成两份算术。
-    static let recordingBandLeadingOverlap: CGFloat = 14
-
-    /// 这一排的**右端**在屏幕上的 x —— 也就是最靠近刘海的那个按钮的右边缘。
-    ///
-    /// **从屏幕坐标算，不从任何 SwiftUI 容器的相对位置算。** 用户明确要求
-    ///（「用绝对路径来定位，就是说根据这个屏幕的左边缘来进行定位，而不是用相对…
-    /// 因为相对的话可能这个刘海它左侧边那个内容，那你这个位置就又往后偏移了」）——
-    /// 相对定位会跟着刘海内容的宽度跑，而刘海内容什么时候变宽是不可预测的。
-    ///
-    /// 从**刘海自己的左边缘**往回退：刘海宽 → 左翼宽 → 录音那条带多压的宽 → 那一段空。
-    /// 退的是**最宽的那一次展开**（录音，见 `recordingBandLeadingOverlap`）。
-    nonisolated static func agentStripTrailingX(on screen: NSScreen) -> CGFloat? {
-        guard let notch = notchRect(on: screen) else { return nil }
-        return screen.frame.minX + notch.minX
-            - leadingWingWidth - recordingBandLeadingOverlap - agentStripGapFromWing
+    /// **从屏幕坐标算，不从任何 SwiftUI 容器的相对位置算。** 用户明确要求过
+    ///（「用绝对路径来定位，就是说根据这个屏幕的左边缘来进行定位，而不是用相对」）——
+    /// 相对定位会跟着容器的内容宽度跑，而那个宽度什么时候变是不可预测的。
+    /// 现在它从屏幕**右**边缘往回退一个 `agentStripOuterMargin`。
+    nonisolated static func agentStripTrailingX(on screen: NSScreen) -> CGFloat {
+        screen.frame.maxX - agentStripOuterMargin
     }
 
-    /// 那一排的右端**相对刘海中心**的偏移（屏幕坐标，负数 = 在刘海左边）——
-    /// 视图就用这个量定位，而不是"窗口坐标里的绝对 x"。
+    /// 第 `indexFromTrailingEdge` 个按钮（0 = 最靠近屏幕右边缘的那个）的屏幕矩形。
     ///
-    /// **为什么是相对中心：根视图只在启动时建一次**（`rebuildScreenPresences`），
-    /// 所以传进去的窗口坐标会被烘死，而那一排要同时服务两个窗口 —— 静止时画在那块
-    /// 673pt 的窗口里（原点 x=527），展开时画在 810pt 的面板里（原点 x=459）。
-    /// 用"窗口坐标"定位，展开那一刻它就会跟着窗口原点整体平移 68pt（实测：
-    /// 按钮被画到 x=566，而命中区在 622–662）。
-    ///
-    /// **两种窗口都居中在刘海中心上**（静止窗口 = 胶囊 ± 等宽外扩；展开面板 =
-    /// 屏幕居中，而刘海本来就在屏幕中间），所以"中心 + 偏移"在两个窗口里得到的是
-    /// 同一个屏幕位置 —— 画的和点的因此永远一致。
-    nonisolated static func agentStripTrailingXFromNotchCenter(on screen: NSScreen) -> CGFloat? {
-        guard let trailingX = agentStripTrailingX(on: screen),
-              let notch = notchRect(on: screen) else { return nil }
-        return trailingX - (screen.frame.minX + notch.midX)
-    }
-
-    /// 第 `indexFromNotch` 个按钮（0 = 最靠近刘海的那个）的屏幕矩形。
-    ///
-    /// **从右往左排**：最新的任务离刘海最近 —— 用户刚说完话，眼睛就在刘海上，
-    /// 而旧任务让他去左边找是合理的。
+    /// **从右往左排**：最新的任务离右上角最近 —— 用户原话是「从右到左依次显示各种各样的
+    /// 任务」，而看那一排的眼睛本来就在菜单栏那个角上。
     nonisolated static func agentButtonFrame(on screen: NSScreen,
-                                             indexFromNotch: Int) -> CGRect? {
-        guard let trailingX = agentStripTrailingX(on: screen) else { return nil }
-        let right = trailingX - CGFloat(indexFromNotch) * (agentButtonWidth + agentButtonSpacing)
+                                             indexFromTrailingEdge: Int) -> CGRect? {
+        let right = agentStripTrailingX(on: screen)
+            - CGFloat(indexFromTrailingEdge) * (agentButtonWidth + agentButtonSpacing)
         let left = right - agentButtonWidth
         // 撞到屏幕左边缘就不放了 —— 一个跑到屏幕外面的按钮，点不到也看不见，
         // 而它会安静地占着一个位置让别的按钮也排不开。
         guard left >= screen.frame.minX + 8 else { return nil }
-        // **顶对齐**：视图是挂在 `.overlay(alignment: .topLeading)` 上的，也就是从
-        // 屏幕最上面那一行开始画。命中矩形必须贴同一条边 —— 原来是"竖直居中在刘海带里"，
-        // 比画出来的位置低 5pt，点按钮上半部分会落空。
+        // **顶边 = 菜单栏的下沿。** 用户要的就是"菜单栏下面一行"，所以这一排的顶边
+        // 不是屏幕顶边，而是屏幕顶边再往下 `menuBarHeight`。
         let height = agentButtonHeight(on: screen)
         return CGRect(x: left,
-                      y: screen.frame.maxY - height,
+                      y: screen.frame.maxY - menuBarHeight(on: screen) - height,
                       width: agentButtonWidth,
                       height: height)
     }
@@ -719,23 +712,75 @@ nonisolated enum NotchSupport {
     /// 展开态的前 74pt 里**一定**是标题行 + 前三行正文，点它收起也对。
     static let agentCardHitHeight: CGFloat = 74
 
+    /// 那一排**同时最多画几张卡片** —— 和 `AgentStripView` 里那个 `prefix(2)` 是同一个数。
+    ///
+    /// 三张一起弹会把屏幕右上角那一块占满，而用户的注意力只有一处；最新的两张够表达
+    /// 「刚才发生了什么」。
+    static let maximumVisibleAgentCards = 2
+
+    /// 按钮下面那张卡片的宽度。**比按钮宽得多** —— 要放得下一行字。
+    static let agentBannerWidth: CGFloat = 190
+    static let agentBannerMaximumHeight: CGFloat = 46
+
+    /// **画这一排的那个窗口**（`AgentStripPanelController` 的 `NSPanel`）的矩形。
+    ///
+    /// 这是"画的和点的只有一处算术"的锚点：面板的**右边缘**就是第 0 颗按钮的右边缘、
+    /// 面板的**上边缘**就是所有按钮的上边缘，视图那一列在面板里**右对齐、顶对齐**铺满，
+    /// 于是画出来的第 0 颗按钮正好落在 `agentButtonFrame(indexFromTrailingEdge: 0)` 上，
+    /// 中间不需要任何第二套换算。
+    ///
+    /// 宽度取 `agentBannerWidth`（190）：按钮那一行只有 132pt，而卡片要 190 —— 取大的
+    /// 那个，两者都右对齐到同一条边。
+    ///
+    /// 高度是**按钮那一行 + 两张收起态的卡片**（本机 32 + 5 + 74 + 5 + 74 = 190）。
+    /// 卡片展开之后比这更高，多出来的部分会被面板裁掉 —— 卡片本来就可以再点一下收起来，
+    /// 而把面板按"最长的那次展开"撑大是做不到的：正文长度没有上限。
+    nonisolated static func agentStripPanelFrame(on screen: NSScreen) -> CGRect {
+        let height = agentButtonHeight(on: screen)
+            + agentStripRowSpacing
+            + CGFloat(maximumVisibleAgentCards) * agentCardHitHeight
+            + CGFloat(maximumVisibleAgentCards - 1) * agentStripRowSpacing
+        return CGRect(x: agentStripTrailingX(on: screen) - agentBannerWidth,
+                      y: screen.frame.maxY - menuBarHeight(on: screen) - height,
+                      width: agentBannerWidth,
+                      height: height)
+    }
+
     /// 第一张卡片的屏幕矩形（卡片就排在按钮那一排下面）。
     ///
     /// 用户 2026-09-26 要求卡片能点（「用户点击可以折叠或展开」），所以它必须和按钮一样
     /// **从屏幕坐标算出来**，不能只靠视图自己的摆放。
     nonisolated static func agentCardFrame(on screen: NSScreen) -> CGRect? {
-        guard let trailingX = agentStripTrailingX(on: screen),
-              let notch = notchRect(on: screen) else { return nil }
-        let top = screen.frame.maxY - notch.height - agentButtonSpacing
-        return CGRect(x: trailingX - agentBannerWidth,
+        let panelFrame = agentStripPanelFrame(on: screen)
+        let top = panelFrame.maxY - agentButtonHeight(on: screen) - agentStripRowSpacing
+        return CGRect(x: panelFrame.minX,
                       y: top - agentCardHitHeight,
                       width: agentBannerWidth,
                       height: agentCardHitHeight)
     }
 
-    /// 按钮下面那张卡片的宽度。**比按钮宽得多** —— 要放得下一行字。
-    static let agentBannerWidth: CGFloat = 190
-    static let agentBannerMaximumHeight: CGFloat = 46
+    /// 临时 agent 的那个**详情面板**（`AgentPanelController`）该挂在哪儿：
+    /// 那一排按钮下面、右边缘和那一排对齐。
+    ///
+    /// 返回面板的**右上角**顶点（屏幕坐标）—— 面板自己知道它有多宽多高，这里只说
+    /// "挂在哪个角上"。原来是挂在刘海左侧那排按钮下面的，跟着那一排一起搬过来了。
+    nonisolated static func agentDetailPanelTopRightAnchor(on screen: NSScreen) -> CGPoint {
+        let panelFrame = agentStripPanelFrame(on: screen)
+        return CGPoint(x: panelFrame.maxX,
+                       y: panelFrame.maxY - agentButtonHeight(on: screen) - agentStripRowSpacing)
+    }
+
+    /// 临时 agent 那一排挂的窗口层级：**在普通窗口之上、在我们自己的面板之下**。
+    ///
+    /// `.mainMenu`（24）正好是那个位置：普通 App 的窗口是 0、浮动面板是 3，而刘海面板
+    /// 是 25（`.mainMenu + 1`）、摄像头小窗是 26。所以展开的面板永远压在这一排之上 ——
+    /// 全屏那一档面板是整块屏，两者会在同一个角上撞见，让面板赢才对（「我的按钮被别人的
+    /// 东西压住了」是最糟的一种）。
+    ///
+    /// **不要沿用 `OverlayWindow` 的 `.screenSaver`（1000）**：那一层是给光标伴随物准备的
+    ///（它要求自己盖在右键菜单之上）。这一排虽然点击穿透，但一块 190pt 宽的卡片盖住用户的
+    /// 右键菜单是看得见的缺陷 —— 和摄像头小窗同一个理由，见 `cameraStripWindowLevel`。
+    static let agentStripWindowLevel: NSWindow.Level = .mainMenu
 
     // MARK: - 摄像头小窗的摆放
 

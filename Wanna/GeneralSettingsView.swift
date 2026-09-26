@@ -279,7 +279,7 @@ struct GeneralSettingsView: View {
                 SettingsCardRowDivider()
                 SettingsRow(
                     label: "光标旁显示 Agent 状态",
-                    description: "派出去的活跑完时，在光标旁弹一个对号加一句话。关掉之后**刘海左侧那一排按钮照常**——那边是「你想看就去看」，这边是「推到你眼前」，后台任务跑很久时后者会一直占着鼠标旁那块地方。"
+                    description: "派出去的活跑完时，在光标旁弹一个对号加一句话。关掉之后**屏幕右上角那一排按钮照常**——那边是「你想看就去看」，这边是「推到你眼前」，后台任务跑很久时后者会一直占着鼠标旁那块地方。"
                 ) {
                     SettingsSwitch(isOn: generalSettingsViewModel.binding(\.showsAgentStatusAtCursor))
                 }

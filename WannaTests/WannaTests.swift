@@ -42,56 +42,108 @@ struct WannaTests {
         #expect(shouldTreatPermissionAsGranted)
     }
 
-    // MARK: - 刘海左侧那一排临时 agent 按钮的几何（2026-09-26）
+    // MARK: - 屏幕右上角那一排临时 agent 的几何（2026-09-26）
+    //
+    // 这一组锁的是同一条性质，只是位置从刘海左侧搬到了屏幕右上角：**画出来的那一排**
+    // 和**点下去命中的矩形**必须重合，而重合是靠"两者读同一批 `NotchSupport` 常量"
+    // 做到的 —— 视图那一列右对齐铺满面板，面板的右边缘就是第 0 颗按钮的右边缘，
+    // 面板的上边缘就是所有按钮的上边缘。
+    //
+    // 这个仓库在"画的和点的各算一遍"上被打过三次（D13）：一次是视图读了给展开态窗口
+    // 算的中心（差 98.5pt，点了没反应），一次是整排跟着窗口原点平移了 68pt。所以这条
+    // 断言不是形式主义 —— 它是那两个 bug 各自的判据。
 
-    /// **画出来的位置**和**点下去命中的矩形**必须是同一个地方，而且在「静止窗口」和
-    /// 「展开面板」两个状态下都是。
-    ///
-    /// 这条测试锁的是一个已经各错过一次的东西：视图原来读的是**给展开态窗口算的**
-    /// notch 中心，于是按钮被画到距刘海 20pt 的地方、而命中区在 96pt 外（差 98.5pt，
-    /// 用户点它没有任何反应）；修的时候又把它写成"静止窗口坐标"，展开那一刻整排
-    /// 跟着窗口原点平移 68pt（实测按钮画到 x=566，命中区在 622–662）。
-    ///
-    /// 锁的性质是：**两种窗口都居中在刘海中心上**，所以「容器中心 + 相对刘海中心的
-    /// 偏移」在两个宽度下算出来的是同一个屏幕位置 —— 谁把某一侧的外扩改得不对称，
-    /// 这条就会红。
-    @Test func agentStripLandsInTheSamePlaceInBothWindowStates() throws {
+    /// **面板（画的那块窗口）和按钮的命中矩形必须重合**：右边缘齐、上边缘齐。
+    @Test func agentStripPanelAgreesWithTheButtonHitRect() throws {
         guard let screen = NSScreen.main, NotchSupport.hasNotch(screen) else { return }
-        let notchCenterX = try #require(NotchSupport.notchRect(on: screen)).midX + screen.frame.minX
-        let hitRect = try #require(NotchSupport.agentButtonFrame(on: screen, indexFromNotch: 0))
-        let trailingOffset = try #require(NotchSupport.agentStripTrailingXFromNotchCenter(on: screen))
+        let panelFrame = NotchSupport.agentStripPanelFrame(on: screen)
+        let firstButton = try #require(NotchSupport.agentButtonFrame(on: screen,
+                                                                    indexFromTrailingEdge: 0))
 
-        for windowFrame in [try #require(NotchSupport.restingWindowFrame(on: screen)),
-                            NotchSupport.expandedSheetFrame(on: screen)] {
-            // ① 前提：窗口中心落在刘海中心上（静止窗口两侧外扩必须等宽）。
-            #expect(abs((windowFrame.minX + windowFrame.width / 2) - notchCenterX) < 0.5)
-            // ② 结论：视图那套算法画出来的右边缘 = 命中矩形的右边缘。
-            let drawnRightEdge = windowFrame.minX + windowFrame.width / 2 + trailingOffset
-            #expect(abs(drawnRightEdge - hitRect.maxX) < 0.5)
-        }
+        // ① 右边缘：面板的右边缘 = 第 0 颗按钮的右边缘（视图是右对齐铺满的）。
+        #expect(abs(panelFrame.maxX - firstButton.maxX) < 0.5)
+        // ② 上边缘：面板的顶边 = 按钮那一行的顶边（视图是顶对齐铺满的）。
+        #expect(abs(panelFrame.maxY - firstButton.maxY) < 0.5)
+        // ③ 面板装得下它自己要画的东西：按钮那一行 + 两张卡片。
+        let buttonsRowWidth = CGFloat(NotchSupport.maximumVisibleAgentButtons) * NotchSupport.agentButtonWidth
+            + CGFloat(NotchSupport.maximumVisibleAgentButtons - 1) * NotchSupport.agentButtonSpacing
+        #expect(panelFrame.width >= buttonsRowWidth)
+        // ④ 整块面板落在屏幕里（右边缘还留着那道外沿）。
+        #expect(panelFrame.maxX <= screen.frame.maxX - NotchSupport.agentStripOuterMargin + 0.5)
+        #expect(panelFrame.minX >= screen.frame.minX)
     }
 
-    /// 那一排必须让开**最宽的那次左侧展开**：录音那条带 = 左翼 + 圆角重叠（86 + 14）。
-    @Test func agentStripClearsTheWidestLeftExpansion() throws {
+    /// **这一排贴在菜单栏下面一行，而不是压在菜单栏上。**
+    ///
+    /// 用户 2026-09-26：「应该放在右侧，电脑屏幕的时间日期这个菜单栏的**下面一行**」——
+    /// 所以按钮的顶边是屏幕顶边往下 `menuBarHeight`，而不是屏幕顶边本身。
+    @Test func agentStripHangsBelowTheMenuBar() throws {
+        guard let screen = NSScreen.main, NotchSupport.hasNotch(screen) else { return }
+        let menuBarHeight = NotchSupport.menuBarHeight(on: screen)
+        #expect(menuBarHeight > 0, "菜单栏高度必须量得到，否则这一排会钻到菜单栏底下")
+
+        let firstButton = try #require(NotchSupport.agentButtonFrame(on: screen,
+                                                                    indexFromTrailingEdge: 0))
+        #expect(abs(firstButton.maxY - (screen.frame.maxY - menuBarHeight)) < 0.5)
+    }
+
+    /// **按钮高度 = 菜单栏高度**（用户：「按钮的高度应该显示到整个菜单栏的高度一样」），
+    /// 而且是长方形（宽 > 高）。
+    @Test func agentButtonIsAsTallAsTheMenuBar() throws {
+        guard let screen = NSScreen.main, NotchSupport.hasNotch(screen) else { return }
+        let hitRect = try #require(NotchSupport.agentButtonFrame(on: screen,
+                                                                 indexFromTrailingEdge: 0))
+        #expect(hitRect.height == NotchSupport.menuBarHeight(on: screen))
+        #expect(hitRect.height == screen.safeAreaInsets.top)
+        #expect(hitRect.width > hitRect.height, "用户要的是长方形（宽 > 高）")
+    }
+
+    /// **那一排必须让开刘海那一带最宽的那次右侧展开。**
+    ///
+    /// 原来这条断言的是"让开录音带在**左侧**多压出来的 100pt"；那一排搬到右上角之后，
+    /// 会朝它伸过来的东西变成了刘海**右翼**（语音/播报时滑出的 `trailingWingWidth`）——
+    /// 所以判据换成"最左边那颗按钮的左边缘，在刘海右边缘 + 右翼宽度之外"。
+    @Test func agentStripClearsTheNotchAndItsRightWing() throws {
         guard let screen = NSScreen.main, NotchSupport.hasNotch(screen) else { return }
         let notch = try #require(NotchSupport.notchRect(on: screen))
-        let hitRect = try #require(NotchSupport.agentButtonFrame(on: screen, indexFromNotch: 0))
-        let widestLeftExpansion = NotchSupport.leadingWingWidth + NotchSupport.recordingBandLeadingOverlap
-        #expect((screen.frame.minX + notch.minX) - hitRect.maxX >= widestLeftExpansion,
-                "录音展开时会把这一排盖住")
+        let leftmostButton = try #require(
+            NotchSupport.agentButtonFrame(on: screen,
+                                          indexFromTrailingEdge: NotchSupport.maximumVisibleAgentButtons - 1)
+        )
+        let notchRightEdge = screen.frame.minX + notch.maxX
+        #expect(leftmostButton.minX >= notchRightEdge + NotchSupport.trailingWingWidth,
+                "刘海右翼展开时会盖住这一排")
     }
 
-    /// 按钮高度 = 菜单栏高度（= 刘海那一条），且**顶对齐**。
+    /// **卡片排在按钮那一行的正下方，右边缘对齐到同一列。**
     ///
-    /// 高度是用户 2026-09-26 明确要的（「按钮的高度应该显示到整个菜单栏的高度一样」）；
-    /// 顶对齐是因为视图挂在 `.overlay(alignment: .topLeading)` 上 —— 命中矩形原来
-    /// "竖直居中在刘海带里"，比画出来的位置低 5pt，点按钮上半部分会落空。
-    @Test func agentButtonIsAsTallAsTheMenuBarAndTopAligned() throws {
+    /// 卡片的命中矩形是从按钮那一行往下推出来的（`agentStripRowSpacing`），而视图里
+    /// 那个 `VStack(spacing:)` 必须用同一个数 —— 两边各写一个数字的话，改了一边就会
+    /// 「画在这、点在那」，而屏幕上完全看不出来。
+    @Test func agentCardSitsDirectlyUnderTheButtonRow() throws {
         guard let screen = NSScreen.main, NotchSupport.hasNotch(screen) else { return }
-        let hitRect = try #require(NotchSupport.agentButtonFrame(on: screen, indexFromNotch: 0))
-        #expect(hitRect.height == screen.safeAreaInsets.top)
-        #expect(abs(hitRect.maxY - screen.frame.maxY) < 0.5)
-        #expect(hitRect.width > hitRect.height, "用户要的是长方形（宽 > 高）")
+        let panelFrame = NotchSupport.agentStripPanelFrame(on: screen)
+        let firstButton = try #require(NotchSupport.agentButtonFrame(on: screen,
+                                                                    indexFromTrailingEdge: 0))
+        let cardFrame = try #require(NotchSupport.agentCardFrame(on: screen))
+
+        #expect(abs(cardFrame.maxY - (firstButton.minY - NotchSupport.agentStripRowSpacing)) < 0.5)
+        #expect(abs(cardFrame.minX - panelFrame.minX) < 0.5)
+        #expect(abs(cardFrame.maxX - panelFrame.maxX) < 0.5)
+        #expect(cardFrame.height == NotchSupport.agentCardHitHeight)
+    }
+
+    /// **收起态的刘海窗口仍然左右对称地居中在刘海上。**
+    ///
+    /// 这条不变量 2026-09-26 破过一次：当时为了让那一排 agent 按钮住在窗口左半边，
+    /// 左侧外扩改成了 `restingLeadingFlankWidth`（212pt）、右侧只有 150pt，于是窗口中心
+    /// 比刘海中心偏左 31pt，胶囊跟着偏出去、露在硬件缺口左边。那一排现在有自己的面板了，
+    /// 两侧都回到 `activeFlankWidth` —— 这条断言把"对称"钉住，以后谁再想单边加宽就会红。
+    @Test func restingWindowStaysCenteredOnTheNotch() throws {
+        guard let screen = NSScreen.main, NotchSupport.hasNotch(screen) else { return }
+        let notchCenterX = try #require(NotchSupport.notchRect(on: screen)).midX + screen.frame.minX
+        let windowFrame = try #require(NotchSupport.restingWindowFrame(on: screen))
+        #expect(abs((windowFrame.minX + windowFrame.width / 2) - notchCenterX) < 0.5)
     }
 
     /// **自动核验的三态判定。**
