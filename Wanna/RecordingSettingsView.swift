@@ -34,6 +34,8 @@ extension GeneralSettingsView {
             recordingServiceSection
             recordingStorageSection
             recordingPolishSection
+            // Notion 笔记排在最后：它是「录完之后还能去哪儿」这一族里最新的一个出口。
+            notionNoteSection
             recordingCameraSection
         }
     }
@@ -493,6 +495,88 @@ extension GeneralSettingsView {
     /// 最近一场连续静音的告警。没有就是 nil。
     private var silentInputWarning: String? {
         LongFormRecorderController.shared.lastSilentInputWarning
+    }
+
+    /// **录音 → Notion 笔记**（用户 2026-09-27 第 9 条：「该功能放在设置页面的录音功能里，
+    /// 允许用户自定义 URL、API key、模型、保存到 Notion 的链接、Notion API 和个人令牌，
+    /// 以及撰写的提示词」）。
+    ///
+    /// 三组：**开关与目的地**、**整理用哪套模型**、**触发关键词与提示词**。整理那套模型
+    /// **故意与「自定义风格」分开** —— 用户明确要求「转写部分使用另一套提示词，独立使用
+    /// DeepSeek Flash 设计的提示词整理，不使用录音润色提示词」。
+    @ViewBuilder
+    private var notionNoteSection: some View {
+        SettingsGroupLabel("Notion 笔记")
+        SettingsCard {
+            SettingsRow(
+                label: "存成 Notion 笔记",
+                description: "开着时：录音的开头或末尾**前 20 字**里出现下面任一关键词，刘海的**左**侧就会出现一颗「取消」。不点它就默认存成一条笔记；点了这一场就按普通录音处理。"
+            ) {
+                SettingsSwitch(isOn: generalSettingsViewModel.binding(\.notionNoteEnabled))
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "写到哪一页",
+                description: "把那一页的链接整条粘进来即可（也能只填页面 id）。**必须先在这一页里把集成添加进来**：打开那一页 → 右上 ••• → 连接 → 选中你的集成，否则服务端会回 404。"
+            ) {
+                TextField("https://www.notion.so/…", text: generalSettingsViewModel.binding(\.notionNotePageID))
+                    .textFieldStyle(.roundedBorder).frame(width: 300)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "打开用的链接",
+                description: "保存成功后点「已保存笔记」跳转的地址。留空则用上面那一页拼一个。"
+            ) {
+                TextField("留空则用上面那一页", text: generalSettingsViewModel.binding(\.notionNoteOpenURL))
+                    .textFieldStyle(.roundedBorder).frame(width: 300)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(
+                label: "集成令牌",
+                description: "Notion 集成令牌（`ntn_…`）。它只写进本机设置文件（0600、仓库之外），不会进仓库；导出设置时那一条会带着它，导出页有说明。"
+            ) {
+                SecureField("ntn_…", text: generalSettingsViewModel.binding(\.notionNoteToken))
+                    .textFieldStyle(.roundedBorder).frame(width: 300)
+            }
+        }
+
+        SettingsCard {
+            SettingsRow(
+                label: "整理用的模型 ID",
+                description: "把录音整理成「大纲 + 排版」这一步用哪个模型。默认 deepseek-flash —— 它是**改写**任务，这一套与「自定义风格」那套完全分开。"
+            ) {
+                TextField("deepseek-flash", text: generalSettingsViewModel.binding(\.notionNoteModelID))
+                    .textFieldStyle(.roundedBorder).frame(width: 200)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(label: "服务地址", description: "留空则用「自定义风格」那套（再没有就用「模型」页里 🧠 的）。") {
+                TextField("留空则用自定义风格那套", text: generalSettingsViewModel.binding(\.notionNoteBaseURL))
+                    .textFieldStyle(.roundedBorder).frame(width: 260)
+            }
+            SettingsCardRowDivider()
+            SettingsRow(label: "API Key", description: "留空同上。只写进本机设置文件。") {
+                SecureField("留空同上", text: generalSettingsViewModel.binding(\.notionNoteAPIKey))
+                    .textFieldStyle(.roundedBorder).frame(width: 260)
+            }
+        }
+
+        SettingsCard {
+            SettingsTextEditorRow(
+                label: "触发关键词",
+                description: "一行一个。检测**只在开头前 20 字与末尾后 20 字**里做，中间出现不算；比较前会去掉空格与标点（转写是 AI 出来的，标点常常和嘴里说的不一致），所以「保存 notion」与「保存notion」都命中。",
+                text: generalSettingsViewModel.binding(\.notionNoteKeywords),
+                placeholder: "保存笔记",
+                minimumHeight: 120
+            )
+            SettingsCardRowDivider()
+            SettingsTextEditorRow(
+                label: "整理提示词",
+                description: "要求模型**只排版、不扩写**，并按三段输出（【总结】【大纲】【排版】）—— 客户端按这三个标记切开，分别放进折叠列表里的两块。",
+                text: generalSettingsViewModel.binding(\.notionNotePrompt),
+                placeholder: "…",
+                minimumHeight: 180
+            )
+        }
     }
 
     @ViewBuilder
