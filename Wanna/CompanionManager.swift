@@ -910,38 +910,6 @@ final class CompanionManager: ObservableObject {
                 TaskListPanelController.shared.toggle()
             }
 
-        // TEMPORARY PROBE (2026-09-26)：造「主会话 → 分组 → 子任务」的样例数据，
-        // 用来核验侧栏的新样式。核对完删。
-        if FileManager.default.fileExists(atPath: "/tmp/wanna-task-probe") {
-            let board = AgentActivityBoard.shared
-            let session = ConversationSessionsStore.activeSession()
-            let sid = session.id.uuidString
-            let g1 = UUID().uuidString, g2 = UUID().uuidString
-            _ = board.beginTask(request: "帮我在桌面上新建一个文件，写今天的清单", groupID: g1,
-                                sessionID: sid, sessionTitle: session.title)
-            _ = board.beginTask(request: "把桌面上的文件按类型归类整理一下", groupID: g1,
-                                sessionID: sid, sessionTitle: session.title)
-            let done = board.beginTask(request: "读一下桌面上那个年龄.txt", groupID: g2,
-                                       sessionID: sid, sessionTitle: session.title)
-            board.finishTask(done, status: .doneVerified)
-        }
-
-        // TEMPORARY PROBE (2026-09-26)：造样例数据核验侧栏新样式（主会话 → 分组 → 子任务）。
-        if FileManager.default.fileExists(atPath: "/tmp/wanna-task-probe") {
-            let board = AgentActivityBoard.shared
-            let session = ConversationSessionsStore.activeSession()
-            let sid = session.id.uuidString
-            let g1 = UUID().uuidString, g2 = UUID().uuidString
-            _ = board.beginTask(request: "启动构建，把这一版推到远端", groupID: g1,
-                                sessionID: sid, sessionTitle: session.title)
-            _ = board.beginTask(request: "把桌面上的文件按类型归类整理一下", groupID: g1,
-                                sessionID: sid, sessionTitle: session.title)
-            let done = board.beginTask(request: "读一下桌面上那个年龄.txt", groupID: g2,
-                                       sessionID: sid, sessionTitle: session.title)
-            board.appendStep("GT推送 - Bash: python3 push.py", to: done)
-            board.finishTask(done, status: .doneVerified)
-        }
-
         AgentPanelController.cancelRunningJob = { [weak self] in
             Task { @MainActor in self?.cancelRunningJob() }
         }
