@@ -236,7 +236,10 @@ struct NotchHomeView: View {
                     onClose: {
                         temporaryConversation.discardEverything()
                         composerConversationMode = .continuous
-                    }
+                    },
+                    // 同一份按钮行 —— 位置与内容在两个模式下完全一致（用户：「按钮的位置
+                    // 不应该变化，只不过是整个的绘画记录变成了一个全新的界面」）。
+                    controlsRow: AnyView(composerControlsRow)
                 )
             }
         }
@@ -857,20 +860,30 @@ struct NotchHomeView: View {
                 composerConversationMode = .continuous
             }
 
+            // **这一组靠右**（用户 2026-09-26：「针对连续对话 / 屏幕 / 声音这几个，
+            // 靠右对齐」）：左边管"我在哪一段对话"，右边管"这一段对话怎么看"。
+            Spacer(minLength: 6)
+
             // **这两颗设置只作用于哪一种对话，必须先写出来。**
             // 用户：「在新建按钮的右侧添加一个『针对……』，会让用户知道其实这个设置
             // 只针对于当前这个状态」—— 临时对话的「语音」关掉**不影响**主对话，
             // 不写清楚，用户会以为它是个全局开关。
             Text(composerConversationMode == .continuous ? "针对连续对话" : "针对临时对话")
                 .font(.system(size: 10.5))
-                .foregroundColor(.white.opacity(0.38))
+                .foregroundColor(composerConversationMode == .continuous
+                                 ? .white.opacity(0.38) : composerTemporaryTint.opacity(0.75))
                 .fixedSize()
 
             screenshotChip
             soundChip
-
-            Spacer(minLength: 0)
         }
+    }
+
+    /// **临时对话那一组用另一个颜色**（用户：「把按钮的颜色修改下，方便用户区分」）。
+    /// 琥珀色：既不是主对话的绿/蓝，也够醒目 —— 一眼能看出"右边这几颗现在管的是
+    /// 临时那一段对话"。
+    private var composerTemporaryTint: Color {
+        Color(red: 0.96, green: 0.72, blue: 0.32)
     }
 
     private func conversationModeChip(_ mode: ComposerConversationMode) -> some View {
@@ -908,6 +921,12 @@ struct NotchHomeView: View {
         .help(mode.helpText)
     }
 
+    /// 高亮色跟着模式走：连续对话用绿（`DS.Colors.success`），临时对话用琥珀 ——
+    /// 见 `composerTemporaryTint`。
+    private var composerHighlightColor: Color {
+        composerConversationMode == .continuous ? DS.Colors.success : composerTemporaryTint
+    }
+
     private func composerRowButton(title: String,
                                    systemImage: String,
                                    isHighlighted: Bool = false,
@@ -918,7 +937,7 @@ struct NotchHomeView: View {
                 Image(systemName: systemImage).font(.system(size: 10.5))
                 Text(title).font(.system(size: 11.5))
             }
-            .foregroundColor(isHighlighted ? DS.Colors.accent : .white.opacity(0.65))
+            .foregroundColor(isHighlighted ? composerHighlightColor : .white.opacity(0.65))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(

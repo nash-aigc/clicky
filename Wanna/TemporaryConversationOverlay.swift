@@ -23,6 +23,13 @@ struct TemporaryConversationOverlay: View {
     @ObservedObject var companionManager: CompanionManager
     /// 关掉它：调用方把模式切回「连续对话」，并清空内容。
     var onClose: () -> Void
+    /// **输入框上方那一行**（模式、新建、针对…、屏幕、声音）。
+    ///
+    /// 由调用方传进来而不是自己在里面再画一份：用户 2026-09-26 报的就是这一处 ——
+    /// 「临时对话的时候，也是固定显示的，否则无法退出临时对话了」。浮层原来把它整块
+    /// 盖住了，于是**进了临时对话就出不来**。那一行的内容和位置在两个模式下完全一样，
+    /// 各画一份必然漂，所以传同一份。
+    var controlsRow: AnyView
 
     @State private var draft = ""
     @State private var isComposerExpanded = false
@@ -155,7 +162,9 @@ struct TemporaryConversationOverlay: View {
                 model.send(text, companionManager: companionManager)
             },
             isResponding: model.isAwaitingReply,
-            onStop: { model.discardEverything() }
+            onStop: { model.discardEverything() },
+            // 参数顺序跟着声明走（memberwise init）：`controlsRow` 在 `onStop` 之后。
+            controlsRow: controlsRow
         )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .padding(.top, 8)

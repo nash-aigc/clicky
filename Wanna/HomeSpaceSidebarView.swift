@@ -359,15 +359,30 @@ struct HomeSpaceSidebarView: View {
             Divider()
                 .overlay(Color.white.opacity(0.08))
 
-            NotchBarActionButton(
-                title: "角色",
-                systemImage: "person.crop.circle",
-                isHighlighted: false,
-                help: "语音 / 视频聊天用的角色预设"
-            ) {
-                SoundEffectPlayer.shared.play(.notchRevealed)
-                showsSettings = false
-                agentSessionManager.selectedSidebarSection = .voiceChat
+            // **角色与复盘并排**（用户 2026-09-26：「复盘 agent 放在左侧下面（分割线
+            // 上面）」）—— 两者都是"去别处"的固定入口，不是跟着任务长出来的卡片。
+            HStack(spacing: 4) {
+                NotchBarActionButton(
+                    title: "角色",
+                    systemImage: "person.crop.circle",
+                    isHighlighted: false,
+                    help: "语音 / 视频聊天用的角色预设"
+                ) {
+                    SoundEffectPlayer.shared.play(.notchRevealed)
+                    showsSettings = false
+                    agentSessionManager.selectedSidebarSection = .voiceChat
+                }
+
+                NotchBarActionButton(
+                    title: "复盘",
+                    systemImage: "chart.line.uptrend.xyaxis",
+                    isHighlighted: false,
+                    help: "跟复盘 agent 聊：它读的是复盘文件夹里的材料"
+                ) {
+                    SoundEffectPlayer.shared.play(.notchRevealed)
+                    showsSettings = false
+                    cardModel.openReviewAgent(agentSessionManager: agentSessionManager)
+                }
             }
         }
         .padding(.horizontal, 10)
@@ -599,8 +614,10 @@ struct HomeSpaceSidebarView: View {
                 showsSettings = true
             }
 
+            // 名字用「历史」（用户 2026-09-26：「名称替换成：设置、历史、录音」）——
+            // 三个字变成两个字，与其他两行一样短，一列读下来才是齐的。
             NotchBarActionButton(
-                title: "历史归档",
+                title: "历史",
                 systemImage: "archivebox",
                 isHighlighted: false,
                 help: "以前的主对话与它们的任务"

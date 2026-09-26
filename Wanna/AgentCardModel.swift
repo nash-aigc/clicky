@@ -133,10 +133,11 @@ final class AgentCardModel: ObservableObject {
         // 它是一条**固定的**记录，不是一次 spawn —— `AgentSessionStore` 的注释说
         // 「spawn 时机归 manager、store 只记录存在」，而这条记录的存在与否本来就不
         // 取决于用户点了什么。
-        if let reviewCard = reviewAgentCard() {
-            built.append(reviewCard)
-        }
-
+        // **复盘 agent 不在这里**（用户 2026-09-26 的第二次调整：「复盘 agent 放在左侧
+        // 下面（分割线上面）」）—— 它不是"跟随任务长的一条线"，而是一个固定的入口，
+        // 与「角色」并排放在分割线上方。它仍然是同一个 `AgentSession`，
+        // 打开它的路在 `openReviewAgent(...)`。
+        //
         // ③ Claude Code 卡片：代理名册（兜底接手过的任务会出现在这里）。
         for agent in AgentSessionStore.allAgents() where agent.name != Self.reviewAgentName {
             let cardID = agent.id.uuidString
@@ -161,21 +162,17 @@ final class AgentCardModel: ObservableObject {
     static let reviewAgentName = "复盘"
     static var reviewAgentFolderPath: String { WorkspaceDirectory.reviewsURL.path }
 
-    /// 找复盘 agent，没有就建一个（幂等：刷新时会反复调用）。
-    private func reviewAgentCard() -> Card? {
+    /// 打开复盘 agent（没有就先建一个，幂等）。
+    ///
+    /// 侧栏那一行读它，所以它同时承担"这个 agent 存在吗"和"切到它"两件事 ——
+    /// 用户点那一下必须真的进得去，哪怕这是第一次。
+    func openReviewAgent(agentSessionManager: AgentSessionManager) {
         let existing = AgentSessionStore.allAgents().first { $0.name == Self.reviewAgentName }
         let agent = existing ?? AgentSessionStore.createAgent(
             name: Self.reviewAgentName,
             projectFolderPath: Self.reviewAgentFolderPath)
-        let cardID = agent.id.uuidString
-        return Card(id: "\(CardKind.review.rawValue):\(cardID)",
-                    kind: .review,
-                    entityID: cardID,
-                    title: Self.reviewAgentName,
-                    isDefault: false,
-                    tasksByColumn: columns(forCardKind: .review,
-                                           cardID: cardID,
-                                           sessionStartedAt: nil))
+        agentSessionManager.selectAgent(agent.id)
+        agentSessionManager.selectedSidebarSection = .agents
     }
 
     private func filtered(_ cards: [Card], query: String) -> [Card] {
