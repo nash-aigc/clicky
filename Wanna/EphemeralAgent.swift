@@ -1,6 +1,99 @@
 import Foundation
 import Combine
 
+/// 一张卡片下面那四栏。**用户定的只有四栏，而且只有状态，没有别的分类。**
+///
+/// 他的原话（2026-09-26）：「是按照状态，不是按照什么时间，也不是按照什么其他的，
+/// 就是按照任务状态，因为对于用户来说，任务就是任务，没有所谓的什么分类这个概念，
+/// 就是任务状态。」所以栏序是**固定**的，不随时间、不随数量变。
+nonisolated enum TaskColumn: String, CaseIterable, Sendable, Equatable {
+    case running
+    case completed
+    case failed
+    case historical
+
+    var displayName: String {
+        switch self {
+        case .running: return "进行中"
+        case .completed: return "任务完成"
+        case .failed: return "任务失败"
+        case .historical: return "历史任务"
+        }
+    }
+
+    /// **一条任务归哪一栏，只由这两件事决定。** 写成纯函数是为了能单独断言：
+    /// 栏的归属是这套界面的核心语义，不该散在视图的 if 里。
+    ///
+    /// `isArchived` 由调用方给（Phase 2：卡片所在的主对话已归档，或这条任务属于
+    /// 更早的一次会话）。默认 false = 「还属于当次会话」。
+    static func column(forStatus status: EphemeralAgent.Status, isArchived: Bool) -> TaskColumn {
+        if status == .running { return .running }
+        if isArchived { return .historical }
+        switch status {
+        case .failed: return .failed
+        case .doneVerified, .doneUnverified: return .completed
+        case .running: return .running            // 上面已返回，写全是为了穷尽
+        }
+    }
+
+    static func column(for task: EphemeralAgent, isArchived: Bool = false) -> TaskColumn {
+        column(forStatus: task.status, isArchived: isArchived)
+    }
+}
+
+/// 一张卡片是哪一类 Agent 主体。
+///
+/// 用户 2026-09-26 定死的两类：「第一种就是咱们的主循环会话，第二种就是 Claude Code
+/// 的代理，一共是这两类」。卡片本身**不新建表** —— 主循环卡片就是一条
+/// `ConversationSession`，Claude Code 卡片就是一个 `AgentSession`，卡片 id 直接复用
+/// 它们现成的 UUID 字符串。
+nonisolated enum CardKind: String, Codable, Sendable, Equatable, CaseIterable {
+    /// 自研的主循环会话。
+    case mainLoop
+    /// 兜底用的 Claude Code 代理。
+    case claudeCode
+
+    var displayName: String {
+        switch self {
+        case .mainLoop: return "主循环"
+        case .claudeCode: return "Claude Code"
+        }
+    }
+
+    /// 卡片上那枚「这条是兜底过来的」标记用的字。
+    var handoffBadgeText: String {
+        switch self {
+        case .mainLoop: return ""
+        case .claudeCode: return "兜底 · Claude Code"
+        }
+    }
+}
+
+/// 一次尝试：某个执行者跑这一趟的过程与结果。
+///
+/// 它是「我的 Agent 试了几次、每次败在哪」的唯一载体 —— 用户要靠它复盘、决定升级
+/// 自研 Agent 的哪个方向（见 `EphemeralAgent.cardKind` 上那段说明）。
+nonisolated struct TaskAttempt: Codable, Sendable, Equatable {
+    /// 谁执行的：nil = 自研（主循环），否则是 `EphemeralAgent.externalAgentKind`
+    /// 的取值（"claudeCode" / "codex" / "hermes"…）。
+    var executorKind: String?
+    var startedAt: Date
+    var finishedAt: Date?
+    var status: EphemeralAgent.Status
+    /// 这一趟的说明：为什么失败、为什么被交出去。
+    var note: String?
+
+    var executorDisplayName: String {
+        switch executorKind {
+        case nil: return "自研"
+        case "claudeCode": return "Claude Code"
+        case "codex": return "Codex"
+        case "hermes": return "Hermes"
+        default: return executorKind ?? "自研"
+        }
+    }
+}
+
 /// 一个**临时 agent** —— 用户的一次任务，而不是一个长期存在的对话。
 ///
 /// ## 为什么是「一个任务一个」
@@ -19,13 +112,13 @@ import Combine
 ///
 /// 只记**给人看的**：这件事是什么、做到哪一步、成没成。工具调用单独放一列 ——
 /// 用户的原话是「工具调用的部分一定要折叠起来，因为它会占用很多的空间」。
-nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
+nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable, Codable {
 
     /// 任务的状态。**三态，不是两态** —— 方案 §04 给执行 agent 定的三态结果协议
     /// （`done_verified` / `done_unverified` / `failed`）在界面上的落点。
     /// 「做完了但没验证」和「做完了并且回读确认过」对用户是两件事：
     /// 前者他可能需要自己看一眼，后者可以放心。
-    enum Status: String, Sendable, Equatable {
+    enum Status: String, Sendable, Equatable, Codable {
         case running
         case doneVerified
         case doneUnverified
@@ -77,6 +170,39 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
     ///（用户：「如果主会话没有归档，也要显示出来，防止用户找不到具体是哪个主会话」）。
     var sessionTitle: String?
 
+    // MARK: - 归因：这条任务现在挂在谁名下（2026-09-26 新增）
+    //
+    // 用户的原话解释了他为什么要这套界面：「我希望全部都由我自己设计…因为考虑到
+    // 我自己设计的能力问题，所以我才会去增加一个兜底策略…这样就能保证用户知道
+    // 哪些任务是我自己设计的 Agent 完成的、哪些是 Claude Code 完成的。然后我再复盘，
+    // 我就能知道我应该有哪些方向去升级我自己的 Agent。」
+    //
+    // 所以**归因是这套界面的目的本身**，不是装饰：它必须落盘、必须能被复盘读到。
+
+    /// **这条任务现在挂在哪张卡片下** —— 兜底交给 Claude Code 时会被改写，
+    /// 这就是用户要的「任务自动从主循环卡片移动到 Claude Code 卡片」。
+    ///
+    /// 注意与 `sessionID` 的分工：`sessionID` 是**谁发起的**（历史事实，永不改写），
+    /// 而 `cardKind`/`cardID` 是**现在由谁负责**（会变）。
+    var cardKind: CardKind?
+    var cardID: String?
+
+    /// **为什么被兜底、什么时候。** 复盘的第一手材料。
+    var handoffReason: String?
+    var handedOffAt: Date?
+
+    /// 主循环最后一步为什么没做成 —— 同样是「我该升级哪里」的直接证据。
+    var failureReason: String?
+
+    /// 每次尝试一行（谁执行的、多久、什么结果、为什么）。**「我的 Agent 试了几次、
+    /// 败在哪」的唯一载体**，卡片上那四栏只是它的视图。
+    var attempts: [TaskAttempt] = []
+
+    /// 当前这次尝试（还在跑的那一条）。`attempts.last` 还没结束时就是它。
+    var currentAttemptIndex: Int? {
+        attempts.lastIndex { $0.finishedAt == nil }
+    }
+
     /// **标题行显示的是时间**，不是标题。
     ///
     /// 用户 2026-09-26：「把标题上写时间，任务内容写在正文上」—— 理由是标题在
@@ -127,6 +253,9 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
          groupID: String? = nil,
          sessionID: String? = nil,
          sessionTitle: String? = nil,
+         externalAgentKind: String? = nil,
+         cardKind: CardKind? = nil,
+         cardID: String? = nil,
          startedAt: Date = Date()) {
         self.id = id
         self.title = title
@@ -134,10 +263,54 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
         self.groupID = groupID
         self.sessionID = sessionID
         self.sessionTitle = sessionTitle
+        self.externalAgentKind = externalAgentKind
+        self.cardKind = cardKind
+        self.cardID = cardID
         self.startedAt = startedAt
         self.status = .running
         self.steps = []
         self.toolCalls = []
+        // 第一次尝试从建它的那一刻开始 —— 复盘要看到「谁先动的手」。
+        self.attempts = [TaskAttempt(executorKind: externalAgentKind,
+                                     startedAt: startedAt,
+                                     finishedAt: nil,
+                                     status: .running,
+                                     note: nil)]
+    }
+
+    /// 手写解码，**不写合成的那一份**：仓规 E1 —— 后加的字段一律 `decodeIfPresent`，
+    /// 否则这个文件将来任何一次加字段都会让已有的 `AgentTasks.json` 整份读不出来
+    /// （`ConversationHistoryStore` 那边已经吃过这个教训）。
+    ///
+    /// `isCardExpanded` **故意不在 `CodingKeys` 里**：那是「此刻有没有被展开」的界面
+    /// 状态，不是任务的属性（原注释：「任务不该知道自己正被显示着」），落盘没有意义，
+    /// 读回来一律从 false 起。
+    private enum CodingKeys: String, CodingKey {
+        case id, title, request, startedAt, finishedAt, status, steps, toolCalls
+        case groupID, sessionID, sessionTitle, externalAgentKind
+        case cardKind, cardID, handoffReason, handedOffAt, failureReason, attempts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        request = try container.decode(String.self, forKey: .request)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt)
+        status = try container.decode(EphemeralAgent.Status.self, forKey: .status)
+        steps = try container.decodeIfPresent([String].self, forKey: .steps) ?? []
+        toolCalls = try container.decodeIfPresent([String].self, forKey: .toolCalls) ?? []
+        groupID = try container.decodeIfPresent(String.self, forKey: .groupID)
+        sessionID = try container.decodeIfPresent(String.self, forKey: .sessionID)
+        sessionTitle = try container.decodeIfPresent(String.self, forKey: .sessionTitle)
+        externalAgentKind = try container.decodeIfPresent(String.self, forKey: .externalAgentKind)
+        cardKind = try container.decodeIfPresent(CardKind.self, forKey: .cardKind)
+        cardID = try container.decodeIfPresent(String.self, forKey: .cardID)
+        handoffReason = try container.decodeIfPresent(String.self, forKey: .handoffReason)
+        handedOffAt = try container.decodeIfPresent(Date.self, forKey: .handedOffAt)
+        failureReason = try container.decodeIfPresent(String.self, forKey: .failureReason)
+        attempts = try container.decodeIfPresent([TaskAttempt].self, forKey: .attempts) ?? []
     }
 
     static func makeID() -> String {
@@ -225,20 +398,77 @@ final class AgentActivityBoard: ObservableObject {
 
     /// 一次任务开始。返回它的 id，调用方后面用它来追加步骤。
     @discardableResult
+    /// 起一条任务。
+    ///
+    /// `cardKind`/`cardID` 是**它现在挂在哪张卡片下**：自研派出去的一律是主循环卡片，
+    /// 而卡片 id 就是那条主会话的 id（卡片不新建表，见 `CardKind`）。兜底时会被改写，
+    /// 那正是用户要的「任务自动从主循环卡片移动到 Claude Code 卡片」。
     func beginTask(request: String,
                    groupID: String? = nil,
                    sessionID: String? = nil,
-                   sessionTitle: String? = nil) -> String {
+                   sessionTitle: String? = nil,
+                   externalAgentKind: String? = nil,
+                   cardKind: CardKind = .mainLoop,
+                   cardID: String? = nil) -> String {
         pruneExpired()
         let agent = EphemeralAgent(title: Self.shortTitle(from: request),
                                    request: request,
                                    groupID: groupID,
                                    sessionID: sessionID,
-                                   sessionTitle: sessionTitle)
+                                   sessionTitle: sessionTitle,
+                                   externalAgentKind: externalAgentKind,
+                                   cardKind: cardKind,
+                                   cardID: cardID ?? sessionID)
         agents.insert(agent, at: 0)
         SoundEffectPlayer.appendToDiagnosticLog(
             "临时 agent \(agent.id) 开始：\(agent.title)")
         return agent.id
+    }
+
+    /// **兜底：把这条任务交给 Claude Code。**
+    ///
+    /// 用户的原话：「在主循环任务失败的时候，自动地去分配给 Claude Code 这个更强的
+    /// Agent」；「这个任务就自动地从咱们设计的主循环会话移动到 Claude Code 这个卡片里面」。
+    ///
+    /// 这里做三件事，而且**必须同时做内存和落盘**：
+    ///   1. 内存里改归属 + 记原因 + 给新执行者开一条尝试（刘海和卡片区立刻反映）；
+    ///   2. 立刻落盘（**不能等结束** —— 中间重启一次，归因就没了，见 `FinishedTaskStore.record`）；
+    ///   3. 收掉旧执行者那条尝试（`attempts` 于是留下「自研试了 N 次没成 → Claude Code 接手」）。
+    func handOffTask(_ agentID: String,
+                     to cardKind: CardKind,
+                     cardID: String,
+                     reason: String,
+                     externalAgentKind: String?) {
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        let now = Date()
+        agents[index].cardKind = cardKind
+        agents[index].cardID = cardID
+        agents[index].handoffReason = reason
+        agents[index].handedOffAt = now
+        agents[index].externalAgentKind = externalAgentKind
+        if let attemptIndex = agents[index].currentAttemptIndex {
+            agents[index].attempts[attemptIndex].finishedAt = now
+            agents[index].attempts[attemptIndex].status = .failed
+            agents[index].attempts[attemptIndex].note = reason
+        }
+        agents[index].attempts.append(
+            TaskAttempt(executorKind: externalAgentKind,
+                        startedAt: now,
+                        finishedAt: nil,
+                        status: .running,
+                        note: "兜底接手"))
+        let handedOffAgent = agents[index]
+        SoundEffectPlayer.appendToDiagnosticLog(
+            "任务 \(agentID) 兜底交给 \(cardKind.displayName)：\(reason)")
+        FinishedTaskStore.shared.record(handedOffAgent)
+    }
+
+    /// 记下「主循环最后为什么没做成」—— 复盘时这行字就是升级方向。
+    func recordFailure(_ reason: String, forTaskID agentID: String) {
+        guard let index = agents.firstIndex(where: { $0.id == agentID }) else { return }
+        agents[index].failureReason = reason
+        let failedAgent = agents[index]
+        FinishedTaskStore.shared.record(failedAgent)
     }
 
     func appendStep(_ text: String, to agentID: String) {
@@ -440,11 +670,50 @@ nonisolated struct FinishedTask: Codable, Identifiable, Sendable, Equatable {
     let request: String
     let statusRawValue: String
     let startedAt: Date
-    let finishedAt: Date
+    /// **可空**：兜底交接时任务还没结束就得落盘（否则复盘会丢，见 `FinishedTaskStore` 的头注释），
+    /// 那时它没有结束时间。旧文件里这个键一定在，`Optional` 照样读得出来 ✓。
+    var finishedAt: Date?
     let sessionID: String?
     let sessionTitle: String?
 
+    // MARK: - 归因（2026-09-26 新增；**全部 Optional**）
+    //
+    // 全部 Optional 是有意的：合成的解码器对 Optional 用 `decodeIfPresent`，所以
+    // **已经写出来的 `FinishedTasks.json` 一个字都不用改就能读**（仓规 E1）。
+    // `cardKind` 存 **raw String** 而不是枚举：枚举直接解码时遇到不认识的取值会抛，
+    // 而这一个字段抛掉就是整份归档没了 —— 与 `AppSettings.WindowExpansionStyle`
+    // 同一个理由、同一个写法。
+
+    /// 现在挂在哪张卡片下（兜底后会变成 claudeCode）。
+    var cardKindRawValue: String?
+    var cardID: String?
+    /// 谁发起的（建任务时的那条主会话）—— 历史事实，永不变。
+    var originSessionID: String?
+    var originTitle: String?
+    /// 一次任务派出去的多个子 agent 归一组（卡片区折成文件夹用）。
+    var groupID: String?
+    /// 谁在执行（nil = 自研）。
+    var externalAgentKind: String?
+    /// 为什么被兜底、什么时候。
+    var handoffReason: String?
+    var handedOffAt: Date?
+    /// 主循环最后为什么没做成 —— 复盘时这行字就是升级方向。
+    var failureReason: String?
+    /// 每次尝试（谁跑的、多久、结果、为什么）。
+    var attempts: [TaskAttempt]?
+
     var status: EphemeralAgent.Status { EphemeralAgent.Status(rawValue: statusRawValue) ?? .doneUnverified }
+
+    var cardKind: CardKind? {
+        guard let cardKindRawValue else { return nil }
+        return CardKind(rawValue: cardKindRawValue)
+    }
+
+    /// 归档与卡片区排序用的时间：没结束就用开始时间。
+    var sortDate: Date { finishedAt ?? startedAt }
+
+    /// 被兜底过没有 —— 卡片上那枚标记、以及复盘要看的就是它。
+    var wasHandedOff: Bool { handoffReason != nil || cardKind == .claudeCode }
 }
 
 nonisolated final class FinishedTaskStore {
@@ -475,7 +744,18 @@ nonisolated final class FinishedTaskStore {
                                                ofItemAtPath: Self.fileURL.path)
     }
 
-    /// 一条任务结束 —— 记进历史。**同一个 id 只留一条**（重跑不会堆两份）。
+    /// 一条任务落盘 —— 记进历史/归因。**同一个 id 只留一条**（upsert：重跑、改归属、
+    /// 补原因都不会堆出第二份）。
+    ///
+    /// ## 名字里的 "Finished" 是历史遗留，现在它**也记还没结束的任务**
+    ///
+    /// 2026-09-26 加兜底时发现的缺口：任务被交给 Claude Code 之后，本 App 里那条
+    /// `EphemeralAgent` 只在**结束**时才落盘；如果这中间重启了 App，这条任务的归因
+    /// （谁发起的、为什么交出去）就永远没了 —— 而复盘要的正是它。所以交接那一刻就得
+    /// 落盘，`finishedAt` 因此变成可空。
+    ///
+    /// 改名会牵动磁盘文件名（`FinishedTasks.json`，里面是已有历史），不值得；
+    /// 但**必须在这里写清楚**，免得下一个人以为"这里只有做完的"。
     func record(_ agent: EphemeralAgent) {
         lock.lock(); defer { lock.unlock() }
         let entry = FinishedTask(id: agent.id,
@@ -483,9 +763,19 @@ nonisolated final class FinishedTaskStore {
                                  request: agent.request,
                                  statusRawValue: agent.status.rawValue,
                                  startedAt: agent.startedAt,
-                                 finishedAt: agent.finishedAt ?? Date(),
+                                 finishedAt: agent.finishedAt,
                                  sessionID: agent.sessionID,
-                                 sessionTitle: agent.sessionTitle)
+                                 sessionTitle: agent.sessionTitle,
+                                 cardKindRawValue: agent.cardKind?.rawValue,
+                                 cardID: agent.cardID,
+                                 originSessionID: agent.sessionID,
+                                 originTitle: agent.sessionTitle,
+                                 groupID: agent.groupID,
+                                 externalAgentKind: agent.externalAgentKind,
+                                 handoffReason: agent.handoffReason,
+                                 handedOffAt: agent.handedOffAt,
+                                 failureReason: agent.failureReason,
+                                 attempts: agent.attempts)
         cache.removeAll { $0.id == entry.id }
         cache.append(entry)
         persist()
@@ -494,7 +784,7 @@ nonisolated final class FinishedTaskStore {
 
     func allTasks() -> [FinishedTask] {
         lock.lock(); defer { lock.unlock() }
-        return cache.sorted { $0.finishedAt > $1.finishedAt }
+        return cache.sorted { $0.sortDate > $1.sortDate }
     }
 
     func clearAll() {

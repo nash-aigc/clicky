@@ -169,8 +169,10 @@ struct NotchArchiveArea: View {
         if !finishedTasks.isEmpty {
             let grouped = Dictionary(grouping: finishedTasks) { $0.sessionID ?? "" }
             let order = grouped.keys.sorted { left, right in
-                let leftDate = grouped[left]?.map(\.finishedAt).max() ?? .distantPast
-                let rightDate = grouped[right]?.map(\.finishedAt).max() ?? .distantPast
+                // 用 `sortDate`（没结束就取开始时间）：兜底交出去的任务在结束前就已落盘，
+                // 它的 `finishedAt` 是空的（见 `FinishedTask.finishedAt` 的说明）。
+                let leftDate = grouped[left]?.map(\.sortDate).max() ?? .distantPast
+                let rightDate = grouped[right]?.map(\.sortDate).max() ?? .distantPast
                 return leftDate > rightDate
             }
             VStack(alignment: .leading, spacing: 0) {
@@ -228,7 +230,8 @@ struct NotchArchiveArea: View {
                         Circle()
                             .fill(archiveStatusColor(task.status))
                             .frame(width: 7, height: 7)
-                        Text(Self.archiveTimeFormatter.string(from: task.finishedAt))
+                        // 同上：还没结束的任务显示它的开始时间，而不是一个空的"结束时间"。
+                        Text(Self.archiveTimeFormatter.string(from: task.sortDate))
                             .font(.system(size: 10.5, weight: .medium).monospacedDigit())
                             .foregroundColor(.white.opacity(0.4))
                         Text(task.request)
