@@ -264,7 +264,12 @@ nonisolated enum NotchSupport {
     ///
     /// 所以这一个值必须**不低于刘海**，两件事才会一起回到正确：内容让开刘海，
     /// 带子取 min 之后正好等于刘海高度。40 = 32（本机刘海）+ 8（呼吸间距）。
-    static let sheetHeaderTopInset: CGFloat = 40
+    /// **2026-09-26 深夜：40 → 32。** 用户要求把两侧分割线**对齐到录音带的下沿**
+    ///（「让分隔线刚好跟录音弹窗下面这条线重叠」），而录音带那一块量出来是
+    /// **64 = 刘海 32 + 转写条 32**。上面那一行按钮要**正好落在 32…64 这一条**里，
+    /// 所以内容顶端只能是刘海底边（32）—— 那 8pt 的呼吸间距让给了"线对齐"这件事，
+    /// 这是他明确要的取舍（「压缩那个按钮的高度」）。刘海仍然压不到任何控件。
+    static let sheetHeaderTopInset: CGFloat = 32
 
     /// The left and right breathing room of a content column. The user asked
     /// for the side margins to be as small as they can be, so all four regions
@@ -327,11 +332,16 @@ nonisolated enum NotchSupport {
     /// 上面）」—— 两排都在同一条分割线之上，按钮却一个 22 一个 34，看起来是两套控件。
     /// 所以高度**只在这里定义一次**：模式条读它、语音页那颗音色/摄像头/连接也读它，
     /// 「完全相同」就成了结构上的事实，而不是两处各调一次数字。
-    static let contentHeaderControlHeight: CGFloat = 34
+    /// **2026-09-26 深夜：34 → 32。** 页头那一格的总高必须等于录音带（64），
+    /// 而它上面只剩 32…64 这 32pt，所以按钮就是 32 —— 上沿贴刘海底边，下沿就是分割线。
+    static let contentHeaderControlHeight: CGFloat = 32
 
     /// 侧栏顶上那两排按钮的**行间距**与**高度** —— 展开态与收起态共用。
-    static let sidebarTopRowSpacing: CGFloat = 6
-    static let sidebarTopButtonHeight: CGFloat = 30
+    /// **2026-09-26 深夜：6 / 30 → 4 / 28。** 侧栏顶上那两行要**正好落在 0…64** 里
+    ///（与右侧、与录音带的下沿同一条线）：4（上边距）+ 28 + 4 + 28 = **64**。
+    /// 改这两个数之前先算一遍这个和 —— 它决定了那条线在左列这边成不成立。
+    static let sidebarTopRowSpacing: CGFloat = 4
+    static let sidebarTopButtonHeight: CGFloat = 28
 
     /// 第 1 行（4 颗）里一颗的宽度。
     ///
@@ -382,7 +392,9 @@ nonisolated enum NotchSupport {
     static let cardChatModeBandHeight: CGFloat = contentHeaderControlHeight
 
     /// 模式行与它下面那行页头之间的细缝。
-    static let cardChatModeBandBottomSpacing: CGFloat = 6
+    /// **2026-09-26 深夜：6 → 0。** 那 6pt 的"细缝"会让分割线落在按钮下面 6pt 处，
+    /// 而用户要的是**线就是那一格的底边**（与录音带下沿重合）。
+    static let cardChatModeBandBottomSpacing: CGFloat = 0
 
     /// **2026-09-26 晚已删除。** 它曾经是"每页自己那行页头"的高度（35），而那一行已经并进
     /// 模式行 —— 再留一个常量在那里，下一个人就会拿它去算那条线（这正是它偏低的原因）。

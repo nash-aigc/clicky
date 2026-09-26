@@ -173,7 +173,9 @@ struct HomeSpaceSidebarView: View {
     private static var topButtonHeight: CGFloat { NotchSupport.sidebarTopButtonHeight }
 
     /// 第 1 行与第 2 行之间（8），与 `NotchSupport` 里那个行内间距（6）不是一回事。
-    private static let topButtonRowSpacing: CGFloat = 8
+    /// **两行之间**（4）—— 与行内那颗按钮的横向间距分开写：这个数参与"两行加起来
+    /// 正好 64"那条算术（4 上边距 + 28 + 4 + 28 = 64），而横向那个只影响观感。
+    private static let topButtonRowSpacing: CGFloat = 4
 
     private static var topButtonRowsHeight: CGFloat {
         topButtonHeight * 2 + topButtonRowSpacing
@@ -285,23 +287,20 @@ struct HomeSpaceSidebarView: View {
             // **只有名称、没有图标**（用户 2026-09-26：「左侧边栏的按钮全部显示为名称，
             // 不使用图标，以便压缩宽度」）—— 两个字的标签比"图标 + 间距 + 文字"窄一截，
             // 侧栏缩到 240 之后靠它才放得下四颗。
+            // **无边框、像一张表**（用户 2026-09-26 深夜：「把它做成一个完全无边框的效果，
+            // 就是极简风格、没有边框的一套，类似于一个表格的感觉」）。
+            //
+            // 去掉了底色和描边之后，一格里只剩下字；而字要**尽可能大**
+            //（「每一个文字尽可能大一点，不要在文字里面留很大的边距」）—— 所以字号从 12
+            // 提到 14、横向内边距压到 2。选中态只剩颜色（绿 = 这一页开着）。
             Text(title)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 14, weight: isOn ? .semibold : .regular))
                 .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.82))
+                .minimumScaleFactor(0.8)
+                .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.88))
                 .frame(maxWidth: .infinity)
                 .frame(height: Self.topButtonHeight)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.white.opacity(isOn ? 0.12 : 0.07))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(isOn ? DS.Colors.success.opacity(0.5) : Color.white.opacity(0.12),
-                                  lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
