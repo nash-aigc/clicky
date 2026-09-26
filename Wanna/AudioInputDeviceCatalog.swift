@@ -210,4 +210,98 @@ nonisolated enum AudioInputDeviceCatalog {
                     processID: pidProperty(of: object) ?? -1)
         }
     }
+
+    // MARK: - 输入音量 / 静音：起录前体检，以及「声音被压掉」的自愈
+
+    /// 承载「输入音量 / 输入静音」的属性元素。多数设备放在主元素上，少数放在流元素 1
+    /// 上 —— 和输出那套（`SystemOutputDeviceMuteController.workingMuteElement`）同一个探测法。
+    private static func workingInputElement(forDeviceID deviceID: AudioDeviceID,
+                                            selector: AudioObjectPropertySelector) -> AudioObjectPropertyElement? {
+        let candidateElements: [AudioObjectPropertyElement] = [
+            kAudioObjectPropertyElementMain,
+            AudioObjectPropertyElement(1)
+        ]
+        for candidateElement in candidateElements {
+            var address = inputPropertyAddress(selector: selector, element: candidateElement)
+            var dataSize = UInt32(0)
+            let status = AudioObjectGetPropertyDataSize(deviceID, &address, 0, nil, &dataSize)
+            guard status == noErr, dataSize > 0 else { continue }
+            return candidateElement
+        }
+        return nil
+    }
+
+    private static func inputPropertyAddress(selector: AudioObjectPropertySelector,
+                                             element: AudioObjectPropertyElement) -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(mSelector: selector,
+                                   mScope: kAudioDevicePropertyScopeInput,
+                                   mElement: element)
+    }
+
+    /// 设备的**输入音量标量**（0…1）。设备不暴露它时返回 nil。
+    ///
+    /// ## 为什么要有它（2026-09-26 那次故障）
+    ///
+    /// 用户报「只能录一句、字幕卡顿、转写后没有」。查下来不是设备坏、不是权限、
+    /// 不是格式 —— 是这台机器的**系统输入音量被留在 0.275**（那条滑杆是指数式的，
+    /// 约 -30dB）。症状的形状值得记住：**设备照常出样本、一个 bit 都不零**，所以
+    /// 「连续精确零」那条看门狗一次都没响，整场录音从 App 的角度看完全正常。
+    /// 两侧的差用探针量过：改之前采到的峰值 28/32768，改之后 1868/32768（×67）。
+    static func inputVolume(of deviceID: AudioDeviceID) -> Float? {
+        guard let element = workingInputElement(forDeviceID: deviceID,
+                                                selector: kAudioDevicePropertyVolumeScalar) else { return nil }
+        var value: Float32 = 0
+        var dataSize = UInt32(MemoryLayout<Float32>.size)
+        var address = inputPropertyAddress(selector: kAudioDevicePropertyVolumeScalar, element: element)
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, &value) == noErr else {
+            return nil
+        }
+        return value
+    }
+
+    /// 输入是否被静音。设备不暴露静音控制时返回 nil（"读不到" 与 "没静音" 是两件事）。
+    static func isInputMuted(of deviceID: AudioDeviceID) -> Bool? {
+        guard let element = workingInputElement(forDeviceID: deviceID,
+                                                selector: kAudioDevicePropertyMute) else { return nil }
+        var value: UInt32 = 0
+        var dataSize = UInt32(MemoryLayout<UInt32>.size)
+        var address = inputPropertyAddress(selector: kAudioDevicePropertyMute, element: element)
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, &value) == noErr else {
+            return nil
+        }
+        return value != 0
+    }
+
+    /// 写输入音量，**写完回读一次**再回答成不成功。
+    ///
+    /// 回读不是形式：返回 `noErr` 而值没变的设备是存在的（这个元素只读、或被别的进程
+    /// 锁住），而调用方要靠这个返回值决定「我到底修好没有」—— 那是它敢不敢对用户说
+    /// 「已经修好了」的唯一依据。
+    @discardableResult
+    static func setInputVolume(_ volume: Float, on deviceID: AudioDeviceID) -> Bool {
+        guard let element = workingInputElement(forDeviceID: deviceID,
+                                                selector: kAudioDevicePropertyVolumeScalar) else { return false }
+        var value = Float32(min(max(volume, 0), 1))
+        var address = inputPropertyAddress(selector: kAudioDevicePropertyVolumeScalar, element: element)
+        guard AudioObjectSetPropertyData(deviceID, &address, 0, nil,
+                                         UInt32(MemoryLayout<Float32>.size), &value) == noErr else {
+            return false
+        }
+        guard let readBack = inputVolume(of: deviceID) else { return false }
+        return abs(readBack - value) < 0.01
+    }
+
+    /// 撤销输入静音（`muted: false`），同样回读确认。
+    @discardableResult
+    static func setInputMuted(_ muted: Bool, on deviceID: AudioDeviceID) -> Bool {
+        guard let element = workingInputElement(forDeviceID: deviceID,
+                                                selector: kAudioDevicePropertyMute) else { return false }
+        var value: UInt32 = muted ? 1 : 0
+        var address = inputPropertyAddress(selector: kAudioDevicePropertyMute, element: element)
+        guard AudioObjectSetPropertyData(deviceID, &address, 0, nil,
+                                         UInt32(MemoryLayout<UInt32>.size), &value) == noErr else {
+            return false
+        }
+        return isInputMuted(of: deviceID) == muted
+    }
 }

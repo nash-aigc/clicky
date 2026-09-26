@@ -108,6 +108,21 @@ nonisolated final class LongFormAudioCapture {
     private var consecutiveSilentBufferCount = 0
     private var hasReportedFirstBuffer = false
 
+    /// 「被压掉的声音」那一路的计数。判据与动作见 `onAbnormallyQuietInput`。
+    ///
+    /// 用「这一段一直在安静」而不是「连续几块」来门控：**一段安静里只报一次** ——
+    /// 报第二次要等中间出现过一块响的（修好了自然会响；修不好也不该每两秒刷一行）。
+    private var quietWindowsSinceReport = 0
+    private var hasReportedQuietInputThisStretch = false
+    /// 本窗口（约 1 秒）内见过的最高峰值，窗口结束时结算。
+    private var quietWindowPeak: Double = 0
+
+    /// 起采时绑到的设备 **id** —— 自愈时要修的正是它。
+    ///
+    /// 不解析 `boundInputDeviceName` 那个字符串（"名字 [id=N]"）：那是给人和日志看的，
+    /// 拿它反推 id 是在两个地方维护同一份真相。
+    private var boundInputDeviceID: AudioDeviceID = kAudioObjectUnknown
+
     /// 起采时绑到的设备名，**记下来给告警用**。
     ///
     /// 不在告警那一刻重新查：那时候查到的可能已经不是当初绑的那一个了
@@ -140,10 +155,54 @@ nonisolated final class LongFormAudioCapture {
     /// 现在是先**修**（换设备接着录），修不动了才报。
     var onSilentInputNeedsDeviceSwitch: ((String) -> Void)?
 
+    // MARK: - 「被压掉的声音」：判据与回调（2026-09-26 新增）
+
+    /// 一个「安静窗口」有多少块：90 块 ≈ 1 秒，和 `silentBufferAlarmThreshold` 同一基准。
+    static let quietWindowBufferCount = 90
+
+    /// 一个窗口（约 1 秒）里的峰值低于这个数，就**值得去看一眼**输入音量。
+    ///
+    /// 依据全是实测：健康房间里**底噪**的窗内峰值是 246/32768 ≈ 0.0075，说话是
+    /// 0.009~0.010 一块；而 2026-09-26 那次故障的窗内峰值是 0.002~0.003。
+    ///
+    /// **这个门槛不是判据，只是「去看一眼」的触发器 —— 真正决定修不修的是输入音量
+    /// 本身（`healInputGainIfNeeded`），它没有余量问题。** 2026-09-26 的实测逼出了
+    /// 这条分工：把音量打回 0.20 之后，房间底噪的窗内峰值是 0.004~0.005 —— 而当初
+    /// 故障时（用户**在说话**）只有 0.002~0.003。两者是交叉的，所以任何电平门槛都
+    /// 只能当"去看一眼"的理由，不能当"确实坏了"的判据。0.006 取在健康底噪
+    /// (0.0075) 之下、坏状态 (0.002~0.005) 之上。
+    static let quietWindowPeakThreshold = 0.006
+
+    /// 连续几个这样的窗口才动手（2 个 ≈ 2 秒）。留出「刚按下、还没开口」的余量：
+    /// 说第一句话之前的房间，就是要多安静有多安静。
+    static let quietWindowAlarmCount = 2
+
+    /// 连续两秒窗内峰值都低到不像话 → 请控制器**去看一眼系统输入音量**（低了就修）。
+    ///
+    /// **「精确的零」和「被压掉的声音」是两种失败，判据不能共用 —— 这是这一段最该
+    /// 记住的一条。**（2026-09-26 的教训）
+    ///
+    ///   * 精确的零 = 这个设备根本没在交付采样 → 换设备
+    ///     （`onSilentInputNeedsDeviceSwitch`，判据见 `silentBufferAlarmThreshold`）。
+    ///   * 异常安静 = 采样在交付、只是被压掉了（系统输入音量 0.275 ≈ -30dB，
+    ///     窗内峰值 0.002~0.003）→ **绝不能换设备**：换哪一个都一样安静，而且会平白
+    ///     把正在录的这一场切开。只能去查音量。
+    ///
+    /// 两个参数：当时绑的设备（要修的是它）、以及触发时的窗内峰值（给日志和告警用）。
+    /// **在音频线程上调用**，接收方必须立刻返回，把 CoreAudio 读写甩到别的线程。
+    var onAbnormallyQuietInput: ((AudioDeviceID, Double) -> Void)?
+
     /// 绑好设备之后回一句「绑到了谁」。**静态是因为绑定函数是静态的**
     ///（它没有实例，而起采路径上第一个用到它的地方在实例建好之前）。
     /// 控制器启动时装上，用来填设置页里「这一场实际用的」那一行。
     nonisolated(unsafe) static var onBoundInputDeviceName: ((String) -> Void)?
+
+    /// 同一个时刻再回一句**绑的是哪个 id** —— 控制器要用它去读音量、去修。
+    ///
+    /// 音量是**设备的**属性，不是这一场的属性：绑到谁就要读谁、修谁。分开回一句
+    /// 而不是让控制器去解析 `onBoundInputDeviceName` 那个 "名字 [id=N]" 字符串 ——
+    /// 那等于在两个地方维护同一份真相。
+    nonisolated(unsafe) static var onBoundInputDeviceID: ((AudioDeviceID) -> Void)?
 
     /// 起采之前，让共享语音引擎让出硬件。
     ///
@@ -294,6 +353,7 @@ nonisolated final class LongFormAudioCapture {
         converter = nil
         converterInputFormat = nil
         Self.onBoundInputDeviceName?(boundName)
+        Self.onBoundInputDeviceID?(device.id)
 
         var componentDescription = AudioComponentDescription(
             componentType: kAudioUnitType_Output,
@@ -402,6 +462,7 @@ nonisolated final class LongFormAudioCapture {
         }
 
         isRunning = true
+        boundInputDeviceID = device.id
         onDiagnostic?("AUHAL 已启动 · 设备=\(boundName) · "
                       + "\(hardwareFormat.mSampleRate)Hz \(hardwareFormat.mChannelsPerFrame)ch")
     }
@@ -556,6 +617,35 @@ nonisolated final class LongFormAudioCapture {
             onSilentInputNeedsDeviceSwitch?(device)
         }
 
+        // **异常安静那一路**（判据与「为什么不换设备」见 `onAbnormallyQuietInput`）。
+        //
+        // 它和上面那条共用「窗口」这个概念，但判的是完全不同的东西：上面问「有没有
+        // 采样」，这里问「采样里有没有够大的声音」。2026-09-26 那次故障只踩中这一条。
+        quietWindowPeak = max(quietWindowPeak, Double(peak) / 32768.0)
+        if receivedBufferCount % Self.quietWindowBufferCount == 0 {
+            if quietWindowPeak < Self.quietWindowPeakThreshold {
+                quietWindowsSinceReport += 1
+            } else {
+                // 出现过一块响的 —— 说明声音回来了（可能正是自愈生效了），
+                // 也说明这一段的告警可以重新武装。
+                quietWindowsSinceReport = 0
+                hasReportedQuietInputThisStretch = false
+            }
+            let observedWindowPeak = quietWindowPeak
+            quietWindowPeak = 0
+            if !hasReportedQuietInputThisStretch,
+               quietWindowsSinceReport >= Self.quietWindowAlarmCount {
+                hasReportedQuietInputThisStretch = true
+                let quietSeconds = Double(Self.quietWindowAlarmCount * Self.quietWindowBufferCount)
+                    / Self.buffersPerSecond
+                onDiagnostic?(String(format: "⚠️ 连续 %.0f 秒峰值都低于 %.3f（本窗口 %.4f）· 设备=%@"
+                                     + " —— 设备在出样本，但声音被压得很低；去查系统输入音量。",
+                                     quietSeconds, Self.quietWindowPeakThreshold,
+                                     observedWindowPeak, boundInputDeviceName))
+                onAbnormallyQuietInput?(boundInputDeviceID, observedWindowPeak)
+            }
+        }
+
         if !hasReportedFirstBuffer || receivedBufferCount % 50 == 0 {
             hasReportedFirstBuffer = true
             onDiagnostic?(String(format: "第 %d 块：%d 帧 峰值=%d/32768 (%.3f) 累计零块=%d/%d",
@@ -641,9 +731,19 @@ nonisolated enum LongFormRecorderError: Error, CustomStringConvertible {
 ///    每 20 分钟在**静音处**主动轮换一次，断了就重连。小时版按音频时长计费，
 ///    轮换本身不花钱。
 /// 3. **文本靠毫秒水位续接，不靠文本相似度。** 识别器会改写文本，毫秒不会。
+/// 「声音被压掉了」自愈的结果 —— 在后台线程算出来，交给主线程去写日志、
+/// 去决定要不要告诉用户。
+///
+/// `logLines` 与 `userMessage` 分开是有意的：**跑了体检、发现一切正常**也要留一行日志
+///（否则事后分不清「当时没查」和「查了、是好的」），但那件事不该弹给用户看 ——
+/// 用户还没开口的房间本来就该是安静的。只有**真的改动了系统状态**才给他一句。
+nonisolated struct QuietInputHealResult: Sendable {
+    var logLines: [String]
+    var userMessage: String?
+}
+
 @MainActor
 final class LongFormRecorderController: ObservableObject {
-
     static let shared = LongFormRecorderController()
 
     enum Phase: Equatable {
@@ -1298,6 +1398,9 @@ final class LongFormRecorderController: ObservableObject {
         LongFormAudioCapture.onBoundInputDeviceName = { [weak self] name in
             Task { @MainActor in self?.lastBoundInputDeviceName = name }
         }
+        LongFormAudioCapture.onBoundInputDeviceID = { [weak self] deviceID in
+            Task { @MainActor in self?.boundInputDeviceID = deviceID }
+        }
         LongFormAudioCapture.onFormatMismatchDetected = { [weak self] message in
             Task { @MainActor in self?.lastErrorMessage = message }
         }
@@ -1312,6 +1415,19 @@ final class LongFormRecorderController: ObservableObject {
                     self?.handleInputDeviceSwitchResult(newDevice,
                                                         previousDevice: previousDevice)
                 }
+            }
+        }
+        // **异常安静 → 去看系统输入音量，低了就修。**
+        //
+        // 与上面那条是两个不同的动作，别合并：换设备解决的是「设备不给采样」，
+        // 而音量被压掉时换哪个设备都一样安静、还会平白把正在录的这一场切开。
+        // 2026-09-26 用户报的那次（只能录一句 / 字幕卡顿 / 转写后没有）根因就是它。
+        capture.onAbnormallyQuietInput = { [weak self] deviceID, observedPeak in
+            Task.detached(priority: .userInitiated) {
+                let result = LongFormRecorderController.healInputGainIfNeeded(
+                    onDeviceID: deviceID,
+                    reason: String(format: "录音中途声音极小（窗内峰值 %.4f）", observedPeak))
+                await MainActor.run { self?.reportQuietInputHeal(result) }
             }
         }
 
@@ -1437,7 +1553,14 @@ final class LongFormRecorderController: ObservableObject {
             // 起采之前先把候选设备排好：用户选定的 → 系统默认 → 其余真设备。
             // 第一个不产出采样时，看门狗会顺着这个队列往后换。见
             // `AudioInputDeviceCatalog` 和 `LongFormAudioCapture.candidateInputDevices`。
-            capture.candidateInputDevices = Self.inputDeviceCandidates(for: settings)
+            let inputCandidates = Self.inputDeviceCandidates(for: settings)
+            capture.candidateInputDevices = inputCandidates
+            // **起录前体检**：在用户开口之前就修掉「静音 / 音量被压到极低」，并留下
+            // 一行「设备是谁、什么状态」。理由见 `preflightInputDeviceCheck` ——
+            // 2026-09-26 那次故障的根因（系统输入音量 0.275）在这一步就是已知的。
+            if let firstCandidate = inputCandidates.first {
+                preflightInputDeviceCheck(firstCandidate)
+            }
             try capture.start()
 
             startedAt = Date()
@@ -1446,6 +1569,7 @@ final class LongFormRecorderController: ObservableObject {
             isSessionActive = true
             // **整场录音期间对外声明「我在录」。** 别的子系统（语音引擎）据此
             phase = .recording
+            startInputGainWatch()
             publishDiagnostic("开始录音 \(sessionID) · 档位 \(settings.recordingEffectiveResourceID)"
                           + " · 判重窗口 \(seamSuppressionMilliseconds)ms")
             startTimers()
@@ -1525,8 +1649,163 @@ final class LongFormRecorderController: ObservableObject {
             "「\(previousDevice)」不产出采样，已自动换到 \(newDeviceName) 接着录。"
     }
 
-    /// 「现在开着麦克风的是谁」，翻译成用户看得懂的名字。
+    // MARK: - 起录前体检 + 「被压掉的声音」自愈（2026-09-26）
+
+    /// 低于这个输入音量就认为「这台机器现在录不到人说话」，体检时直接调上去。
+    /// 0.5 是保守值：实测那次故障是 0.275，而正常机器的输入音量在 0.7~1.0 之间。
+    static let lowInputVolumeThreshold: Float = 0.5
+    /// 体检／自愈时把过低的输入音量调到这个值。1.0 = 系统那条滑杆拉满。
+    static let healedInputVolume: Float = 1.0
+
+    /// 上一次起录时的设备摘要（名字 + id + 声道数），用来发现「设备换了」。
+    private var lastPreflightDeviceSummary: String?
+    /// 当前绑着的输入设备 id（由 `LongFormAudioCapture.onBoundInputDeviceID` 填）。
+    /// 录制期间的例行复查读它、修它。
+    private var boundInputDeviceID: AudioDeviceID = kAudioObjectUnknown
+    /// 录制期间的例行复查表。**只在录音期间存在**，见 `startInputGainWatch`。
+    private var inputGainWatchTimer: Timer?
+
+    /// **起录前体检**：记一行「绑到了谁、它现在什么状态」，并修掉两种一眼能看出的坏状态。
     ///
+    /// 为什么值得每次起录花这几个 CoreAudio 读：2026-09-26 那次故障里，系统输入音量是
+    /// 0.275 —— 而这件事**在用户开口之前就已经是已知的**，只要有人去看。修在开头，
+    /// 用户就不必先录一段没人听得见的音、再由服务端超时告诉他。
+    ///
+    /// 做三件事：
+    ///   1. 静音 → 打开；音量低于 `lowInputVolumeThreshold` → 调到 1.0。都记一行日志。
+    ///   2. 设备与上一场不同（名字 / id / 声道数变了）→ 单独记一行「设备变了」。
+    ///      2026-09-26 同一天里内置麦克风从 `[id=88] 1 声道` 变成 `[id=91] 3 声道`，
+    ///      而这条变化当时只能靠人一行行翻录音日志才看得出来。
+    ///   3. 一切正常也记一行 —— **「正常」也要留下证据**，否则事后无法区分
+    ///      「当时没查」和「当时查了、是好的」。
+    private func preflightInputDeviceCheck(_ device: AudioInputDevice) {
+        let channelCount = AudioInputDeviceCatalog.inputChannelCount(of: device.id)
+        let volumeBefore = AudioInputDeviceCatalog.inputVolume(of: device.id)
+        let isMuted = AudioInputDeviceCatalog.isInputMuted(of: device.id)
+
+        var healingNotes: [String] = []
+        if isMuted == true {
+            let didUnmute = AudioInputDeviceCatalog.setInputMuted(false, on: device.id)
+            healingNotes.append(didUnmute
+                                ? "输入本来是静音的，已替你打开"
+                                : "输入处于静音状态，而且打不开（这个设备不让改）")
+        }
+        if let volumeBefore, volumeBefore < Self.lowInputVolumeThreshold {
+            let didRaise = AudioInputDeviceCatalog.setInputVolume(Self.healedInputVolume, on: device.id)
+            if didRaise {
+                healingNotes.append(String(format: "输入音量只有 %.2f（衰减约 %.0fdB），已调到 %.2f",
+                                           volumeBefore, -20 * log10(Double(max(volumeBefore, 0.001))),
+                                           Self.healedInputVolume))
+            } else {
+                healingNotes.append(String(format: "输入音量只有 %.2f，而且改不动（这个设备不让改）",
+                                           volumeBefore))
+            }
+        }
+
+        let deviceSummary = "\(device.name) [id=\(device.id)] \(channelCount)ch"
+        publishDiagnostic("🎙️ 起录体检 · 设备=\(deviceSummary) · "
+                          + "音量=\(volumeBefore.map { String(format: "%.2f", $0) } ?? "读不到") · "
+                          + "静音=\(isMuted.map { $0 ? "是" : "否" } ?? "读不到")")
+        if let previousSummary = lastPreflightDeviceSummary, previousSummary != deviceSummary {
+            publishDiagnostic("🔀 输入设备和上一场不一样了：\(previousSummary) → \(deviceSummary)")
+        }
+        lastPreflightDeviceSummary = deviceSummary
+        healingNotes.forEach { publishDiagnostic("🩺 \($0)") }
+        if !healingNotes.isEmpty {
+            lastSilentInputWarning = "起录前体检：" + healingNotes.joined(separator: "；")
+                + "。如果你是有意调低的，在「系统设置 → 声音 → 输入」里可以改回去。"
+        }
+    }
+
+    /// 「声音被压掉了」的自愈：读绑定设备的输入音量与静音状态，能修就修。
+    ///
+    /// 顺序有讲究：**先看静音，再看音量** —— 设备被静音时音量读数没有意义。
+    /// 两样都正常时**什么都不改**：那种情况大概率只是房间真的安静（或者用户还没开口），
+    /// 替用户改系统状态是越权 —— 但要把这件事写进日志（见 `QuietInputHealResult`）。
+    ///
+    /// `nonisolated static`：它由音频线程那侧的回调甩到 detached task 上跑，里面全是
+    /// 可能阻塞的 HAL 调用，不该占主线程（和输出静音那套同一个理由）。
+    nonisolated static func healInputGainIfNeeded(onDeviceID deviceID: AudioDeviceID,
+                                                  reason: String) -> QuietInputHealResult {
+        let isMuted = AudioInputDeviceCatalog.isInputMuted(of: deviceID)
+        let volumeBefore = AudioInputDeviceCatalog.inputVolume(of: deviceID)
+
+        if isMuted == true, AudioInputDeviceCatalog.setInputMuted(false, on: deviceID) {
+            return QuietInputHealResult(
+                logLines: ["🩺 \(reason) —— 输入的静音被打开了，接着录。"],
+                userMessage: "这一场的声音极小：麦克风当时是静音状态，我已经替你打开。")
+        }
+        if let volumeBefore, volumeBefore < lowInputVolumeThreshold,
+           AudioInputDeviceCatalog.setInputVolume(healedInputVolume, on: deviceID) {
+            let decibels = -20 * log10(Double(max(volumeBefore, 0.001)))
+            return QuietInputHealResult(
+                logLines: [String(format: "🩺 %@ —— 输入音量只有 %.2f（衰减约 %.0fdB），已调到 %.2f。",
+                                  reason, volumeBefore, decibels, healedInputVolume)],
+                userMessage: String(format: "这一场的声音极小：系统输入音量只有 %.0f%%，我已经调到 100%%。",
+                                    Double(volumeBefore) * 100))
+        }
+        return QuietInputHealResult(
+            logLines: ["🩺 \(reason) —— 但输入没静音、音量也正常（\(volumeBefore.map { String(format: "%.2f", $0) } ?? "音量读不到")），"
+                       + "设备在出样本，先照常录；如果你确实在说话，检查麦克风是否被挡住或离得太远。"],
+            userMessage: nil)
+    }
+
+    /// 把自愈结果写进日志，并在需要时告诉用户一句。
+    ///
+    /// 去重不在这一层：**一段安静里只报一次**由采集侧门控
+    ///（`hasReportedQuietInputThisStretch`，见 `onAbnormallyQuietInput`）——
+    /// 那一层才知道「声音回来了没有」，在这里按时间猜是第二份真相。
+    private func reportQuietInputHeal(_ result: QuietInputHealResult) {
+        result.logLines.forEach { publishDiagnostic($0) }
+        if let userMessage = result.userMessage {
+            lastSilentInputWarning = userMessage
+        }
+    }
+
+    /// **录制期间的例行复查**：每 5 秒读一次当前绑定设备的输入音量，低了就修。
+    ///
+    /// 为什么要有它，而不是只靠「异常安静」那条电平触发器：2026-09-26 实测证明
+    /// 电平门槛没有余量 —— 音量被打回 0.20 时房间底噪的窗内峰值是 0.004~0.005，
+    /// 而当初真故障时（用户在说话）只有 0.002~0.003，两者是交叉的。**音量本身没有
+    /// 这个问题**：0.2 就是 0.2。所以让确定性量当主判据，电平只负责"什么时候去看一眼"。
+    ///
+    /// **它只在录音期间存在**，而且第一个 tick 就会自查 `phase`：不在录了就把自己停掉。
+    /// 今天刚把那张"从启动响到退出"的权限表拆掉，不能再留一张会忘记停的表。
+    ///
+    /// 5 秒这个间隔是"够快到用户还在说第一句、够慢到不打扰"的折中：读两个 CoreAudio
+    /// 属性是微秒级，但坏掉的状态最多只影响开头那几秒。
+    private func startInputGainWatch() {
+        inputGainWatchTimer?.invalidate()
+        inputGainWatchTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard self.phase == .recording else {
+                    self.inputGainWatchTimer?.invalidate()
+                    self.inputGainWatchTimer = nil
+                    return
+                }
+                self.checkInputGainDuringRecording()
+            }
+        }
+    }
+
+    /// 例行复查那一下：读绑定设备的音量/静音，能修就修。
+    ///
+    /// **只在真的改动了什么的时候才说话** —— 每 5 秒一条"一切正常"是噪声，而且会把
+    /// 「异常安静」那条真正重要的告警淹掉。
+    private func checkInputGainDuringRecording() {
+        let deviceID = boundInputDeviceID
+        guard deviceID != kAudioObjectUnknown else { return }
+        Task.detached(priority: .utility) { [weak self] in
+            let result = LongFormRecorderController.healInputGainIfNeeded(
+                onDeviceID: deviceID,
+                reason: "录制中例行复查")
+            guard result.userMessage != nil else { return }
+            await MainActor.run { self?.reportQuietInputHeal(result) }
+        }
+    }
+
+    /// 「现在开着麦克风的是谁」，翻译成用户看得懂的名字。
     /// bundle id 是 `cn.shandianshuo.desktop` 这种，对用户没有意义；能查到 App 就拿
     /// 它的显示名（`闪电说`），查不到才退回 bundle id 或 pid。
     private func microphoneHolderDisplayNames() -> [String] {
@@ -1694,7 +1973,24 @@ final class LongFormRecorderController: ObservableObject {
             RecordingLibraryStore.shared.upsert(session)
         }
 
+        inputGainWatchTimer?.invalidate()
+        inputGainWatchTimer = nil
         publishDiagnostic("录音结束：\(text.count) 字，\(String(format: "%.1f", session?.recordedSeconds ?? 0)) 秒")
+
+        // **一个字都没有的时候要说一声。**
+        //
+        // 「录了几秒、返回 0 字」和「录成功、内容恰好很短」在界面上长得一模一样 ——
+        // 用户唯一的线索是粘贴出来的东西是空的，而那要等他自己发现。
+        // 判据取「一个字都没有」：真在说话的人不可能一个字都不出（识别器连「嗯」
+        // 都会出），所以这一条几乎不会误报，却把静默的失败变成一句能读到的话。
+        if text.isEmpty {
+            let recordedSeconds = String(format: "%.1f", session?.recordedSeconds ?? 0)
+            publishDiagnostic("⚠️ 录音结束但一个字都没有（\(recordedSeconds) 秒）"
+                              + " —— 若是静音，原因见上面的「起录体检」与采集自检那几行。")
+            lastSilentInputWarning = "这一场（\(recordedSeconds) 秒）没有识别到任何文字。"
+                + "如果是静音，多半是麦克风被压低、被静音、或被别的程序占着 —— "
+                + "录音诊断日志里有这一刻的设备和音量。"
+        }
 
         // **这里一声都不响。**
         //

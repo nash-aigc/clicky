@@ -409,6 +409,14 @@ The recording mute is now the between-replies half, and the AEC covers the windo
 
 **交互规则**（用户逐条定的）：粘贴**只发生在**「窗口没开 + 按快捷键停止」；其余一律**只进剪贴板**，且挂在**关窗**这个唯一收口上，保证没点过复制的也不会丢。ESC 分两档 —— 有活在跑时是「取消整件事」（录音和已转写的部分都保留，因为用户可能只是误触），都停了才是「收起窗口」；顺序不能反，否则用户会以为没生效。取消的闸门是 `cancellationGeneration`：润色正卡在网络请求里时，取消是从**另一个入口**按下来的，两者不在同一条任务链上。
 
+**录音不再靠人发现故障：三层防线（2026-09-26，用户要求「一个非常稳定的方案…我不希望再出现问题」）。** 触发这条要求的是当天那次故障：系统把内置麦克风重挂了一次（`[id=88] 1 声道` → `[id=91] 3 声道`），顺手把它的**输入音量留在 0.275**（那条滑杆是指数式的，约 -30dB）。症状形状值得记住：**设备照常出样本、一个 bit 都不零**，所以「连续精确零」那条看门狗一次都没响，整场录音从 App 的角度完全正常 —— 用户唯一的感觉是「字幕卡顿、转写不出来、像只录了一句」。用探针量过两侧：改之前 28/32768，改之后 1868/32768（×67）。**App 从来不写输入音量**（它只对输出设备做静音），所以这不是它弄坏的，但它必须能发现。三层：
+
+1. **起录前体检**（`preflightInputDeviceCheck`，在 `startRecording` 里、`capture.start()` 之前）：读绑定设备的静音/音量/声道，静音就打开、音量低于 `lowInputVolumeThreshold` (0.5) 就调到 1.0，并在诊断日志里留一行「设备=… · 音量=… · 静音=…」；**设备与上一场不同时单独记一行「设备变了」**（当天那条 `1 声道→3 声道` 的变化，当时只能靠人一行行翻日志才看出来）。**验证**：注入 0.30 → 日志出现 `🩺 输入音量只有 0.30（衰减约 12dB），已调到 1.00`，音量回读 1.000，第一个音频块峰值 0.039。
+2. **录制期间每 5 秒复查一次输入音量**（`startInputGainWatch` → `checkInputGainDuringRecording` → `healInputGainIfNeeded`，读+写都在 detached task 上）：**主判据是音量本身，不是电平** —— 这条分工是被实测逼出来的：把音量打回 0.20 之后房间底噪的窗内峰值是 0.004~0.005，而真故障时（用户在说话）只有 0.002~0.003，两者**交叉**，所以任何电平门槛都只能当"去看一眼"的触发器。这条表**只在录音期间存在**，第一个 tick 自查 `phase`、不在录了就把自己停掉（当天刚拆掉一张"从启动响到退出"的权限表，不能再留一张会忘记停的）。例行复查**只在真的改动了什么的时候才说话**，否则每 5 秒一条"一切正常"会把真正的告警淹掉。**验证**：录音中途注入 0.20 → 5 秒内出现 `🩺 录制中例行复查 —— 输入音量只有 0.20（衰减约 14dB），已调到 1.00`，回读 1.000。
+3. **录完一个字都没有就说一声**（`finalize` 路径里 `text.isEmpty`）：判据取「一个字都没有」——真在说话的人不可能一个字都不出（识别器连「嗯」都会出），所以几乎不会误报。**验证**：3.6 秒与 28.4 秒两次空录音都出现 `⚠️ 录音结束但一个字都没有（N 秒）`，并在设置页留下说明。
+
+还有一条**次级**触发器：`onAbnormallyQuietInput`（连续 2 个 1 秒窗口的峰值都低于 `quietWindowPeakThreshold` 0.006）→ 走的是与第 2 层**同一个** `healInputGainIfNeeded`，所以动作路径是一样的；它独有的价值是"音量正常但设备交付的声音很小"那一种（盖住麦克风、离得太远）会留下一行日志。**这条触发本身没有被单独观察到**（确定性复查先修好了，见上），如实记在这里。同一天补的还有两件相邻的事：`AudioInputDeviceCatalog` 多了输入侧的音量/静音读写（`inputVolume` / `isInputMuted` / `setInputVolume` / `setInputMuted`，写完都回读确认 —— 返回 noErr 而值没变的设备是存在的），以及探测工具两条：`scripts/recording-capture-probe.swift`（格式）与 `scripts/recording-hal-amplitude-probe.swift`（**样本振幅**，格式对而样本全零时它才是判据）。
+
 ### Acting on the computer
 
 The model can do more than point — `[CLICK:]`, `[RIGHT_CLICK:]`, `[DOUBLE_CLICK:]`, `[SCROLL:]`, `[TYPE:]`, `[SELECT:]`, `[PRESS:]`, `[OPEN:]`, `[WAIT:]` and `[AX_TREE]` are executed for real by `MacosUseController`, the **only file that imports `MacosUseSDK`** (SPM, pinned to revision `a2d78663`; the same SDK the machine's `mcp-server-macos-use` project uses). Four things about it are load-bearing:
