@@ -513,9 +513,126 @@ final class VoiceChatController: ObservableObject {
         }
     }
 
+    // MARK: - 卡片绑定（2026-09-26）
+
+    /// 这一场会话属于哪张卡片 —— 语音 / 视频是**卡片的两个模式**（用户的原始设计），
+    /// 所以：① 系统提示词要带上这段会话的记录与选中的角色；② 每一轮要写回那张卡片的历史。
+    struct CardVoiceBinding {
+        let cardID: String
+        let cardKind: CardKind
+    }
+
+    private var cardBinding: CardVoiceBinding?
+
+    /// 连接时组装好的上下文（会话记录 + 角色提示词）。nil = 不是从卡片进来的。
+    private var cardAssembledContext: CardChatContextAssembler.AssembledContext?
+
+    /// **交给引擎的那个角色。**
+    ///
+    /// 卡片绑定时它是 `currentRole` 的**一份副本**，只有 `systemPrompt` 换成了组装结果
+    ///（`VoiceChatRole.systemPrompt` 本来就是两条引擎路径的系统提示词：全双工在
+    /// `startDuplexSession` 里读它、三段式在 `CascadeVoiceEngine.systemPrompt(for:)` 里读它，
+    /// 所以换个字符串就够了，引擎一行都不用改）。
+    ///
+    /// **必须是副本。** `selectMode` / `selectChannel` / `selectPreset` /
+    /// `applyCurrentPresetToRole` 那些路径读的也是 `currentRole` 并把结果 `upsertRole`
+    /// 落盘 —— 把组装出来的几千字塞进真角色，用户下次编辑角色时会看见一整段会话记录。
+    private var engineRole: VoiceChatRole {
+        guard let cardAssembledContext else { return currentRole }
+        var copy = currentRole
+        copy.systemPrompt = cardAssembledContext.systemPrompt
+        return copy
+    }
+
+    /// 把「这段会话的记录」与「选中的角色」组装成这一场的系统提示词。
+    ///
+    /// 角色的取法与页面那颗「连接」按钮用的是**同一个**解析
+    ///（`CardChatPreferenceModel.resolvedRole`），所以发出去的提示词与界面上显示的
+    /// 角色名不可能是两个东西。
+    private func assembleCardContext(binding: CardVoiceBinding) -> CardChatContextAssembler.AssembledContext {
+        let mode = CardChatPreferenceModel.shared.mode(forCardID: binding.cardID, kind: binding.cardKind)
+        let role = CardChatPreferenceModel.shared.resolvedRole(forCardID: binding.cardID,
+                                                              kind: binding.cardKind,
+                                                              mode: mode)
+
+        var cardTitle = ""
+        var turns: [CardChatContextAssembler.Turn] = []
+        if let entityID = UUID(uuidString: binding.cardID) {
+            switch binding.cardKind {
+            case .mainLoop:
+                if let session = ConversationSessionsStore.allSessionsIncludingArchived()
+                    .first(where: { $0.id == entityID }) {
+                    cardTitle = session.title
+                    turns = CardChatContextAssembler.turns(fromConversationEntries: session.entries)
+                }
+            case .claudeCode, .review:
+                if let agent = AgentSessionStore.allAgents().first(where: { $0.id == entityID }) {
+                    cardTitle = agent.name
+                    turns = CardChatContextAssembler.turns(fromAgentTranscript: agent.transcript)
+                }
+            }
+        }
+        return CardChatContextAssembler.assemble(role: role, turns: turns, cardTitle: cardTitle)
+    }
+
+    /// 这一轮写回卡片的历史。
+    ///
+    /// 用户：「聊天记录和会话记录显示在右侧，并添加到主模型或 Claude Code 模型的历史记录中」
+    /// —— 于是切回图文模式时，这段对话就在**同一条会话**里，重启后也还在盘上。
+    ///
+    /// 主循环那条写成一条正常的 `ConversationHistoryEntry`，`recordedWithActionTags`
+    /// 记 true：那一位的含义是「这条回复可以被回放给视觉模型」—— 语音这一轮是用户真的问过、
+    /// 真的答过的对话，回放它正是他要的「切回图文继续聊」，而不是要过滤掉的那种
+    /// 「答了一句、什么都没做」的空转。
+    private func recordTurnToBoundCard(answerEntryID: UUID, answer: String) {
+        guard let cardBinding else { return }
+        let trimmedAnswer = answer.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedAnswer.isEmpty else { return }
+        guard let question = userTextPreceding(answerEntryID: answerEntryID),
+              !question.isEmpty else { return }
+        guard let entityID = UUID(uuidString: cardBinding.cardID) else { return }
+
+        switch cardBinding.cardKind {
+        case .mainLoop:
+            ConversationSessionsStore.appendEntry(
+                ConversationHistoryEntry(userTranscript: question,
+                                         assistantResponse: trimmedAnswer,
+                                         displayResponse: trimmedAnswer,
+                                         recordedWithActionTags: true),
+                targetSessionID: entityID)
+        case .claudeCode, .review:
+            AgentSessionStore.appendTranscriptEntry(
+                AgentTranscriptEntry(kind: .userMessage, text: question),
+                targetAgentID: entityID)
+            AgentSessionStore.appendTranscriptEntry(
+                AgentTranscriptEntry(kind: .assistantMessage, text: trimmedAnswer),
+                targetAgentID: entityID)
+        }
+        print("💬 语音聊天：这一轮已写回卡片 \(cardBinding.cardID.prefix(8))")
+    }
+
+    /// 这一轮里用户说的那句 —— 取回答气泡**前面最近的那条用户条目**。
+    ///
+    /// 用相邻关系而不是另存一个状态：脱口而出的那句、打字那句、确认后补发的那句，
+    /// 三条路都先把用户条目写进 `transcriptEntries` 再开回合，所以"回答前最近的那条
+    /// 用户条目"就是这一轮的问题，不需要第二条真相。
+    private func userTextPreceding(answerEntryID: UUID) -> String? {
+        guard let answerIndex = transcriptEntries.firstIndex(where: { $0.id == answerEntryID }) else {
+            return nil
+        }
+        for index in stride(from: answerIndex - 1, through: 0, by: -1) {
+            let entry = transcriptEntries[index]
+            if entry.isUser {
+                let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                return text.isEmpty ? nil : text
+            }
+        }
+        return nil
+    }
+
     // MARK: - 连接 / 挂断
 
-    func connectToRole(_ roleID: String) {
+    func connectToRole(_ roleID: String, cardBinding: CardVoiceBinding? = nil) {
         // 已经连在这个角色上就什么都不做（重复点击不该重启会话）。
         if connectionPhase != .idle, activeRoleID == roleID { return }
         if connectionPhase == .connecting { return }
@@ -523,6 +640,16 @@ final class VoiceChatController: ObservableObject {
         // 换角色 = 换会话。先把上一个干净地收掉。
         if connectionPhase != .idle {
             disconnectCurrentSession()
+        }
+
+        // **卡片绑定在挂断之后设**：`disconnectCurrentSession` 会把它清掉（那一场结束了）。
+        // 组装在这一刻做，而不是每一轮做 —— 用户的原话是「当用户点击语音聊天时，提取当前
+        // 会话记录的文本」，而且每轮重算等于把整段历史每句话都重发一遍。
+        self.cardBinding = cardBinding
+        self.cardAssembledContext = cardBinding.map { assembleCardContext(binding: $0) }
+        if let cardAssembledContext {
+            // 「它到底看到了多少」唯一可核对的数：几轮、几张图、提示词多长。
+            print("💬 语音聊天：卡片上下文 \(cardAssembledContext.logLine)")
         }
 
         selectedRoleID = roleID
@@ -776,7 +903,7 @@ final class VoiceChatController: ObservableObject {
         //  · App 那套连续监听会把麦克风 tap 装到共享引擎上 —— 而全双工也要装。
         //    同一根输入总线只有一个 tap，后装的会把先装的顶掉。
         if selectedMode == .duplexVoice {
-            await startDuplexSession(role: currentRole, settings: settings)
+            await startDuplexSession(role: engineRole, settings: settings)
             _ = await (screenPreviewStarted, cameraPreviewStarted)
             return
         }
@@ -1033,6 +1160,12 @@ final class VoiceChatController: ObservableObject {
         connectionPhase = .idle
         liveUserTranscriptEntryID = nil
         setNotchOverride(nil)
+
+        // **卡片绑定跟着会话一起结束**：这一场是"主循环卡片在语音模式下的一次对话"，
+        // 会话没了，它就不属于任何卡片了。不清的话，下一次从别处（旧的「语音聊天」分区）
+        // 连起来的会话会接着往上一张卡片的历史里写字。
+        cardBinding = nil
+        cardAssembledContext = nil
 
         // 挂断音。它必须在这个**唯一漏斗**里响 —— 刘海右翼的红色挂断、角色行上的
         // 「挂断」、再按一次连接快捷键，三条路都走到这里，所以一处就够。
@@ -1461,7 +1594,7 @@ final class VoiceChatController: ObservableObject {
 
         cascadeEngine.runTurn(
             utterance: utterance,
-            role: currentRole,
+            role: engineRole,
             preset: currentPreset,
             channel: currentChannel,
             callbacks: CascadeTurnCallbacks(
@@ -1562,6 +1695,10 @@ final class VoiceChatController: ObservableObject {
             transcriptEntries[index].text = displayText
         }
         streamingAnswerTextStore.clearText(forEntryID: answerEntryID)
+
+        // **这一轮到此为止了，所以这是写回卡片历史的时刻**（2026-09-26）。放在这里而不是
+        // 引擎别处：`finishTurn` 是整轮唯一一次定稿的地方，成功与失败都经过它。
+        recordTurnToBoundCard(answerEntryID: answerEntryID, answer: displayText)
 
         // 与按住说话那条路共用一个出口：`CompanionManager` 注入的 `presentAnswer`
         // 会检查「回答时显示文字」并安排淡化，所以气泡行为两边一致。

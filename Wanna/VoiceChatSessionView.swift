@@ -476,12 +476,22 @@ struct VoiceChatSessionView: View {
         return cardChatPreferences.mode(forCardID: cardID, kind: cardKind)
     }
 
-    /// 把「语音 / 视频」两个模式落到 `controller.selectedChannel` 上。
+    /// 把「语音 / 视频」两个模式落到 `controller.selectedChannel` 上，**并把卡片选的角色
+    /// 同步到控制器**。
     ///
     /// 用户：「语音聊天与视频聊天分别使用对应的全双工三段式模式」—— 所以两个模式就是
     /// 这条分流本身。**语音那一档永远不开画面**这条闸门住在聊天类型上
     ///（`VoiceCatalog.capability`），所以让模式驱动聊天类型，闸门才是自动生效的。
+    ///
+    /// 角色也要同步：页头的音色、两行预设、以及按「连接」时读的都是控制器的角色。不同步
+    /// 的话，界面显示的是一张卡片选的角色、连上去用的却是上一次那个 —— 而这两件事在
+    /// 用户眼里是同一件事。
     private func syncChannelToCardChatMode() {
+        guard let cardID else { return }
+        let roleID = roleIDForConnect
+        if controller.selectedRoleID != roleID {
+            controller.selectRole(roleID)
+        }
         guard let channel = currentCardChatMode?.voiceChatChannel,
               controller.selectedChannel != channel else { return }
         controller.selectChannel(channel)
@@ -521,7 +531,14 @@ struct VoiceChatSessionView: View {
                 tint: DS.Colors.success,
                 help: "开始这一场语音聊天"
             ) {
-                controller.connectToRole(roleIDForConnect)
+                controller.connectToRole(
+                    roleIDForConnect,
+                    // 从卡片进来才带绑定：它决定系统提示词里有没有这段会话的记录、
+                    // 以及回话写回哪张卡片。
+                    cardBinding: cardID.map {
+                        VoiceChatController.CardVoiceBinding(cardID: $0, cardKind: cardKind)
+                    }
+                )
             })
         }
     }
@@ -2048,6 +2065,11 @@ struct VoiceChatSessionView: View {
     ///（`connectToRole` 当时一个调用点都没有：语音聊天根本连不上）。连接按钮现在是这一页
     /// 页头里那颗（`connectButton`），所以两种情况的说法都跟着改。
     private var emptyHintHeadline: String {
+        // 从卡片进来时，说的是**这张卡片选的那个角色**（按「连接」用的就是它）。
+        if let cardID, let mode = currentCardChatMode, mode.isVoiceLike {
+            let role = cardChatPreferences.resolvedRole(forCardID: cardID, kind: cardKind, mode: mode)
+            return "已选中「\(role.displayName)」，点上面的「连接」开始"
+        }
         if let selectedRoleID = controller.selectedRoleID,
            let role = controller.rolePresets.first(where: { $0.id == selectedRoleID }) {
             return "已选中「\(role.name)」，点上面的「连接」开始"
