@@ -1,5 +1,5 @@
 #!/bin/bash
-# 截屏并 OCR —— Clicky 工具库 · 截图与OCR
+# 截屏并 OCR —— Wanna 工具库 · 截图与OCR
 # 用法:
 #   capture_and_ocr.sh <区域> <输出前缀>
 #   区域: left | right | top | bottom | full | X,Y,W,H(逻辑坐标)

@@ -78,7 +78,7 @@
 | `CompanionScreenCaptureUtility.swift` | 新增一条**原图**抓取路径（现状是缩到 1280 + JPEG 0.8，只适合喂模型）；现有视觉那条路一行不改 | [`05`](05-截图与OCR.md) 第一节 |
 | `MacosUseController.swift` | `[SCREENSHOT:区域]`（left/right/top/bottom/full + 归一化矩形）、`[CROP:路径:x,y,w,h]` 两个动作 | [`05`](05-截图与OCR.md) 第二节 |
 | 新增 | OCR（Vision `VNRecognizeTextRequest`，显式 `zh-Hans` + `en`）——全仓库目前没用过 Vision | [`05`](05-截图与OCR.md) 第四节 |
-| `AppSettings.swift` + `GeneralSettingsView.swift` | 看与截图页加「截图保存位置」，默认 `~/Desktop/Clicky/` | [`05`](05-截图与OCR.md) 第三节 |
+| `AppSettings.swift` + `GeneralSettingsView.swift` | 看与截图页加「截图保存位置」，默认 `~/Desktop/Wanna/` | [`05`](05-截图与OCR.md) 第三节 |
 
 ### 第六优先：工具库（收益最大的一步）
 

@@ -37,7 +37,7 @@ conversation, and the whole settings set.
 ### 1. Secrets
 
 The app reads `BailianAPIKey` and `BailianWorkspaceBaseURL` from a plist that is
-**not** committed to this repository. Create `leanring-buddy/BailianSecrets.plist`:
+**not** committed to this repository. Create `Wanna/BailianSecrets.plist`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -57,7 +57,7 @@ without a key:
 
 ```bash
 mkdir -p ~/Library/Application\ Support/Wanna
-cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
+cp Wanna/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 chmod 600 ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 ```
 
@@ -70,15 +70,15 @@ card, and after that the app's own settings own the configuration.
 ### 2. Build and run
 
 ```bash
-cd /Users/mjm/Documents/SuperAgent/APP/Design/wanna
-xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy -configuration Debug build
+cd /Users/mjm/Documents/SuperAgent/Wanna
+xcodebuild -project Wanna.xcodeproj -scheme Wanna -configuration Debug build
 ```
 
 The built app lands in Xcode's DerivedData. To launch the copy the app actually
 runs from, install it to `/Applications`:
 
 ```bash
-APP_DIR=$(xcodebuild -project leanring-buddy.xcodeproj -scheme leanring-buddy \
+APP_DIR=$(xcodebuild -project Wanna.xcodeproj -scheme Wanna \
   -configuration Debug -showBuildSettings 2>/dev/null \
   | awk -F' = ' '/ BUILT_PRODUCTS_DIR /{print $2}')
 cp -R "$APP_DIR/Wanna.app" /Applications/
@@ -138,7 +138,7 @@ decision. Read it before changing anything.
 ## Project layout
 
 ```
-leanring-buddy/                     # Swift source (the "leanring" typo is legacy and stays)
+Wanna/                              # Swift source
   CompanionManager.swift               # Central state machine
   ActionTagParser.swift                # The tag grammar, and nothing else
   MacosUseController.swift             # The only file that imports MacosUseSDK
@@ -153,13 +153,21 @@ leanring-buddy/                     # Swift source (the "leanring" typo is legac
   AgentSessionManager.swift            # The agent roster and turn pipeline
   AppSettings.swift / AppSettingsStore.swift   # Settings data and storage
   ModelConfiguration.swift / ModelConfigurationStore.swift  # The three model roles
+  WorkspaceDirectory.swift             # Where the checkout is, and the four output folders
   DesignSystem.swift                   # Colour, radius and style tokens
-leanring-buddy.xcodeproj
-worker/                             # Retired Cloudflare Worker proxy (reference only)
+Wanna.xcodeproj
 AGENTS.md                           # Full architecture reference
 开发经验/                            # What was learned building this, one doc per subsystem
 解决方案/                            # One doc per solved problem, written as the full story
+参考资料/                            # Research material kept beside the code, not in git
 ```
+
+Four folders at the root are the app's own output rather than source — `Wanna录音/`
+(recordings and transcripts), `Wanna图形/` (rendered figures), `Wanna复盘/` (review
+reports) and `WannaAgents/` (the background agents' project roots). They sit beside the
+code so a person can find them in one place, and they are gitignored because they are
+runtime data: `Wanna录音/` alone is thousands of files. `WorkspaceDirectory` is the one
+place that names them — moving the checkout is an edit there and nowhere else.
 
 ## Configuration lives outside the repo
 

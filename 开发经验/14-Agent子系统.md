@@ -61,7 +61,7 @@
 
 流式文本**故意不进 `AgentSession` 模型**：delta 每秒几十次，模型住在 store 的 NSLock + 磁盘写后面，每条 delta 过一次锁再写一次盘不可接受。所以 manager 单独持有 `streamingTextByAgentID`，只有完成的回合走 store。
 
-## 六、实测数据（2026-09-22，沙箱 `~/Desktop/clicky-agent-sandbox/`）
+## 六、实测数据（2026-09-22，沙箱 `~/Desktop/wanna-agent-sandbox/`）
 
 | 项 | 值 |
 |---|---|
@@ -75,7 +75,7 @@
 
 参考项目 03 号文档的「多 Agent 协作」不是 Agent 互相对话，而是**语音伴侣当总调度**：用户一句话，模型自己 spawn / send。本机形态是两个新动作标签：
 
-- `[AGENT_SPAWN:名字:任务描述]` — 新开一个 Agent 干后台活。任务描述必须自包含（Agent 只看得到这一段文字）。同名 Agent 已存在 → 直接把任务交给它，不新建；文件夹取「默认项目文件夹」设置，没设就用 `~/Desktop/ClickyAgents/<名字>`（自动建目录，重名加 `-2`）。
+- `[AGENT_SPAWN:名字:任务描述]` — 新开一个 Agent 干后台活。任务描述必须自包含（Agent 只看得到这一段文字）。同名 Agent 已存在 → 直接把任务交给它，不新建；文件夹取「默认项目文件夹」设置，没设就用 `~/Desktop/WannaAgents/<名字>`（自动建目录，重名加 `-2`）。
 - `[AGENT_SEND:名字:追加指令]` — 给在跑的 Agent 追加要求。名字按大小写不敏感精确匹配优先、含匹配兜底；匹配到多个 → 把候选名单回填给模型改口；找不到 → 回填现有名单。
 
 三个硬性实现决策：
@@ -89,7 +89,7 @@
 `AgentHUDController.swift`，形态抄还原文档 04 号：每屏右上角一摞圆 chip。实现决策：
 
 - **面板参数克隆 `CompanionResponseOverlay`**（borderless + nonactivatingPanel、`.statusBar` 层级、透明、跨 Space），唯一区别是 `ignoresMouseEvents = false`——chip 是按钮。面板只占 chip 栈大小（宽 264、右上角菜单栏下方），不做全屏命中区探针（那是覆盖层为了不挡交互才需要的）。**绝不能成为 key window**：`.nonactivatingPanel` + 内容里没有文本框，点 chip 纯鼠标交互。
-- **`NSHostingView` 只装一次**。刷新（`.clickyAgentSessionsDidChange`，运行中的 Agent 每几秒一发）只原位更新共享的 `AgentHUDStackModel.agents`——每次重建 hosting view 会把用户的悬停状态打断。chip 行高固定 56（悬停展开条比折叠瓦片高，固定行高让悬停变成纯内容切换，面板 frame 不用跟着动）。
+- **`NSHostingView` 只装一次**。刷新（`.wannaAgentSessionsDidChange`，运行中的 Agent 每几秒一发）只原位更新共享的 `AgentHUDStackModel.agents`——每次重建 hosting view 会把用户的悬停状态打断。chip 行高固定 56（悬停展开条比折叠瓦片高，固定行高让悬停变成纯内容切换，面板 frame 不用跟着动）。
 - **面板 frame 跟随 chip 数量与手柄折叠态**。手柄折叠发生在 SwiftUI 侧，控制器靠 `stackModel.objectWillChange` 得知后重设 frame——收起时面板只剩手柄那么高，否则透明区域挡住底下应用的点击。
 - **可见性规则**：显示所有 `status != .idle` 且本轮未点 × 的 Agent（dismissed 是内存 `Set<UUID>`，重启即回来）；启动时什么都不显示，直到本会话第一次 turn 活动——空闲 Agent 没有可看的东西。控制器在 `CompanionManager.start()` 里就触碰（`_ = agentHUDController`），保证第一次 store 变更前面板已存在，否则「运行中」的 chip 要等到第二次变更才出现。
 - **点 chip 进刘海 Agent 页**：`CompanionManager.openAgentPage(agentID:)` → `selectAgent` + `selectedSidebarSection = .agents` + `expandForLaunch()`。不需要 `requestedAgentID` 之类的请求标志——Agent 视图是侧栏的另一半，内容列实时读 section；设置才需要请求标志（设置页与侧栏互斥）。

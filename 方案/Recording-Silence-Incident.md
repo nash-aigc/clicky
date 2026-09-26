@@ -207,7 +207,7 @@ upload path, or the transcript writer. `开发经验/10-踩过的坑.md` and
 The file on disk is the truth:
 
 ```bash
-ls -la ~/Desktop/Clicky录音/<session-id>.*
+ls -la ~/Desktop/Wanna录音/<session-id>.*
 ```
 
 A non-zero `.txt` with nothing on screen is a display problem, not a capture one.

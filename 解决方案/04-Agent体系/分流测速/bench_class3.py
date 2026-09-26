@@ -147,7 +147,7 @@ def main():
                   "jev_p95_ms": jms[min(int(len(jms) * .95), len(jms) - 1)] if jms else 0,
                   "ds_p95_ms": dms[min(int(len(dms) * .95), len(dms) - 1)] if dms else 0},
     }
-    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/clicky/解决方案/04-Agent体系/分流测速/三分类结果.json"
+    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/wanna/解决方案/04-Agent体系/分流测速/三分类结果.json"
     with open(dest, "w") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
     print("\n== 汇总 ==")

@@ -1,0 +1,2187 @@
+//
+//  BuddyDictationManager.swift
+//  Wanna
+//
+//  Shared push-to-talk dictation manager for the help chat and brainstorm buddy.
+//  Captures microphone audio with AVAudioEngine, routes it into the active
+//  transcription provider, and hands the final draft back to the active input bar.
+//
+
+import AppKit
+import AVFoundation
+import Combine
+import Foundation
+import Speech
+
+/// `RecordedKeyboardShortcut` is pure data (a raw-value struct in
+/// `AppSettings.swift`, which deliberately imports no AppKit), so the
+/// `NSEvent.ModifierFlags` view of its stored raw value lives here with the
+/// event-matching code that needs it.
+extension RecordedKeyboardShortcut {
+    var modifierFlags: NSEvent.ModifierFlags {
+        NSEvent.ModifierFlags(rawValue: modifierFlagsRawValue)
+    }
+}
+
+enum BuddyPushToTalkShortcut {
+    enum ShortcutOption {
+        case shiftFunction
+        case controlOption
+        case shiftControl
+        case controlOptionSpace
+        case shiftControlSpace
+
+        var displayText: String {
+            switch self {
+            case .shiftFunction:
+                return "shift + fn"
+            case .controlOption:
+                return "ctrl + option"
+            case .shiftControl:
+                return "shift + control"
+            case .controlOptionSpace:
+                return "ctrl + option + space"
+            case .shiftControlSpace:
+                return "shift + control + space"
+            }
+        }
+
+        var keyCapsuleLabels: [String] {
+            switch self {
+            case .shiftFunction:
+                return ["shift", "fn"]
+            case .controlOption:
+                return ["ctrl", "option"]
+            case .shiftControl:
+                return ["shift", "control"]
+            case .controlOptionSpace:
+                return ["ctrl", "option", "space"]
+            case .shiftControlSpace:
+                return ["shift", "control", "space"]
+            }
+        }
+
+        /// The preset expressed in the same shape as a shortcut the user
+        /// recorded, so the event matcher below has one path for both. Every
+        /// modifier-only preset binds no key; the two space presets bind
+        /// space (key code 49).
+        var defaultShortcutBinding: RecordedKeyboardShortcut {
+            switch self {
+            case .shiftFunction:
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.shift, .function]).rawValue,
+                    keyCode: nil
+                )
+            case .controlOption:
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.control, .option]).rawValue,
+                    keyCode: nil
+                )
+            case .shiftControl:
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.shift, .control]).rawValue,
+                    keyCode: nil
+                )
+            case .controlOptionSpace:
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.control, .option]).rawValue,
+                    keyCode: pushToTalkKeyCode
+                )
+            case .shiftControlSpace:
+                return RecordedKeyboardShortcut(
+                    modifierFlagsRawValue: NSEvent.ModifierFlags([.shift, .control]).rawValue,
+                    keyCode: pushToTalkKeyCode
+                )
+            }
+        }
+    }
+
+    enum ShortcutTransition {
+        case none
+        case pressed
+        case released
+    }
+
+    private enum ShortcutEventType {
+        case flagsChanged
+        case keyDown
+        case keyUp
+    }
+
+    /// The push-to-talk keybinding in effect. Read from the app settings on
+    /// every access rather than cached: the settings window can change it while
+    /// the app runs, and the event-tap matching and the panel's tooltip must
+    /// never disagree about which keys start and end a recording. A shortcut
+    /// the user recorded in the settings window wins over the preset.
+    static var currentShortcutBinding: RecordedKeyboardShortcut {
+        AppSettingsStore.snapshot().pushToTalkShortcutBinding
+    }
+    /// Space, the key the two built-in presets bind. Kept as a named constant
+    /// because the preset bindings and any recorder hint text both want it.
+    static let pushToTalkKeyCode: UInt16 = 49
+    static var pushToTalkDisplayText: String { currentShortcutBinding.displayText }
+    static var pushToTalkTooltipText: String { "push to talk (\(pushToTalkDisplayText))" }
+
+    static func shortcutTransition(
+        for event: NSEvent,
+        wasShortcutPreviouslyPressed: Bool
+    ) -> ShortcutTransition {
+        guard let shortcutEventType = shortcutEventType(for: event.type) else { return .none }
+
+        return shortcutTransition(
+            for: shortcutEventType,
+            keyCode: event.keyCode,
+            modifierFlags: event.modifierFlags.intersection(.deviceIndependentFlagsMask),
+            wasShortcutPreviouslyPressed: wasShortcutPreviouslyPressed
+        )
+    }
+
+    static func shortcutTransition(
+        for eventType: CGEventType,
+        keyCode: UInt16,
+        modifierFlagsRawValue: UInt64,
+        wasShortcutPreviouslyPressed: Bool
+    ) -> ShortcutTransition {
+        guard let shortcutEventType = shortcutEventType(for: eventType) else { return .none }
+
+        return shortcutTransition(
+            for: shortcutEventType,
+            keyCode: keyCode,
+            modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(modifierFlagsRawValue))
+                .intersection(.deviceIndependentFlagsMask),
+            wasShortcutPreviouslyPressed: wasShortcutPreviouslyPressed
+        )
+    }
+
+    private static func shortcutEventType(for eventType: NSEvent.EventType) -> ShortcutEventType? {
+        switch eventType {
+        case .flagsChanged:
+            return .flagsChanged
+        case .keyDown:
+            return .keyDown
+        case .keyUp:
+            return .keyUp
+        default:
+            return nil
+        }
+    }
+
+    private static func shortcutEventType(for eventType: CGEventType) -> ShortcutEventType? {
+        switch eventType {
+        case .flagsChanged:
+            return .flagsChanged
+        case .keyDown:
+            return .keyDown
+        case .keyUp:
+            return .keyUp
+        default:
+            return nil
+        }
+    }
+
+    private static func shortcutTransition(
+        for shortcutEventType: ShortcutEventType,
+        keyCode: UInt16,
+        modifierFlags: NSEvent.ModifierFlags,
+        wasShortcutPreviouslyPressed: Bool
+    ) -> ShortcutTransition {
+        // One matching path for presets and recorded shortcuts alike — they are
+        // the same shape by the time they get here (`pushToTalkShortcutBinding`
+        // resolves which one is live). Modifier-only bindings press and release
+        // on flagsChanged; bindings with a key press and release on that key.
+        let binding = currentShortcutBinding
+        let requiredModifierFlags = binding.modifierFlags
+            .intersection(.deviceIndependentFlagsMask)
+
+        if let boundKeyCode = binding.keyCode {
+            if shortcutEventType == .keyDown
+                && keyCode == boundKeyCode
+                && modifierFlags.isSuperset(of: requiredModifierFlags)
+                && !wasShortcutPreviouslyPressed {
+                return .pressed
+            }
+
+            if shortcutEventType == .keyUp
+                && keyCode == boundKeyCode
+                && wasShortcutPreviouslyPressed {
+                return .released
+            }
+
+            return .none
+        }
+
+        guard shortcutEventType == .flagsChanged, !requiredModifierFlags.isEmpty else { return .none }
+
+        let isShortcutCurrentlyPressed = modifierFlags.isSuperset(of: requiredModifierFlags)
+
+        if isShortcutCurrentlyPressed && !wasShortcutPreviouslyPressed {
+            return .pressed
+        }
+
+        if !isShortcutCurrentlyPressed && wasShortcutPreviouslyPressed {
+            return .released
+        }
+
+        return .none
+    }
+}
+
+enum BuddyDictationPermissionProblem {
+    case microphoneAccessDenied
+    case speechRecognitionDenied
+}
+
+private enum BuddyDictationStartSource {
+    case microphoneButton
+    case keyboardShortcut
+}
+
+/// Callbacks the continuous-listening window (回答时持续监听) installs so
+/// CompanionManager can react to what the microphone hears while the answer
+/// is still being spoken. Deliberately a separate shape from
+/// `BuddyDictationDraftCallbacks`: a listening session never writes into the
+/// composer draft — its transcripts are whole new questions.
+struct BuddyContinuousListeningCallbacks {
+    /// The user really is speaking over the answer (the barge-in moment: the
+    /// caller stops TTS playback and takes the follow-up screenshot here).
+    ///
+    /// Fires at most ONCE per utterance, and from the level VAD's
+    /// QUIET→SPEAKING transition alone. A transcript may not start a turn here
+    /// — that is the reference's own structure, not a local bar; the interim
+    /// handler in `openContinuousListeningTranscriptionSession` carries the
+    /// evidence.
+    let onSpeechDetected: () -> Void
+    /// Cumulative interim transcript of the utterance currently being spoken.
+    let onTranscriptUpdate: (String) -> Void
+    /// The utterance ended (silence long enough) and the recognizer delivered
+    /// its final transcript. Empty/echo-short transcripts are filtered before
+    /// this fires.
+    let onUtteranceFinalized: (String) -> Void
+    /// 最终转写**因为太短被丢掉**了 —— 调用方据此把那行气泡撤掉，而不是让它
+    /// 永远留在屏幕上看起来像「问了没反应」。
+    let onUtteranceDropped: (String) -> Void
+}
+
+private struct BuddyDictationDraftCallbacks {
+    let updateDraftText: (String) -> Void
+    let submitDraftText: (String) -> Void
+}
+
+@MainActor
+final class BuddyDictationManager: NSObject, ObservableObject {
+    private static let defaultFinalTranscriptFallbackDelaySeconds: TimeInterval = 2.4
+    private static let recordedAudioPowerHistoryLength = 44
+    private static let recordedAudioPowerHistoryBaselineLevel: CGFloat = 0.02
+    private static let recordedAudioPowerHistorySampleIntervalSeconds: TimeInterval = 0.07
+
+    // Continuous listening (回答时持续监听) tuning. The layering mirrors what
+    // the VoiceWeb reference measured (浏览器 AEC 承重 + VAD 阈值/时长防误触发),
+    // and since 2026-09-23 it matches it again — the load-bearing layer is a
+    // real AEC once more.
+    // ① the system AEC (Apple voice processing, on the shared playback engine
+    //    — see VoicePlaybackEngine's header) removes the app's own answer from
+    //    the microphone BEFORE the recognizer sees it. This is the layer that
+    //    matters: without it the answer arrives as perfectly real words and no
+    //    later layer can tell them apart from the user's.
+    // ② the recording mute (SystemSpeakerMuteCoordinator) keeps system audio
+    //    out of the mic while nothing is playing — it is what covers the
+    //    windows in which ① is not running, and it is why AEC is only needed
+    //    while an answer is actually being read aloud.
+    // ③ a smoothed-RMS threshold rejects background hiss,
+    // ④ a sustained-speech debounce rejects clicks and door slams,
+    // ⑤ a minimum transcript length keeps a short artefact from being sent
+    //    as a question even if ①-④ all let something through.
+    //
+    // The threshold is on the waveform's boosted scale (RMS × 10.2), and it
+    // was calibrated 2026-09-23 against this machine's built-in mic with a
+    // 15 s quiet-room probe: the ambient floor peaked at 0.167 (typical
+    // 0.09–0.11), so the original 0.06 sat BELOW the noise floor and the VAD
+    // fired constantly in silence — every answer triggered a garbage follow-up
+    // (「嗯。」) and the whole runaway-loop failure. Normal speech measures
+    // 0.3–1.0 on the same scale, so 0.25 clears the floor with margin while
+    // staying under quiet speech.
+    private static let continuousListeningSpeechLevelThreshold: CGFloat = 0.25
+    // Speech is confirmed by ACCUMULATED above-threshold time with a slow
+    // release, NOT by an unbroken run of it.
+    //
+    // Why (measured 2026-09-23, probe: a real Chinese voice played through the
+    // system speakers into this same tap topology, while VPIO was still in
+    // place): the smoothed level
+    // during continuous speech reads peak 0.772 / p95 0.556 but p50 0.159 —
+    // natural articulation dips below 0.25 roughly half the time, and the
+    // smoothing decays at 0.72 per tap buffer, so the level is already down
+    // between syllables. The previous rule asked for 0.35 s of CONTINUOUS
+    // above-threshold time, which normal speech never delivers, so
+    // `continuousListeningUtteranceActive` never became true: nothing to send
+    // after 2–3 s of silence (「等待了两秒、三秒，它还是没有发送」) and a
+    // shortcut press found nothing pending, fell through to the stop branch
+    // and exited listening (「我按住快捷键的话，它还是自动退出」).
+    //
+    // A leaky accumulator tolerates those dips the way pipecat's neural VAD
+    // tolerates them, while still demanding real speech rather than one loud
+    // click. Rising costs the full poll interval, falling returns only a
+    // quarter of it, so ~0.2 s of net speech confirms the utterance and a
+    // brief pause cannot undo it.
+    private static let continuousListeningSpeechAccumulationSeconds: TimeInterval = 0.20
+    private static let continuousListeningSpeechAccumulatorReleaseRatio: Double = 0.25
+    // While the answer plays, the microphone LEVEL is evidence of nothing — and
+    // that is a measurement, not a margin (2026-09-24).
+    //
+    // An earlier attempt settled only a reply's first moments with an onset
+    // grace (0.8 s), on the theory that our own voice leaking back into the
+    // microphone was an AEC convergence TRANSIENT: the canceller has no
+    // far-end signal between replies, so it re-converges against a new
+    // reference and the leak passes. The app's own log says otherwise.
+    // Measured across four replies while an answer was playing and the user was
+    // NOT speaking, the microphone peak read 0.876 / 1.000 / 1.000 / 1.000 —
+    // against a room floor of 0.167 and a CONVERGED echo of 0.111. A peak at
+    // full scale is not a transient to wait out; it is our own answer arriving
+    // louder at the microphone than the room it plays into, and once it clips,
+    // a linear canceller cannot remove it. It clears the 0.25 speech threshold
+    // for the WHOLE reply, not its first second.
+    //
+    // What that produced is the user's 「偶尔发声，偶尔不读」/「十次九次都没有声音」
+    // (2026-09-24): the level path was licensed to interrupt an answer whenever
+    // the echo-cancellation flag was set, so the reply killed ITSELF on its own
+    // voice — and the recognizer's mis-hearing of that clipped signal (「嗯。」
+    // 「我」「中间」, one to three content characters) also cleared the
+    // level-corroborated 1-character bar, so the transcript path killed it too.
+    // One character of the app's own audio is not a barge-in.
+    //
+    // The rule is therefore pipecat's own, for exactly this case — the echo
+    // reaching the recognizer: `min_words_user_turn_start_strategy.py:108` reads
+    // `min_words = self._min_words if self._bot_speaking else 1`, "If the bot is
+    // speaking we want to interrupt using min words". MORE evidence while the
+    // bot speaks, never less. VoiceWeb can run the bar-free pair
+    // (`VADUserTurnStartStrategy` + `TranscriptionUserTurnStartStrategy`,
+    // server.py:3753) only because its AEC lives in the browser and stays
+    // converged for the whole session; this app restarts its canceller per
+    // reply, which is what makes the local rule the stricter one.
+    //
+    // Concretely, the level VAD is the ONLY thing that may start a turn, while
+    // the answer plays or not. That is what the reference does, and the reason
+    // is structural rather than a threshold: VoiceWeb's transcript cannot exist
+    // until its VAD has already ruled that the user spoke, so a transcript can
+    // never be an independent trigger there. Here the recognizer free-runs, and
+    // one guessed character is all it takes — so the source is restricted
+    // instead. Real barge-in is unaffected: the user's own speech measures
+    // 0.3–1.0 against a 0.25 threshold.
+    // The silence that ends an utterance is now a USER SETTING
+    // (「静音多久自动发送」, AppSettings.continuousListeningSilenceSendSeconds,
+    // default 2.0 s, clamped 1–5) — human thinking pauses are unbounded (the
+    // user's framing, 2026-09-23), so no single silence value can be the
+    // "finished speaking" verdict; the talk shortcut is the reliable send
+    // marker and this wait is only the auto path. Held as an instance
+    // property fed in at window start, not read from the store mid-window,
+    // so changing the setting only affects the NEXT window (the live VAD loop
+    // must not have its threshold move under it).
+    private var continuousListeningUtteranceEndSilenceSeconds: TimeInterval = 2.0
+    private static let continuousListeningMaximumUtteranceSeconds: TimeInterval = 15
+    /// The VAD loop's tick. Held in seconds and derived into a `Duration` so
+    /// the accumulator maths and the sleep can never disagree about it.
+    private static let continuousListeningVADPollSeconds: TimeInterval = 0.05
+    private static var continuousListeningVADPollInterval: Duration { .seconds(continuousListeningVADPollSeconds) }
+    /// How far back the level window the refusal report reads looks, and how
+    /// many VAD ticks that is.
+    ///
+    /// Half a second, because the level is SPIKY: continuous speech on this
+    /// machine reads peak 0.772 / p95 0.556 but only p50 0.159 (measured
+    /// 2026-09-23), so at any single 50 ms tick the level is as likely as not
+    /// to be sitting under the 0.25 threshold. The window answers "has the
+    /// microphone been loud recently", which is the question a report about
+    /// what was heard at the moment of a refusal actually wants answered.
+    ///
+    /// It is no longer evidence of anything: it used to corroborate a short
+    /// interrupt transcript, and that is exactly the shortcut the 0.876–1.000
+    /// measurement above removed.
+    private static let continuousListeningRecentLevelWindowSeconds: TimeInterval = 0.5
+    private static var continuousListeningRecentLevelSampleCount: Int {
+        max(1, Int((continuousListeningRecentLevelWindowSeconds / continuousListeningVADPollSeconds).rounded()))
+    }
+    // 4 characters of REAL content (up from 2, 2026-09-23): an interjection the
+    // user hums while listening to an answer (「嗯。」) transcribes to 1–3
+    // characters and must not be submitted as a brand-new question — that was
+    // the "循环一个全新的东西" loop's fuel. A real follow-up question is a
+    // sentence. Counted through `continuousListeningContentCharacterCount`, so
+    // punctuation can never add up to a sentence (「。。。。」 is 0, not 4).
+    /// 发送门槛：**低于这个内容字数的最终转写不会成为一个问题**。
+    ///
+    /// 默认 4 是给**对话页面**定的：那里「嗯。」这种语气词不该变成新问题。
+    /// 但语音聊天是**连续的问答**，「演过谁？」「还在吗？」「几点了？」都是
+    /// 3 个字的正经问题 —— 用同一把尺子会把它们**静默丢掉**（2026-09-24 实测：
+    /// 用户问「演过谁？」「还在吗？」各 3 个内容字，识别完全正确，然后被这一行丢掉，
+    /// 既不回答也不报错，看起来就像应用死了）。所以门槛改为按会话传入，
+    /// 语音聊天传 1。
+    static let continuousListeningMinimumTranscriptCharacters = 4
+    // There is NO content bar on the interrupt path, and there must not be one:
+    // the interrupt has a single source, the level VAD (2026-09-24).
+    //
+    // This file used to carry a 4-content-character bar here, justified by
+    // pipecat's `MinWordsUserTurnStartStrategy`
+    // (`word_count >= (min_words if bot_speaking else 1)`). That justification
+    // was wrong. VoiceWeb never instantiates that strategy: its 三段式 builds
+    // its user-turn-start list from `VADUserTurnStartStrategy` and
+    // `TranscriptionUserTurnStartStrategy` only (server.py:3753-3754), and
+    // neither carries any word, character or bot-speaking condition.
+    //
+    // Removing the bar was right; re-opening the ASR as a turn-start source was
+    // not. In VoiceWeb the transcription strategy is unreachable for an
+    // interruption no matter what it says, because the STT is segmented by the
+    // VAD — a transcript cannot exist before the VAD has ruled. Run that same
+    // strategy against this app's free-running streaming recognizer and it
+    // becomes the hole: measured 2026-09-24, the canceller's residual made the
+    // recognizer guess 「噻」 and 「是」 at mic peaks of 0.214 / 0.241 — BELOW the
+    // 0.25 level gate, so the VAD was silent and only the transcript stopped the
+    // answer. No bar fixes that (a guessed character can be four characters long
+    // too); only restricting the SOURCE does, which is what the interim handler
+    // now does.
+
+    /// Characters that are actual linguistic content — letters (CJK included)
+    /// and digits — with punctuation, whitespace, symbols and emoji excluded.
+    ///
+    /// Chinese has no spaces, so pipecat's `len(text.split())` cannot be ported
+    /// literally. This counts the same thing that test counts in English: how
+    /// many words the recognizer really heard, rather than how many marks it
+    /// emitted into a silent room.
+    private static func continuousListeningContentCharacterCount(in transcriptText: String) -> Int {
+        transcriptText.reduce(into: 0) { contentCharacterCount, character in
+            if character.isLetter || character.isNumber { contentCharacterCount += 1 }
+        }
+    }
+    /// Whether a listening transcript is the app's OWN answer coming back
+    /// through the microphone, not the user speaking.
+    ///
+    /// This is a BACKSTOP, not the defence. The defence is the system AEC on
+    /// the shared playback engine (VoicePlaybackEngine's header): it removes
+    /// the answer from the microphone before the recognizer ever sees it, and
+    /// the 「回声消除」 setting is what turns it off. This filter covers the
+    /// cases where the AEC is off, could not be enabled, or did not fully
+    /// converge — a Bluetooth route with no usable reference signal, a device
+    /// that refuses voice processing.
+    ///
+    /// Why a backstop is worth keeping, measured 2026-09-23: while an answer
+    /// plays the recording mute lifts (so the user can hear it), and without
+    /// AEC the answer's own audio reaches the microphone raw — the recognizer
+    /// transcribes it as perfectly real words. Those words clear the
+    /// ≥4-character content bar, and pipecat's `MinWordsUserTurnStartStrategy`
+    /// rule cannot help, because echo of speech IS words — so the ASR
+    /// barge-in path (the only path allowed to interrupt while the bot speaks)
+    /// fires on them. What the framework's rule cannot know, this filter does:
+    /// the app knows exactly what it is reading aloud. A transcript contained
+    /// in that text is our own voice.
+    ///
+    /// **It cannot be the only defence, and that is the point.** The recognizer
+    /// hears a MIX of our answer and the user's voice, and the transcript of a
+    /// mix is unreliable in both directions: heard cleanly, our words match and
+    /// are refused — which the user experiences as "it took three or four
+    /// sentences to stop"; mis-heard by one character, the same words fail the
+    /// containment test, are taken for the user's, and the answer interrupts
+    /// itself. Both were reported on 2026-09-23, from this one filter. Un-mix
+    /// the signal and neither happens.
+    ///
+    /// Containment, not equality: the recognizer delivers the CUMULATIVE
+    /// utterance, and an echo utterance is a run of the spoken answer's own
+    /// text. Both sides are reduced to letters and digits first — the
+    /// recognizer's punctuation of our own voice never matches the text that
+    /// was spoken mark for mark.
+    static func continuousListeningTranscriptIsEchoOfSpokenAnswer(
+        _ transcriptText: String,
+        spokenAnswerText: String
+    ) -> Bool {
+        let normalizedTranscriptText = transcriptText.filter { $0.isLetter || $0.isNumber }
+        guard !normalizedTranscriptText.isEmpty else { return false }
+        let normalizedSpokenAnswerText = spokenAnswerText.filter { $0.isLetter || $0.isNumber }
+        guard !normalizedSpokenAnswerText.isEmpty else { return false }
+        return normalizedSpokenAnswerText.contains(normalizedTranscriptText)
+    }
+    private static let continuousListeningSessionRetryCount = 5
+    // How long the final-fallback waits after requestFinalTranscript before
+    // deciding the session is dead. Measured 2026-09-23: a failing Bailian
+    // websocket dies with "Socket is not connected" WITHOUT the error handler
+    // firing on the listening path every time — the final simply never
+    // arrives, and the window sits deaf forever (the 「说完它也不回复」
+    // complaint). When the deadline passes, the latest interim transcript is
+    // submitted as the final instead. Same grace figure as the push-to-talk
+    // fallback above.
+    // `nonisolated` because it is used as a DEFAULT ARGUMENT value, and default
+    // arguments are evaluated outside the actor — a main-actor-isolated static
+    // here is a warning today and an error under Swift 6.
+    nonisolated private static let continuousListeningFinalGraceSeconds: TimeInterval = 2.4
+    // The same fallback, for the EXPLICIT send (the talk shortcut pressed while
+    // an utterance is pending). Shorter because here the user is standing by
+    // waiting for the answer, and because the wait is known to be unnecessary
+    // in the healthy case: measured 2026-09-23 against the live service, the
+    // final lands 0.27 s after `input_audio_buffer.commit`. 2.4 s of silence
+    // after an explicit "send it" reads as the feature being broken again.
+    private static let continuousListeningShortcutSendGraceSeconds: TimeInterval = 0.8
+
+    @Published private(set) var isRecordingFromMicrophoneButton = false
+    @Published private(set) var isRecordingFromKeyboardShortcut = false
+    @Published private(set) var isKeyboardShortcutSessionActiveOrFinalizing = false
+    @Published private(set) var isFinalizingTranscript = false
+    @Published private(set) var isPreparingToRecord = false
+    /// The 回答时持续监听 window is open: the engine and a streaming ASR
+    /// session run while the answer plays, watching for the user to speak.
+    /// Deliberately NOT part of `isDictationInProgress` — the shortcut guard
+    /// and the derived voice-state observation must not treat passive
+    /// listening as a real recording.
+    @Published private(set) var isContinuousListening = false
+    @Published private(set) var currentAudioPowerLevel: CGFloat = 0
+    @Published private(set) var recordedAudioPowerHistory = Array(
+        repeating: BuddyDictationManager.recordedAudioPowerHistoryBaselineLevel,
+        count: BuddyDictationManager.recordedAudioPowerHistoryLength
+    )
+    @Published private(set) var microphoneButtonRecordingStartedAt: Date?
+    @Published private(set) var transcriptionProviderDisplayName = ""
+    @Published var lastErrorMessage: String?
+    @Published private(set) var currentPermissionProblem: BuddyDictationPermissionProblem?
+
+    var isDictationInProgress: Bool {
+        isPreparingToRecord || isRecordingFromMicrophoneButton || isRecordingFromKeyboardShortcut || isFinalizingTranscript
+    }
+
+    var isActivelyRecordingAudio: Bool {
+        isRecordingFromMicrophoneButton || isRecordingFromKeyboardShortcut
+    }
+
+    var isMicrophoneButtonActivelyRecordingAudio: Bool {
+        isRecordingFromMicrophoneButton
+    }
+
+    var isMicrophoneButtonSessionBusy: Bool {
+        activeStartSource == .microphoneButton
+            && (isPreparingToRecord || isRecordingFromMicrophoneButton || isFinalizingTranscript)
+    }
+
+    var needsInitialPermissionPrompt: Bool {
+        if transcriptionProvider.requiresSpeechRecognitionPermission {
+            return AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined
+                || SFSpeechRecognizer.authorizationStatus() == .notDetermined
+        }
+
+        return AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined
+    }
+
+    /// The transcription backend in use.
+    ///
+    /// Not `let`: the provider is chosen once at init from whichever backend was
+    /// configured *at that moment*, so a user who had no speech-recognition
+    /// credentials at launch falls back to Apple Speech — and would then stay on
+    /// Apple Speech forever, no matter what they typed into the model settings
+    /// window, until the app was restarted. `startRecognitionSession` re-resolves
+    /// it when the current one is unusable.
+    private var transcriptionProvider: any BuddyTranscriptionProvider
+    /// The push-to-talk engine — the FALLBACK path only.
+    ///
+    /// Recording normally runs through the shared playback engine, the same one
+    /// the answer is spoken from and the listening window taps (see
+    /// `startRecognitionSession`). That is the reference's own rule — capture and
+    /// playback on ONE audio path — and it is what keeps a second engine from
+    /// tearing the shared one down: measured 2026-09-24, stopping an engine that
+    /// shares the input device with a voice-processing engine kills the voice
+    /// one. This engine is kept only for the case where the shared engine is
+    /// missing, which is also why its start still lives here.
+    private let audioEngine = AVAudioEngine()
+
+    /// Whether this recording's tap is on the SHARED engine rather than
+    /// `audioEngine`. Every teardown goes through `stopPushToTalkCapture()`, so
+    /// the two cannot disagree about which engine to stop.
+    private var isPushToTalkCaptureOnSharedEngine = false
+
+    /// Stops whichever engine is carrying this recording's tap.
+    ///
+    /// One helper because there are five teardown paths — session end, cancel,
+    /// pre-start cancellation, finalisation, and error — and a path that stopped
+    /// the wrong engine would leave the other running with a live microphone tap
+    /// and no session to feed.
+    private func stopPushToTalkCapture() {
+        if isPushToTalkCaptureOnSharedEngine {
+            isPushToTalkCaptureOnSharedEngine = false
+            sharedVoicePlaybackEngineProvider?()?.removeInputTap()
+        } else {
+            audioEngine.stop()
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+    }
+    private var activeTranscriptionSession: (any BuddyStreamingTranscriptionSession)?
+    private var activeStartSource: BuddyDictationStartSource?
+    private var draftCallbacks: BuddyDictationDraftCallbacks?
+    private var draftTextBeforeCurrentDictation = ""
+    private var latestRecognizedText = ""
+    private var shouldAutomaticallySubmitFinalDraft = false
+    private var hasFinishedCurrentDictationSession = false
+    private var finalizeFallbackWorkItem: DispatchWorkItem?
+    private var pendingStartRequestIdentifier = UUID()
+    private var contextualKeyterms: [String] = []
+
+    /// 本次监听窗口用的识别模型覆盖（语音聊天的**角色独立配置**传进来；
+    /// 对话页不传 = 跟随「听」页的全局选择）。见 `startContinuousListening`。
+    private var continuousListeningModelIDOverride: String?
+    private var lastRecordedAudioPowerSampleDate = Date.distantPast
+
+    /// When `currentAudioPowerLevel` was last published, and how often it may be.
+    ///
+    /// See the throttle in `updateAudioPowerLevel`: the raw rate is one publish
+    /// per audio buffer (~47 Hz), and each publish re-evaluates a full-screen
+    /// overlay's body on every display. 20 Hz is above the overlay's own 0.08 s
+    /// animation, so the waveform still reads as continuous.
+    private var lastAudioPowerLevelPublishDate = Date.distantPast
+    private static let audioPowerLevelPublishIntervalSeconds: TimeInterval = 0.05
+    private var activePermissionRequestTask: Task<Bool, Never>?
+    /// Timestamp of the last completed permission request, used to debounce
+    /// rapid follow-up requests that arrive before macOS updates its cache.
+    private var lastPermissionRequestCompletedAt: Date?
+
+    // Continuous-listening state (see the constants block above for the design).
+    private var continuousListeningCallbacks: BuddyContinuousListeningCallbacks?
+    /// 这一次监听窗口的发送门槛（见 `startContinuousListening` 的参数）。
+    private var continuousListeningMinimumTranscriptCharactersForThisWindow =
+        BuddyDictationManager.continuousListeningMinimumTranscriptCharacters
+    private var continuousListeningVADTask: Task<Void, Never>?
+    /// Provides the shared TTS playback engine (injected by CompanionManager,
+    /// which owns the lazy TTS client). The listening tap installs on IT —
+    /// one engine serves both halves of the voice conversation (the same-engine
+    /// rule; see VoicePlaybackEngine's header). nil → the own-engine fallback
+    /// below runs instead.
+    var sharedVoicePlaybackEngineProvider: (() -> VoicePlaybackEngine?)?
+    /// Whether the app is reading an answer aloud right now (injected by
+    /// CompanionManager, which owns the lazy TTS client). `isPlaying` is true
+    /// for a whole spoken reply, segment gaps included, so it is the faithful
+    /// macOS equivalent of pipecat's `BotStartedSpeakingFrame` /
+    /// `BotStoppedSpeakingFrame` pair — and it is what raises the bar for
+    /// accepting a transcript as the user speaking. See
+    /// `continuousListeningMinimumInterruptContentCharacters`.
+    var isBotSpeakingProvider: (() -> Bool)?
+    /// The tag-stripped text of the answer currently being read aloud — or the
+    /// most recent one, because an echo transcript can arrive after the
+    /// barge-in has already stopped playback. Injected by CompanionManager,
+    /// which holds the exact text every TTS path feeds. The echo filter
+    /// (`continuousListeningTranscriptIsEchoOfSpokenAnswer`) compares what the
+    /// microphone heard against this text. The real defence is the shared
+    /// engine's AEC (VoicePlaybackEngine's header); this is the backstop for
+    /// when it is off or did not fully converge — on those paths the answer's
+    /// own audio reaches the input while it plays (the mute lifts so the user
+    /// can hear it), and the recognizer transcribes it as real words.
+    var spokenAnswerTextProvider: (() -> String)?
+    /// Whether the current listening window's tap lives on the shared engine
+    /// (endContinuousListening must then NOT stop that engine — playback and
+    /// later windows still need it, and its voice processing can only be
+    /// reconfigured while it is stopped).
+    private var isContinuousListeningOnSharedEngine = false
+    /// Leaky accumulator of above-threshold mic level for the current
+    /// window-with-no-utterance state, in seconds. Replaces a "how long has it
+    /// been continuously loud" timestamp: it fills at the full poll interval
+    /// while the level is up and drains at a quarter of it while the level is
+    /// down, so the inter-syllable dips of ordinary speech do not reset the
+    /// count (see `continuousListeningSpeechAccumulationSeconds`).
+    private var continuousListeningSpeechAccumulatorSeconds: TimeInterval = 0
+    /// An utterance is in progress (speech was detected, interim transcripts
+    /// are accumulating); the VAD loop is now watching for it to end.
+    private var continuousListeningUtteranceActive = false
+    /// The barge-in callback has already fired for the utterance in progress.
+    ///
+    /// One-shot per utterance: the level VAD is the only thing that can raise
+    /// it, and an utterance must not be interrupted twice.
+    private var continuousListeningDidRequestBargeIn = false
+    /// The microphone levels of the last
+    /// `continuousListeningRecentLevelWindowSeconds`, refreshed by the VAD loop
+    /// on its own 50 ms cadence. Read only to REPORT what the microphone heard
+    /// when a level rise is refused while an answer plays — see
+    /// `markContinuousListeningUtteranceActive`.
+    ///
+    /// Deliberately NOT cleared per utterance: the window is self-refreshing by
+    /// construction, and emptying it would blind the report for the half second
+    /// it takes to refill. It is cleared when the listening WINDOW opens and
+    /// closes.
+    private var continuousListeningRecentAudioLevels: [CGFloat] = []
+
+    /// 自产瞬时噪声的静默截止时刻。见 `noteSelfProducedAudioTransient()`。
+    private var selfProducedTransientQuietUntil: Date = .distantPast
+
+    /// 刚刚有一次**本 App 自己造成的**音频瞬变（目前只有一处：系统扬声器的硬件
+    /// 静音/解静音切换）。在这之后的短时间内，电平 VAD 与识别结果一律不算数。
+    ///
+    /// **为什么必须这样**（2026-09-24 实测定位）：那一下切换走的是 CoreAudio 的
+    /// `kAudioDevicePropertyMute`，而输出编解码器和内置麦克风是同一条物理链路 ——
+    /// 切换时"咔哒"一声进了麦克风，电平峰值 **0.49~0.83**，而本 App 自己回答的残留
+    /// 只有 **0.05~0.08**（实测），所以那绝不是回答漏音。识别器把这个非语音瞬变
+    /// 听成了一个字，返回「嗯。」，于是：
+    ///
+    ///     回答播完 → 2 秒后扬声器重新静音 → 咔哒 → 电平 VAD 触发
+    ///     → 误判成用户插话 → 掐掉/新起一轮 → 屏幕上多出一个「嗯。」
+    ///
+    /// 时间戳能把这条钉死：`bargeIn t=…949.423` 紧挨着 `speakersMUTED t=…949.765`，
+    /// 另一处 `bargeIn t=…926.717` 紧挨着 `speakersMUTED t=…927.029`。
+    ///
+    /// 窗口取 0.6 秒：爆音是几毫秒的事，而真人插话会持续几百毫秒并很快出字 ——
+    /// 真人的打断最多晚 0.6 秒被承认，误触发则被彻底挡掉。
+    func noteSelfProducedAudioTransient() {
+        selfProducedTransientQuietUntil = Date().addingTimeInterval(Self.selfProducedTransientQuietSeconds)
+    }
+
+    private static let selfProducedTransientQuietSeconds: TimeInterval = 0.6
+
+    private var isInsideSelfProducedTransientQuietWindow: Bool {
+        Date() < selfProducedTransientQuietUntil
+    }
+    /// The loudest the microphone has been inside that window.
+    private var continuousListeningRecentPeakAudioLevel: CGFloat {
+        continuousListeningRecentAudioLevels.max() ?? 0
+    }
+    private var continuousListeningUtteranceStartedAt: Date?
+    private var continuousListeningSilenceStartedAt: Date?
+    /// The latest interim transcript of the current utterance. The fallback
+    /// for a dead session: if `requestFinalTranscript` produces no final
+    /// within the grace window, THIS text is submitted as the question
+    /// instead (measured failure: the websocket dies with "Socket is not
+    /// connected" and delivers neither a final nor an error event).
+    private var continuousListeningLatestInterimTranscript = ""
+    /// True between requestFinalTranscript and the final's arrival (or the
+    /// grace fallback firing). The shortcut-send branch must not treat a
+    /// "finalizing" utterance as speech-in-progress, and the fallback must
+    /// not fire once a real final has landed — this flag is both gates.
+    private var isContinuousListeningAwaitingFinal = false
+    /// Bumped on every requestContinuousListeningFinalTranscript and captured
+    /// by the grace task, so a STALE grace task (from an earlier request)
+    /// can never cancel a newer request's session or submit an older
+    /// interim — only the generation it was created for.
+    private var continuousListeningFinalRequestGeneration = 0
+
+    override init() {
+        let transcriptionProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider()
+        self.transcriptionProvider = transcriptionProvider
+        self.transcriptionProviderDisplayName = transcriptionProvider.displayName
+        super.init()
+    }
+
+    func updateContextualKeyterms(_ contextualKeyterms: [String]) {
+        self.contextualKeyterms = contextualKeyterms
+    }
+
+    func startPersistentDictationFromMicrophoneButton(
+        currentDraftText: String,
+        updateDraftText: @escaping (String) -> Void,
+        submitDraftText: @escaping (String) -> Void
+    ) async {
+        await startPushToTalk(
+            startSource: .microphoneButton,
+            currentDraftText: currentDraftText,
+            updateDraftText: updateDraftText,
+            submitDraftText: submitDraftText,
+            shouldAutomaticallySubmitFinalDraftOnStop: false
+        )
+    }
+
+    func startPushToTalkFromKeyboardShortcut(
+        currentDraftText: String,
+        updateDraftText: @escaping (String) -> Void,
+        submitDraftText: @escaping (String) -> Void
+    ) async {
+        await startPushToTalk(
+            startSource: .keyboardShortcut,
+            currentDraftText: currentDraftText,
+            updateDraftText: updateDraftText,
+            submitDraftText: submitDraftText,
+            shouldAutomaticallySubmitFinalDraftOnStop: currentDraftText
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .isEmpty
+        )
+    }
+
+    func stopPersistentDictationFromMicrophoneButton() {
+        stopPushToTalk(expectedStartSource: .microphoneButton)
+    }
+
+    func stopPushToTalkFromKeyboardShortcut() {
+        stopPushToTalk(expectedStartSource: .keyboardShortcut)
+    }
+
+    // MARK: - Continuous listening (回答时持续监听)
+
+    /// Opens the continuous-listening window: starts the audio engine (whose
+    /// voice processing is managed by the engine itself — see
+    /// VoicePlaybackEngine's header), opens one streaming ASR session, and
+    /// runs a local VAD loop that watches the mic level.
+    ///
+    /// Unlike push-to-talk, the engine KEEPS RUNNING across utterances: the
+    /// tap feeds whatever `activeTranscriptionSession` currently points at, so
+    /// swapping that reference after each final transcript moves the next
+    /// utterance onto a fresh websocket without touching the engine (one
+    /// Bailian connection carries exactly one final transcript).
+    func startContinuousListening(
+        utteranceEndSilenceSeconds: TimeInterval,
+        transcriptionModelIDOverride: String? = nil,
+        minimumContentCharacters: Int = BuddyDictationManager.continuousListeningMinimumTranscriptCharacters,
+        onSpeechDetected: @escaping () -> Void,
+        onTranscriptUpdate: @escaping (String) -> Void,
+        onUtteranceFinalized: @escaping (String) -> Void,
+        onUtteranceDropped: @escaping (String) -> Void
+    ) async {
+        // ⚠️ 这两个 guard 是**静默返回**，而调用方很容易把「窗口开着」当成
+        // 「我开成功了」。语音聊天就踩过这个：它连到对话页面已经开着的窗口上，
+        // 回调是别人的，于是用户说话页面上什么都不显示（2026-09-24 查实的可达路径）。
+        // 所以这里必须留下**谁被挡住了**的证据 —— 正常路径下这两行不会出现。
+        guard !isContinuousListening else {
+            print("🎙️ ⚠️ 连续监听请求被忽略：**已经有一个窗口开着**（门槛 \(continuousListeningMinimumTranscriptCharactersForThisWindow)）。调用方若以为这是自己开的窗口，它的说话就不会被自己收到。")
+            return
+        }
+        guard !isDictationInProgress else {
+            print("🎙️ ⚠️ 连续监听请求被忽略：**正在按住说话**。")
+            return
+        }
+
+        print("🎙️ BuddyDictationManager: continuous listening requested")
+
+        // Snapshot the 「静音多久自动发送」 setting for THIS window — a change
+        // mid-window must not move the VAD loop's threshold under it.
+        continuousListeningUtteranceEndSilenceSeconds = utteranceEndSilenceSeconds
+        continuousListeningModelIDOverride = transcriptionModelIDOverride
+        // 门槛随会话设定（见 `continuousListeningMinimumTranscriptCharacters`）。
+        continuousListeningMinimumTranscriptCharactersForThisWindow = minimumContentCharacters
+
+        if needsInitialPermissionPrompt {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+
+            do {
+                try await Task.sleep(for: .milliseconds(200))
+            } catch {
+                // Same reasoning as the push-to-talk start: continue into the
+                // permission check even if this wait was cut short.
+            }
+        }
+
+        guard await requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts() else {
+            print("🎙️ BuddyDictationManager: continuous listening blocked (permissions missing)")
+            return
+        }
+
+        isContinuousListening = true
+        continuousListeningCallbacks = BuddyContinuousListeningCallbacks(
+            onSpeechDetected: onSpeechDetected,
+            onTranscriptUpdate: onTranscriptUpdate,
+            onUtteranceFinalized: onUtteranceFinalized,
+            onUtteranceDropped: onUtteranceDropped
+        )
+        resetContinuousListeningUtteranceState()
+        continuousListeningRecentAudioLevels.removeAll()
+        currentAudioPowerLevel = 0
+        recordedAudioPowerHistory = Array(
+            repeating: Self.recordedAudioPowerHistoryBaselineLevel,
+            count: Self.recordedAudioPowerHistoryLength
+        )
+        lastRecordedAudioPowerSampleDate = .distantPast
+
+        do {
+            try await openContinuousListeningEngineAndSession()
+            continuousListeningVADTask = Task { [weak self] in
+                await self?.runContinuousListeningVADLoop()
+            }
+            print("🎙️ BuddyDictationManager: continuous listening started")
+        } catch {
+            print("❌ BuddyDictationManager: failed to start continuous listening: \(error)")
+            endContinuousListening()
+        }
+    }
+
+    /// Closes the listening window: stops the VAD loop, the engine, and the
+    /// ASR session. Safe to call when no window is open.
+    ///
+    /// On the shared TTS engine the engine is only RELEASED if idle (never
+    /// stopped unconditionally — a follow-up reply may need it a moment later).
+    func endContinuousListening() {
+        guard isContinuousListening else { return }
+
+        isContinuousListening = false
+        continuousListeningVADTask?.cancel()
+        continuousListeningVADTask = nil
+        continuousListeningCallbacks = nil
+        resetContinuousListeningUtteranceState()
+        continuousListeningRecentAudioLevels.removeAll()
+
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        if isContinuousListeningOnSharedEngine {
+            isContinuousListeningOnSharedEngine = false
+            sharedVoicePlaybackEngineProvider?()?.removeInputTap()
+        } else {
+            audioEngine.stop()
+            audioEngine.inputNode.removeTap(onBus: 0)
+        }
+
+        currentAudioPowerLevel = 0
+        recordedAudioPowerHistory = Array(
+            repeating: Self.recordedAudioPowerHistoryBaselineLevel,
+            count: Self.recordedAudioPowerHistoryLength
+        )
+        lastRecordedAudioPowerSampleDate = .distantPast
+
+        print("🎙️ BuddyDictationManager: continuous listening ended")
+    }
+
+    /// Opens the first ASR session of the window and installs the tap.
+    ///
+    /// Voice processing is NOT enabled here: it belongs to the engine and is
+    /// applied by the engine at start-up, gated on the settings
+    /// (VoicePlaybackEngine's header). The tap's HOME is the shared TTS
+    /// playback engine whenever that engine is available — which is exactly
+    /// what makes its AEC able to cancel the answer out of the mic, since AEC
+    /// only works on audio rendered through the same engine. Only when the
+    /// shared engine is missing does the window fall back to this manager's
+    /// own engine, and that fallback runs without AEC; the echo filter in
+    /// `continuousListeningTranscriptIsEchoOfSpokenAnswer` is the backstop
+    /// there.
+    private func openContinuousListeningEngineAndSession() async throws {
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        if !transcriptionProvider.isConfigured {
+            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider(
+                transcriptionModelIDOverride: continuousListeningModelIDOverride
+            )
+            if reResolvedProvider.isConfigured {
+                print("🎙️ BuddyDictationManager: switching transcription provider \(transcriptionProvider.displayName) → \(reResolvedProvider.displayName)")
+                transcriptionProvider = reResolvedProvider
+                transcriptionProviderDisplayName = reResolvedProvider.displayName
+            }
+        }
+
+        if let sharedEngine = sharedVoicePlaybackEngineProvider?() {
+            do {
+                // The window can open right as the first TTS chunk starts
+                // (the arm happens on the first-audio hook), so this usually
+                // resolves to the playback engine, whose voice processing is what
+                // cancels the answer out of the microphone. With nothing playing
+                // it resolves to the engine that has no voice processing at all,
+                // so the rest of the listening window does not duck every other
+                // app on the machine.
+                sharedEngine.prepareCaptureHost()
+
+                activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
+
+                // The format is the engine's business, not ours: the two engines
+                // run at different formats, and a tap installed with the other
+                // one's format delivers silence rather than an error.
+                try await sharedEngine.installInputTap(bufferSize: 1024) { [weak self] buffer, _ in
+                    self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
+                    self?.updateAudioPowerLevel(from: buffer)
+                }
+                isContinuousListeningOnSharedEngine = true
+                print("🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine")
+                return
+            } catch {
+                // Falling back must not leave the shared engine half-configured.
+                sharedEngine.removeInputTap()
+                isContinuousListeningOnSharedEngine = false
+                print("⚠️ BuddyDictationManager: shared-engine listening failed (\(error)); falling back to the own engine")
+            }
+        }
+
+        isContinuousListeningOnSharedEngine = false
+        let inputNode = audioEngine.inputNode
+
+        activeTranscriptionSession = try await openContinuousListeningTranscriptionSession()
+
+        // BuddyPCM16AudioConverter rebuilds itself whenever the incoming
+        // format description changes, so no extra work is needed downstream.
+        let inputFormat = inputNode.outputFormat(forBus: 0)
+
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { [weak self] buffer, _ in
+            self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
+            self?.updateAudioPowerLevel(from: buffer)
+        }
+
+        audioEngine.prepare()
+        try audioEngine.start()
+    }
+
+    private func openContinuousListeningTranscriptionSession() async throws -> any BuddyStreamingTranscriptionSession {
+        try await transcriptionProvider.startStreamingSession(
+            keyterms: buildTranscriptionKeyterms(),
+            onTranscriptUpdate: { [weak self] transcriptText in
+                Task { @MainActor in
+                    guard let self, self.isContinuousListening else { return }
+                    // Keep the cumulative interim — the dead-session fallback
+                    // submits it as the final if the real final never lands.
+                    // Every utterance resets the state that clears this, so a
+                    // new utterance never inherits the old text.
+                    let didTranscriptChange = transcriptText
+                        != self.continuousListeningLatestInterimTranscript
+                    self.continuousListeningLatestInterimTranscript = transcriptText
+                    // The transcript is RECORDED here, never acted on: it is the
+                    // copy a dead session's fallback submits as the final, and
+                    // the text the send bar counts. It may not start a turn.
+                    //
+                    // That is not a policy choice, it is the reference's own
+                    // structure. VoiceWeb's cascade pipeline segments its STT by
+                    // the VAD — `class BailianASRService(SegmentedSTTService)`
+                    // (server.py:699) — which emits one final transcript per VAD
+                    // segment and never an interim (pipecat
+                    // services/stt_service.py:906-918). A transcript therefore
+                    // cannot exist until the VAD has already decided the user
+                    // spoke. `TranscriptionUserTurnStartStrategy` IS in VoiceWeb's
+                    // `_start` list (server.py:3754) and still cannot interrupt:
+                    // `UserTurnController`'s only dedup is `if self._user_turn:
+                    // return` (turns/user_turn_controller.py:353), and a segment's
+                    // transcript arrives in the same pass as the turn end, while
+                    // `_user_turn` is still true. In VoiceWeb the ONLY thing that
+                    // can interrupt mid-reply is the VAD's QUIET→SPEAKING
+                    // transition — one event per transition, after `start_secs` of
+                    // sustained confidence (pipecat audio/vad/vad_analyzer.py:211,
+                    // :238-243).
+                    //
+                    // Ported onto a free-running streaming ASR, that same
+                    // strategy becomes the one hole in the wall, because a
+                    // transcription no longer requires a VAD decision first. A
+                    // cloud recogniser handed the canceller's residual does not
+                    // return silence — it GUESSES, and it guesses single
+                    // characters: measured 2026-09-24, 「噻」 and 「是」 at mic peaks
+                    // of 0.214 and 0.241, both BELOW the 0.25 level gate, so no
+                    // VAD would have fired and every one of them used to stop the
+                    // answer mid-sentence. No threshold can take this job: the
+                    // reference's canceller is Chrome's, and Silero rates a
+                    // smeared echo of speech as speech at the same confidence as
+                    // clean speech (frac >= 0.7 of 0.90–0.94 against 0.89 clean,
+                    // measured 2026-09-24 on the shipped ONNX model). Only the
+                    // turn-start SOURCE can, so the VAD is the source.
+                    let trimmedTranscriptText = transcriptText
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedTranscriptText.isEmpty {
+                        // Diagnostic, deliberately NOT a gate. While an answer
+                        // plays, a transcript contained in the text being read
+                        // is our own voice reaching the recognizer; it should
+                        // not appear at all now that the canceller's output is
+                        // no longer re-gained, so one line per reply is what
+                        // tells a regression apart from a fix.
+                        let isBotSpeaking = self.isBotSpeakingProvider?() ?? false
+                        if isBotSpeaking, didTranscriptChange,
+                           Self.continuousListeningTranscriptIsEchoOfSpokenAnswer(
+                               transcriptText,
+                               spokenAnswerText: self.spokenAnswerTextProvider?() ?? ""
+                           ) {
+                            print("🎙️ BuddyDictationManager: our own answer is still reaching the recognizer (transcript: \"\(transcriptText)\", recent mic peak \(String(format: "%.3f", self.continuousListeningRecentPeakAudioLevel)))")
+                        }
+                    }
+                    // New words are still arriving, so the user is still
+                    // talking — restart the silence countdown. This is the
+                    // reference's 「有文本」 turn-end rule (pipecat's
+                    // SpeechTimeoutUserTurnStopStrategy only ends a turn once
+                    // text has stopped coming AND silence has sustained), and it
+                    // is what keeps a voice below the energy threshold from
+                    // being cut off mid-sentence by the backstop that exists to
+                    // catch exactly that voice. Keyed on a CHANGE, not on every
+                    // callback: a repeated identical transcript is not evidence
+                    // of speech.
+                    if didTranscriptChange, self.continuousListeningUtteranceActive {
+                        self.continuousListeningSilenceStartedAt = nil
+                    }
+                    self.continuousListeningCallbacks?.onTranscriptUpdate(transcriptText)
+                }
+            },
+            onFinalTranscriptReady: { [weak self] transcriptText in
+                Task { @MainActor in
+                    guard let self, self.isContinuousListening else { return }
+                    self.handleContinuousListeningFinalTranscript(transcriptText)
+                }
+            },
+            onError: { [weak self] error in
+                Task { @MainActor in
+                    guard let self, self.isContinuousListening else { return }
+                    print("❌ BuddyDictationManager: continuous listening session error: \(error)")
+                    Task {
+                        await self.restartListeningTranscriptionSession()
+                    }
+                }
+            }
+        )
+    }
+
+    /// One final transcript has landed for the current utterance. Short/empty
+    /// results (echo artefacts, a cough, nothing recognizable) are dropped;
+    /// real ones are handed to the caller as a new question. Either way the
+    /// next utterance needs a fresh websocket, so the session is replaced.
+    private func handleContinuousListeningFinalTranscript(_ transcriptText: String) {
+        // A final is only expected while a request is outstanding
+        // (isContinuousListeningAwaitingFinal). Without a request, this is a
+        // LATE final from a session the grace fallback already cancelled and
+        // replaced — its utterance was already submitted from the interim, so
+        // delivering it here would send the question twice.
+        guard isContinuousListeningAwaitingFinal else {
+            print("🎙️ BuddyDictationManager: ignoring a late final with no pending request (already handled by the fallback)")
+            Task {
+                await self.restartListeningTranscriptionSession()
+            }
+            return
+        }
+
+        let trimmedTranscriptText = transcriptText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        resetContinuousListeningUtteranceState()
+
+        let contentCharacterCount = Self.continuousListeningContentCharacterCount(in: trimmedTranscriptText)
+        if contentCharacterCount < continuousListeningMinimumTranscriptCharactersForThisWindow {
+            // **丢掉了就要说**。原来这里只有一行 print，用户那一侧完全看不到 ——
+            // 问题留在屏幕上、没有任何回答，看起来就是「它死了」。
+            print("🎙️ BuddyDictationManager: listening transcript too short to send (\(contentCharacterCount) content chars: \"\(trimmedTranscriptText)\")")
+            continuousListeningCallbacks?.onUtteranceDropped(trimmedTranscriptText)
+        } else {
+            continuousListeningCallbacks?.onUtteranceFinalized(trimmedTranscriptText)
+        }
+
+        // **这一句交付完，会话继续用**（原来这里会 `restartListeningTranscriptionSession()`
+        // —— 取消旧 socket 再立刻在同一个共享 URLSession 上建新的）。
+        //
+        // 官方实测（2026-09-24，直连真服务）：同一个 websocket 连着 commit 两次，
+        // 两次都给出各自的最终结果，而且 commit 之后服务端**不会**关连接。所以
+        // 「每句重开会话」不是协议要求，是我们自己加的限制 —— 而它的代价是
+        // **每一轮**都报 `Socket is not connected`、触发重连重试（最多 5×1s），
+        // 最后结果还得先等 2.4 秒宽限。用户报的「三段式特别慢、卡顿」就在这里。
+        activeTranscriptionSession?.beginNextUtterance()
+    }
+
+    /// Replaces the ASR session after a final transcript was delivered (the
+    /// provider closes its websocket and stops accepting audio then). The
+    /// engine and tap keep running; only the session reference changes.
+    private func restartListeningTranscriptionSession() async {
+        guard isContinuousListening else { return }
+
+        resetContinuousListeningUtteranceState()
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        for attemptIndex in 1...Self.continuousListeningSessionRetryCount {
+            do {
+                let replacementSession = try await openContinuousListeningTranscriptionSession()
+                guard isContinuousListening else {
+                    replacementSession.cancel()
+                    return
+                }
+                activeTranscriptionSession = replacementSession
+                return
+            } catch {
+                print("❌ BuddyDictationManager: listening session restart failed (attempt \(attemptIndex)): \(error)")
+                guard attemptIndex < Self.continuousListeningSessionRetryCount else { return }
+                do {
+                    try await Task.sleep(for: .seconds(1))
+                } catch {
+                    return
+                }
+                guard isContinuousListening else { return }
+            }
+        }
+    }
+
+    /// The idle→utterance transition, in ONE place because there are two
+    /// independent ways to discover that the user is speaking.
+    ///
+    /// 1. `trigger == "mic level"` — the local energy VAD's accumulator
+    ///    reached its threshold. Fast.
+    /// 2. `trigger == "ASR transcript"` — the speech service produced text.
+    ///    This is pipecat's `TranscriptionUserTurnStartStrategy` doing the same
+    ///    job in the reference: a VAD will always miss a quiet or unusual
+    ///    voice, but if the recognizer heard words then the user was
+    ///    unambiguously speaking. Slower to fire, and the safety net when
+    ///    path 1 does not.
+    ///
+    /// Opening an utterance and INTERRUPTING the answer are two decisions with
+    /// two different bars, and this function is where the difference lives.
+    ///
+    /// While an answer is being read aloud, a microphone-level rise is not
+    /// evidence that the USER spoke, and this measurement is unambiguous
+    /// (2026-09-24, four replies, user silent): the peak read 0.876 / 1.000 /
+    /// 1.000 / 1.000 while the answer played, against a room floor of 0.167 and
+    /// a converged echo of 0.111. Our own answer arrives at the microphone
+    /// LOUDER than the room it plays into, and once it clips a linear canceller
+    /// cannot remove it — so it clears the 0.25 speech threshold for the WHOLE
+    /// reply, not for a settling instant at its start. An earlier version
+    /// fenced only the first 0.8 s on the transient theory and the answer still
+    /// died; the leak outlives any grace.
+    ///
+    /// Nothing here is conditioned on the bot speaking, and nothing is
+    /// conditioned on the microphone level either — that is the whole of the
+    /// port. The reference's two strategies fire on their frame and stop:
+    /// `VADUserTurnStartStrategy` on any `VADUserStartedSpeakingFrame`,
+    /// `TranscriptionUserTurnStartStrategy` on any `InterimTranscriptionFrame`
+    /// (server.py:3753-3754), and `llm_response_universal.py:1328` broadcasts
+    /// the interruption off `enable_interruptions` alone, with no bot-speaking
+    /// gate on that branch.
+    ///
+    /// So the truth table is one row repeated — whatever the evidence, and
+    /// whether or not the bot is mid-sentence, the utterance opens and the
+    /// barge-in fires:
+    ///
+    ///     bot speaking?  trigger            utterance   barge-in
+    ///     no             mic level          opened      yes
+    ///     no             ASR transcript     opened      yes
+    ///     yes            mic level          opened      yes
+    ///     yes            ASR transcript     opened      yes
+    ///
+    /// What makes that safe is not a bar but the canceller. The microphone is
+    /// no longer re-gained — see `VoicePlaybackEngine`'s
+    /// `disableAutomaticGainControlOnProcessedUplink`, which is the detail that
+    /// was missing while every earlier attempt tried to survive a signal that
+    /// had our own answer pumped to full scale in it — so the bot's own voice
+    /// is gone before either path reads it, which is the position VoiceWeb is
+    /// in with the browser's AEC.
+    private func markContinuousListeningUtteranceActive(trigger: String) {
+        guard isContinuousListening, !isContinuousListeningAwaitingFinal else { return }
+
+        // Judged BEFORE the utterance-active guard below, because the level
+        // path usually opens the utterance first and the transcript path must
+        // still be able to interrupt it.
+        requestContinuousListeningBargeIn(trigger: trigger)
+
+        // Decision 2: open the utterance, once. The silence countdown and the
+        // maximum-utterance cap hang off this.
+        guard !continuousListeningUtteranceActive else { return }
+        continuousListeningUtteranceActive = true
+        continuousListeningSpeechAccumulatorSeconds = 0
+        continuousListeningUtteranceStartedAt = Date()
+        continuousListeningSilenceStartedAt = nil
+    }
+
+    /// Tells the caller to stop the answer and take the follow-up screenshot,
+    /// at most once per utterance.
+    ///
+    /// The transcript is logged WITH the trigger because the two paths fail
+    /// differently and the text is what tells them apart: an energy fire with
+    /// empty text means our own audio leaked back into the mic (echo), while
+    /// an ASR fire carrying a lone 「。」 or a
+    /// couple of echoed characters is the recognizer's own noise.
+    private func requestContinuousListeningBargeIn(trigger: String) {
+        guard isContinuousListening,
+              !isContinuousListeningAwaitingFinal,
+              !continuousListeningDidRequestBargeIn else { return }
+
+        continuousListeningDidRequestBargeIn = true
+        // TEMPORARY PROBE (2026-09-24): timestamped so this instant can be
+        // placed against the level curve and against the events either side of
+        // it (chunk start/end, the speaker mute toggle).
+        print("🎙️ [aecprobe] t=\(String(format: "%.3f", Date().timeIntervalSince1970)) event=bargeIn trigger=\(trigger)")
+        print("🎙️ BuddyDictationManager: continuous listening detected speech (\(trigger), recent mic peak \(String(format: "%.3f", continuousListeningRecentPeakAudioLevel)), transcript: \"\(continuousListeningLatestInterimTranscript)\")")
+        continuousListeningCallbacks?.onSpeechDetected()
+    }
+
+    /// The local VAD loop. 50 ms polling of the existing smoothed RMS level,
+    /// three states: idle (watching for speech to sustain long enough),
+    /// utterance active (watching for silence to sustain long enough, or the
+    /// maximum-utterance cap), and finalizing (handed to the session's
+    /// requestFinalTranscript). The engine is NEVER stopped here — that is the
+    /// one behavioural difference from the push-to-talk stop path.
+    private func runContinuousListeningVADLoop() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: Self.continuousListeningVADPollInterval)
+            guard isContinuousListening else { return }
+
+            let now = Date()
+            let audioLevel = currentAudioPowerLevel
+
+            // 自产爆音的静默窗内，电平一律不作为「有人在说话」的证据。
+            // 仍然把电平记进滚动窗口，这样日志里看得到当时到底有多响。
+            let isInsideSelfProducedTransientQuietWindow = self.isInsideSelfProducedTransientQuietWindow
+
+            // Refresh the rolling level window the refusal report reads.
+            // Sampled here rather than in the tap so the window means
+            // wall-clock time — "the last half second" — instead of "however
+            // many tap buffers happened to arrive".
+            continuousListeningRecentAudioLevels.append(audioLevel)
+            let recentLevelSampleCount = Self.continuousListeningRecentLevelSampleCount
+            if continuousListeningRecentAudioLevels.count > recentLevelSampleCount {
+                continuousListeningRecentAudioLevels.removeFirst(
+                    continuousListeningRecentAudioLevels.count - recentLevelSampleCount)
+            }
+
+            // TEMPORARY PROBE (2026-09-24): the leak curve, which no log has
+            // ever carried. The user's report is that the answer interrupts
+            // itself only in the first three or four turns of a session and
+            // never after ~30 s — a shape that needs a NUMBER to be read
+            // against, and the only number that can show it is the microphone
+            // level sampled while our own answer plays, next to a wall clock
+            // that the engine's own bring-up mark (`[aecprobe] … event=bringUp`)
+            // can be subtracted from.
+            //
+            // Printed only while the assistant is speaking, because that is the
+            // only window in which a level rise can be our own voice, and at
+            // most 10×/s so the curve stays readable.
+            let isAssistantSpeakingNow = isBotSpeakingProvider?() ?? false
+            if isAssistantSpeakingNow {
+                let probeNow = Date().timeIntervalSince1970
+                // 只在电平**值得看**的时候打（2026-09-24 收紧）。原来是无条件
+                // 每 100ms 一行，用来画那条泄漏曲线；曲线已经拿到了（自身音频
+                // 0.05–0.08，阈值 0.25），而它每秒十次的主线程 I/O 会和用户正在
+                // 评判的刘海动画抢同一条线程。阈值放到 0.15：健康的残留在 0.09
+                // 以下，任何能触发打断的泄漏都远在 0.25 之上，所以「有泄漏」
+                // 这件事一个也不会漏掉，安静时不再写日志。
+                if audioLevel >= 0.15 || continuousListeningRecentPeakAudioLevel >= 0.15 {
+                    print("🎙️ [aecprobe] t=\(String(format: "%.3f", probeNow)) event=level botSpeaking=true level=\(String(format: "%.3f", Double(audioLevel))) peak0.5s=\(String(format: "%.3f", Double(continuousListeningRecentPeakAudioLevel))) utteranceActive=\(continuousListeningUtteranceActive ? "yes" : "no")")
+                }
+            }
+
+            if isInsideSelfProducedTransientQuietWindow {
+                // 静默窗内什么都不判：不开新的一句，也不推进静音倒计时。
+                // 已经开着的那一句**不取消** —— 用户可能正在说话，不该被这一下打断。
+                continue
+            }
+
+            if continuousListeningUtteranceActive {
+                let utteranceDuration = now.timeIntervalSince(continuousListeningUtteranceStartedAt ?? now)
+
+                if utteranceDuration >= Self.continuousListeningMaximumUtteranceSeconds {
+                    requestContinuousListeningFinalTranscript()
+                    continue
+                }
+
+                if audioLevel < Self.continuousListeningSpeechLevelThreshold {
+                    if let silenceStartedAt = continuousListeningSilenceStartedAt,
+                       now.timeIntervalSince(silenceStartedAt) >= continuousListeningUtteranceEndSilenceSeconds {
+                        print("⏱️ [listen] silence lasted \(continuousListeningUtteranceEndSilenceSeconds)s — requesting the final transcript")
+                        requestContinuousListeningFinalTranscript()
+                    } else if continuousListeningSilenceStartedAt == nil {
+                        print("⏱️ [listen] silence began — the \(continuousListeningUtteranceEndSilenceSeconds)s auto-send countdown starts now")
+                        continuousListeningSilenceStartedAt = now
+                    }
+                } else {
+                    if continuousListeningSilenceStartedAt != nil {
+                        print("⏱️ [listen] speech resumed — the silence countdown is reset")
+                    }
+                    continuousListeningSilenceStartedAt = nil
+                }
+            } else {
+                // Idle: accumulate above-threshold time rather than requiring
+                // an unbroken run of it (see the accumulator's declaration).
+                let pollSeconds = Self.continuousListeningVADPollSeconds
+                if audioLevel >= Self.continuousListeningSpeechLevelThreshold {
+                    continuousListeningSpeechAccumulatorSeconds += pollSeconds
+                } else {
+                    continuousListeningSpeechAccumulatorSeconds = max(
+                        0,
+                        continuousListeningSpeechAccumulatorSeconds
+                            - pollSeconds * Self.continuousListeningSpeechAccumulatorReleaseRatio
+                    )
+                }
+                if continuousListeningSpeechAccumulatorSeconds >= Self.continuousListeningSpeechAccumulationSeconds {
+                    markContinuousListeningUtteranceActive(trigger: "mic level")
+                }
+            }
+        }
+    }
+
+    /// Whether the press has something to send. True ONLY while the listening
+    /// window is open — it is the shortcut-send branch's gate: a press while
+    /// this is true means "I'm done, send it", a press while it is false means
+    /// "stop".
+    ///
+    /// The bar is the SEND path's own bar
+    /// (`continuousListeningMinimumTranscriptCharacters`), deliberately: a press
+    /// may only mean "send" when the send could accept the result, or the press
+    /// is spent on a delivery `handleContinuousListeningFinalTranscript` drops
+    /// one line later. That mismatch is the 「按两次快捷键才能停止播放」 defect
+    /// (measured 2026-09-23): the recognizer emits 「啊。」/「嗯。」/「中间。」 off the
+    /// assistant's own leaked audio — one or two content characters each — and
+    /// every one of them cleared the old `> 0` test, so the first press went
+    /// into a send that could never happen and the user had to press again to
+    /// get playback stopped.
+    ///
+    /// Content is the ONLY evidence counted here; a confirmed utterance is
+    /// deliberately not enough on its own. The energy VAD reads raw mic level,
+    /// so the assistant's own residual echo trips it as readily as the user's
+    /// voice — the same run logged "detected speech (mic level, transcript:
+    /// \"\")" with nobody speaking. So a triggered-but-empty utterance says
+    /// nothing about the user, while real speech is never empty by the time
+    /// they press: the recognizer streams partial results throughout the
+    /// utterance, and the press comes after the user has finished talking. Real
+    /// speech below the bar is the cheaper mistake of the two — the press still
+    /// does something the user can see, and they can say it again, whereas a
+    /// press that does nothing at all is what they reported.
+    var isContinuousListeningUtterancePending: Bool {
+        guard isContinuousListening else { return false }
+        // A final is already in flight (the silence window expired, or an
+        // earlier press asked for one): the press means "send it now".
+        if isContinuousListeningAwaitingFinal { return true }
+
+        // TWO QUESTIONS, TWO ANSWERS. The user's own model of their shortcut,
+        // stated 2026-09-24:
+        //
+        //   「如果 AI 在回复的过程中，用户没有打断，按下了快捷键，这个时候的
+        //     快捷键就是终止播放…用户打断之后说了内容，再按住快捷键，它就是一个
+        //     发送的按钮」
+        //
+        // 1. IS THIS A SEND OR A STOP? The BARGE-IN answers it. The user has
+        //    interrupted this reply ⇒ the shortcut is SEND; they have not ⇒ it is
+        //    STOP and there is nothing of theirs to send.
+        // 2. IS THERE ANYTHING TO SEND? A content bar answers it — the same one
+        //    `handleContinuousListeningFinalTranscript` applies, because asking
+        //    for a final that bar will reject spends the press on a delivery that
+        //    is dropped one line later. The user experiences that as a press that
+        //    did nothing.
+        //
+        // The bar alone was the original bug: after a barge-in the interim only
+        // grows, so EVERY press took the send branch and the stop branch became
+        // unreachable — reported as 「没有增加这个停止运行的快捷键，变成了一个永远
+        // 都在循环」. The barge-in alone is the other half: without a bar, a
+        // one-character barge-in asks for a final that is then dropped, and the
+        // press does nothing. Both are needed, and they answer different
+        // questions.
+        guard continuousListeningDidRequestBargeIn else { return false }
+        return Self.continuousListeningContentCharacterCount(
+            in: continuousListeningLatestInterimTranscript
+        ) >= Self.continuousListeningMinimumTranscriptCharacters
+    }
+
+    /// Whether the user's speech is being captured RIGHT NOW inside a listening
+    /// window: true from the moment the VAD (or the recognizer) opens an
+    /// utterance until its final has been delivered or the utterance is
+    /// dropped.
+    ///
+    /// This — not `isContinuousListening` — is what `SystemSpeakerMuteCoordinator`
+    /// keys the system-speaker mute to, and the difference is a defect the user
+    /// reported as 「按键之前和之后都压低了电脑的系统音量」. `isContinuousListening` is
+    /// true for the whole ARMED window (30 s by default), so keying the mute to
+    /// it silenced the speakers for up to half a minute after every answer —
+    /// attenuation far outside the 「按住快捷键 → 任务结束」 span, and applied while
+    /// the user was doing nothing with the app at all. Keyed here, the mute
+    /// covers exactly the speech being recorded and lifts the instant the
+    /// utterance ends.
+    ///
+    /// The cost is accepted and bounded: the energy VAD needs
+    /// `continuousListeningSpeechAccumulationSeconds` (0.35 s) of speech before
+    /// it opens an utterance, so a follow-up question's first ~0.35 s is
+    /// recorded with other apps' audio still audible. That is the same trade
+    /// the onset debounce itself already makes, and it is strictly smaller than
+    /// muting for the window.
+    ///
+    /// Deliberately NOT a `@Published` property: nothing renders from it, and
+    /// the mute coordinator polls it every 0.5 s from the main actor.
+    var isContinuousListeningUtteranceInProgress: Bool {
+        isContinuousListening && continuousListeningUtteranceActive
+    }
+
+    /// The talk shortcut pressed mid-utterance is the explicit "I'm done —
+    /// send it" marker (the user's design, 2026-09-23): human thinking pauses
+    /// are unbounded, so no silence threshold can be the finished-speaking
+    /// verdict. The shortcut bypasses the silence wait entirely and requests
+    /// the final immediately.
+    func finishContinuousListeningUtteranceByShortcutSend() {
+        guard isContinuousListening, isContinuousListeningUtterancePending else { return }
+        print("🎙️ BuddyDictationManager: talk shortcut pressed mid-utterance — sending it now")
+
+        // Interim text with no confirmed utterance: promote it to a live
+        // utterance so the shared request path (final + grace fallback) runs.
+        if !continuousListeningUtteranceActive && !isContinuousListeningAwaitingFinal {
+            continuousListeningUtteranceActive = true
+            continuousListeningUtteranceStartedAt = Date()
+        }
+
+        // The shorter grace: the user is waiting on this send, and a healthy
+        // session answers a commit in ~0.27 s (see the constant).
+        requestContinuousListeningFinalTranscript(
+            graceSeconds: Self.continuousListeningShortcutSendGraceSeconds
+        )
+    }
+
+    /// Ends the current utterance and turns whatever audio is already in the
+    /// session into a final transcript.
+    ///
+    /// The grace fallback is load-bearing: a Bailian websocket can die with
+    /// "Socket is not connected" and deliver NEITHER a final NOR an error
+    /// event (measured 2026-09-23), and without a final the utterance is
+    /// never submitted and the window sits deaf — the 「说完它也不回复」
+    /// failure. If the final has not landed within
+    /// `continuousListeningFinalGraceSeconds`, the latest interim transcript
+    /// is submitted as the final instead.
+    private func requestContinuousListeningFinalTranscript(
+        graceSeconds requestedGraceSeconds: TimeInterval? = nil
+    ) {
+        // 宽限用**这个 provider 自己报的**值：实时 websocket 是 2.4 秒，非实时
+        // HTTP 是 12 秒（它要等一次往返，实测 12 秒音频 1.27 秒返回）。套用同一个
+        // 常量会把正常的 HTTP 请求提前掐掉 —— 那正是「最终结果拿不到、只能交中间
+        // 结果」的老毛病，只是换了个原因。
+        let graceSeconds = requestedGraceSeconds
+            ?? activeTranscriptionSession?.finalTranscriptFallbackDelaySeconds
+            ?? BuddyDictationManager.continuousListeningFinalGraceSeconds
+        // Capture BEFORE the reset — resetContinuousListeningUtteranceState
+        // clears the interim, and the fallback may still need it.
+        let fallbackTranscriptText = continuousListeningLatestInterimTranscript
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        resetContinuousListeningUtteranceState()
+        isContinuousListeningAwaitingFinal = true
+        continuousListeningFinalRequestGeneration += 1
+        let requestGeneration = continuousListeningFinalRequestGeneration
+
+        // The engine and tap stay up; the provider turns the audio it has
+        // already received into a final transcript, whose delivery handler
+        // swaps in a fresh session.
+        activeTranscriptionSession?.requestFinalTranscript()
+
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(graceSeconds))
+            guard let self, self.isContinuousListening, self.isContinuousListeningAwaitingFinal else { return }
+            // A newer request superseded this one (or a final landed and a new
+            // request began) — this task's session is no longer the live one.
+            guard self.continuousListeningFinalRequestGeneration == requestGeneration else { return }
+
+            print("⚠️ BuddyDictationManager: no final transcript arrived in \(graceSeconds)s — submitting the interim transcript instead")
+            self.isContinuousListeningAwaitingFinal = false
+
+            // Cancel BEFORE submitting: a dead session delivering a late
+            // final would double-submit the utterance. The replacement
+            // session below is what the next utterance speaks into.
+            self.activeTranscriptionSession?.cancel()
+            self.activeTranscriptionSession = nil
+
+            if fallbackTranscriptText.count >= Self.continuousListeningMinimumTranscriptCharacters {
+                self.continuousListeningCallbacks?.onUtteranceFinalized(fallbackTranscriptText)
+            } else {
+                print("🎙️ BuddyDictationManager: fallback interim transcript too short to send (\(fallbackTranscriptText.count) chars)")
+            }
+
+            await self.restartListeningTranscriptionSession()
+        }
+    }
+
+    private func resetContinuousListeningUtteranceState() {
+        continuousListeningSpeechAccumulatorSeconds = 0
+        continuousListeningUtteranceActive = false
+        continuousListeningDidRequestBargeIn = false
+        continuousListeningUtteranceStartedAt = nil
+        continuousListeningSilenceStartedAt = nil
+        continuousListeningLatestInterimTranscript = ""
+        isContinuousListeningAwaitingFinal = false
+    }
+
+    func cancelCurrentDictation(preserveDraftText: Bool = true) {
+        pendingStartRequestIdentifier = UUID()
+
+        guard isDictationInProgress else { return }
+
+        finalizeFallbackWorkItem?.cancel()
+        finalizeFallbackWorkItem = nil
+
+        if preserveDraftText {
+            let currentDraftText = composeDraftText(withTranscribedText: latestRecognizedText)
+            draftCallbacks?.updateDraftText(currentDraftText)
+        }
+
+        stopPushToTalkCapture()
+        activeTranscriptionSession?.cancel()
+
+        resetSessionState()
+    }
+
+    func requestInitialPushToTalkPermissionsIfNeeded() async {
+        guard needsInitialPermissionPrompt else { return }
+        guard !isDictationInProgress else { return }
+
+        lastErrorMessage = nil
+        currentPermissionProblem = nil
+        isPreparingToRecord = true
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+
+        do {
+            try await Task.sleep(for: .milliseconds(200))
+        } catch {
+            // If the task is cancelled while we are waiting for macOS to bring
+            // the app forward, we can safely continue into the permission check.
+        }
+
+        let hasPermissions = await requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts()
+        isPreparingToRecord = false
+
+        if hasPermissions {
+            lastErrorMessage = nil
+        }
+    }
+
+    private func startPushToTalk(
+        startSource: BuddyDictationStartSource,
+        currentDraftText: String,
+        updateDraftText: @escaping (String) -> Void,
+        submitDraftText: @escaping (String) -> Void,
+        shouldAutomaticallySubmitFinalDraftOnStop: Bool
+    ) async {
+        // Double insurance: CompanionManager ends the listening window before it
+        // starts a real recording, but a stray start arriving mid-window must
+        // not silently fight the listening session over the single engine.
+        guard !isContinuousListening else { return }
+        guard !isDictationInProgress else { return }
+
+        print("🎙️ BuddyDictationManager: start requested (\(startSource))")
+
+        if needsInitialPermissionPrompt {
+            print("🎙️ BuddyDictationManager: requesting initial permissions")
+            NSApplication.shared.activate(ignoringOtherApps: true)
+
+            do {
+                try await Task.sleep(for: .milliseconds(200))
+            } catch {
+                // If the task is cancelled while the app is being activated,
+                // we can safely continue into the permission request.
+            }
+        }
+
+        let startRequestIdentifier = UUID()
+        pendingStartRequestIdentifier = startRequestIdentifier
+
+        lastErrorMessage = nil
+        currentPermissionProblem = nil
+        isPreparingToRecord = true
+
+        guard await requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts() else {
+            print("🎙️ BuddyDictationManager: permissions missing or denied")
+            isPreparingToRecord = false
+            return
+        }
+
+        guard !Task.isCancelled else {
+            print("🎙️ BuddyDictationManager: start cancelled (shortcut released during permission check)")
+            isPreparingToRecord = false
+            return
+        }
+        guard pendingStartRequestIdentifier == startRequestIdentifier else {
+            print("🎙️ BuddyDictationManager: start request superseded")
+            isPreparingToRecord = false
+            return
+        }
+
+        draftTextBeforeCurrentDictation = currentDraftText
+        latestRecognizedText = ""
+        draftCallbacks = BuddyDictationDraftCallbacks(
+            updateDraftText: updateDraftText,
+            submitDraftText: submitDraftText
+        )
+        activeStartSource = startSource
+        shouldAutomaticallySubmitFinalDraft = shouldAutomaticallySubmitFinalDraftOnStop
+        hasFinishedCurrentDictationSession = false
+        isFinalizingTranscript = false
+        isRecordingFromMicrophoneButton = startSource == .microphoneButton
+        isRecordingFromKeyboardShortcut = startSource == .keyboardShortcut
+        isKeyboardShortcutSessionActiveOrFinalizing = startSource == .keyboardShortcut
+        currentAudioPowerLevel = 0
+        recordedAudioPowerHistory = Array(
+            repeating: Self.recordedAudioPowerHistoryBaselineLevel,
+            count: Self.recordedAudioPowerHistoryLength
+        )
+        microphoneButtonRecordingStartedAt = nil
+        lastRecordedAudioPowerSampleDate = .distantPast
+
+        guard !Task.isCancelled else {
+            print("🎙️ BuddyDictationManager: start cancelled (shortcut released before recording began)")
+            resetSessionState()
+            return
+        }
+
+        do {
+            try await startRecognitionSession()
+            guard !Task.isCancelled else {
+                print("🎙️ BuddyDictationManager: start cancelled (shortcut released during session start)")
+                stopPushToTalkCapture()
+                activeTranscriptionSession?.cancel()
+                resetSessionState()
+                return
+            }
+            if startSource == .microphoneButton {
+                microphoneButtonRecordingStartedAt = Date()
+            }
+            isPreparingToRecord = false
+            print("🎙️ BuddyDictationManager: recognition session started")
+        } catch {
+            isPreparingToRecord = false
+            lastErrorMessage = userFacingErrorMessage(
+                from: error,
+                fallback: "couldn't start voice input. try again."
+            )
+            print("❌ BuddyDictationManager: failed to start recognition session (\(transcriptionProvider.displayName)): \(error)")
+            resetSessionState()
+        }
+    }
+
+    private func stopPushToTalk(expectedStartSource: BuddyDictationStartSource) {
+        pendingStartRequestIdentifier = UUID()
+
+        guard activeStartSource == expectedStartSource else {
+            isPreparingToRecord = false
+            return
+        }
+        guard !isFinalizingTranscript else { return }
+
+        print("🎙️ BuddyDictationManager: stop requested (\(expectedStartSource))")
+
+        isRecordingFromMicrophoneButton = false
+        isRecordingFromKeyboardShortcut = false
+        isFinalizingTranscript = true
+
+        let finalTranscriptFallbackDelaySeconds = activeTranscriptionSession?.finalTranscriptFallbackDelaySeconds
+            ?? Self.defaultFinalTranscriptFallbackDelaySeconds
+
+        stopPushToTalkCapture()
+        activeTranscriptionSession?.requestFinalTranscript()
+
+        finalizeFallbackWorkItem?.cancel()
+        let shouldSubmitFinalDraftWhenFallbackTriggers = shouldAutomaticallySubmitFinalDraft
+        let fallbackWorkItem = DispatchWorkItem { [weak self] in
+            Task { @MainActor in
+                self?.finishCurrentDictationSessionIfNeeded(
+                    shouldSubmitFinalDraft: shouldSubmitFinalDraftWhenFallbackTriggers
+                )
+            }
+        }
+        finalizeFallbackWorkItem = fallbackWorkItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + finalTranscriptFallbackDelaySeconds,
+            execute: fallbackWorkItem
+        )
+    }
+
+    private func startRecognitionSession() async throws {
+        activeTranscriptionSession?.cancel()
+        activeTranscriptionSession = nil
+
+        // The provider was picked at init from what was configured then. If it is
+        // still unusable, re-resolve now — this is the path that makes a model
+        // configured in the settings window take effect on the next push-to-talk
+        // instead of on the next launch.
+        if !transcriptionProvider.isConfigured {
+            let reResolvedProvider = BuddyTranscriptionProviderFactory.makeDefaultProvider(
+                transcriptionModelIDOverride: continuousListeningModelIDOverride
+            )
+            if reResolvedProvider.isConfigured {
+                print("🎙️ BuddyDictationManager: switching transcription provider \(transcriptionProvider.displayName) → \(reResolvedProvider.displayName)")
+                transcriptionProvider = reResolvedProvider
+                transcriptionProviderDisplayName = reResolvedProvider.displayName
+            }
+        }
+
+        print("🎙️ BuddyDictationManager: opening transcription provider \(transcriptionProvider.displayName)\(continuousListeningModelIDOverride.map { "（角色指定：\($0)）" } ?? "")")
+
+        let activeTranscriptionSession = try await transcriptionProvider.startStreamingSession(
+            keyterms: buildTranscriptionKeyterms(),
+            onTranscriptUpdate: { [weak self] transcriptText in
+                Task { @MainActor in
+                    self?.latestRecognizedText = transcriptText
+                }
+            },
+            onFinalTranscriptReady: { [weak self] transcriptText in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.latestRecognizedText = transcriptText
+
+                    if self.isFinalizingTranscript {
+                        self.finishCurrentDictationSessionIfNeeded(
+                            shouldSubmitFinalDraft: self.shouldAutomaticallySubmitFinalDraft
+                        )
+                    }
+                }
+            },
+            onError: { [weak self] error in
+                Task { @MainActor in
+                    self?.handleRecognitionError(error)
+                }
+            }
+        )
+
+        self.activeTranscriptionSession = activeTranscriptionSession
+        print("🎙️ BuddyDictationManager: provider ready, starting audio engine")
+
+        // THE SHARED ENGINE CARRIES THE RECORDING, not one of its own.
+        //
+        // Two reasons, and the second is the one the user can hear.
+        //
+        // 1. It is the reference's rule and this file's own history: capture and
+        //    playback on ONE audio path. Measured 2026-09-24, stopping an engine
+        //    that shares the input device with a voice-processing engine kills
+        //    the voice one — which is why this app once went mute per reply and
+        //    took four rounds to diagnose.
+        // 2. It is what makes the FIRST question of a session fast. The shared
+        //    engine's bring-up (~2 s, enabling voice processing reconfigures the
+        //    whole IO) used to start when the first TTS chunk was ready; here it
+        //    starts the moment the recording does, so it runs while the user is
+        //    still speaking and is finished long before the reply exists. The
+        //    second question was already fast (measured 2026-09-24: ~1.1 s from
+        //    the card to the first sound inside a held session, against ~3 s
+        //    cold); this is the same trick applied to the first.
+        //
+        // `installInputTap` does the start itself — off the main actor, and
+        // verified — so nothing here needs to touch an `AVAudioEngine` directly.
+        let tapHandler: AVAudioNodeTapBlock = { [weak self] buffer, _ in
+            self?.activeTranscriptionSession?.appendAudioBuffer(buffer)
+            self?.updateAudioPowerLevel(from: buffer)
+        }
+        if let sharedEngine = sharedVoicePlaybackEngineProvider?() {
+            do {
+                try await sharedEngine.installInputTap(bufferSize: 1024, handler: tapHandler)
+                isPushToTalkCaptureOnSharedEngine = true
+                return
+            } catch {
+                print("⚠️ BuddyDictationManager: the shared engine would not carry the recording (\(error.localizedDescription)) — falling back to the own engine")
+                sharedEngine.removeInputTap()
+                isPushToTalkCaptureOnSharedEngine = false
+            }
+        }
+
+        // Fallback: the own engine, for the case where there is no shared one.
+        // Same shape as before — the AVAudioEngine calls run on a detached task
+        // so the notch's expansion animation is never blocked by them (see the
+        // 380 ms slide measurement this replaced).
+        let engineToStart = audioEngine
+        let engineStartFailure: Error? = await Task.detached(priority: .userInitiated) {
+            let inputNode = engineToStart.inputNode
+            let inputFormat = inputNode.outputFormat(forBus: 0)
+            inputNode.removeTap(onBus: 0)
+            inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat, block: tapHandler)
+            engineToStart.prepare()
+            do {
+                try engineToStart.start()
+                return nil
+            } catch {
+                return error
+            }
+        }.value
+        if let engineStartFailure {
+            throw engineStartFailure
+        }
+    }
+
+    private func handleRecognitionError(_ error: Error) {
+        if hasFinishedCurrentDictationSession {
+            return
+        }
+
+        if isFinalizingTranscript && !latestRecognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            finishCurrentDictationSessionIfNeeded(
+                shouldSubmitFinalDraft: shouldAutomaticallySubmitFinalDraft
+            )
+        } else {
+            print("❌ Buddy dictation error (\(transcriptionProvider.displayName)): \(error)")
+            lastErrorMessage = userFacingErrorMessage(
+                from: error,
+                fallback: "couldn't transcribe that. try again."
+            )
+            cancelCurrentDictation(preserveDraftText: false)
+        }
+    }
+
+    private func finishCurrentDictationSessionIfNeeded(shouldSubmitFinalDraft: Bool) {
+        guard !hasFinishedCurrentDictationSession else { return }
+        hasFinishedCurrentDictationSession = true
+
+        finalizeFallbackWorkItem?.cancel()
+        finalizeFallbackWorkItem = nil
+
+        let finalDraftText = composeDraftText(withTranscribedText: latestRecognizedText)
+        let finalTranscriptText = latestRecognizedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let currentDraftCallbacks = draftCallbacks
+
+        if !shouldSubmitFinalDraft && !finalDraftText.isEmpty {
+            currentDraftCallbacks?.updateDraftText(finalDraftText)
+        }
+
+        stopPushToTalkCapture()
+        activeTranscriptionSession?.cancel()
+
+        resetSessionState()
+
+        guard shouldSubmitFinalDraft else { return }
+        guard !finalTranscriptText.isEmpty else { return }
+
+        currentDraftCallbacks?.submitDraftText(finalDraftText)
+    }
+
+    private func composeDraftText(withTranscribedText transcribedText: String) -> String {
+        let trimmedTranscriptText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedTranscriptText.isEmpty else {
+            return draftTextBeforeCurrentDictation
+        }
+
+        let trimmedExistingDraftText = draftTextBeforeCurrentDictation
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedExistingDraftText.isEmpty else {
+            return trimmedTranscriptText
+        }
+
+        if draftTextBeforeCurrentDictation.hasSuffix(" ") || draftTextBeforeCurrentDictation.hasSuffix("\n") {
+            return draftTextBeforeCurrentDictation + trimmedTranscriptText
+        }
+
+        return draftTextBeforeCurrentDictation + " " + trimmedTranscriptText
+    }
+
+    private func resetSessionState() {
+        pendingStartRequestIdentifier = UUID()
+        activeTranscriptionSession = nil
+        draftCallbacks = nil
+        activeStartSource = nil
+        draftTextBeforeCurrentDictation = ""
+        latestRecognizedText = ""
+        shouldAutomaticallySubmitFinalDraft = false
+        hasFinishedCurrentDictationSession = false
+        isPreparingToRecord = false
+        isRecordingFromMicrophoneButton = false
+        isRecordingFromKeyboardShortcut = false
+        isKeyboardShortcutSessionActiveOrFinalizing = false
+        isFinalizingTranscript = false
+        currentAudioPowerLevel = 0
+        recordedAudioPowerHistory = Array(
+            repeating: Self.recordedAudioPowerHistoryBaselineLevel,
+            count: Self.recordedAudioPowerHistoryLength
+        )
+        microphoneButtonRecordingStartedAt = nil
+        lastRecordedAudioPowerSampleDate = .distantPast
+    }
+
+    private func buildTranscriptionKeyterms() -> [String] {
+        // Vocabulary the speech recognizer is likely to meet in this app's
+        // conversations. Kept in sync with the models the app actually calls —
+        // naming a provider the app no longer uses only biases the recognizer
+        // toward words the user is unlikely to say.
+        let baseKeyterms = [
+            "Wanna",
+            "Bailian",
+            "Qwen",
+            "DashScope",
+            "SwiftUI",
+            "Xcode",
+            "Vercel",
+            "Next.js",
+            "localhost"
+        ]
+
+        // Keyterms the user added in the settings window (听 → 热词), one per
+        // line. They join the built-in list rather than replacing it: the base
+        // terms describe the app itself, which the user did not opt out of.
+        let extraKeyterms = AppSettingsStore.snapshot()
+            .extraTranscriptionKeyterms
+            .split(whereSeparator: \.isNewline)
+            .map(String.init)
+
+        let combinedKeyterms = baseKeyterms + extraKeyterms + contextualKeyterms
+        var uniqueNormalizedKeyterms = Set<String>()
+        var orderedKeyterms: [String] = []
+
+        for keyterm in combinedKeyterms {
+            let trimmedKeyterm = keyterm.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedKeyterm.isEmpty else { continue }
+
+            let normalizedKeyterm = trimmedKeyterm.lowercased()
+            if uniqueNormalizedKeyterms.contains(normalizedKeyterm) {
+                continue
+            }
+
+            uniqueNormalizedKeyterms.insert(normalizedKeyterm)
+            orderedKeyterms.append(trimmedKeyterm)
+        }
+
+        return orderedKeyterms
+    }
+
+    private func updateAudioPowerLevel(from audioBuffer: AVAudioPCMBuffer) {
+        guard let channelData = audioBuffer.floatChannelData else { return }
+
+        let channelSamples = channelData[0]
+        let frameCount = Int(audioBuffer.frameLength)
+        guard frameCount > 0 else { return }
+
+        var summedSquares: Float = 0
+        for sampleIndex in 0..<frameCount {
+            let sample = channelSamples[sampleIndex]
+            summedSquares += sample * sample
+        }
+
+        let rootMeanSquare = sqrt(summedSquares / Float(frameCount))
+        let boostedLevel = min(max(rootMeanSquare * 10.2, 0), 1)
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            let smoothedAudioPowerLevel = max(
+                CGFloat(boostedLevel),
+                self.currentAudioPowerLevel * 0.72
+            )
+
+            let now = Date()
+            // PUBLISH AT A RATE THE UI CAN DRAW, not one per audio buffer.
+            //
+            // This runs ~47×/s (1024 frames at 48 kHz), and `currentAudioPowerLevel`
+            // is `@Published` → `CompanionManager.bindAudioPowerLevel` mirrors it
+            // into ITS `@Published` → `BlueCursorView` is an `@ObservedObject` on a
+            // FULL-SCREEN `NSPanel` per display, so every one of those writes
+            // re-evaluates a screen-sized view body, and each one re-arms that
+            // view's `.animation(.linear(duration: 0.08), value: audioPowerLevel)`.
+            // The overlay sits at `.screenSaver` level — above the notch — and the
+            // wings slide on the same main thread (audit, 2026-09-24).
+            //
+            // The tap goes live MID-SLIDE, which is why the wings hitch in the
+            // middle and are smooth afterwards: before that instant the overlay had
+            // only its TimelineView, and after it these implicit animations pile up
+            // on top of it. Reported as 「在中间卡顿一下，之后就很正常」.
+            //
+            // Skipping publishes costs the waveform nothing: the smoothing above is
+            // `max(new, old × 0.72)` and is still applied on EVERY buffer, so the
+            // value published after a skip is already the peak of the buffers that
+            // were skipped, and the 0.08 s animation interpolates between them.
+            let shouldPublishLevel =
+                now.timeIntervalSince(self.lastAudioPowerLevelPublishDate)
+                >= Self.audioPowerLevelPublishIntervalSeconds
+            if shouldPublishLevel {
+                self.lastAudioPowerLevelPublishDate = now
+                self.currentAudioPowerLevel = smoothedAudioPowerLevel
+            }
+
+            if now.timeIntervalSince(self.lastRecordedAudioPowerSampleDate)
+                >= Self.recordedAudioPowerHistorySampleIntervalSeconds {
+                self.lastRecordedAudioPowerSampleDate = now
+                self.appendRecordedAudioPowerSample(
+                    max(CGFloat(boostedLevel), Self.recordedAudioPowerHistoryBaselineLevel)
+                )
+            }
+        }
+    }
+
+    private func appendRecordedAudioPowerSample(_ audioPowerSample: CGFloat) {
+        var updatedRecordedAudioPowerHistory = recordedAudioPowerHistory
+        updatedRecordedAudioPowerHistory.append(audioPowerSample)
+
+        if updatedRecordedAudioPowerHistory.count > Self.recordedAudioPowerHistoryLength {
+            updatedRecordedAudioPowerHistory.removeFirst(
+                updatedRecordedAudioPowerHistory.count - Self.recordedAudioPowerHistoryLength
+            )
+        }
+
+        recordedAudioPowerHistory = updatedRecordedAudioPowerHistory
+    }
+
+    private func requestMicrophoneAndSpeechPermissionsIfNeeded() async -> Bool {
+        let hasMicrophonePermission = await requestMicrophonePermissionIfNeeded()
+        guard hasMicrophonePermission else {
+            lastErrorMessage = "microphone permission is required for push to talk."
+            return false
+        }
+
+        guard transcriptionProvider.requiresSpeechRecognitionPermission else {
+            return true
+        }
+
+        let hasSpeechRecognitionPermission = await requestSpeechRecognitionPermissionIfNeeded()
+        guard hasSpeechRecognitionPermission else {
+            lastErrorMessage = "speech recognition permission is required for push to talk."
+            return false
+        }
+
+        return true
+    }
+
+    /// macOS can show the microphone/speech sheet again if we accidentally fan out
+    /// multiple permission requests before the first one finishes. We keep exactly
+    /// one in-flight request task so rapid repeat presses all await the same result.
+    ///
+    /// After the task completes, we skip re-requesting for a short cooldown period
+    /// so macOS has time to update its authorization cache. This prevents the
+    /// permission dialog from popping up again on rapid follow-up presses.
+    private func requestMicrophoneAndSpeechPermissionsWithoutDuplicatePrompts() async -> Bool {
+        // If a permission request is already in-flight, reuse it.
+        if let activePermissionRequestTask {
+            return await activePermissionRequestTask.value
+        }
+
+        // If we just finished a permission request very recently, skip re-requesting.
+        // macOS can briefly report .notDetermined even after the user tapped Allow,
+        // so we trust the cached result for a short window.
+        if let lastPermissionRequestCompletedAt,
+           Date().timeIntervalSince(lastPermissionRequestCompletedAt) < 1.0 {
+            return AVCaptureDevice.authorizationStatus(for: .audio) != .denied
+                && AVCaptureDevice.authorizationStatus(for: .audio) != .restricted
+        }
+
+        let permissionRequestTask = Task { @MainActor in
+            await self.requestMicrophoneAndSpeechPermissionsIfNeeded()
+        }
+
+        activePermissionRequestTask = permissionRequestTask
+
+        let hasPermissions = await permissionRequestTask.value
+        activePermissionRequestTask = nil
+        lastPermissionRequestCompletedAt = Date()
+        return hasPermissions
+    }
+
+    private func requestMicrophonePermissionIfNeeded() async -> Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            currentPermissionProblem = nil
+            return true
+        case .notDetermined:
+            let isGranted = await withCheckedContinuation { continuation in
+                AVCaptureDevice.requestAccess(for: .audio) { isGranted in
+                    continuation.resume(returning: isGranted)
+                }
+            }
+            currentPermissionProblem = isGranted ? nil : .microphoneAccessDenied
+            return isGranted
+        case .denied, .restricted:
+            currentPermissionProblem = .microphoneAccessDenied
+            return false
+        @unknown default:
+            currentPermissionProblem = .microphoneAccessDenied
+            return false
+        }
+    }
+
+    private func requestSpeechRecognitionPermissionIfNeeded() async -> Bool {
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .authorized:
+            currentPermissionProblem = nil
+            return true
+        case .notDetermined:
+            let isGranted = await withCheckedContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { authorizationStatus in
+                    continuation.resume(returning: authorizationStatus == .authorized)
+                }
+            }
+            currentPermissionProblem = isGranted ? nil : .speechRecognitionDenied
+            return isGranted
+        case .denied, .restricted:
+            currentPermissionProblem = .speechRecognitionDenied
+            return false
+        @unknown default:
+            currentPermissionProblem = .speechRecognitionDenied
+            return false
+        }
+    }
+
+    func openRelevantPrivacySettings() {
+        let settingsURLString: String
+
+        switch currentPermissionProblem {
+        case .microphoneAccessDenied:
+            settingsURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
+        case .speechRecognitionDenied:
+            settingsURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_SpeechRecognition"
+        case nil:
+            settingsURLString = "x-apple.systempreferences:com.apple.preference.security"
+        }
+
+        guard let settingsURL = URL(string: settingsURLString) else { return }
+        NSWorkspace.shared.open(settingsURL)
+    }
+
+    private func userFacingErrorMessage(from error: Error, fallback: String) -> String {
+        if let localizedError = error as? LocalizedError,
+           let errorDescription = localizedError.errorDescription?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !errorDescription.isEmpty {
+            return errorDescription
+        }
+
+        let errorDescription = error.localizedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !errorDescription.isEmpty,
+           errorDescription != "The operation couldn’t be completed." {
+            return errorDescription
+        }
+
+        return fallback
+    }
+}

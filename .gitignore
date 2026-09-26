@@ -2,7 +2,7 @@ worker/node_modules/
 worker/.dev.vars
 
 # Holds the Alibaba Bailian API key. Never commit this — it would leak the key.
-leanring-buddy/BailianSecrets.plist
+Wanna/BailianSecrets.plist
 
 .DS_Store
 *.xcuserstate
@@ -12,13 +12,13 @@ releases/
 coding-plans/
 
 # Xcode per-user state and coverage artifacts — never part of the project
-leanring-buddy.xcodeproj/xcuserdata/
+Wanna.xcodeproj/xcuserdata/
 default.profraw
 
 # Local-only neighbours of the project: the user's own voice recordings
 # (`voice-agent/*.wav`), a side experiment that keeps a plaintext key
 # (`mini-agent/.deepseek-key`), design mockups and scratch test scratch.
-# None of it belongs to Clicky, and a stray `git add -A` would publish all of
+# None of it belongs to Wanna, and a stray `git add -A` would publish all of
 # it — so it is blocked here rather than left to be noticed at commit time.
 voice-agent/
 mini-agent/
@@ -37,15 +37,29 @@ tools/截图与OCR/ocr
 屏幕文字-*.txt
 
 # The running app appends to its own run log, so the newest one is never stable.
-开发经验/运行日志/clicky-冷重开验证-20260924-123505.log
+开发经验/运行日志/wanna-冷重开验证-20260924-123505.log
 
 # Python bytecode. Machine-generated, pinned to one interpreter — the file that
 # prompted this entry is `bench_route.cpython-314.pyc`, useless to any other Python —
 # and it stamps in the absolute path its source was compiled at. No amount of editing
 # the source corrects that, because the path comes from `__file__`, not from a literal.
 # It is how the file was caught: this repository moved on 2026-09-26 and the bytecode
-# still read `/Users/mjm/Desktop/clicky/…`, a location that had stopped existing, while
+# still read the checkout’s previous location under `~/Desktop/`, a location that had stopped existing, while
 # its source was perfectly clean. The 分流测速 benchmarks keep their sources and their
 # result files on purpose; the compiled form is not one of them.
 __pycache__/
 *.pyc
+
+# 运行时产物：app 自己读写的四个目录。2026-09-26 从桌面搬进 checkout 并改名
+# `Wanna*`，路径统一由 `WorkspaceDirectory` 给出 —— 它们跟着 checkout 走，但
+# 它们是**运行数据**，不是源码：Wanna录音 一个目录就是 240MB+、上千个 wav。
+# 不入库，否则第一次 `git add -A` 就会把用户的所有录音推上 GitHub。
+Wanna录音/
+Wanna图形/
+Wanna复盘/
+WannaAgents/
+
+# 参考资料：建这个项目时用过的调研素材（动画、几何示例、需求文档、复盘…）。
+# 2026-09-26 从桌面搬进来，方便和代码放在一起查阅。**放在 checkout 里但不入库**
+# —— 体积大，而且里面混着第三方内容（竞品截图之类），不该跟着仓库发出去。
+参考资料/

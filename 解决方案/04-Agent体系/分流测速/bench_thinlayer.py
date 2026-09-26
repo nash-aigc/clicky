@@ -144,7 +144,7 @@ def main():
               f" → 实得 {r['script']}({r['script_conf']:.2f})/{r['cls']}({r['cls_conf']:.2f})")
     total_cost = sum(r["cost"] for r in rows)
     print(f"总成本 ${total_cost:.6f}（{n} 次调用两问）")
-    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/clicky/解决方案/04-Agent体系/分流测速/薄层两问结果.json"
+    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/wanna/解决方案/04-Agent体系/分流测速/薄层两问结果.json"
     json.dump({"rows": rows, "score": {"script_ok": f"{cs}/{n}",
                                        "cls_ok": f"{cc_}/{n}",
                                        "both_ok": f"{both}/{n}",

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>LSUIElement</key>
+	<true/>
+	<key>VoiceTranscriptionProvider</key>
+	<string>bailian</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Wanna uses your microphone so you can talk to it</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Wanna needs screen recording access to see your screen and help you.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Wanna uses speech recognition to transcribe your voice when you talk to it</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Wanna uses the camera only while a voice chat is running, so the AI can see you when you turn the camera on. The video never leaves your Mac except to the model you configured, and it is not recorded.</string>
+</dict>
+</plist>

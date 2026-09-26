@@ -66,7 +66,7 @@
 ## 四、目录：按功能分类
 
 ```
-~/Documents/SuperAgent/APP/Design/clicky/tools/              ← 自定义工具库（进仓库、可版本化、**不含任何密钥**）
+~/Documents/SuperAgent/APP/Design/wanna/tools/              ← 自定义工具库（进仓库、可版本化、**不含任何密钥**）
 ├── manifest.json                    总清单（模型看到的只是它的投影）
 ├── 备忘录/
 │   ├── notes_create.py
@@ -85,7 +85,7 @@
 | 决定 | 理由 |
 |---|---|
 | **按功能分类**（你的建议） | 找工具、加工具、一眼看清哪些依赖 MCP，都变简单 |
-| **放仓库里**（不是 `~/.clicky/`） | 它是 **App 的能力**，该版本化、该能被 review；密钥仍然在外面（见 §七） |
+| **放仓库里**（不是 `~/.wanna/`） | 它是 **App 的能力**，该版本化、该能被 review；密钥仍然在外面（见 §七） |
 | 每个工具标注 `dependsOnMCP` | 那个 MCP 没装/挂了，这类工具要能被**明确标为不可用**，而不是跑起来才报错 |
 
 manifest 里一条长这样：

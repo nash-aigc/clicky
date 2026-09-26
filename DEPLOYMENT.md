@@ -56,12 +56,12 @@ Wanna ──→ 你在「模型设置」里指定的服务商（直连，无代�
 | 语音转文字 | AssemblyAI（经 Worker 拿临时 token） | `qwen3-asr-flash-realtime` websocket 直连 | `BailianRealtimeTranscriptionProvider.swift`（新） |
 | 看屏幕回答 | Anthropic Claude | `qwen3-vl-plus`（可选 flash）OpenAI 兼容 SSE | `BailianVisionChatAPI.swift`（新） |
 | 朗读 | ElevenLabs | `qwen-audio-3.1-tts-flash`，音色=赵今麦克隆音色（voice-enrollment 复刻，想换回官方音色改 `BailianConfiguration.textToSpeechVoice` 为 `yuxiaoyun_v3.1` 等） | `BailianTTSClient.swift`（新） |
-| 分析上报 | PostHog（传转写/回答/邮箱） | **无** | `ClickyAnalytics.swift` 已删 |
+| 分析上报 | PostHog（传转写/回答/邮箱） | **无** | `WannaAnalytics.swift` 已删 |
 | 密钥 | 硬编码 / Worker 环境变量 | gitignored `BailianSecrets.plist`（首次播种用） | `BailianConfiguration.swift`（新）、`AppBundleConfiguration.swift`（扩展） |
 | 模型可配置 | 三个模型全部写死在代码里，换模型要改代码重编译 | 设置窗口里填 URL / API Key / 模型名，**保存后立即生效** | `ModelSettingsView.swift`、`ModelConfiguration.swift`、`ModelConfigurationStore.swift`（均为新增） |
 
-删除的文件：`ClaudeAPI.swift`、`ElevenLabsTTSClient.swift`、`ClickyAnalytics.swift`。
-`worker/` 目录保留仅作参考，**不再被编译和调用**。
+删除的文件：`ClaudeAPI.swift`、`ElevenLabsTTSClient.swift`、`WannaAnalytics.swift`。
+`worker/` 目录（改造前的 Cloudflare 代理，转发 Anthropic / ElevenLabs）已移出仓库。
 `OpenAIAudioTranscriptionProvider.swift`、`AssemblyAIStreamingTranscriptionProvider.swift`、
 `OpenAIAPI.swift` 是死代码，保留未删（不影响构建）。
 
@@ -82,13 +82,13 @@ Wanna ──→ 你在「模型设置」里指定的服务商（直连，无代�
 </plist>
 ```
 
-一份放在仓库里（`leanring-buddy/BailianSecrets.plist`，已 gitignore，Xcode 打包用），
+一份放在仓库里（`Wanna/BailianSecrets.plist`，已 gitignore，Xcode 打包用），
 一份放在 `~/Library/Application Support/Wanna/BailianSecrets.plist`（兜底，
 防止 Xcode 没把 loose plist 拷进包里；`AppBundleConfiguration` 会自动找到它）：
 
 ```bash
 mkdir -p ~/Library/Application\ Support/Wanna
-cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
+cp Wanna/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 chmod 600 ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 ```
 
@@ -274,22 +274,22 @@ DeepSeek 的 key 在设置窗口的 DeepSeek 卡里，想换直接改；百炼�
 ```bash
 # 0)（国内网络）克隆前先测速选源
 for url in \
-  "https://github.com/nash-aigc/clicky/archive/refs/heads/main.tar.gz" \
-  "https://gh-proxy.com/https://github.com/nash-aigc/clicky/archive/refs/heads/main.tar.gz" \
-  "https://ghfast.top/https://github.com/nash-aigc/clicky/archive/refs/heads/main.tar.gz" \
-  "https://ghproxy.net/https://github.com/nash-aigc/clicky/archive/refs/heads/main.tar.gz"; do
+  "https://github.com/nash-aigc/wanna/archive/refs/heads/main.tar.gz" \
+  "https://gh-proxy.com/https://github.com/nash-aigc/wanna/archive/refs/heads/main.tar.gz" \
+  "https://ghfast.top/https://github.com/nash-aigc/wanna/archive/refs/heads/main.tar.gz" \
+  "https://ghproxy.net/https://github.com/nash-aigc/wanna/archive/refs/heads/main.tar.gz"; do
   echo "$url => $(curl -sL -o /dev/null --connect-timeout 5 --max-time 15 \
     -w '%{http_code} total:%{time_total}s' "$url")"
 done
 # 选最快且 200 的源来 clone（仓库大时差异明显）
 
 # 1) clone（以 gh-proxy 为例）
-git clone https://gh-proxy.com/https://github.com/nash-aigc/clicky.git
-cd clicky
+git clone https://gh-proxy.com/https://github.com/nash-aigc/wanna.git
+cd wanna
 
 # 2) 放密钥（见第 2 节的 plist 模板，两处都放）
 mkdir -p ~/Library/Application\ Support/Wanna
-cp leanring-buddy/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
+cp Wanna/BailianSecrets.plist ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 chmod 600 ~/Library/Application\ Support/Wanna/BailianSecrets.plist
 
 # 3) 通电自检（可选但强烈建议，30 秒确认 key/额度/三路都通）
@@ -308,7 +308,7 @@ curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST \
 ```
 
 ```text
-4) Xcode：打开 leanring-buddy.xcodeproj
+4) Xcode：打开 Wanna.xcodeproj
    - Settings → Accounts 登录 Apple ID（免费的就行）
    - app target → Signing & Capabilities：
      Team 选你的个人团队（Automatic + Apple Development）
