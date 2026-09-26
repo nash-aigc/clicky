@@ -350,40 +350,50 @@ struct HomeSpaceSidebarView: View {
     /// 一个任务一行。**高度 44（会话行是随内容的）、左边一颗渐变图标块、右边一颗会呼吸的
     /// 状态点** —— 这三样加起来就是"一眼分得清"。
     private func taskRow(_ agent: EphemeralAgent, indented: Bool) -> some View {
-        HStack(spacing: 8) {
-            if indented { Spacer().frame(width: 12) }
-            // 图标块：和桌面 HUD 的 chip 同一个语汇（渐变 + id 前两位），所以两处认得出是同一个东西。
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(DS.Colors.accentGradient)
-                .frame(width: 22, height: 22)
-                .overlay(
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.95))
-                )
-            VStack(alignment: .leading, spacing: 1) {
-                Text(agent.title)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(DS.Colors.textPrimary)
-                    .lineLimit(1)
-                // **id + 状态** 同一行：只画一颗小圆点的话，"状态"根本读不出来
-                //（用户要求「高度、图标、状态、呼吸灯」都要能区分 —— 2026-09-26 自查时
-                // 发现只有点、没有字）。做完的两种用静态文字，跑着/失败的带呼吸点。
-                HStack(spacing: 4) {
-                    Text(agent.id)
-                        .font(.system(size: 9.5, weight: .medium).monospaced())
-                        .foregroundColor(DS.Colors.textTertiary)
-                    Text(agent.status.displayName)
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundColor(taskStatusColor(agent.status))
+        // **点得动**（用户 2026-09-26：「无法点击」—— 这一行原来只是个 HStack，
+        // 连 `contentShape` 都没有）。点击落到既有那条链上：`manualPanelID` → 详情面板。
+        //
+        // 用 `manualPanelID` 而不是"选中/右侧显示"：面板那条链**已经被测试锁住**
+        //（`togglingAnAgentOpensThePanel`，而且去过修掉的那行会变红），而"右侧列显示
+        // 任务详情"要新增一整套内容列分支 —— 先让用户点得动、看得见，再谈放哪一列。
+        Button {
+            AgentActivityBoard.shared.togglePanel(agent.id)
+        } label: {
+            HStack(spacing: 8) {
+                if indented { Spacer().frame(width: 12) }
+                // 图标块：和桌面 HUD 的 chip 同一个语汇（渐变 + id 前两位）。
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(DS.Colors.accentGradient)
+                    .frame(width: 22, height: 22)
+                    .overlay(
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.95))
+                    )
+                VStack(alignment: .leading, spacing: 1) {
+                    // **标题也是时间**（和刘海卡片、和详情面板一致）。
+                    Text("\(agent.startTimeText)  \(agent.title)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(DS.Colors.textPrimary)
+                        .lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(agent.id)
+                            .font(.system(size: 9.5, weight: .medium).monospaced())
+                            .foregroundColor(DS.Colors.textTertiary)
+                        Text(agent.status.displayName)
+                            .font(.system(size: 9.5, weight: .medium))
+                            .foregroundColor(taskStatusColor(agent.status))
+                    }
                 }
+                Spacer(minLength: 4)
+                taskStatusDot(agent.status, size: 10)
             }
-            Spacer(minLength: 4)
-            taskStatusDot(agent.status, size: 10)
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 12)
-        .frame(height: 44)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        .pointerCursor()
     }
 
     /// 状态点。**跑着和失败会呼吸**（用户：「失败或者没有完成，应该有一个呼吸的效果，
