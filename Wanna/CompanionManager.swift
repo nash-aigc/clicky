@@ -1312,17 +1312,8 @@ final class CompanionManager: ObservableObject {
                 guard self.voiceState != .responding else { return }
 
                 if isFinalizing {
-                    // The observation refires on every combineLatest tick, so each
-                    // chime is guarded on the state actually changing — without that
-                    // a tick while already .processing would replay the send chime.
-                    if self.voiceState != .processing {
-                        SoundEffectPlayer.shared.play(.transcriptSent)
-                    }
                     self.voiceState = .processing
                 } else if isRecording {
-                    if self.voiceState != .listening {
-                        SoundEffectPlayer.shared.play(.listeningStarted)
-                    }
                     self.voiceState = .listening
                     self.noteVoiceActivity()
                     // The whole time the user is holding the shortcut (or a
@@ -2763,7 +2754,6 @@ final class CompanionManager: ObservableObject {
 
                             if !announcedAnswerStart, !accumulatedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                                 announcedAnswerStart = true
-                                SoundEffectPlayer.shared.play(.answerStarted)
                                 // The stream is live — the cursor-side answer card
                                 // may show its blurred writing tail from here on.
                                 self?.isAnswerStreamLive = true
@@ -3765,7 +3755,6 @@ final class CompanionManager: ObservableObject {
         guard !Task.isCancelled else { return }
 
         lastErrorMessage = failure.localizedDescription
-        SoundEffectPlayer.shared.play(.errorSurprised)
         print("⚠️ Companion fallback — speaking apology. Reason: \(failure.localizedDescription)")
 
         let utterance = "抱歉，我这边出了点问题，刚才没能答上来。再试一次好吗？"

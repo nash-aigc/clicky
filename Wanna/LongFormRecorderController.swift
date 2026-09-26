@@ -1145,7 +1145,6 @@ final class LongFormRecorderController: ObservableObject {
         guard !apiKey.isEmpty else {
             lastErrorMessage = LongFormRecorderError.missingAPIKey.description
             publishDiagnostic("拒绝开始：设置里没有 API Key")
-            playErrorSound()
             return
         }
 
@@ -1295,13 +1294,11 @@ final class LongFormRecorderController: ObservableObject {
             publishDiagnostic("开始录音 \(sessionID) · 档位 \(settings.recordingEffectiveResourceID)"
                           + " · 判重窗口 \(seamSuppressionMilliseconds)ms")
             startTimers()
-            SoundEffectPlayer.shared.play(.listeningStarted)
         } catch {
             publishDiagnostic("开始失败：\(error)")
             lastErrorMessage = error.localizedDescription
             teardownStorage()
         phase = .idle
-            playErrorSound()
         }
     }
 
@@ -1752,10 +1749,6 @@ final class LongFormRecorderController: ObservableObject {
         } catch {
             publishDiagnostic("写元数据失败：\(error)")
         }
-    }
-
-    private func playErrorSound() {
-        SoundEffectPlayer.shared.play(.errorSurprised)
     }
 
     /// `2026-09-25-190412-A3F2`。时间在前，用户在访达里按名字排序就是按时间排序。

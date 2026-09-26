@@ -18,14 +18,6 @@ final class SoundEffectPlayer {
     private static let fixedPlaybackVolume: Float = 0.5
 
     enum SoundEffect: String, CaseIterable {
-        /// Recording started — the user pressed the talk shortcut.
-        case listeningStarted = "wanna-text-open"
-        /// Transcript sent — the talk shortcut was released.
-        case transcriptSent = "wanna-text-send"
-        /// The model's answer started arriving.
-        case answerStarted = "wanna-text-receive"
-        /// Something failed — the companion says so out loud too.
-        case errorSurprised = "wanna-surprised"
         /// The notch sheet expanded —— 用户 2026-09-25 指定**苹果官方音效 08（导航推入）**：
         /// 「点击刘海时，音效08（导航推入）」。
         case notchRevealed = "ui-navigation-push"
