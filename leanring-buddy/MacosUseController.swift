@@ -1643,9 +1643,20 @@ enum MacosUseController {
 
     /// The fifth exit's script. One script, fixed path — same rule as the
     /// fourth exit: the model picks tasks for it, never commands.
-    /// Lives inside the geometry-dsl subproject, which is bundled in this repo.
+    /// Lives inside the geometry-dsl subproject, which sits in this checkout.
+    ///
+    /// **This one follows the checkout, and the checkout moves.** It read
+    /// `~/Desktop/clicky/…` until the repository moved to its current home on
+    /// 2026-09-26, at which point every `[SVG_AGENT:]` started answering
+    /// 「画图助手的脚本不见了」. The fourth exit's script does not have this
+    /// problem because it lives *outside* the repository and so never moved with
+    /// it; this one is inside, which makes moving the checkout an edit here.
+    ///
+    /// Deliberately not derived from `Bundle.main`: the app runs from DerivedData,
+    /// from `/Applications`, or from a `swiftc` probe directory, and none of those
+    /// bears any relation to where the sources are.
     private static let figureAgentScriptPath =
-        NSHomeDirectory() + "/Desktop/clicky/geometry-dsl/figure_agent.py"
+        NSHomeDirectory() + "/Documents/SuperAgent/APP/Design/clicky/geometry-dsl/figure_agent.py"
     private static let figureAgentTimeoutSeconds: TimeInterval = 180
 
     /// Renders the element list as prompt text.
