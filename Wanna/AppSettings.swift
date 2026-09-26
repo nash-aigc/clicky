@@ -1555,6 +1555,14 @@ nonisolated extension AppSettings {
         customSystemPrompt = try container.decodeIfPresent(String.self, forKey: .customSystemPrompt)
         // 老文件没有这个键 = 用户没设过默认会话 —— 与 nil 同义，不是错误。
         defaultSessionID = try container.decodeIfPresent(String.self, forKey: .defaultSessionID)
+        // **这两个必须在 CodingKeys 之外再单独解一次**（2026-09-26 踩到）：`init(from:)` 是
+        // 手写的，编码器是合成的 —— 所以只把字段加进 `CodingKeys` 会**写得进、读不出**：
+        // 磁盘上明明有值，每次启动却回落成空表，表现就是「模式改了、重启又变回去」。
+        // 判据在一行日志上（`🎛 [settings] 读盘成功 模式表=…`），不是猜出来的。
+        cardChatModeRawValues = try container.decodeIfPresent([String: String].self,
+                                                             forKey: .cardChatModeRawValues)
+        cardVoiceRoleIDs = try container.decodeIfPresent([String: String].self,
+                                                        forKey: .cardVoiceRoleIDs)
         // 两个都是"没设过 = 关"（仓规 E1：`Bool?` + `decodeIfPresent`）。
         reviewAgentReadsProject = try container.decodeIfPresent(Bool.self, forKey: .reviewAgentReadsProject)
         reviewAgentWritesProject = try container.decodeIfPresent(Bool.self, forKey: .reviewAgentWritesProject)

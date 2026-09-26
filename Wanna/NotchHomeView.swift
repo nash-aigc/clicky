@@ -66,10 +66,22 @@ struct NotchHomeView: View {
     @State private var composerConversationMode: ComposerConversationMode = .continuous
     /// 临时对话（阶段 4）：它自己的会话，**不碰主对话的任何状态**。
     @StateObject private var temporaryConversation = TemporaryConversationModel()
-    /// 「屏幕」这一格：勾着才在发送时带截图。**连续对话默认勾**（用户要求：
-    /// 「连续对话默认屏幕勾选、声音勾选」），不写进 AppSettings —— 它是「这一次对话」
-    /// 的属性，不是全局偏好。
-    @State private var sendsScreenshotWithQuestion = true
+
+    /// 每张卡片的聊天模式与角色。观察它，是为了让「在页头换一下模式」立刻改到这一页的
+    /// 行为（带不带截图），而不是等下一次重开面板。
+    @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
+
+    /// **这一轮带不带截图 —— 由卡片的聊天模式决定**（2026-09-26）。
+    ///
+    /// 它原来是一颗默认勾上的「屏幕」开关，现在那张卡片最上面那排模式里的**图文 / 文本**
+    /// 就是它（图文 = 带截图，文本 = 不带）。用户把模式做出来之后，那一格就是同一个问题的
+    /// 第二个答案，所以它下线了 —— 主对话的截图不再有自己的状态，只有一个来源。
+    ///
+    /// 拿不到当前会话时（还没建过会话）返回 true：那一刻的行为与今天一致。
+    private var sendsScreenshotWithQuestion: Bool {
+        guard let cardID = sessionsModel.activeSessionID?.uuidString else { return true }
+        return cardChatPreferences.mode(forCardID: cardID, kind: .mainLoop).sendsScreenshot
+    }
 
     @State private var composerDraft: String = ""
 
@@ -842,9 +854,9 @@ struct NotchHomeView: View {
     /// still spelled out in the empty-session hero.
     /// 输入框上方那一行。左 = 两种对话模式；右 = 新建 · 声音 · 音色。
     ///
-    /// 「屏幕」这一格**这一阶段先不放**：它要真的做到「不勾就不截图」，得给
-    /// `sendTranscriptToVisionChatWithScreenshot` 加一条不带图的路径（那条函数
-    /// 三百多行，中途插参数我不在这轮冒险）。放一个按了没反应的开关，比暂时不放更糟。
+    /// **「屏幕」只给临时对话留着了**（2026-09-26）：主对话带不带截图搬去了卡片页最上面
+    /// 那排模式（图文 / 文本）—— 同一件事不该有两个开关。临时对话不是卡片，所以它那颗
+    /// 还在，而且只在临时模式下画。
     private var composerControlsRow: some View {
         HStack(spacing: 6) {
             ForEach(ComposerConversationMode.allCases) { mode in
@@ -874,7 +886,9 @@ struct NotchHomeView: View {
                                  ? .white.opacity(0.38) : composerTemporaryTint.opacity(0.75))
                 .fixedSize()
 
-            screenshotChip
+            if composerConversationMode == .temporary {
+                screenshotChip
+            }
             soundChip
         }
     }
@@ -954,29 +968,20 @@ struct NotchHomeView: View {
         .help(helpText)
     }
 
-    /// 「屏幕」：勾着时每次发送都带上截图（2026-09-26 接线完成）。**默认勾**。
+    /// 「屏幕」：**只给临时对话用了**（2026-09-26）。
     ///
-    /// 关掉它之后这一轮真的不带图（`CompanionManager.submitTypedQuestion` →
-    /// `sendTranscriptToVisionChatWithScreenshot(sendsScreenshot:false)` → 不截屏、
-    /// 也不消费预截图）。写这一格时先做了「不勾就不截」那条链路再放按钮 ——
-    /// 一个按下去没反应的开关比没有更糟。
+    /// 主对话带不带截图现在是卡片页最上面那排模式里的事（**图文** = 带截图，**文本** =
+    /// 不带）—— 用户把这两个做成了显式模式之后，这一格就是同一个问题的第二个答案。
+    /// 临时对话不是卡片（它用完即弃、不写任何会话），所以它仍然要自己那颗。
     private var screenshotChip: some View {
-        // **两种对话各记各的**（用户：「临时对话，它的屏幕跟声音跟语音这两个是独立的…
-        // 它并不影响主循环的对话」）。连续对话默认勾、临时对话默认不勾。
-        let isOn = composerConversationMode == .continuous
-            ? sendsScreenshotWithQuestion
-            : temporaryConversation.sendsScreenshot
+        let isOn = temporaryConversation.sendsScreenshot
         return composerRowButton(title: "屏幕",
                                  systemImage: isOn ? "checkmark" : "rectangle.slash",
                                  isHighlighted: isOn,
                                  helpText: isOn
-                                     ? "每次发送都会带上截图（点击：不看屏幕）"
-                                     : "不看屏幕，纯文字提问（点击：恢复带截图）") {
-            if composerConversationMode == .continuous {
-                sendsScreenshotWithQuestion.toggle()
-            } else {
-                temporaryConversation.sendsScreenshot.toggle()
-            }
+                                     ? "临时对话每次发送都会带上截图（点击：不看屏幕）"
+                                     : "临时对话不看屏幕，纯文字提问（点击：恢复带截图）") {
+            temporaryConversation.sendsScreenshot.toggle()
         }
     }
 

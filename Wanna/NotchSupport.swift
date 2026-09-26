@@ -298,15 +298,41 @@ nonisolated enum NotchSupport {
     ///
     /// 写成三项之和而不是一个数字：这条线的全部意义就是两边对齐，任何一边的间距改
     /// 动都必须同时反映到另一边，而这个和是唯一能保证这件事的写法。
+    ///
+    /// **2026-09-26 加了一项**：右列页头之上多了「角色 + 文本/图文/语音/视频」那一排
+    ///（用户要求「放在这里，右侧分割线上面，左侧对齐」）。它占一整格，所以这条线的 y
+    /// 跟着下移 `cardChatModeBandHeight + cardChatModeBandBottomSpacing`。
+    ///
+    /// 左列**不受影响**：那条让两列对齐的「对话 / Agent / 语音聊天」切换器在
+    /// 2026-09-26 的卡片化改造里已经删掉了，侧栏顶上现在是搜索框、下面直接是卡片区，
+    /// y=75 那儿本来就没有线了。所以这个和今天只是右列自己的页头高度 —— 留成和式是
+    /// 为了下一次有人往页头里加东西时，仍然只有一个地方要改。
     static let contentColumnHeaderRuleY: CGFloat =
-        sheetHeaderTopInset + sidebarSectionSwitcherButtonHeight + sidebarSectionSwitcherBottomPadding
+        sheetHeaderTopInset
+        + cardChatModeBandHeight
+        + cardChatModeBandBottomSpacing
+        + sidebarSectionSwitcherButtonHeight
+        + sidebarSectionSwitcherBottomPadding
+
+    // MARK: - 「角色 + 四个模式」那一排（2026-09-26）
+
+    /// 模式行自己的高度。取 30 与侧栏那颗切换器同高（`sidebarSectionSwitcherButtonHeight`）
+    /// —— 两处的按钮看起来才像同一套控件；四颗两字标签 + 一颗「角色」在这一格里放得下。
+    static let cardChatModeBandHeight: CGFloat = 30
+
+    /// 模式行与它下面那行页头之间的细缝。
+    static let cardChatModeBandBottomSpacing: CGFloat = 6
 
     /// 右列页头**内容**能用的高度：从 `sheetHeaderTopInset` 的下沿到那条线。
     ///
     /// 三页的页头（对话页是顶栏，另两页是它们自己的标题行）都按这个高度排版，内容在
     /// 这条带子里垂直居中，于是每页的页头都恰好在那条线上结束、正文恰好从线下开始。
+    ///
+    /// **它不含模式行**（模式行有自己的 `cardChatModeBandHeight`）：这一格是"每页自己那行
+    /// 页头"的高度，所以三个内容视图里那句 `frame(height:)` 一个字都不用改，
+    /// 它们只是各自被套进一个 `VStack`，上面多一行模式条而已。
     static var contentColumnHeaderBandHeight: CGFloat {
-        contentColumnHeaderRuleY - sheetHeaderTopInset
+        sidebarSectionSwitcherButtonHeight + sidebarSectionSwitcherBottomPadding
     }
 
     /// The expanded sheet's size — the expanded sheet is *large*, a real

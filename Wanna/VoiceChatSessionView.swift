@@ -42,10 +42,26 @@ struct VoiceChatSessionView: View {
     /// 这一条订阅**只落在这个视图上**，所以逐字重算的范围是内容列，而不是整个面板。
     @ObservedObject private var streamingAnswerTextStore: VoiceChatController.VoiceChatStreamingTextStore
 
-    init(controller: VoiceChatController) {
+    init(controller: VoiceChatController,
+         cardID: String? = nil,
+         cardKind: CardKind = .mainLoop) {
         self.controller = controller
+        self.cardID = cardID
+        self.cardKind = cardKind
         self.streamingAnswerTextStore = controller.streamingAnswerTextStore
     }
+
+    /// **这一页此刻属于哪张卡片**（2026-09-26）。
+    ///
+    /// nil = 不从卡片进来（旧的「语音聊天」分区，侧栏那颗「角色」走的路）—— 那一页脖子上
+    /// 没有卡片，所以不画模式条，聊天类型仍然由页头那个分段控件决定。
+    /// 有值时：模式条取代那个分段控件（`语音`/`视频` 两个模式就是那两种聊天类型），
+    /// 而且阶段 3/4 会把「这段会话的记录 + 角色提示词」组装进系统提示词、把回话写回这条会话。
+    let cardID: String?
+    let cardKind: CardKind
+
+    /// 每张卡片的模式与角色 —— 只读它来决定"现在是不是视频模式"这类事。
+    @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
 
     @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
@@ -366,14 +382,33 @@ struct VoiceChatSessionView: View {
     private var header: some View {
         VStack(spacing: 0) {
 
+            // ── 模式行（2026-09-26）────────────────────────────────────────
+            // 从卡片进来时，最上面这排是共用的 `[角色][文本][图文][语音][视频]` ——
+            // 用户把它钉在了「右侧分割线上面，左侧对齐」，而这一带正是代码里叫
+            // 「分割线**上方**」的那一格（见下面那段注释）。
+            //
+            // **它取代了原来那个 `[视频聊天 | 语音聊天]` 分段控件**：那两个按钮本来就是
+            // 这条分流，现在「语音」「视频」两个模式就是它，多出来的是「文本」「图文」——
+            // 点它们会换页（回到这一页时聊天类型又跟着回来）。
+            if let cardID {
+                CardChatModeBar(cardID: cardID,
+                                cardKind: cardKind,
+                                onModeSelected: { _ in syncChannelToCardChatMode() },
+                                preferences: cardChatPreferences)
+            }
+
             // ── 分割线**上方**（用户 2026-09-24 的第三次重排）──────────────
             //   左：`[视频聊天 | 语音聊天]` 分段控件 + 当前模式的绿色文字
+            //       （从卡片进来时那一格已经搬到上面那排模式里，这里只剩音色）
             //   右：摄像头 · 屏幕 · 语速（靠右，依次）
             //
             // **语速不受分流影响**（用户明确要求：它是全局的，任何分流都不改它），
             // 所以它只是位置在这，行为与聊天类型无关。
             HStack(spacing: 8) {
-                channelSegmentedControl
+                // 不从卡片进来时（旧的「语音聊天」分区）才需要它 —— 那条路上没有模式条。
+                if cardID == nil {
+                    channelSegmentedControl
+                }
                 currentVoiceLabel
 
                 Spacer(minLength: 8)
@@ -402,6 +437,8 @@ struct VoiceChatSessionView: View {
 
                 speedMenuButton
                     .background(headerAnchorReporter(.speed))
+
+                connectButton
             }
             .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
             .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
@@ -423,7 +460,117 @@ struct VoiceChatSessionView: View {
             // 设置页是整窗独占的，所以"改完设置回到这一页"一定走一次
             // onAppear —— 这里重读一次，两颗开关就不会拿着上一个模式的值。
             controller.reloadDeviceSwitches()
+            syncChannelToCardChatMode()
         }
+        // 模式条上换了模式（语音 ↔ 视频）：聊天类型跟着走。**用 `onChange` 而不是
+        // 只在点按钮时同步**，因为模式也可能在别处被改（另一页点的那一下），
+        // 而这一页这时正挂在屏幕上。
+        .onChange(of: currentCardChatMode) { _, _ in
+            syncChannelToCardChatMode()
+        }
+    }
+
+    /// 这张卡片此刻选的是哪种模式（不从卡片进来时是 nil）。
+    private var currentCardChatMode: CardChatMode? {
+        guard let cardID else { return nil }
+        return cardChatPreferences.mode(forCardID: cardID, kind: cardKind)
+    }
+
+    /// 把「语音 / 视频」两个模式落到 `controller.selectedChannel` 上。
+    ///
+    /// 用户：「语音聊天与视频聊天分别使用对应的全双工三段式模式」—— 所以两个模式就是
+    /// 这条分流本身。**语音那一档永远不开画面**这条闸门住在聊天类型上
+    ///（`VoiceCatalog.capability`），所以让模式驱动聊天类型，闸门才是自动生效的。
+    private func syncChannelToCardChatMode() {
+        guard let channel = currentCardChatMode?.voiceChatChannel,
+              controller.selectedChannel != channel else { return }
+        controller.selectChannel(channel)
+    }
+
+    /// **连接 / 连接中 / 挂断** —— 这一页唯一能开始一场会话的入口。
+    ///
+    /// 它原先住在侧栏角色行的右端（用户第 5 条要的"鼠标移动距离小"）。2026-09-26 的
+    /// 卡片化改造把侧栏那一列换成了卡片区，角色列表只剩收起态那条细栏 —— 于是整条路上
+    /// **`connectToRole` 一个调用点都没有了**：语音聊天能打开、能选角色，但永远连不上。
+    /// 而「语音 / 视频」两个模式必用这一步，所以它搬到这一页的页头（那一排的最右端），
+    /// 一键三态，不再有第二个地方能连。
+    private var connectButton: some View {
+        switch controller.connectionPhase {
+        case .connected:
+            return AnyView(headerActionButton(
+                title: "挂断",
+                systemImage: "phone.down.fill",
+                tint: Color(red: 0.95, green: 0.42, blue: 0.40),
+                help: "断开这一场语音聊天（也可以点刘海右侧那颗红色电话）"
+            ) {
+                controller.disconnectCurrentSession()
+            })
+        case .connecting:
+            return AnyView(headerActionButton(
+                title: "连接中…",
+                systemImage: "ellipsis",
+                tint: Color(red: 0.98, green: 0.73, blue: 0.14),
+                help: "正在建立连接",
+                isEnabled: false,
+                action: {}
+            ))
+        case .idle:
+            return AnyView(headerActionButton(
+                title: "连接",
+                systemImage: "phone.fill",
+                tint: DS.Colors.success,
+                help: "开始这一场语音聊天"
+            ) {
+                controller.connectToRole(roleIDForConnect)
+            })
+        }
+    }
+
+    /// 连接用哪个角色：**卡片选了哪个就用哪个**（没有卡片时回落到侧栏那份选择）。
+    ///
+    /// 卡片侧的选择住在 `AppSettings`（每张卡片各记各的），而控制器只认一个
+    /// `selectedRoleID` —— 所以连接这一下必须显式把它交给控制器，否则两个人各说各话。
+    private var roleIDForConnect: String {
+        guard let cardID, let mode = currentCardChatMode else {
+            return controller.selectedRoleID ?? VoiceChatRoleStore.defaultRole().id
+        }
+        return cardChatPreferences.resolvedRole(forCardID: cardID, kind: cardKind, mode: mode).id
+    }
+
+    /// 页头那颗动作按钮（连接 / 连接中 / 挂断）。形状与 `deviceToggleButton` 同一套
+    /// —— 它们并排站在一起，圆角与高度必须是同一个来源。
+    private func headerActionButton(title: String,
+                                    systemImage: String,
+                                    tint: Color,
+                                    help: String,
+                                    isEnabled: Bool = true,
+                                    action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .medium))
+                Text(title)
+                    .font(.system(size: Self.headerControlFontSize, weight: .medium))
+                    .lineLimit(1)
+            }
+            .foregroundColor(isEnabled ? tint : tint.opacity(0.55))
+            .padding(.horizontal, Self.headerControlHorizontalPadding)
+            .frame(height: Self.headerControlHeight)
+            .fixedSize(horizontal: true, vertical: false)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(isEnabled ? tint.opacity(0.18) : Color.white.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .strokeBorder(isEnabled ? tint.opacity(0.5) : Color.clear, lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .pointerCursor()
+        .help(help)
     }
 
     // MARK: - 聊天类型分段控件 + 当前模式
@@ -1882,9 +2029,7 @@ struct VoiceChatSessionView: View {
             Image(systemName: "waveform.circle")
                 .font(.system(size: 34))
                 .foregroundColor(.white.opacity(0.25))
-            // The wording follows the interaction: choosing a role in the
-            // sidebar only selects it now — the connection is started by the
-            // 连接 button on that role's own row.
+            // 引导语跟着交互走：见 `emptyHintHeadline` —— 连接按钮现在在这一页的页头里。
             Text(emptyHintHeadline)
                 .font(.system(size: 13))
                 .foregroundColor(.white.opacity(0.45))
@@ -1896,14 +2041,18 @@ struct VoiceChatSessionView: View {
         .padding(.top, 60)
     }
 
-    /// 引导语跟着交互走：连接按钮现在在**角色卡片自己的右侧**（用户第 5 条），
-    /// 所以这里不能再写「点右上角连接」。
+    /// 引导语要说清**这一页上**该点哪里。
+    ///
+    /// 它原本写的是「点它右边的「连接」」—— 那颗按钮住在侧栏的角色行上，而侧栏的角色列表
+    /// 在 2026-09-26 的卡片化改造里被卡片区取代了，于是那句话指向了一个**不存在**的按钮
+    ///（`connectToRole` 当时一个调用点都没有：语音聊天根本连不上）。连接按钮现在是这一页
+    /// 页头里那颗（`connectButton`），所以两种情况的说法都跟着改。
     private var emptyHintHeadline: String {
         if let selectedRoleID = controller.selectedRoleID,
            let role = controller.rolePresets.first(where: { $0.id == selectedRoleID }) {
-            return "已选中「\(role.name)」，点它右边的「连接」开始"
+            return "已选中「\(role.name)」，点上面的「连接」开始"
         }
-        return "点左侧一个角色，再点它右边的「连接」"
+        return "点上面的「连接」开始"
     }
 
     // MARK: - Composer

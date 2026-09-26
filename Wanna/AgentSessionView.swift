@@ -53,9 +53,15 @@ struct AgentSessionView: View {
     /// @State，保存设置时靠 `.wannaAppSettingsChanged` 重读。
     @State private var answerCardStyle: AnswerCardStyle = AppSettingsStore.snapshot().answerCardStyle
 
+    /// 每张卡片的聊天模式 —— 只为了让换模式那一下重绘这一页（模式条自己也在观察它）。
+    @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
+
     var body: some View {
         if let agent = agentSessionManager.selectedAgent {
             VStack(spacing: 0) {
+                // **模式行在这张卡片页的页头之上**（2026-09-26）：与主循环页、
+                // 语音页同一个视图、同一个 y（右列那条横线之上）。
+                cardChatModeBar(agent)
                 agentHeader(agent)
                 transcriptFlow(agent)
                 errorLine
@@ -169,7 +175,21 @@ struct AgentSessionView: View {
         // 「每一个页面的右侧增加一条线…线上面是相关的参数部分」）。原来是内容底边距
         // 10，换成固定高度后由这条带自己决定内容的位置。
         .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
-        .padding(.top, NotchSupport.sheetHeaderTopInset)
+        // **顶边距不在这里**：这一行上面现在还有一排模式条，让开刘海的
+        // `sheetHeaderTopInset` 属于整块页头（模式条自己带上了它，见 `cardChatModeBar`）。
+    }
+
+    /// 卡片页最上面那排 `[角色][文本][图文][语音][视频]`。
+    ///
+    /// 它跟主循环页、语音页共用同一个视图，所以位置、观感、高度不可能分叉；这一页
+    /// 只是把它摞在自己的 `agentHeader` 上面，并**带上让开刘海的那段顶边距**（下面
+    /// 那行页头因此不再自己 pad 一次）。
+    private func cardChatModeBar(_ agent: AgentSession) -> some View {
+        let cardKind: CardKind = agent.name == AgentCardModel.reviewAgentName ? .review : .claudeCode
+        return CardChatModeBar(cardID: agent.id.uuidString,
+                               cardKind: cardKind,
+                               preferences: cardChatPreferences)
+            .padding(.top, NotchSupport.sheetHeaderTopInset)
     }
 
     /// The header's 「打开」 control: pick a folder, then work in it.

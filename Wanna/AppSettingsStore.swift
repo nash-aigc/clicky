@@ -133,12 +133,21 @@ nonisolated enum AppSettingsStore {
     /// behavior every build of this app has had, so it is the honest default.
     private static func loadSettingsFromDiskOrDefaults() -> AppSettings {
         guard let settingsFileURL,
-              let storedSettingsData = try? Data(contentsOf: settingsFileURL),
-              let decodedSettings = try? JSONDecoder().decode(AppSettings.self, from: storedSettingsData)
-        else {
+              let storedSettingsData = try? Data(contentsOf: settingsFileURL) else {
+            // 没有文件 = 第一次运行，是正常状态，不打日志。
             return AppSettings()
         }
-
-        return decodedSettings.clamped()
+        do {
+            return try JSONDecoder().decode(AppSettings.self, from: storedSettingsData).clamped()
+        } catch {
+            // **解不出来时整份设置回落成默认，而这件事必须是看得见的。**
+            //
+            // 原来是 `try?`：一个字段的类型写错（或者像 2026-09-26 那样，新字段只加进了
+            // `CodingKeys` 而忘了在 `init(from:)` 里解一次）会让整份设置静默变成出厂值 ——
+            // 表现是「我明明保存了，重启就没了」，而磁盘上明明写着值。这一行就是那个
+            // 判据；没有它，这类 bug 只能靠猜。
+            print("❌ [settings] 解不出来，整份回落默认：\(error)")
+            return AppSettings()
+        }
     }
 }

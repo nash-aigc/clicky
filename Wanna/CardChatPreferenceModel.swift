@@ -46,6 +46,10 @@ final class CardChatPreferenceModel: ObservableObject {
     }
 
     func setMode(_ mode: CardChatMode, forCardID cardID: String) {
+        // **一行日志，因为「模式改了没生效」唯一可核对的判据就是它**：哪张卡片、写成了
+        // 什么、写完的表长什么样。2026-09-26 就是靠这一行抓到「写得进、读不出」那个
+        // 解码 bug 的（只加 `CodingKeys` 忘了加 `init(from:)` 那两行）。
+        print("🎛 [mode] card=\(cardID.prefix(8)) → \(mode.rawValue)")
         save(AppSettingsStore.snapshot().withCardChatMode(mode, forCardID: cardID),
              what: "聊天模式（\(mode.displayName)）")
     }

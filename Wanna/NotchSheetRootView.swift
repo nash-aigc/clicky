@@ -26,6 +26,9 @@ struct NotchSheetRootView: View {
     /// the app) — observed because both the 语音聊天 sidebar list and the
     /// content column read its published presets / phase / transcript.
     @ObservedObject private var voiceChatController: VoiceChatController
+    /// 每张卡片的聊天模式与角色。设置本身住在磁盘上（`AppSettings.json`），这个模型只是
+    /// 把它读成视图要的形状 —— 观察它是为了让「切一下模式」立刻重绘右列。
+    @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
     /// 「复制全文」按下后的对勾态，1.4 秒后自己回去。
     @State private var copyFullConversationDidSucceed = false
     @State private var copyFullConversationResetTask: Task<Void, Never>?
@@ -89,6 +92,50 @@ struct NotchSheetRootView: View {
         self.revealSheetAction = revealSheetAction
         self.toggleFullScreenAction = toggleFullScreenAction
         self.audioHistoryProvider = audioHistoryProvider
+    }
+
+    // MARK: - 当前卡片与它的聊天模式（2026-09-26）
+
+    /// 右列现在属于哪一类卡片。
+    ///
+    /// 「分区决定哪张卡片」这条线是从旧结构继承下来的（`.conversations` = 主循环卡片，
+    /// `.agents` = 选中的那个 agent 卡片），今天依然成立：卡片区点一下就会把分区一起切
+    ///（`AgentCardModel.open`）。模式与角色都按这张卡片取。
+    private var activeCardKind: CardKind {
+        guard agentSessionManager.selectedSidebarSection == .agents else { return .mainLoop }
+        // 复盘 agent 也是一个 `AgentSession`，但它的默认模式与 Claude Code 一样是文本，
+        // 所以这个区分只影响"记的是哪张卡片的模式"，不影响默认值。
+        return agentSessionManager.selectedAgent?.name == AgentCardModel.reviewAgentName
+            ? .review
+            : .claudeCode
+    }
+
+    /// 右列现在属于哪张卡片（= 背后那条会话 / 代理记录的 uuidString，与卡片区同一个键）。
+    private var activeCardID: String? {
+        switch agentSessionManager.selectedSidebarSection {
+        case .conversations: return sessionsModel.activeSessionID?.uuidString
+        case .agents: return agentSessionManager.selectedAgentID?.uuidString
+        // 旧的「语音聊天」分区（侧栏那颗「角色」进的页）**不归任何卡片** ——
+        // 所以它没有模式条。那条路在阶段 5 改成直进角色编辑页。
+        case .voiceChat: return nil
+        }
+    }
+
+    /// 右列此刻该按哪种模式显示。nil = 没有卡片（见上一条），模式条也就不画。
+    private var activeCardChatMode: CardChatMode? {
+        guard let cardID = activeCardID else { return nil }
+        return cardChatPreferences.mode(forCardID: cardID, kind: activeCardKind)
+    }
+
+    /// 模式条 —— 三页共用同一个视图，所以位置与观感不会分叉。
+    ///
+    /// 它只在**卡片页**上画；`trailingAccessory` 由各页决定自己那一组页头控件
+    ///（语音页是摄像头 / 屏幕 / 语速，对话页是活动动画 + 音色 + 复制全文）。
+    private func cardChatModeBar(trailingAccessory: AnyView? = nil) -> some View {
+        CardChatModeBar(cardID: activeCardID ?? "",
+                        cardKind: activeCardKind,
+                        trailingAccessory: trailingAccessory,
+                        preferences: cardChatPreferences)
     }
 
     var body: some View {
@@ -160,8 +207,22 @@ struct NotchSheetRootView: View {
                             // 顶栏只剩对话页有：Agent 与语音聊天页的内容视图
                             // 自带标题，用户要求「两个标题保留一个」，并且那条
                             // 栏上的 ✕ 也不要（点窗口外 / Esc 都能收起）。
-                            if agentSessionManager.selectedSidebarSection == .conversations {
-                                topBar
+                            //
+                            // **模式行在它上面**（2026-09-26）：三页共用同一排
+                            // `[角色][文本][图文][语音][视频]`，各页自己那行页头在它下面，
+                            // 两行一起落在右列那条横线之上（两格高度都在 `NotchSupport`
+                            // 里，见 `contentColumnHeaderRuleY`）。
+                            //
+                            // 语音 / 视频模式下这整块让给语音页（它自带页头，也自带模式条），
+                            // 所以这里只在文本 / 图文模式下画 —— 否则会画出两排模式按钮。
+                            if agentSessionManager.selectedSidebarSection == .conversations,
+                               let activeChatMode = activeCardChatMode,
+                               !activeChatMode.isVoiceLike {
+                                VStack(spacing: 0) {
+                                    cardChatModeBar()
+                                    topBar
+                                }
+                                .padding(.top, NotchSupport.sheetHeaderTopInset)
                                 // 音色弹窗跟着页头走：它就开在「复制全文」那颗按钮下面
                                 //（`VoiceChatSessionView` 那套锚点测量对一个下拉列表不值当）。
                                 if isVoicePickerPresented {
@@ -179,20 +240,35 @@ struct NotchSheetRootView: View {
                             // 而树的主体就是这三页里的一页。
                             if panelModel.isSheetContentReady {
                                 Group {
-                                    switch agentSessionManager.selectedSidebarSection {
-                                    case .conversations:
-                                        NotchHomeView(
-                                            companionManager: companionManager,
-                                            sessionsModel: sessionsModel
-                                        )
-                                    case .agents:
-                                        AgentSessionView(
-                                            agentSessionManager: agentSessionManager,
-                                            hideSheet: hideSheetAction,
-                                            revealSheet: revealSheetAction
-                                        )
-                                    case .voiceChat:
-                                        VoiceChatSessionView(controller: voiceChatController)
+                                    // **语音 / 视频模式：右列整块换成语音页**（用户：这两个
+                                    // 模式「分别使用对应的全双工三段式模式」）。它按卡片绑定 ——
+                                    // 提示词里要带这段会话的记录，回话也要写回这条会话，
+                                    // 所以卡片 id 一路传下去。
+                                    if let cardID = activeCardID,
+                                       let activeChatMode = activeCardChatMode,
+                                       activeChatMode.isVoiceLike {
+                                        VoiceChatSessionView(controller: voiceChatController,
+                                                             cardID: cardID,
+                                                             cardKind: activeCardKind)
+                                    } else {
+                                        switch agentSessionManager.selectedSidebarSection {
+                                        case .conversations:
+                                            NotchHomeView(
+                                                companionManager: companionManager,
+                                                sessionsModel: sessionsModel
+                                            )
+                                        case .agents:
+                                            AgentSessionView(
+                                                agentSessionManager: agentSessionManager,
+                                                hideSheet: hideSheetAction,
+                                                revealSheet: revealSheetAction
+                                            )
+                                        case .voiceChat:
+                                            // 旧的「语音聊天」分区：不归任何卡片，所以没有
+                                            // 模式条、也没有卡片提示词（阶段 5 把这条路改成
+                                            // 直进角色编辑页）。
+                                            VoiceChatSessionView(controller: voiceChatController)
+                                        }
                                     }
                                 }
                                 // TEMPORARY PROBE (2026-09-26)：分阶段加载的第二拍
@@ -635,7 +711,9 @@ struct NotchSheetRootView: View {
         // 原来的 `.padding(.bottom, 2)` 是内容底边距，换成固定高度后由这 35pt
         // 自己决定内容在中线上方的位置。
         .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
-        .padding(.top, NotchSupport.sheetHeaderTopInset)
+        // **顶边距移到外面那个 `VStack` 上了**（2026-09-26）：这一行现在上面还有一排
+        // 模式条（`cardChatModeBar`），让开刘海的 `sheetHeaderTopInset` 属于整块页头，
+        // 不属于这一行 —— 留在这里的话模式条会顶进刘海底下。
     }
 
     // MARK: - 复制全文
