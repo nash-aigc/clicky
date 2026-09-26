@@ -125,7 +125,15 @@ nonisolated final class LongFormAudioCapture {
         let declaredFormat = inputNode.outputFormat(forBus: 0)
         // 把取到的格式原样报出去。采样率/声道都可能是 0（没设备 / 没权限 /
         // 被别的进程占着），而它们失败的方式都是静音 —— 不打印就分不出来。
-        onDiagnostic?("引擎声明的输入格式 采样率=\(declaredFormat.sampleRate) 声道=\(declaredFormat.channelCount)")
+        // **格式和「绑到了哪个设备」必须一起打。**
+        //
+        // 只打格式的代价实测过一次：出现「声道=3、全是静音」时，机器上
+        // **没有任何设备是 3 声道**（麦克风 1，另一个虚拟设备 2）—— 日志里有格式、
+        // 没有设备名，于是查不下去。和点击那条路当初一模一样：仪器少一个维度，
+        // 几种可能性就分不开，只能靠猜。
+        onDiagnostic?("引擎声明的输入格式 采样率=\(declaredFormat.sampleRate)"
+                      + " 声道=\(declaredFormat.channelCount)"
+                      + " · 设备=\(describeCurrentInputDevice(inputNode))")
         guard declaredFormat.sampleRate > 0 else {
             throw LongFormRecorderError.microphoneUnavailable
         }
@@ -1547,4 +1555,30 @@ private extension RecordingAudioWriter {
         do { try append(pcm) }
         catch { NSLog("[LongForm] 写音频失败：\(error)") }
     }
+}
+
+/// 输入节点现在挂在哪个设备上。
+///
+/// `AVAudioEngine.inputNode` 用的是**系统默认输入** —— 而「默认」是会变的，
+/// 而且可能被虚拟设备影响（这台机器上就装着一个 `iShotAudioPlugin`，
+/// Transport: Virtual）。所以出问题时第一个要知道的就是它到底绑到了谁。
+private nonisolated func describeCurrentInputDevice(_ node: AVAudioInputNode) -> String {
+    guard let unit = node.audioUnit else { return "（拿不到 audioUnit）" }
+    var deviceID = AudioDeviceID(0)
+    var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+    guard AudioUnitGetProperty(unit, kAudioOutputUnitProperty_CurrentDevice,
+                               kAudioUnitScope_Global, 0, &deviceID, &size) == noErr,
+          deviceID != 0 else {
+        return "（读不到当前设备）"
+    }
+    var name: CFString = "" as CFString
+    var nameSize = UInt32(MemoryLayout<CFString>.size)
+    var address = AudioObjectPropertyAddress(
+        mSelector: kAudioObjectPropertyName,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain)
+    let status = withUnsafeMutablePointer(to: &name) {
+        AudioObjectGetPropertyData(deviceID, &address, 0, nil, &nameSize, $0)
+    }
+    return "\(status == noErr ? (name as String) : "（读不到名字）") [id=\(deviceID)]"
 }
