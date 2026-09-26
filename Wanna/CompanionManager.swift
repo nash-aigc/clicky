@@ -122,6 +122,19 @@ final class CompanionManager: ObservableObject {
     /// 任务列表快捷键那一个订阅 —— **必须持有**，否则 `sink` 一建好就被释放，
     /// 按快捷键什么都不会发生（而且不报错）。
     private var taskListShortcutObservation: AnyCancellable?
+
+    /// **有没有一条"任务"正在后台跑。**
+    ///
+    /// 用户 2026-09-26 定死的规则：「只要它是任务，都不应该受到我的下一次提问的影响而
+    /// 打断。**只有用户手动去点击任务按钮才能打断**」。判据是"这一轮进入了第二步及以后"
+    /// —— 一问一答（第 1 步就结束）不算任务 ✓，它本来就该被下一个问题打断 ✓。
+    private var isAgentJobRunning = false
+
+    /// **回答任务槽的代次。** 从 2026-09-26 起可能有两轮同时在跑（任务在后台继续、
+    /// 新一轮已经开始 ✗），所以"我结束的时候把槽清掉"必须确认**槽还是我的** ——
+    /// 否则旧任务收尾时会把新一轮的句柄清掉，而那个句柄正是"观察者要不要让位"的判据，
+    /// 松掉之后就是那条"所有会话看起来是同一份内容"的老 bug ✗。
+    private var responseTaskGeneration = 0
     let overlayWindowManager = OverlayWindowManager()
     private(set) var notchWindowController: NotchWindowController?
 
@@ -898,7 +911,7 @@ final class CompanionManager: ObservableObject {
             }
 
         AgentPanelController.cancelRunningJob = { [weak self] in
-            Task { @MainActor in self?.interruptActiveResponse() }
+            Task { @MainActor in self?.cancelRunningJob() }
         }
 
 
@@ -2564,9 +2577,22 @@ final class CompanionManager: ObservableObject {
     }
 
     private func sendTranscriptToVisionChatWithScreenshot(transcript: String) {
-        currentResponseTask?.cancel()
+        // **任务在跑的时候，新问题只打断"正在说的话"，不打断任务。**
+        // 用户 2026-09-26：「刚才让 AI 去在桌面上写一个文件。那么 AI 没有写完的时候，
+        // 用户有另外一个需求…这两个任务都需要完成。但是因为用户的两个任务之间的间距太紧，
+        // 那会导致上一个任务直接打断，那这种情况是必须要禁止的」。
+        // 要停任务只有一条路：任务面板上的「取消任务」→ `cancelRunningJob()` ✓。
+        if isAgentJobRunning {
+            print("🛑 新问题到达：任务继续跑，只停掉正在播报的回答")
+            bailianTTSClient.stopPlayback()
+            clearAnswerBubble()
+        } else {
+            currentResponseTask?.cancel()
+        }
         bailianTTSClient.stopPlayback()
 
+        responseTaskGeneration += 1
+        let responseTaskGenerationAtStart = responseTaskGeneration
         currentResponseTask = Task {
             // **任何退出路径都要收掉「正在回答的问题」这个占位。**
             //
@@ -2784,8 +2810,12 @@ final class CompanionManager: ObservableObject {
                 var hasRefusedUnnamedClickThisJob = false
 
                 var stepCount = 0
+                // 任务的生命周期跟着这个循环：第一步就结束的是问答（可被打断），
+                // 进入第二步之后它就是"任务"了（只接受手动取消）。
+                defer { isAgentJobRunning = false }
                 while true {
                     stepCount += 1
+                    if stepCount > 1 { isAgentJobRunning = true }
 
                     // Pointing sets .idle while its flight plays; the spinner comes
                     // back for the duration of the next request.
@@ -3500,7 +3530,7 @@ final class CompanionManager: ObservableObject {
                 // without throwing (cancelled mid-TTS) — by then the
                 // interrupting path has already nilled or replaced the
                 // reference, and wiping it would drop the *new* task.
-                if !Task.isCancelled {
+                if !Task.isCancelled, responseTaskGeneration == responseTaskGenerationAtStart {
                     currentResponseTask = nil
                 }
 
@@ -3791,7 +3821,25 @@ final class CompanionManager: ObservableObject {
         }
     }
 
+    /// **手动取消一个正在跑的任务** —— 任务面板上那颗「取消任务」走这里。
+    /// 和 `interruptActiveResponse()` 的唯一区别：**这个不看旗标**，它就是要停 ✓
+    ///（用户：「要想打断它的话，只有用户点击这个左侧这个图标，然后点击这个取消任务」）。
+    func cancelRunningJob() {
+        isAgentJobRunning = false
+        interruptActiveResponse()
+    }
+
     func interruptActiveResponse() {
+        // **任务在跑时，"打断"只打断正在说的话。** 这是"下一次提问不打断任务"的另一半：
+        // 快捷键那一下也不该顺手把任务杀掉 —— 任务只在 `cancelRunningJob()` 里死 ✓。
+        if isAgentJobRunning {
+            print("🛑 打断：只停播报，任务继续跑（要停任务请用任务面板里的「取消任务」）")
+            notchWindowController?.forceActivityPhaseIdle()
+            bailianTTSClient.stopPlayback()
+            clearAnswerBubble()
+            clearDetectedElementLocation()
+            return
+        }
         // Tell the panel this idle is an ENDING, not the gap between two phases
         // of a running turn. It cannot tell those apart on its own — see
         // `forceActivityPhaseIdle` — so the stop is stated rather than inferred.
