@@ -338,7 +338,8 @@ struct HomeSpaceSidebarView: View {
                     Spacer(minLength: 4)
                     taskStatusDot(group.worstStatus, size: 7)
                 }
-                .padding(.leading, indented + 12)
+                // 对齐到主会话标题（头像右边那条竖线），不是贴着头像 ✗。
+                .padding(.leading, indented + 34)
                 .padding(.trailing, 12)
                 .frame(height: 30)
                 .contentShape(Rectangle())
@@ -403,8 +404,8 @@ struct HomeSpaceSidebarView: View {
             HStack(spacing: 6) {
                 // **照参考图：这一行只写「N agents」+ 折叠箭头**（组的身份由下面那几行说）。
                 Text("\(group.members.count) agents")
-                    .font(.system(size: 11.5))
-                    .foregroundColor(DS.Colors.textTertiary)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(DS.Colors.textSecondary)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 10, weight: .bold))
@@ -428,7 +429,7 @@ struct HomeSpaceSidebarView: View {
             AgentActivityBoard.shared.togglePanel(agent.id)
         } label: {
             HStack(spacing: 7) {
-                if indented { Spacer().frame(width: 10) }
+                if indented { Spacer().frame(width: 30) }
                 taskStatusGlyph(agent.status)
                 // **第二个位置 = "调用的哪一个 agent"，只有外部/兜底 agent 才画图标。**
                 // 用户 2026-09-26：「如果是系统 agent，咱们自己设计的 agent，那就不用显示图标，
@@ -441,7 +442,9 @@ struct HomeSpaceSidebarView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(DS.Colors.warning)
                 }
-                Text("\(agent.title) · \(agent.bannerLine)")
+                // **只写标题**（用户 2026-09-26：「你这个标题的名字太少了」）——
+                // 原来拼了「 · 最后一步」，名字被挤掉了 ✗。详情在面板里 ✓。
+                Text(agent.title)
                     .font(.system(size: 12))
                     .foregroundColor(DS.Colors.textSecondary)
                     .lineLimit(1)

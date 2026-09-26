@@ -21,6 +21,17 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     let userTranscript: String
     let assistantResponse: String
 
+    /// **只给界面看的那一份回复。**
+    ///
+    /// `assistantResponse` 对一条多步任务来说是**每一步的原始回复拼起来的** —— 那是历史
+    /// 回放需要的（模型要从里面看出这条任务实际发生过什么），但它**不该进卡片**：
+    /// 用户 2026-09-26 报「任务描述，矛盾」，看到的就是把「文件夹建好了」和后面推翻它的
+    /// 那几句拼在一张卡里，同一句话出现两三次 ✗。
+    ///
+    /// 所以卡片读 `displayResponse ?? assistantResponse` ✓：单步那一轮两者相同，
+    /// 多步任务显示的是**最后那一步**说的话。`nil` = 没有这一份，按老规矩回落到原始回复。
+    var displayResponse: String?
+
     /// The screenshots the model was looking at when it answered.
     ///
     /// Deliberately absent from `CodingKeys` below, so they live in memory and
@@ -80,6 +91,7 @@ nonisolated struct ConversationHistoryEntry: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case userTranscript
         case assistantResponse
+        case displayResponse
         case recordedWithActionTags
         case progressSteps
         case turnDurationSeconds

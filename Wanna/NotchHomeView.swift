@@ -552,7 +552,7 @@ struct NotchHomeView: View {
             )
         }
 
-        assistantBubble(entry.assistantResponse, isStreaming: false)
+        assistantBubble(entry.displayResponse ?? entry.assistantResponse, isStreaming: false)
 
         turnFooter(entry)
     }
@@ -733,7 +733,7 @@ struct NotchHomeView: View {
             // 存储的 `assistantResponse` 还带着 `[POINT:…]` / `[CLICK:…]`
             // 这些执行器标签，粘到别处只会是噪声。
             MessageCopyButton(
-                text: stripActionTagsForDisplay(entry.assistantResponse),
+                text: stripActionTagsForDisplay(entry.displayResponse ?? entry.assistantResponse),
                 helpText: "复制这条回答"
             )
 

@@ -3408,6 +3408,9 @@ final class CompanionManager: ObservableObject {
                     let newEntry = ConversationHistoryEntry(
                         userTranscript: transcript,
                         assistantResponse: combinedRawResponseText,
+                        // **卡片只显示最后一步说的话**（拼接那一份留给历史回放 ✓）——
+                        // 见 `ConversationHistoryEntry.displayResponse`。
+                        displayResponse: lastStreamedDisplayText,
                         userScreenshots: historyScreenshots,
                         recordedWithActionTags: true,
                         progressSteps: liveJobProgressSteps.isEmpty ? nil : liveJobProgressSteps,
@@ -3573,6 +3576,9 @@ final class CompanionManager: ObservableObject {
                     let interruptedEntry = ConversationHistoryEntry(
                         userTranscript: transcript,
                         assistantResponse: combinedRawResponseText,
+                        // **卡片只显示最后一步说的话**（拼接那一份留给历史回放 ✓）——
+                        // 见 `ConversationHistoryEntry.displayResponse`。
+                        displayResponse: lastStreamedDisplayText,
                         userScreenshots: [],
                         recordedWithActionTags: true,
                         progressSteps: liveJobProgressSteps.isEmpty ? nil : liveJobProgressSteps,
