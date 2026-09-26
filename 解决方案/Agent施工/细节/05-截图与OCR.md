@@ -136,7 +136,7 @@
 
 ### 固化状态（2026-09-25）
 
-探针已固化为工具库第一个正式工具：`~/Desktop/clicky/tools/截图与OCR/`（`ocr_to_file.swift` 源码 + `build.sh` 编译 + `capture_and_ocr.sh` 编排，区域全覆盖复测通过：left/right/top/bottom/full/自定义矩形）。用法与已修的坑见该目录 README。**尚未做的**：App 内的 `[SCREENSHOT:]`/`[OCR:]` 标签接入、manifest 条目、设置页保存位置——仍是设计。
+探针已固化为工具库第一个正式工具：`~/Documents/SuperAgent/APP/Design/clicky/tools/截图与OCR/`（`ocr_to_file.swift` 源码 + `build.sh` 编译 + `capture_and_ocr.sh` 编排，区域全覆盖复测通过：left/right/top/bottom/full/自定义矩形）。用法与已修的坑见该目录 README。**尚未做的**：App 内的 `[SCREENSHOT:]`/`[OCR:]` 标签接入、manifest 条目、设置页保存位置——仍是设计。
 
 ### 对设计的三个修正
 

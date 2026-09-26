@@ -66,7 +66,7 @@
 ## 四、目录：按功能分类
 
 ```
-~/Desktop/clicky/tools/              ← 自定义工具库（进仓库、可版本化、**不含任何密钥**）
+~/Documents/SuperAgent/APP/Design/clicky/tools/              ← 自定义工具库（进仓库、可版本化、**不含任何密钥**）
 ├── manifest.json                    总清单（模型看到的只是它的投影）
 ├── 备忘录/
 │   ├── notes_create.py
