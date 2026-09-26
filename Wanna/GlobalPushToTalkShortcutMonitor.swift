@@ -34,6 +34,12 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
     /// 与上面两组分开成一个数组，是因为它是一个**定长、可空**的表：没录的格子是 nil，
     /// 匹配时跳过。用可选数组而不是四个独立字段，是为了复用同一个逐格匹配循环 ——
     /// 四份几乎一样的代码必然会漂。
+    /// **「任务列表」那一个快捷键**（用户 2026-09-26 要的那个）。和下面那一组同一个
+    /// 匹配循环、同一套"按下/松开"判定 —— 不另写一遍。
+    var taskListShortcutBinding: RecordedKeyboardShortcut?
+    let taskListShortcutTransitionsPublisher = PassthroughSubject<Bool, Never>()
+    private var taskListShortcutPressed = false
+
     var openSheetShortcutBindings: [RecordedKeyboardShortcut?] = []
     let openSheetShortcutTransitionsPublisher = PassthroughSubject<(index: Int, pressed: Bool), Never>()
     private var openSheetShortcutPressedStates: [Int: Bool] = [:]
@@ -282,6 +288,17 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
         keyCode: UInt16,
         modifierFlagsRawValue: UInt64
     ) -> Bool {
+        if let binding = taskListShortcutBinding,
+           let pressedNow = Self.shortcutPressednessChange(for: binding,
+                                                           eventType: eventType,
+                                                           keyCode: keyCode,
+                                                           modifierFlags: NSEvent.ModifierFlags(rawValue: UInt(modifierFlagsRawValue)),
+                                                           wasPressed: taskListShortcutPressed) {
+            taskListShortcutPressed = pressedNow
+            taskListShortcutTransitionsPublisher.send(pressedNow)
+            return true
+        }
+
         guard openSheetShortcutBindings.contains(where: { $0 != nil }) else { return false }
         guard eventType == .flagsChanged || eventType == .keyDown || eventType == .keyUp else {
             return false

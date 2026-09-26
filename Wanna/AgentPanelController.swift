@@ -353,3 +353,166 @@ private struct AgentDetailView: View {
         }
     }
 }
+
+/// **鼠标左下角那块任务清单**（用户按快捷键弹出来的那一个）。
+///
+/// 用户 2026-09-26 的原话与理由：「增加一个快捷键…在鼠标左下角显示这个窗口。点这个快捷键
+/// 之后，**它就不变了**，但是任务的卡片是可以变化的，可以展开的，也可以停止什么的」；
+/// 「为什么推荐呢？因为鼠标移动到左侧是左上角，它其实需要时间和距离的，而且体验下来不是
+/// 很好」。所以：
+///
+/// - **位置在弹出那一刻定死**（锚在鼠标的左下角），之后**不跟随鼠标** —— 会跟随的东西
+///   点不准，而这里的每一行都要能点（看详情 / 取消）。
+/// - 内容跟着看板走（`@ObservedObject`），所以卡片该变的时候它自己变 ✓。
+@MainActor
+final class TaskListPanelController {
+
+    static let shared = TaskListPanelController()
+    private init() {}
+
+    private var panel: NSPanel?
+    private var hosting: NSHostingView<TaskListView>?
+
+    private static let panelWidth: CGFloat = 320
+    private static let panelMaximumHeight: CGFloat = 420
+
+    var isShown: Bool { panel?.isVisible == true }
+
+    func toggle() { isShown ? hide() : show() }
+
+    func show() {
+        let root = TaskListView()
+        if let hosting {
+            hosting.rootView = root
+        } else {
+            let view = NSHostingView(rootView: root)
+            view.sizingOptions = []
+            hosting = view
+        }
+        guard let hosting else { return }
+
+        let height = min(Self.panelMaximumHeight, max(80, hosting.fittingSize.height))
+        let size = NSSize(width: Self.panelWidth, height: height)
+        if panel == nil {
+            let created = NSPanel(contentRect: NSRect(origin: .zero, size: size),
+                                  styleMask: [.borderless, .nonactivatingPanel],
+                                  backing: .buffered, defer: false)
+            created.isOpaque = false
+            created.backgroundColor = .clear
+            created.hasShadow = true
+            created.hidesOnDeactivate = false
+            // 和任务详情面板同层：它也是从刘海那套里出来的。
+            created.level = NotchSupport.notchPanelWindowLevel + 1
+            created.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+            created.isReleasedWhenClosed = false
+            created.animationBehavior = .none
+            created.contentView = hosting
+            panel = created
+        }
+        hosting.frame = NSRect(origin: .zero, size: size)
+
+        // **锚点：此刻鼠标的左下角。** AppKit 全局坐标是左下原点，所以"面板的右上角
+        // 落在光标上"就是它挂在光标的左下 ✓。夹进屏幕里 —— 光标贴着边时面板不能跑出去。
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
+        var origin = NSPoint(x: mouse.x - size.width, y: mouse.y - size.height)
+        if let frame = screen?.frame {
+            origin.x = min(max(origin.x, frame.minX + 8), frame.maxX - size.width - 8)
+            origin.y = min(max(origin.y, frame.minY + 8), frame.maxY - size.height - 8)
+        }
+        panel?.setFrame(NSRect(origin: origin, size: size), display: true)
+        panel?.orderFrontRegardless()
+    }
+
+    func hide() {
+        panel?.orderOut(nil)
+    }
+}
+
+/// 清单里画的东西。**只读 + 三个动作**：看状态、去详情、取消在跑的那条。
+private struct TaskListView: View {
+
+    @ObservedObject private var board = AgentActivityBoard.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text("任务")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(DS.Colors.textPrimary)
+                Text("\(board.agents.count)")
+                    .font(.system(size: 11, weight: .medium).monospacedDigit())
+                    .foregroundColor(DS.Colors.textTertiary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+
+            Divider().overlay(DS.Colors.borderSubtle)
+
+            if board.agents.isEmpty {
+                Text("现在没有任务")
+                    .font(.system(size: 12))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 14)
+            } else {
+                ScrollView(.vertical, showsIndicators: true) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(board.agents) { agent in
+                            row(agent)
+                        }
+                    }
+                }
+                .frame(height: 300)
+            }
+        }
+        .frame(width: 320)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(DS.Colors.surface1)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(DS.Colors.borderSubtle, lineWidth: 1)
+                )
+        )
+    }
+
+    private func row(_ agent: EphemeralAgent) -> some View {
+        HStack(spacing: 8) {
+            Circle().fill(color(agent.status)).frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("\(agent.startTimeText)  \(agent.title)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(DS.Colors.textPrimary)
+                    .lineLimit(1)
+                Text(agent.status.displayName)
+                    .font(.system(size: 10))
+                    .foregroundColor(color(agent.status))
+            }
+            Spacer(minLength: 4)
+            if agent.status == .running {
+                Button {
+                    AgentPanelController.cancelRunningJob?()
+                } label: {
+                    Image(systemName: "stop.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(DS.Colors.destructive)
+                }
+                .buttonStyle(.plain)
+                .help("停掉这条正在跑的任务")
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 42)
+    }
+
+    private func color(_ status: EphemeralAgent.Status) -> Color {
+        switch status {
+        case .running: return DS.Colors.accent
+        case .doneVerified: return DS.Colors.success
+        case .doneUnverified: return DS.Colors.warning
+        case .failed: return DS.Colors.destructive
+        }
+    }
+}

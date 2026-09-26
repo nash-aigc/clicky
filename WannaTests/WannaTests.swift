@@ -94,6 +94,25 @@ struct WannaTests {
         #expect(hitRect.width > hitRect.height, "用户要的是长方形（宽 > 高）")
     }
 
+    /// **自动核验的三态判定。**
+    ///
+    /// 用户 2026-09-26：「总是显示缺少验证…应该让 AI 自动验证吧」。判据的核心是
+    /// **不听模型说，听证据**：说成功但给出的路径不存在 → 没做成（他踩过的正是这个：
+    /// 说「文件建好了」，桌面上什么都没有）；证据核对不了（"界面上显示了"）→ 停在未核验；
+    /// 没按格式答 → 当"说不清"，**不是失败**（否则一堆本来成功的任务会被判死）。
+    @Test func jobVerificationChecksTheEvidenceItself() async throws {
+        #expect(JobVerification.status(for: JobVerification.parse("结果=成功；证据=/tmp"))
+                == .doneVerified)
+        #expect(JobVerification.status(for: JobVerification.parse("结果=成功；证据=/tmp/绝对不存在的文件-xyz.txt"))
+                == .failed)
+        #expect(JobVerification.status(for: JobVerification.parse("结果=成功；证据=界面上显示了那个文件夹"))
+                == .doneUnverified)
+        #expect(JobVerification.status(for: JobVerification.parse("结果=失败；证据=报错"))
+                == .failed)
+        #expect(JobVerification.status(for: JobVerification.parse("我看了一下，应该成了吧"))
+                == .doneUnverified)
+    }
+
     /// **同一个目标派出去的多个 agent = 侧栏里的一个文件夹。**
     ///
     /// 用户 2026-09-26：「一个目标需要同时调用多个 agent 来执行…那在左侧列表是不是应该

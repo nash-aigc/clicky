@@ -690,6 +690,23 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 在别人的应用里抢键，而这个功能是"想用才录"的。
     /// 用户 2026-09-25：「在设置页面增加一个快捷键，用于打开窗口……还能自动打开
     /// Screen、Agent、Call 这三个窗口，一共三类，因此可以分别为每一个设置快捷键」。
+    /// **「任务列表」的快捷键** —— 按一下在**鼠标左下角**弹出任务面板。
+    ///
+    /// 用户 2026-09-26：「要新增一个快捷键…就是在鼠标左下角显示这个窗口。点这个快捷键之后，
+    /// 它就不变了，但是任务的卡片是可以变化的，可以展开的，也可以停止什么的」——
+    /// 为什么要快捷键：刘海在屏幕左上角，「鼠标移过去需要时间和距离，体验下来不太好」。
+    /// 默认 ⌃⌥T（keyCode 17 = t）。
+    var taskListShortcut: RecordedKeyboardShortcut?
+
+    /// 解析：录过就用录的，没录就用预设 —— 和 `pushToTalkShortcutBinding` 同一个形状。
+    var taskListShortcutBinding: RecordedKeyboardShortcut {
+        taskListShortcut ?? Self.defaultTaskListShortcutBinding
+    }
+    /// ⌃⌥T = control(262144) + option(524288)，keyCode 17 = t。
+    static let defaultTaskListShortcutBinding = RecordedKeyboardShortcut(
+        modifierFlagsRawValue: 262144 + 524288,
+        keyCode: 17)
+
     var openSheetShortcut: RecordedKeyboardShortcut?
     var openSheetScreenShortcut: RecordedKeyboardShortcut?
     var openSheetAgentShortcut: RecordedKeyboardShortcut?
@@ -1306,6 +1323,7 @@ nonisolated extension AppSettings {
         case continuousListeningSilenceSendSeconds
         case audioEngineIdleReleaseMinutes
         case releaseAudioEngineShortcut
+        case taskListShortcut
         case openSheetShortcut
         case openSheetScreenShortcut
         case openSheetAgentShortcut
@@ -1436,6 +1454,7 @@ nonisolated extension AppSettings {
         continuousListeningSilenceSendSeconds = try container.decodeIfPresent(Double.self, forKey: .continuousListeningSilenceSendSeconds) ?? defaults.continuousListeningSilenceSendSeconds
         audioEngineIdleReleaseMinutes = try container.decodeIfPresent(Int.self, forKey: .audioEngineIdleReleaseMinutes) ?? defaults.audioEngineIdleReleaseMinutes
         releaseAudioEngineShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .releaseAudioEngineShortcut)
+        taskListShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .taskListShortcut)
         openSheetShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetShortcut)
         openSheetScreenShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetScreenShortcut)
         openSheetAgentShortcut = try container.decodeIfPresent(RecordedKeyboardShortcut.self, forKey: .openSheetAgentShortcut)

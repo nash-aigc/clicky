@@ -69,6 +69,14 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
     /// 全部放在这一组上」。一组 = 一轮提问里派出去的所有活儿（id 由那一轮生成）。
     var groupID: String?
 
+    /// **这条任务属于哪个主会话。** 归档页按它折叠（用户 2026-09-26：「归档页面应该是：
+    /// 某个卡片（折叠形式），然后点击后显示（卡片=主会话，和不同的其他分组或任务的卡片）
+    /// 的会话」），所以创建时就记下来，而不是事后去猜 ✗。
+    var sessionID: String?
+    /// 存**当时的**主会话标题 —— 会话被删/改名之后，归档里仍然认得出是哪一次
+    ///（用户：「如果主会话没有归档，也要显示出来，防止用户找不到具体是哪个主会话」）。
+    var sessionTitle: String?
+
     /// **标题行显示的是时间**，不是标题。
     ///
     /// 用户 2026-09-26：「把标题上写时间，任务内容写在正文上」—— 理由是标题在
@@ -88,11 +96,15 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
          title: String,
          request: String,
          groupID: String? = nil,
+         sessionID: String? = nil,
+         sessionTitle: String? = nil,
          startedAt: Date = Date()) {
         self.id = id
         self.title = title
         self.request = request
         self.groupID = groupID
+        self.sessionID = sessionID
+        self.sessionTitle = sessionTitle
         self.startedAt = startedAt
         self.status = .running
         self.steps = []
@@ -184,11 +196,16 @@ final class AgentActivityBoard: ObservableObject {
 
     /// 一次任务开始。返回它的 id，调用方后面用它来追加步骤。
     @discardableResult
-    func beginTask(request: String, groupID: String? = nil) -> String {
+    func beginTask(request: String,
+                   groupID: String? = nil,
+                   sessionID: String? = nil,
+                   sessionTitle: String? = nil) -> String {
         pruneExpired()
         let agent = EphemeralAgent(title: Self.shortTitle(from: request),
                                    request: request,
-                                   groupID: groupID)
+                                   groupID: groupID,
+                                   sessionID: sessionID,
+                                   sessionTitle: sessionTitle)
         agents.insert(agent, at: 0)
         SoundEffectPlayer.appendToDiagnosticLog(
             "临时 agent \(agent.id) 开始：\(agent.title)")
@@ -225,6 +242,10 @@ final class AgentActivityBoard: ObservableObject {
         expandedIDs.insert(agentID)
         scheduleCollapse(of: agentID)
         scheduleRetirement(of: agentID, status: status)
+        // **归档**：做完的进历史记录（用户 2026-09-26：「任务完成之后自动消失，然后自动
+        // 归档到…归档页面」；「叫归档，本质是历史记录」）。放这里而不是调用方 —— 一条
+        // 任务无论从哪条路结束，都只经过这一个收口 ✓。
+        FinishedTaskStore.shared.record(agents[index])
     }
 
     /// 做完的按钮**自己退场**（用户 2026-09-26：「任务完成之后应该自动退出」）。
@@ -314,4 +335,142 @@ final class AgentActivityBoard: ObservableObject {
         guard !text.isEmpty else { return String(request.prefix(8)) }
         return String(text.prefix(10))
     }
+}
+
+/// **任务做完之后的自动核验。**
+///
+/// 用户 2026-09-26：「总是显示缺少验证，那还如何归档呢，**应该让 AI 自动验证吧**」——
+/// 在那之前 `doneVerified`（绿点）**全仓没有任何代码产生**，任务永远停在「未核验」✗。
+///
+/// 为什么不直接信模型说的"成功"：它正是会把话讲圆的那种 ✗（实测：说「文件建好了」而
+/// 桌面上什么都没有）。所以核验要求它**给出证据**，而**能核对的那种由 App 自己核对** ——
+/// 路径存在吗？核对得上的才算「已核验」✓；核对不了（比如"界面上显示了"）就老实留在
+/// 未核验那一档 ✓。
+nonisolated enum JobVerification {
+
+    /// 从模型的回读回答里解出「成了没有」和「证据是什么」。
+    ///
+    /// **没按格式答 = 说不清**（`claimedSuccess: true, evidence: nil`），不是"失败" ——
+    /// 把格式没跟上当成失败，会把一堆本来成功的任务判死 ✗。
+    static func parse(_ reply: String) -> (claimedSuccess: Bool, evidence: String?) {
+        let flattened = reply.replacingOccurrences(of: "\n", with: " ")
+        let saidSuccess = ["结果=成功", "结果:成功", "结果：成功"].contains { flattened.contains($0) }
+        let saidFailure = ["结果=失败", "结果:失败", "结果：失败"].contains { flattened.contains($0) }
+
+        var evidence: String?
+        for marker in ["证据=", "证据:", "证据："] {
+            if let range = flattened.range(of: marker) {
+                evidence = String(flattened[range.upperBound...])
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                break
+            }
+        }
+        if !saidSuccess && !saidFailure { return (claimedSuccess: true, evidence: evidence) }
+        return (claimedSuccess: saidSuccess, evidence: evidence)
+    }
+
+    /// **证据是真的吗？** 只核对能核对的东西：**绝对路径**（`/` 开头）→ 文件/目录在不在。
+    /// 别的返回 `nil` = 核对不了（不是"假" ✗）。
+    static func evidenceIsReal(_ evidence: String) -> Bool? {
+        let trimmed = evidence.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("/") else { return nil }
+        let path = trimmed
+            .split(whereSeparator: { " ，,。；;)".contains($0) })
+            .first.map(String.init) ?? trimmed
+        guard path.hasPrefix("/") else { return nil }
+        return FileManager.default.fileExists(atPath: path)
+    }
+
+    /// 三态判定。**"说成功、但给出的路径不存在" → 没做成** —— 这正是用户踩过的那个坑
+    ///（说「文件建好了」而桌面上没有），所以它不该被算作任何一档"成功"。
+    static func status(for verdict: (claimedSuccess: Bool, evidence: String?)) -> EphemeralAgent.Status {
+        guard verdict.claimedSuccess else { return .failed }
+        guard let evidence = verdict.evidence, !evidence.isEmpty,
+              let isReal = evidenceIsReal(evidence) else { return .doneUnverified }
+        return isReal ? .doneVerified : .failed
+    }
+}
+
+
+/// **做完的任务的历史记录。**
+///
+/// 用户 2026-09-26：「任务完成之后自动消失，然后自动归档到……归档页面」——
+/// 在那之前任务只是**从内存里过期掉** ✗（看板上 4/12 秒后退场，然后什么都没有 ✗），
+/// 所以"归档"没有内容可看 ✗。
+///
+/// 形状照这个仓库另外几个 store（`AgentSessionStore` / `VoiceChatRoleStore`）：
+/// `nonisolated` + `NSLock` + 原子写后补 `0600` + 变更通知，落在仓库外的
+/// Application Support 里。**只记给人看的**：时间、任务内容、结果、属于哪个主会话。
+nonisolated struct FinishedTask: Codable, Identifiable, Sendable, Equatable {
+    let id: String
+    let title: String
+    let request: String
+    let statusRawValue: String
+    let startedAt: Date
+    let finishedAt: Date
+    let sessionID: String?
+    let sessionTitle: String?
+
+    var status: EphemeralAgent.Status { EphemeralAgent.Status(rawValue: statusRawValue) ?? .doneUnverified }
+}
+
+nonisolated final class FinishedTaskStore {
+    static let shared = FinishedTaskStore()
+
+    private let lock = NSLock()
+    private var cache: [FinishedTask] = []
+
+    private static var fileURL: URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Wanna", isDirectory: true)
+        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        return base.appendingPathComponent("FinishedTasks.json")
+    }
+
+    private init() { load() }
+
+    private func load() {
+        guard let data = try? Data(contentsOf: Self.fileURL),
+              let decoded = try? JSONDecoder().decode([FinishedTask].self, from: data) else { return }
+        cache = decoded
+    }
+
+    private func persist() {
+        guard let data = try? JSONEncoder().encode(cache) else { return }
+        try? data.write(to: Self.fileURL, options: .atomic)
+        try? FileManager.default.setAttributes([.posixPermissions: 0o600],
+                                               ofItemAtPath: Self.fileURL.path)
+    }
+
+    /// 一条任务结束 —— 记进历史。**同一个 id 只留一条**（重跑不会堆两份）。
+    func record(_ agent: EphemeralAgent) {
+        lock.lock(); defer { lock.unlock() }
+        let entry = FinishedTask(id: agent.id,
+                                 title: agent.title,
+                                 request: agent.request,
+                                 statusRawValue: agent.status.rawValue,
+                                 startedAt: agent.startedAt,
+                                 finishedAt: agent.finishedAt ?? Date(),
+                                 sessionID: agent.sessionID,
+                                 sessionTitle: agent.sessionTitle)
+        cache.removeAll { $0.id == entry.id }
+        cache.append(entry)
+        persist()
+        NotificationCenter.default.post(name: .wannaFinishedTasksDidChange, object: nil)
+    }
+
+    func allTasks() -> [FinishedTask] {
+        lock.lock(); defer { lock.unlock() }
+        return cache.sorted { $0.finishedAt > $1.finishedAt }
+    }
+
+    func clearAll() {
+        lock.lock(); defer { lock.unlock() }
+        cache.removeAll(); persist()
+        NotificationCenter.default.post(name: .wannaFinishedTasksDidChange, object: nil)
+    }
+}
+
+extension Notification.Name {
+    static let wannaFinishedTasksDidChange = Notification.Name("wannaFinishedTasksDidChange")
 }

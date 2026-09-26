@@ -118,6 +118,10 @@ final class CompanionManager: ObservableObject {
 
     let buddyDictationManager = BuddyDictationManager()
     let globalPushToTalkShortcutMonitor = GlobalPushToTalkShortcutMonitor()
+
+    /// 任务列表快捷键那一个订阅 —— **必须持有**，否则 `sink` 一建好就被释放，
+    /// 按快捷键什么都不会发生（而且不报错）。
+    private var taskListShortcutObservation: AnyCancellable?
     let overlayWindowManager = OverlayWindowManager()
     private(set) var notchWindowController: NotchWindowController?
 
@@ -883,6 +887,16 @@ final class CompanionManager: ObservableObject {
         _ = AgentPanelController.shared
         // 面板上那颗「取消任务」落到这里 —— 它就是既有的"停止"路径（停播报、停流式、
         // 取消当前响应任务），只是现在有了一个**只在任务面板里**的入口。
+        // **任务列表的快捷键**（用户 2026-09-26 要的那个）：按一下在鼠标左下角弹出清单。
+        // 匹配走监听器里既有的那一套，这里只接"按下了"这一个边沿。
+        globalPushToTalkShortcutMonitor.taskListShortcutBinding = AppSettingsStore.snapshot().taskListShortcutBinding
+        taskListShortcutObservation = globalPushToTalkShortcutMonitor
+            .taskListShortcutTransitionsPublisher
+            .sink { pressed in
+                guard pressed else { return }
+                TaskListPanelController.shared.toggle()
+            }
+
         AgentPanelController.cancelRunningJob = { [weak self] in
             Task { @MainActor in self?.interruptActiveResponse() }
         }
@@ -2754,6 +2768,11 @@ final class CompanionManager: ObservableObject {
                 /// 侧栏里因此折叠成一个「文件夹」（用户 2026-09-26 的要求）。
                 /// **一轮生成一次**，不是每派一次生成一次。
                 let turnGroupID = UUID().uuidString
+
+                /// **这一轮的主会话标题**（归档页按主会话折叠，标题一起记下来：会话
+                /// 改名/被删之后，归档里仍然认得出是哪一次 —— 用户：「防止用户找不到
+                /// 具体是哪个主会话」）。`turnSessionID` 已经在上面快照过 ✓。
+                let turnSessionTitle = turnTargetSession.title
                 var unexecutedActionCountFromPreviousStep = 0
 
                 /// 这条任务里**已经拒过一次「没写名字的点击」**。
@@ -2952,7 +2971,11 @@ final class CompanionManager: ObservableObject {
                     if let role = dispatchRequest.subAgentRequest {
                         dispatchedRole = role
                         // 派活 = 这件事交给别人去做了，这一刻它值得在刘海左侧占一个位置。
-                        ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript, groupID: turnGroupID)
+                        ephemeralAgentID = AgentActivityBoard.shared.beginTask(
+                            request: transcript,
+                            groupID: turnGroupID,
+                            sessionID: turnSessionID.uuidString,
+                            sessionTitle: turnSessionTitle)
                         AgentActivityBoard.shared.appendStep(
                             "交给\(role.displayName) agent 去做", to: ephemeralAgentID!)
                         AgentActivityBoard.shared.appendToolCall(
@@ -3157,7 +3180,11 @@ final class CompanionManager: ObservableObject {
                         // **执行了动作 = 也是一个任务**（不一定要派活）。用户问
                         // 「帮我点一下」时主 agent 可能自己就把标签写了。
                         if ephemeralAgentID == nil {
-                            ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript, groupID: turnGroupID)
+                            ephemeralAgentID = AgentActivityBoard.shared.beginTask(
+                            request: transcript,
+                            groupID: turnGroupID,
+                            sessionID: turnSessionID.uuidString,
+                            sessionTitle: turnSessionTitle)
                         }
                         if let id = ephemeralAgentID {
                             AgentActivityBoard.shared.appendToolCall(
@@ -3304,9 +3331,17 @@ final class CompanionManager: ObservableObject {
                 }
                 // 收掉那个临时 agent：状态定下来，卡片再弹一次让用户看到结果。
                 if let id = ephemeralAgentID {
-                    let status: EphemeralAgent.Status = Task.isCancelled
+                    var status: EphemeralAgent.Status = Task.isCancelled
                         ? .failed
                         : (lastErrorMessage != nil ? .failed : .doneUnverified)
+                    // **自动核验**（用户 2026-09-26：「应该让 AI 自动验证吧」）：
+                    // 只有在"看起来做完了、但没人确认过"这一档才多问一次 ——
+                    // 已经失败/被取消的不问，那是已知的结果 ✗。
+                    if status == .doneUnverified, !Task.isCancelled {
+                        status = await verifyFinishedJob(request: transcript,
+                                                         reply: lastStreamedDisplayText,
+                                                         settings: appSettings)
+                    }
                     AgentActivityBoard.shared.finishTask(id, status: status)
                 }
 
@@ -3720,6 +3755,39 @@ final class CompanionManager: ObservableObject {
         // 文字已流完、只剩声音在播 → 连刘海一起收回待命。
         if !isAnswerStreamLive {
             scheduleVoiceStateResetAfterPlayback()
+        }
+    }
+
+    /// **任务做完之后的自动核验**：再问一次「成了没有、证据是什么」，然后 App 自己去核对。
+    ///
+    /// 用户 2026-09-26：「应该让 AI 自动验证吧」。之前 `doneVerified` 没有任何代码产生 ✓，
+    /// 任务永远停在「未核验」，于是"归档"也就没有判据 ✗。
+    ///
+    /// 一次多花一次模型调用（文本、不带图 ✓）。**任何失败都退回未核验** —— 核验是加分项，
+    /// 不该让一条本来就做完了的任务因为核验本身出错而变红 ✗。
+    private func verifyFinishedJob(request: String,
+                                   reply: String,
+                                   settings: AppSettings) async -> EphemeralAgent.Status {
+        let prompt = """
+        回读确认。你刚才替用户做的这件事：\(request)
+        你最后说的是：\(reply)
+
+        只回一行，严格按这个格式，不要任何解释：
+        结果=成功 或 结果=失败；证据=你能据以判断的东西（一个文件路径，或"界面上的结果"）
+        """
+        do {
+            let (text, _) = try await visionChatAPI.analyzeImageStreaming(
+                images: [],
+                systemPrompt: "你是一个只回一行的核验器。",
+                userPrompt: prompt,
+                onTextChunk: { _ in })
+            let verdict = JobVerification.parse(text)
+            let status = JobVerification.status(for: verdict)
+            print("🔎 任务核验：\(text.replacingOccurrences(of: "\n", with: " ")) → \(status.displayName)")
+            return status
+        } catch {
+            print("⚠️ 任务核验请求失败（保持未核验）：\(error.localizedDescription)")
+            return .doneUnverified
         }
     }
 

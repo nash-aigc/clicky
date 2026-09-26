@@ -33,6 +33,13 @@ struct NotchArchiveArea: View {
 
     @ObservedObject var sessionsModel: ConversationSessionsModel
 
+    /// **做完的任务的历史**（`FinishedTaskStore`）—— 用户 2026-09-26：「任务完成之后
+    /// 自动消失，然后自动归档到：左侧边栏——某个卡片的自动化任务的归档」，
+    /// 「叫归档，本质是历史记录」。
+    @State private var finishedTasks: [FinishedTask] = []
+    /// 展开了哪几个主会话（折叠卡片：一张卡片 = 一个主会话 + 它下面挂的任务）。
+    @State private var expandedHistoryGroups: Set<String> = []
+
     /// 左下角那颗「‹ 返回」。**可为空** —— 这个视图现在有两个宿主：整窗接管的
     /// 旧入口（要它），以及设置里的「归档」页（不要，设置侧栏自己就是导航）。
     /// 为空时那一行整块不画，而不是画一颗点了没反应的按钮。
@@ -61,6 +68,8 @@ struct NotchArchiveArea: View {
     @State private var contentColumnWidth: CGFloat = 0
 
     var body: some View {
+        // 任务历史的数据在这里刷新：出现时读一次，任务结束时再读一次
+        //（`FinishedTaskStore` 落盘后会发通知）。
         HStack(spacing: 0) {
             archiveSidebar
 
@@ -88,7 +97,14 @@ struct NotchArchiveArea: View {
                 }
             )
         }
-        .onAppear { repairSelectionIfNeeded() }
+        .onAppear {
+            repairSelectionIfNeeded()
+            finishedTasks = FinishedTaskStore.shared.allTasks()
+        }
+        // 任务一结束就刷新历史（`FinishedTaskStore.record` 会发这个通知）。
+        .onReceive(NotificationCenter.default.publisher(for: .wannaFinishedTasksDidChange)) { _ in
+            finishedTasks = FinishedTaskStore.shared.allTasks()
+        }
         .onChange(of: sessionsModel.archivedSessions) { _, _ in
             repairSelectionIfNeeded()
         }
@@ -140,6 +156,110 @@ struct NotchArchiveArea: View {
         }
     }
 
+    // MARK: - 任务历史（按主会话折叠）
+
+    /// **一张折叠卡片 = 一个主会话 + 它下面挂的任务。**
+    ///
+    /// 用户 2026-09-26 的原话：「归档页面，应该是：某个卡片（折叠形式），然后点击后显示
+    ///（卡片=主会话，和不同的其他分组或任务的卡片的会话）……（如果主会话没有归档，
+    /// 也要显示出来，防止用户找不到具体是哪个主会话）」—— 所以分组用的是**任务创建时
+    /// 记下的那个会话标题** ✓，而不是去会话表里查（会话可能已经改名或被删 ✗）。
+    @ViewBuilder
+    private var taskHistorySection: some View {
+        if !finishedTasks.isEmpty {
+            let grouped = Dictionary(grouping: finishedTasks) { $0.sessionID ?? "" }
+            let order = grouped.keys.sorted { left, right in
+                let leftDate = grouped[left]?.map(\.finishedAt).max() ?? .distantPast
+                let rightDate = grouped[right]?.map(\.finishedAt).max() ?? .distantPast
+                return leftDate > rightDate
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text("任务历史")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.7)
+                    .foregroundColor(.white.opacity(0.35))
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 4)
+
+                ForEach(order, id: \.self) { key in
+                    if let tasks = grouped[key] {
+                        taskHistoryGroup(key: key, tasks: tasks)
+                    }
+                }
+            }
+            .padding(.bottom, 10)
+        }
+    }
+
+    private func taskHistoryGroup(key: String, tasks: [FinishedTask]) -> some View {
+        let isOpen = expandedHistoryGroups.contains(key)
+        let title = tasks.first?.sessionTitle ?? "（会话已不在）"
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                if isOpen { expandedHistoryGroups.remove(key) } else { expandedHistoryGroups.insert(key) }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: isOpen ? "folder.fill" : "folder")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.55))
+                    Text(title)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+                        .lineLimit(1)
+                    Text("· \(tasks.count)")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.35))
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white.opacity(0.3))
+                        .rotationEffect(.degrees(isOpen ? 90 : 0))
+                }
+                .padding(.horizontal, 18)
+                .frame(height: 32)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+
+            if isOpen {
+                ForEach(tasks) { task in
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(archiveStatusColor(task.status))
+                            .frame(width: 7, height: 7)
+                        Text(Self.archiveTimeFormatter.string(from: task.finishedAt))
+                            .font(.system(size: 10.5, weight: .medium).monospacedDigit())
+                            .foregroundColor(.white.opacity(0.4))
+                        Text(task.request)
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.7))
+                            .lineLimit(2)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.leading, 34)
+                    .padding(.trailing, 18)
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private func archiveStatusColor(_ status: EphemeralAgent.Status) -> Color {
+        switch status {
+        case .running: return DS.Colors.accent
+        case .doneVerified: return DS.Colors.success
+        case .doneUnverified: return DS.Colors.warning
+        case .failed: return DS.Colors.destructive
+        }
+    }
+
+    private static let archiveTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM-dd HH:mm"
+        return formatter
+    }()
+
     // MARK: - Sidebar
 
     private var archiveSidebar: some View {
@@ -156,6 +276,8 @@ struct NotchArchiveArea: View {
                 .foregroundColor(.white.opacity(0.35))
                 .padding(.horizontal, 18)
                 .padding(.bottom, 14)
+
+            taskHistorySection
 
             if sessionsModel.archivedSessions.isEmpty {
                 Text("还没有归档的对话")
