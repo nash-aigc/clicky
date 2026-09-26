@@ -35,6 +35,103 @@ final class ReviewRunner {
         WorkspaceDirectory.reviewsURL.appendingPathComponent("复盘报告.md")
     }
 
+    /// 执行历史文件：复盘 agent 读的第一份材料。
+    static var executionHistoryFileURL: URL {
+        WorkspaceDirectory.reviewsURL.appendingPathComponent("执行历史.md")
+    }
+
+    /// **把执行历史写进复盘文件夹** —— 复盘 agent 的项目文件夹就是这里，所以写完它
+    /// 的上下文里就有材料了，不需要靠提示词告诉它。
+    ///
+    /// 用户 2026-09-26 要的两个指标就是这个 + `复盘报告.md`（它自己上次的复盘结果）：
+    /// 「你把这个整个的文件…把历史记录这部的内容当做一个参考，然后把他自己复盘的结果
+    /// 当做一个复盘结果的依据，添加这两个指标，然后用户可以跟他聊」。
+    ///
+    /// 两份的差别是有意的：**执行历史是原料**（发生过什么、谁做的、卡在哪），
+    /// **复盘报告是上一轮的结论**（他上次认为该改什么）。让 agent 同时看着这两份，
+    /// 它才回答得了"这条为什么没做成、上次说该怎么改、改了没有"。
+    @discardableResult
+    static func writeExecutionHistoryFile(now: Date = Date()) -> URL? {
+        var lines: [String] = []
+        let stamp = DateFormatter()
+        stamp.dateFormat = "yyyy-MM-dd HH:mm"
+        lines.append("# 执行历史")
+        lines.append("")
+        lines.append("这份是 Wanna 自己写出来的执行记录（生成于 \(stamp.string(from: now))），")
+        lines.append("给复盘 agent 当原料用。它和同目录的「复盘报告.md」是两回事：")
+        lines.append("这份记**发生过什么**，那份记**上一轮的结论**。")
+        lines.append("")
+
+        // ① 主对话与回合
+        lines.append("## 一、主对话与回合")
+        lines.append("")
+        let sessions = ConversationSessionsStore.allSessionsIncludingArchived()
+        if sessions.isEmpty {
+            lines.append("（还没有任何对话。）")
+        }
+        for session in sessions.sorted(by: { $0.updatedAt > $1.updatedAt }) {
+            let archivedMark = session.archivedAt == nil ? "" : "（已归档）"
+            lines.append("### \(session.title)\(archivedMark) · \(session.entries.count) 轮")
+            lines.append("")
+            for entry in session.entries {
+                let interrupted = entry.wasInterrupted == true ? " · **被用户打断**" : ""
+                lines.append("- 问：\(entry.userTranscript.replacingOccurrences(of: "\n", with: " "))")
+                let replyFirstLine = entry.assistantResponse
+                    .components(separatedBy: .newlines)
+                    .first { !$0.trimmingCharacters(in: .whitespaces).isEmpty } ?? ""
+                lines.append("  - 答：\(replyFirstLine)\(interrupted)")
+            }
+            lines.append("")
+        }
+
+        // ② 任务：谁发起的、谁执行的、卡在哪 —— 复盘最要紧的一段
+        lines.append("## 二、任务（谁做的、成没成、卡在哪）")
+        lines.append("")
+        let tasks = FinishedTaskStore.shared.allTasks()
+        if tasks.isEmpty {
+            lines.append("（还没有任务记录。）")
+        }
+        for task in tasks {
+            let executor = task.cardKind == .claudeCode ? "Claude Code（兜底）" : "自研主循环"
+            lines.append("- **\(task.title)** · \(task.status.displayName) · 执行者：\(executor)")
+            lines.append("  - 用户要的：\(task.request.replacingOccurrences(of: "\n", with: " "))")
+            if let reason = task.handoffReason {
+                lines.append("  - 为什么交给 Claude Code：\(reason)")
+            }
+            if let failure = task.failureReason {
+                lines.append("  - 主循环为什么没做成：\(failure)")
+            }
+            if let attempts = task.attempts, attempts.count > 1 {
+                lines.append("  - 试过 \(attempts.count) 次：")
+                for attempt in attempts {
+                    let note = attempt.note.map { "（\($0)）" } ?? ""
+                    lines.append("    - \(attempt.executorDisplayName)：\(attempt.status.displayName)\(note)")
+                }
+            }
+        }
+        lines.append("")
+
+        let body = lines.joined(separator: "\n")
+        let fileURL = executionHistoryFileURL
+        do {
+            try FileManager.default.createDirectory(
+                at: WorkspaceDirectory.reviewsURL,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
+            try body.write(to: fileURL, atomically: true, encoding: .utf8)
+            // 这里装着用户的对话原文，所以和别的数据文件一样补 0600
+            //（`.atomic` 落盘是 0644）。
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600],
+                                                   ofItemAtPath: fileURL.path)
+            return fileURL
+        } catch {
+            // 静态写法里没有实例的 `lastError` 可写；这里用一行日志 —— 写不进去的原因
+            // 只可能是目录权限或磁盘，用户看到的效果是"复盘 agent 的文件夹里没有新材料"。
+            print("⚠️ Wanna: 写执行历史失败 \(fileURL.path)：\(error.localizedDescription)")
+            return nil
+        }
+    }
+
     func run(now: Date = Date()) async {
         guard !isRunning else { return }
         isRunning = true

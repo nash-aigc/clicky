@@ -351,6 +351,22 @@ final class AgentSessionManager: ObservableObject {
 
         guard let agent = sessions.first(where: { $0.id == agentID }) else { return }
 
+        // **写这个项目之前必须先有提交**（用户 2026-09-26 的强制约定，用代码实现）。
+        //
+        // 门放在这里而不是提示词里：提示词是请求模型自觉，而这件事的成本不对称 ——
+        // 改错一个文件用户的代码就没了，多做一次 `git log` 是毫秒级。
+        // 只有「复盘 agent + 用户勾了写」这一种组合会被拦；读、以及别的 agent 不受影响。
+        if agent.name == AgentCardModel.reviewAgentName,
+           currentSettings.reviewAgentCanWriteProject {
+            let verdict = GitCommitGuard.verdict(forRepositoryAt: WorkspaceDirectory.rootPath)
+            guard verdict.allowsWriting else {
+                let reason = verdict.blockingMessage ?? "现在不能写这个项目。"
+                lastAgentErrorMessage = reason
+                print("🛑 复盘 agent 的写入被拦下：\(reason)")
+                return
+            }
+        }
+
         guard agent.status != .running else {
             lastAgentErrorMessage = "「\(agent.name)」正在执行上一条任务，先点中断或等它完成。"
             return
@@ -423,7 +439,22 @@ final class AgentSessionManager: ObservableObject {
             self?.handleAgentProcessEvent(event)
         }
 
-        let permissionArguments = currentSettings.agentPermissionMode.cliArguments
+        // **复盘 agent 的权限在这里落地**（用户 2026-09-26：读要看得到、写要先过 git）。
+        //
+        // 映射用的是两个我确定的开关，不猜规则语法：
+        //   * 读 → `--add-dir <项目根>`（把那个文件夹纳进它的可见范围）；
+        //   * 不写 → 强制 `--permission-mode plan`（只读规划，改不了任何文件）。
+        // 写 = `--add-dir` + 用户选的全局权限模式，**而且发回合前要先过 `GitCommitGuard`**
+        //（见 `sendTurn` 里的门）—— 两道都要过才真的能改。
+        var permissionArguments = currentSettings.agentPermissionMode.cliArguments
+        if agent.name == AgentCardModel.reviewAgentName {
+            if currentSettings.reviewAgentCanReadProject {
+                permissionArguments += ["--add-dir", WorkspaceDirectory.rootPath]
+            }
+            if !currentSettings.reviewAgentCanWriteProject {
+                permissionArguments += ["--permission-mode", "plan"]
+            }
+        }
         try processBridge.launch(
             executablePath: resolution.path,
             projectFolderPath: agent.projectFolderPath,

@@ -574,6 +574,35 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// nil = 用户没设过：那就还用「当前活动会话」，与今天的行为一致。
     var defaultSessionID: String?
 
+    // MARK: - 复盘 agent 的权限（2026-09-26）
+
+    /// **指令文件夹权限**：复盘 agent 自己的项目文件夹（`Wanna复盘/`）。
+    /// 它是这个 agent 存在的意义，所以**固定开着、用户改不了** —— 用户的原话是
+    /// 「第一个权限就是指令文件夹权限，这个是默认的，然后也是不可以被修改的，
+    /// 它就是一直是勾选的状态」。因此它不存成设置，只有一个常量（见
+    /// `AgentCardModel.reviewAgentFolderPath`）。
+
+    /// **Wanna 权限：能不能读当前这个项目**（用户：「另外一个权限叫 Wanna 权限，
+    /// 就是当前这个软件或者这个项目的整个路径」）。默认**关闭** —— 涉及整个软件，
+    /// 必须用户手动开。nil = 没设过 = 关。
+    var reviewAgentReadsProject: Bool?
+
+    /// **Wanna 权限：能不能改当前这个项目**。默认**关闭**，而且**只有读了才能写**
+    /// （用户：「默认呢，勾选是读，另外一个写入权限需要用户勾选才能写入，就是为了防止
+    /// 用户的不经意操作或者是误操作，导致一些文件的错误删除或者错误备份」）。
+    var reviewAgentWritesProject: Bool?
+
+    /// 读得到这个项目吗。
+    var reviewAgentCanReadProject: Bool { reviewAgentReadsProject ?? false }
+    /// 改得了这个项目吗 —— **写必然包含读**（代码里保证，不靠 UI 记得同时勾两个）。
+    var reviewAgentCanWriteProject: Bool { reviewAgentCanReadProject && (reviewAgentWritesProject ?? false) }
+
+    /// 改权限的唯一入口：把「写」当成「读」的子集来维护。
+    mutating func setReviewAgentProjectAccess(canRead: Bool, canWrite: Bool) {
+        reviewAgentReadsProject = canRead
+        reviewAgentWritesProject = canRead ? canWrite : false
+    }
+
     /// 复制一份、只换默认会话 —— `AppSettingsStore.save` 收的是整份值，
     /// 调用方不该在手上去拼一份新的（漏字段就是把设置悄悄改回默认）。
     func withDefaultSessionID(_ sessionID: String?) -> AppSettings {
@@ -1332,6 +1361,8 @@ nonisolated extension AppSettings {
         case extraSystemPromptInstructions
         case customSystemPrompt
         case defaultSessionID
+        case reviewAgentReadsProject
+        case reviewAgentWritesProject
         case transcriptionLanguage
         case extraTranscriptionKeyterms
         case finalTranscriptGracePeriodSeconds
@@ -1465,6 +1496,9 @@ nonisolated extension AppSettings {
         customSystemPrompt = try container.decodeIfPresent(String.self, forKey: .customSystemPrompt)
         // 老文件没有这个键 = 用户没设过默认会话 —— 与 nil 同义，不是错误。
         defaultSessionID = try container.decodeIfPresent(String.self, forKey: .defaultSessionID)
+        // 两个都是"没设过 = 关"（仓规 E1：`Bool?` + `decodeIfPresent`）。
+        reviewAgentReadsProject = try container.decodeIfPresent(Bool.self, forKey: .reviewAgentReadsProject)
+        reviewAgentWritesProject = try container.decodeIfPresent(Bool.self, forKey: .reviewAgentWritesProject)
         transcriptionLanguage = try container.decodeIfPresent(TranscriptionLanguage.self, forKey: .transcriptionLanguage) ?? defaults.transcriptionLanguage
         extraTranscriptionKeyterms = try container.decodeIfPresent(String.self, forKey: .extraTranscriptionKeyterms) ?? defaults.extraTranscriptionKeyterms
         finalTranscriptGracePeriodSeconds = try container.decodeIfPresent(Double.self, forKey: .finalTranscriptGracePeriodSeconds) ?? defaults.finalTranscriptGracePeriodSeconds

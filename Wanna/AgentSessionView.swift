@@ -514,7 +514,17 @@ struct AgentSessionView: View {
     /// send button that used to sit to the right (「无论是对话、agent 还是语音
     /// 聊天，都删掉右侧底部的发送按钮」) — Return sends, and the field's own
     /// Return handling goes through the same `submitComposerDraft`.
+    /// `@ViewBuilder`：这一块现在有两个可能的成员（复盘那栏 + 输入框本身），
+    /// 而多语句的函数体推不出 `some View` —— 加上它，两件事在宿主 VStack 里上下排。
+    @ViewBuilder
     private func composerRow(_ agent: AgentSession) -> some View {
+        // **复盘 agent 的权限栏**（用户 2026-09-26：「用户在右侧边跟他聊天的时候，
+        // 在输入框的上面有一个权限按钮」）。只对复盘 agent 画 —— 别的 agent 的权限
+        // 是设置页里那三档，不是这一套。
+        if isReviewAgent {
+            reviewPermissionRow
+        }
+
         MessageComposerField(
             placeholder: "让 Agent 做什么…",
             draft: $composerDraft,
@@ -537,6 +547,133 @@ struct AgentSessionView: View {
 
     /// Three lines at rest, 30% of the content column when expanded — the
     /// user's own figure for the 展开 button.
+    /// 这一页是不是复盘 agent（权限栏只对它出现）。
+    private var isReviewAgent: Bool {
+        agentSessionManager.selectedAgent?.name == AgentCardModel.reviewAgentName
+    }
+
+    /// **权限栏**：指令文件夹（固定勾、不可改）+ Wanna 权限（默认关 → 开时出读/写）。
+    ///
+    /// 右边常显**最近一次提交距今多久** —— 用户要的就是这个：「修改任何一次之前都要去
+    /// 先提交一下历史，并且检测一次…右侧要显示一个东西，就是当前的 Git 提交的时间历史」。
+    /// 写权限开着的时候它是红/绿的状态灯；关着的时候它只是信息。
+    private var reviewPermissionRow: some View {
+        let settings = AppSettingsStore.snapshot()
+        let verdict = GitCommitGuard.verdict(forRepositoryAt: WorkspaceDirectory.rootPath)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.55))
+                Text("权限")
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundColor(.white.opacity(0.75))
+
+                Spacer(minLength: 6)
+
+                // 最近提交（绿 = 可以写，红 = 要先提交）
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(verdict.allowsWriting ? DS.Colors.success : Color(red: 0.95, green: 0.42, blue: 0.42))
+                        .frame(width: 6, height: 6)
+                    Text(verdict.commit.map { "最近提交 \($0.ageText)" } ?? "读不到提交历史")
+                        .font(.system(size: 10.5))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+                .help(verdict.commit.map { "\($0.shortHash) \($0.subject)" } ?? "")
+            }
+
+            // ① 指令文件夹：固定勾选、不可点（用户：「这个是默认的…不可以被修改」）
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(DS.Colors.success)
+                    .frame(width: 12)
+                Text("指令文件夹")
+                    .font(.system(size: 11.5))
+                    .foregroundColor(.white.opacity(0.80))
+                Text("Wanna复盘/ · 固定")
+                    .font(.system(size: 10.5))
+                    .foregroundColor(.white.opacity(0.35))
+                Spacer(minLength: 0)
+            }
+
+            // ② Wanna 权限：默认关；开了才出读 / 写
+            HStack(spacing: 6) {
+                Button {
+                    var draft = settings
+                    draft.setReviewAgentProjectAccess(canRead: !settings.reviewAgentCanReadProject,
+                                                      canWrite: false)
+                    try? AppSettingsStore.save(draft)
+                } label: {
+                    Image(systemName: settings.reviewAgentCanReadProject ? "checkmark" : "square")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(settings.reviewAgentCanReadProject
+                                         ? DS.Colors.success : .white.opacity(0.35))
+                        .frame(width: 12)
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+
+                Text("Wanna 权限")
+                    .font(.system(size: 11.5))
+                    .foregroundColor(.white.opacity(0.80))
+                Text("当前项目的整个路径")
+                    .font(.system(size: 10.5))
+                    .foregroundColor(.white.opacity(0.35))
+
+                Spacer(minLength: 0)
+
+                if settings.reviewAgentCanReadProject {
+                    permissionSubToggle(title: "读",
+                                        isOn: true,
+                                        help: "读得到这个项目（读一直开着）") {}
+                    permissionSubToggle(title: "写",
+                                        isOn: settings.reviewAgentCanWriteProject,
+                                        help: settings.reviewAgentCanWriteProject
+                                            ? "能改这个项目 —— 每次发送前都要先过提交检查"
+                                            : "只能读。要让它改，勾上这里（改之前必须先提交）") {
+                        var draft = settings
+                        draft.setReviewAgentProjectAccess(canRead: true,
+                                                          canWrite: !settings.reviewAgentCanWriteProject)
+                        try? AppSettingsStore.save(draft)
+                    }
+                }
+            }
+
+            if settings.reviewAgentCanWriteProject, let blocking = verdict.blockingMessage {
+                Text(blocking)
+                    .font(.system(size: 10.5))
+                    .foregroundColor(Color(red: 0.95, green: 0.45, blue: 0.42))
+            }
+        }
+        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+        .padding(.bottom, 4)
+    }
+
+    private func permissionSubToggle(title: String,
+                                     isOn: Bool,
+                                     help: String,
+                                     action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: isOn ? "checkmark" : "square")
+                    .font(.system(size: 8.5, weight: .bold))
+                Text(title).font(.system(size: 10.5))
+            }
+            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.45))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(Color.white.opacity(isOn ? 0.10 : 0.04))
+            )
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
+    }
+
     private var composerHeight: CGFloat {
         guard isComposerExpanded, contentColumnHeight > 0 else {
             return MessageComposerField.threeLineHeight

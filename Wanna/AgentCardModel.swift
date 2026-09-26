@@ -167,6 +167,10 @@ final class AgentCardModel: ObservableObject {
     /// 侧栏那一行读它，所以它同时承担"这个 agent 存在吗"和"切到它"两件事 ——
     /// 用户点那一下必须真的进得去，哪怕这是第一次。
     func openReviewAgent(agentSessionManager: AgentSessionManager) {
+        // **先把原料刷新一遍**：复盘 agent 的文件夹里应该有当下的执行历史（它读的就是
+        // 那个文件夹）。用户点进来的这一下是最合适的时机 —— 比定时刷新省，也比让他
+        // 自己想到"先跑一次复盘"可靠。
+        ReviewRunner.writeExecutionHistoryFile()
         let existing = AgentSessionStore.allAgents().first { $0.name == Self.reviewAgentName }
         let agent = existing ?? AgentSessionStore.createAgent(
             name: Self.reviewAgentName,
