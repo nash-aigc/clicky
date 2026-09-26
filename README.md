@@ -28,7 +28,7 @@ Once you get Claude running, paste this:
 ```
 Hi Claude.
 
-Clone https://github.com/farzaa/clicky.git into my current directory.
+Clone https://github.com/nash-aigc/clicky.git into my current directory.
 
 Then read the CLAUDE.md. I want to get Clicky running locally on my Mac.
 

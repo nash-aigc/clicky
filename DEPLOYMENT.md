@@ -7,7 +7,7 @@
 
 ## 1. 方案总览
 
-### 原项目（上游 farzaa/clicky）的架构
+### 改造前：原项目的架构
 
 ```
 Clicky ──→ Cloudflare Worker（代理，防密钥泄露）
