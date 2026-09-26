@@ -105,7 +105,7 @@ struct CardChatModeBar: View {
             // 所以"选中"只能靠颜色（绿字），格线负责说清"这一格到哪为止"。
             Text(mode.displayName)
                 .tableCellText(isOn: isSelected, fontSize: 13)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, TableStyle.cellHorizontalPadding)
                 .frame(height: NotchSupport.contentHeaderControlHeight)
                 .contentShape(Rectangle())
         }
@@ -279,7 +279,7 @@ struct CardChatRoleChip: View {
                     .font(.system(size: 8, weight: .semibold))
                     .foregroundColor(.white.opacity(0.6))
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, TableStyle.cellHorizontalPadding)
             .frame(height: NotchSupport.contentHeaderControlHeight)
             .contentShape(Rectangle())
         }

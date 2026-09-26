@@ -22,6 +22,15 @@
 import SwiftUI
 
 enum TableStyle {
+
+    /// **一格左右的内边距**（表格里所有格共用）。
+    ///
+    /// 2026-09-26 深夜：通话那颗在两个模式下宽度差了 4pt（语音页自己写 12、图文页写 10），
+    /// 于是它右边那条边在两个模式之间来回跳 —— 用户说的「产生飘逸」就是这个。
+    /// 现在这个数只在这里有一份。
+    static let cellHorizontalPadding: CGFloat = 12
+    /// 表格里的字号（左列 14、右列 13 都用它当基准）。
+    static let cellFontSize: CGFloat = 13
     /// 格线颜色。只比面板地面亮一档：表格要读得出结构，但不能抢内容。
     static let ruleColor = Color.white.opacity(0.14)
     static let ruleThickness: CGFloat = 1
@@ -68,5 +77,34 @@ extension View {
             .lineLimit(1)
             .minimumScaleFactor(0.8)
             .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.88))
+    }
+}
+
+/// **「通话」那一格的标签** —— 一处实现，两个模式共用（2026-09-26 深夜）。
+///
+/// 用户的话：「为什么图文模式、图片文本模式跟语音视频模式右侧这个通话按钮不一样呢？
+/// 正常情况下这个通话按钮都应该是白色的呀？不对，我想想想，应该是绿色的。那你就按照视频
+/// 语音模式下这个通话按钮样式，修改一下文本跟图片的通话按钮样式，让它变成一个绿色图标跟
+/// 绿色的文字。」
+///
+/// 所以两边**必须长得完全一样**：没通话时是绿的（图标 + 文字都绿），通话中是红的 + 「挂断」。
+/// 之前两处各写一份（语音页在 `headerActionButton`、图文页在 `textCallChip`），
+/// 颜色就是这么飘开的 —— 现在它只有这一个实现。
+struct CallChipLabel: View {
+    let isCalling: Bool
+
+    /// 挂断用的红。与刘海那条带子上的挂断一个色。
+    static let hangUpColor = Color(red: 0.95, green: 0.42, blue: 0.40)
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: isCalling ? "phone.down.fill" : "phone.fill")
+                .font(.system(size: 12, weight: .medium))
+            Text(isCalling ? "挂断" : "通话")
+                .font(.system(size: 13, weight: isCalling ? .semibold : .regular))
+                .lineLimit(1)
+        }
+        // **绿色**（他明确要的），通话中变红。
+        .foregroundColor(isCalling ? Self.hangUpColor : DS.Colors.success)
     }
 }

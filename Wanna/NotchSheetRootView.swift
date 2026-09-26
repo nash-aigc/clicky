@@ -585,7 +585,7 @@ struct NotchSheetRootView: View {
                 Text(currentVoiceDisplayName)
                     .tableCellText(isOn: isVoicePickerPresented, fontSize: 13)
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, TableStyle.cellHorizontalPadding)
             .frame(height: NotchSupport.contentHeaderControlHeight)
             .contentShape(Rectangle())
         }
@@ -821,17 +821,9 @@ struct NotchSheetRootView: View {
                 await textCallController.start(cardID: cardID, cardKind: cardKind)
             }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: isCalling ? "phone.down.fill" : "phone.fill")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40)
-                                               : DS.Colors.success)
-                Text(isCalling ? "挂断" : "通话")
-                    .tableCellText(isOn: isCalling, fontSize: 13)
-                    .foregroundColor(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40)
-                                               : DS.Colors.success)
-            }
-            .padding(.horizontal, 10)
+            CallChipLabel(isCalling: isCalling)
+            // **与语音页那颗同一个内边距**（差 4pt 就是用户看到的"飘"）。
+            .padding(.horizontal, TableStyle.cellHorizontalPadding)
             .frame(height: NotchSupport.contentHeaderControlHeight)
             .contentShape(Rectangle())
         }

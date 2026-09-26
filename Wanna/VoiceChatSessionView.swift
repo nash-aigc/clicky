@@ -617,33 +617,24 @@ struct VoiceChatSessionView: View {
     /// 而「语音 / 视频」两个模式必用这一步，所以它搬到这一页的页头（那一排的最右端），
     /// 一键三态，不再有第二个地方能连。
     private var connectButton: some View {
+        // **与图文 / 文本那颗同一个标签**（用户 2026-09-26 深夜：「按照视频语音模式下这个
+        // 通话按钮样式，修改一下文本跟图片的通话按钮样式，让它变成一个绿色图标跟绿色的
+        // 文字」）—— 三个状态只差"点下去做什么"和颜色，形状与文案来自 `CallChipLabel`。
         switch controller.connectionPhase {
         case .connected:
             return AnyView(headerActionButton(
-                // **写「挂断」两个字**（用户 2026-09-26 深夜：「在语音和视频这两个模式下，
-                // 把通话按钮也写成通话，因为图文、图片文本模式下这个通话按钮效果挺好的，
-                // 把它也换成这个样式」）—— 与文本 / 图文那一颗同一种写法：图标 + 文字。
-                title: "挂断",
-                systemImage: "phone.down.fill",
-                tint: Color(red: 0.95, green: 0.42, blue: 0.40),
                 help: "断开这一场语音聊天（也可以点刘海右侧那颗红色电话）"
             ) {
                 controller.disconnectCurrentSession()
             })
         case .connecting:
             return AnyView(headerActionButton(
-                title: nil,
-                systemImage: "ellipsis",
-                tint: Color(red: 0.98, green: 0.73, blue: 0.14),
-                help: "正在建立连接",
                 isEnabled: false,
+                help: "正在建立连接",
                 action: {}
             ))
         case .idle:
             return AnyView(headerActionButton(
-                title: "通话",
-                systemImage: "phone.fill",
-                tint: DS.Colors.success,
                 help: "开始这一场语音聊天"
             ) {
                 controller.connectToRole(
@@ -673,30 +664,25 @@ struct VoiceChatSessionView: View {
     /// —— 它们并排站在一起，圆角与高度必须是同一个来源。
     /// `title` 传 nil = **只要图标**（通话那颗就是：用户 2026-09-26「该按钮没有文字，
     /// 只有一个图标，让用户知道它是一个通话功能」）。
-    private func headerActionButton(title: String?,
-                                    systemImage: String,
-                                    tint: Color,
-                                    help: String,
-                                    isEnabled: Bool = true,
-                                    action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage)
-                    .font(.system(size: title == nil ? 13 : 11, weight: .medium))
-                if let title {
-                    Text(title)
-                        .font(.system(size: Self.headerControlFontSize, weight: .medium))
-                        .lineLimit(1)
-                }
-            }
-            .foregroundColor(isEnabled ? tint : tint.opacity(0.55))
-            .padding(.horizontal, Self.headerControlHorizontalPadding)
-            .frame(height: Self.headerControlHeight)
-            .fixedSize(horizontal: true, vertical: false)
-            .contentShape(Rectangle())
+    /// 「通话」那一格的壳：内容固定是 `CallChipLabel`，只差"点下去做什么"和能不能点。
+    ///
+    /// 原来是 `title: String?` + `systemImage:` + `tint:` 三个参数 —— 正因为它是**通用**的，
+    /// 两个页面才会各配出一套颜色。现在它只服务通话这一件事。
+    private func headerActionButton(
+        isEnabled: Bool = true,
+        help: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        let isCalling = controller.isCalling(cardID: cardID ?? "")
+        return Button(action: action) {
+            CallChipLabel(isCalling: isCalling)
+                .opacity(isEnabled ? 1 : 0.55)
+                .padding(.horizontal, Self.headerControlHorizontalPadding)
+                .frame(height: Self.headerControlHeight)
+                .fixedSize(horizontal: true, vertical: false)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
         .pointerCursor()
         .help(help)
     }
@@ -831,7 +817,7 @@ struct VoiceChatSessionView: View {
                     .lineLimit(1)
             }
             .foregroundStyle(isSelected ? DS.Colors.success : DS.Colors.textSecondary)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, TableStyle.cellHorizontalPadding)
             .frame(height: Self.headerControlHeight)
             .contentShape(Rectangle())
         }
@@ -862,7 +848,7 @@ struct VoiceChatSessionView: View {
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
             .foregroundColor(.white.opacity(isOpen ? 1.0 : 0.85))
-            .padding(.horizontal, 10)
+            .padding(.horizontal, TableStyle.cellHorizontalPadding)
             .frame(height: Self.headerControlHeight)
             .contentShape(Rectangle())
         }
@@ -1043,7 +1029,7 @@ struct VoiceChatSessionView: View {
                     .rotationEffect(.degrees(isOpen ? 180 : 0))
             }
             .foregroundColor(isEnabled ? .white.opacity(isOpen ? 1.0 : 0.85) : DS.Colors.textTertiary)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, TableStyle.cellHorizontalPadding)
             .frame(height: Self.headerControlHeight)
             .contentShape(Rectangle())
         }
@@ -1859,7 +1845,7 @@ struct VoiceChatSessionView: View {
     private static var headerControlHeight: CGFloat {
         NotchSupport.contentHeaderControlHeight
     }
-    private static let headerControlHorizontalPadding: CGFloat = 12
+    private static let headerControlHorizontalPadding = TableStyle.cellHorizontalPadding
     private static let headerControlFontSize: CGFloat = 12
 
     /// 模式下拉里**文字那一格**的固定宽度，取最长的模式名。
