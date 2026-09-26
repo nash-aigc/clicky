@@ -282,7 +282,14 @@ struct HomeSpaceSidebarView: View {
     private func taskGroups(forSessionID sessionID: String) -> some View {
         let groups = boardGroups(forSessionID: sessionID)
         ForEach(groups, id: \.id) { group in
-            taskGroupRow(group, indented: 10)
+            taskFolderRow(group)
+            // **展开后才列子任务**（子行原来在那份被删掉的重复实现里 ✗ —— 删重时把它一起删掉了，
+            // 于是箭头能翻、行却不出来 ✗）。
+            if expandedTaskGroups.contains(group.id) {
+                ForEach(group.members) { member in
+                    taskRow(member, indented: true)
+                }
+            }
         }
     }
 
@@ -302,7 +309,12 @@ struct HomeSpaceSidebarView: View {
                     .foregroundColor(DS.Colors.textTertiary)
                     .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 2)
                 ForEach(orphans) { group in
-                    taskGroupRow(group, indented: 12)
+                    taskFolderRow(group)
+                    if expandedTaskGroups.contains(group.id) {
+                        ForEach(group.members) { member in
+                            taskRow(member, indented: true)
+                        }
+                    }
                 }
             }
         }
@@ -311,88 +323,6 @@ struct HomeSpaceSidebarView: View {
     private func boardGroups(forSessionID sessionID: String) -> [AgentActivityBoard.SidebarGroup] {
         AgentActivityBoard.shared.sidebarGroups.filter { group in
             group.members.contains { $0.sessionID == sessionID }
-        }
-    }
-
-    /// 一个分组：可折叠的一行 + 展开后的子任务。
-    private func taskGroupRow(_ group: AgentActivityBoard.SidebarGroup, indented: CGFloat) -> some View {
-        let isOpen = expandedTaskGroups.contains(group.id)
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                if isOpen { expandedTaskGroups.remove(group.id) } else { expandedTaskGroups.insert(group.id) }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: isOpen ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(DS.Colors.textTertiary)
-                    Image(systemName: "folder")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(DS.Colors.accent.opacity(0.8))
-                    Text(group.members.first?.title ?? "一组任务")
-                        .font(.system(size: 11.5, weight: .medium))
-                        .foregroundColor(DS.Colors.textSecondary)
-                        .lineLimit(1)
-                    Text("· \(group.members.count)")
-                        .font(.system(size: 10.5))
-                        .foregroundColor(DS.Colors.textTertiary)
-                    Spacer(minLength: 4)
-                    taskStatusDot(group.worstStatus, size: 7)
-                }
-                // 对齐到主会话标题（头像右边那条竖线），不是贴着头像 ✗。
-                .padding(.leading, indented + 34)
-                .padding(.trailing, 12)
-                .frame(height: 30)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .pointerCursor()
-
-            if isOpen {
-                ForEach(group.members) { member in
-                    taskRow(member, indented: true)
-                }
-            }
-        }
-    }
-
-    // MARK: - 任务（刘海左侧那一排的同源视图）
-
-    /// 侧栏里的任务区。**和会话行长得不一样是要求，不是风格** —— 用户要靠"高度、图标、
-    /// 状态、呼吸灯"一眼分清"这是一次派出去的活"还是"一轮对话"。
-    ///
-    /// 同一个目标派出去的多个 agent 折成一个文件夹（`sidebarGroups`）：
-    /// 一组一行、点开看成员，组行显示"最坏的那个状态"（有失败就红、有在跑就呼吸）。
-    @ViewBuilder
-    private var taskSection: some View {
-        let groups = AgentActivityBoard.shared.sidebarGroups
-        if !groups.isEmpty {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("任务")
-                    .font(.system(size: 10, weight: .semibold))
-                    .tracking(0.7)
-                    .foregroundColor(DS.Colors.textTertiary)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 10)
-                    .padding(.bottom, 4)
-
-                ForEach(groups) { group in
-                    if group.isFolder {
-                        taskFolderRow(group)
-                        if expandedTaskGroups.contains(group.id) {
-                            ForEach(group.members) { member in
-                                taskRow(member, indented: true)
-                            }
-                        }
-                    } else if let onlyMember = group.members.first {
-                        taskRow(onlyMember, indented: false)
-                    }
-                }
-            }
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                    isTaskDotBreathing = true
-                }
-            }
         }
     }
 
