@@ -144,12 +144,14 @@ struct HomeSpaceSidebarView: View {
     /// **30，不是 34**：用户给的参照是「右侧这个展开的按钮」—— 窗口右上角那颗
     /// 「展开到全屏」，它是 30 高（`NotchBarActionButton` 的那一档）。两行合起来
     /// 4（上边距）+ 30 + 8 + 30 = 72，正好在那条线（80）之上留出 8pt。
-    private static let topButtonHeight: CGFloat = 30
+    private static var topButtonHeight: CGFloat { NotchSupport.sidebarTopButtonHeight }
+
+    /// 第 1 行与第 2 行之间（8），与 `NotchSupport` 里那个行内间距（6）不是一回事。
+    private static let topButtonRowSpacing: CGFloat = 8
 
     private static var topButtonRowsHeight: CGFloat {
         topButtonHeight * 2 + topButtonRowSpacing
     }
-    private static let topButtonRowSpacing: CGFloat = 8
 
     private var sidebarTopButtonRows: some View {
         VStack(spacing: Self.topButtonRowSpacing) {
@@ -159,7 +161,7 @@ struct HomeSpaceSidebarView: View {
             // 折叠第 2。折叠那颗以前是**窗口级**画在面板左上角的，现在搬进这一行：
             // 它就该和这些按钮排在一起，而不是浮在它们上面（浮着的那颗已经删掉，
             // 右侧那颗窗口级的「收起侧栏」还在，两颗动作本来相同）。
-            HStack(spacing: 6) {
+            HStack(spacing: NotchSupport.sidebarTopRowSpacing) {
                 // **折叠在最左，设置第 2**（用户 2026-09-26：「左侧顶部第一行最左侧应为折叠
                 // 按钮（当前写错了），第二个是设置」—— 上一轮他说"设置放在折叠的左侧"，
                 // 这一轮更正回来了）。
@@ -187,7 +189,7 @@ struct HomeSpaceSidebarView: View {
             // 「角色」是他这一轮点名要回来的（上一轮他删过一次）：它对应**设置里的角色页**
             //（「对应的关系就是在设置页面里面这个角色」）—— 也就是设计角色的地方；
             // 语音 / 视频模式下**选用**哪个角色在卡片页头上，两条路各管一件事。
-            HStack(spacing: 6) {
+            HStack(spacing: NotchSupport.sidebarTopRowSpacing) {
                 sidebarTopButton(title: "角色", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     showsSettings = false
@@ -428,12 +430,11 @@ struct HomeSpaceSidebarView: View {
     /// 说「点击时没有高亮选中效果」—— 所以它回来了：**点出来的那张就该一直亮着**，
     /// 这既是"我点了哪张"的回执，也是"右列在显示谁"的指示。
     private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
-        switch card.kind {
-        case .mainLoop:
-            return sessionsModel.activeSessionID?.uuidString == card.entityID
-        case .claudeCode, .review:
-            return agentSessionManager.selectedAgentID?.uuidString == card.entityID
-        }
+        AgentCardModel.currentCardID(
+            section: agentSessionManager.selectedSidebarSection,
+            activeSessionID: sessionsModel.activeSessionID,
+            selectedAgentID: agentSessionManager.selectedAgentID
+        ) == card.entityID
     }
 
     /// 卡片右侧那颗「通话」。
@@ -877,7 +878,7 @@ struct HomeSpaceSidebarRailView: View {
             // 整个面板，收起来时它照样在 y=80 处穿过这一条窄栏）。
             Color.clear
                 .frame(height: max(0, NotchSupport.contentColumnHeaderRuleY + 10
-                                   - (NotchSupport.sheetHeaderTopInset - 34 + 30 + 8)))
+                                   - (4 + NotchSupport.sidebarTopButtonHeight + 8)))
 
             ScrollView {
                 VStack(spacing: 6) {
@@ -897,18 +898,52 @@ struct HomeSpaceSidebarRailView: View {
 
     /// 收起之后把侧栏放回来的那一颗。**图标**，与窗口右上角那颗「收起侧栏」同一个符号。
     private var expandButton: some View {
-        NotchBarActionButton(
-            title: nil,
-            systemImage: "sidebar.left",
-            isHighlighted: false,
-            help: "展开侧栏",
-            action: {
+        // **它与展开态那颗「折叠」逐点相同**（尺寸、高度、宽度、位置）—— 两处都读
+        // `NotchSupport` 的同一组常量，所以「折叠前后按钮不变」是结构上的事实。
+        // 用户 2026-09-26：「折叠之后这个折叠按钮的大小、高度、宽度应该不变才对，
+        // 就跟折叠前的大小、高度、宽度、位置应该不变。」
+        HStack(spacing: 0) {
+            sidebarRailIconButton(systemImage: "sidebar.left", help: "展开侧栏") {
                 SoundEffectPlayer.shared.play(.notchRevealed)
                 toggleSidebarCollapseAction()
             }
-        )
-        .padding(.top, NotchSupport.sheetHeaderTopInset - 34)
+            Spacer(minLength: 0)
+        }
+        .padding(.leading, NotchSupport.cornerControlInset)
+        .padding(.top, 4)
         .padding(.bottom, 8)
+    }
+
+    /// 与展开态第 1 行那颗同尺寸的图标按钮。
+    private func sidebarRailIconButton(systemImage: String,
+                                       help: String,
+                                       action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundColor(.white.opacity(0.82))
+                .frame(width: NotchSupport.sidebarTopButtonWidth,
+                       height: NotchSupport.sidebarTopButtonHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.white.opacity(0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
+        .clipShape(
+            UnevenRoundedRectangle(topLeadingRadius: 16,
+                                   bottomLeadingRadius: 8,
+                                   bottomTrailingRadius: 8,
+                                   topTrailingRadius: 8,
+                                   style: .continuous)
+        )
     }
 
     // MARK: 卡片（收起之后的列表）
@@ -969,12 +1004,11 @@ struct HomeSpaceSidebarRailView: View {
     /// 所以**同时只会有一颗亮着**（他看到的"点击折叠之后处于默认全选状态"就是这里原来
     /// 按分区各判各的造成的）。
     private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
-        switch card.kind {
-        case .mainLoop:
-            return sessionsModel.activeSessionID?.uuidString == card.entityID
-        case .claudeCode, .review:
-            return agentSessionManager.selectedAgentID?.uuidString == card.entityID
-        }
+        AgentCardModel.currentCardID(
+            section: agentSessionManager.selectedSidebarSection,
+            activeSessionID: sessionsModel.activeSessionID,
+            selectedAgentID: agentSessionManager.selectedAgentID
+        ) == card.entityID
     }
 
     // 这里原来是「Screen / Agent / Call」的**当前页标识** + 按分区切换的三个列表

@@ -329,6 +329,20 @@ nonisolated enum NotchSupport {
     /// 「完全相同」就成了结构上的事实，而不是两处各调一次数字。
     static let contentHeaderControlHeight: CGFloat = 34
 
+    /// 侧栏顶上那两排按钮的**行间距**与**高度** —— 展开态与收起态共用。
+    static let sidebarTopRowSpacing: CGFloat = 6
+    static let sidebarTopButtonHeight: CGFloat = 30
+
+    /// 第 1 行（4 颗）里一颗的宽度。
+    ///
+    /// **展开态的「折叠」与收起态那颗「展开」必须是同一个尺寸、同一个位置**
+    ///（用户 2026-09-26：「折叠之后这个折叠按钮的大小、高度、宽度应该不变才对，就跟折叠前的
+    /// 大小、高度、宽度、位置应该不变」）—— 所以那个宽度由这一个式子给，两处都读它，
+    /// 「不变」就成了结构上的事实而不是两处各调一次数字。
+    static var sidebarTopButtonWidth: CGFloat {
+        (expandedSidebarWidth - cornerControlInset * 2 - sidebarTopRowSpacing * 3) / 4
+    }
+
     /// 面板**顶角那一排按钮**离左右边缘的距离。
     ///
     /// 用户 2026-09-26 要求顶角的按钮与旁边的按钮**按边对齐**（「右侧这个展开的按钮跟语速

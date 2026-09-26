@@ -158,6 +158,28 @@ final class AgentCardModel: ObservableObject {
         cards = filtered(built, query: searchQuery)
     }
 
+    /// **主面板此刻在显示哪一张卡片** —— 一处实现，三处读（展开的卡片列表、收起的窄栏、
+    /// sheet 根的路由）。
+    ///
+    /// 判据必须**两个来源都看**：只看"当前活动会话"，主循环卡片永远算当前；只看"选中的
+    /// agent"，Claude Code 卡片永远算当前 —— **两张就同时亮**。2026-09-26 用户报的
+    /// 「总是两张同时选中，点击也无法切换」就是这个：两个条件各自都成立。
+    ///
+    /// 真正决定"右列在显示谁"的是**分区**：它说明主面板属于哪一族，族内再用 id 定位。
+    /// 分区也确实是随点击走的（`open(_:sessionsModel:agentSessionManager:)` 会同时改它），
+    /// 所以点击卡片时高亮跟着动。
+    static func currentCardID(section: SidebarSection,
+                              activeSessionID: UUID?,
+                              selectedAgentID: UUID?) -> String? {
+        switch section {
+        case .agents:
+            return selectedAgentID?.uuidString
+        case .conversations, .voiceChat:
+            // `.voiceChat` 是老分区（已无入口）—— 它归主循环那一族，判据与上面同类。
+            return activeSessionID?.uuidString
+        }
+    }
+
     /// 复盘 agent 的名字与文件夹 —— **一处定义**，卡片区和以后那个权限界面都读它。
     static let reviewAgentName = "复盘"
     static var reviewAgentFolderPath: String { WorkspaceDirectory.reviewsURL.path }
