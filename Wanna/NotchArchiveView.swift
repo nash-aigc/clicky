@@ -167,7 +167,7 @@ struct NotchArchiveArea: View {
     @ViewBuilder
     private var taskHistorySection: some View {
         if !finishedTasks.isEmpty {
-            let grouped = Dictionary(grouping: finishedTasks) { $0.sessionID ?? "" }
+            let grouped = Dictionary(grouping: finishedTasks) { cardKey(for: $0) }
             let order = grouped.keys.sorted { left, right in
                 // 用 `sortDate`（没结束就取开始时间）：兜底交出去的任务在结束前就已落盘，
                 // 它的 `finishedAt` 是空的（见 `FinishedTask.finishedAt` 的说明）。
@@ -193,9 +193,39 @@ struct NotchArchiveArea: View {
         }
     }
 
+    /// 归档里的分组键 = **现在拥有这条任务的卡片**（`cardKind` + `cardID`），
+    /// 不是「谁发起的会话」。
+    ///
+    /// 用户的设计是「按卡片分类，每个卡片包含其主对话和任务」，而一条被兜底的
+    /// 任务**现在属于 Claude Code 那张卡片** —— 按发起会话分组的话它会挂在主对话
+    /// 下面，而复盘要回答的恰恰是「哪些是 Claude Code 做的」。
+    ///
+    /// 老记录（2026-09-26 之前）没有 `cardKind`：那时任务都是主循环派出去的，
+    /// 所以回落成主循环 + 它的 `sessionID`。
+    private func cardKey(for task: FinishedTask) -> String {
+        let kind = task.cardKind ?? .mainLoop
+        let cardID = task.cardID ?? task.sessionID ?? ""
+        return "\(kind.rawValue):\(cardID)"
+    }
+
+    /// 分组标题：主循环卡片用会话标题，Claude Code 卡片用**代理的名字**（兜底那张
+    /// 就是「兜底」）。
+    private func cardTitle(forKey key: String, tasks: [FinishedTask]) -> String {
+        guard let first = tasks.first else { return "（卡片已不在）" }
+        guard (first.cardKind ?? .mainLoop) == .claudeCode else {
+            return first.sessionTitle ?? "（会话已不在）"
+        }
+        if let cardID = first.cardID,
+           let agentUUID = UUID(uuidString: cardID),
+           let agent = AgentSessionStore.allAgents().first(where: { $0.id == agentUUID }) {
+            return "\(agent.name) · Claude Code"
+        }
+        return "Claude Code"
+    }
+
     private func taskHistoryGroup(key: String, tasks: [FinishedTask]) -> some View {
         let isOpen = expandedHistoryGroups.contains(key)
-        let title = tasks.first?.sessionTitle ?? "（会话已不在）"
+        let title = cardTitle(forKey: key, tasks: tasks)
         return VStack(alignment: .leading, spacing: 0) {
             Button {
                 if isOpen { expandedHistoryGroups.remove(key) } else { expandedHistoryGroups.insert(key) }
