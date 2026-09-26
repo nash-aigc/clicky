@@ -81,9 +81,26 @@ final class TemporaryConversationModel: ObservableObject {
                     images: images,
                     systemPrompt: Self.temporarySystemPrompt,
                     userPrompt: question,
-                    onTextChunk: { [weak self] chunk in
+                    onTextChunk: { [weak self] accumulatedText in
+                        // **赋值，不是追加。**
+                        //
+                        // 这个回调每帧给的是**整段累积文本**，不是"新到的这一小块" ——
+                        // `BailianVisionChatAPI.analyzeImageStreaming` 的最后一行是
+                        // `await onTextChunk(currentAccumulatedText)`，参数名也写着
+                        // `accumulatedText`。追加就把它变成了"前缀之和"：第 k 帧之后
+                        // 屏上那段文字的长度约等于 k²/2，一条 30 字的回答会肿到 465 字、
+                        // 十几行 —— 然后这一轮结束、下面那行 `answer = answerText`
+                        // 把文字换回正确的那一份，整块又塌回去。用户 2026-09-26 报的
+                        // 「临时对话时……回复的气泡总是闪一下，突然变大一下，即便回复的
+                        // 是两个字的也会突然变大」就是它。
+                        //
+                        // 主对话那条路（`CompanionManager.swift` 里同一个回调）一直
+                        // 都是赋值，所以只有临时对话有这个现象。
+                        //
+                        // 赋值之后 `answer` 在最后一帧就已经等于 `answerText`，下面那一行
+                        // 因此是逐字节的 no-op —— 回合结束时界面上不再有任何变化。
                         guard let self, turnIndex < self.turns.count else { return }
-                        self.turns[turnIndex].answer += chunk
+                        self.turns[turnIndex].answer = accumulatedText
                     })
 
                 guard turnIndex < self.turns.count else { return }
