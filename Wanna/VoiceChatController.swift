@@ -524,6 +524,12 @@ final class VoiceChatController: ObservableObject {
 
     private var cardBinding: CardVoiceBinding?
 
+    /// 这一场会话绑定的是哪张卡片（nil = 不是从卡片进来的）。
+    ///
+    /// 给 sheet 根用：面板重新展开时它要把右列切回**跑着这场会话的那张卡片**，
+    /// 而不是旧的「语音聊天」分区。
+    var boundCardIdentity: CardVoiceBinding? { cardBinding }
+
     /// 连接时组装好的上下文（会话记录 + 角色提示词）。nil = 不是从卡片进来的。
     private var cardAssembledContext: CardChatContextAssembler.AssembledContext?
 

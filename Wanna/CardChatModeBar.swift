@@ -39,13 +39,16 @@ struct CardChatModeBar: View {
     @ObservedObject var preferences: CardChatPreferenceModel
 
     var body: some View {
+        baseRow
+    }
+
+    private var baseRow: some View {
         HStack(spacing: 6) {
+            roleChip
+
             ForEach(CardChatMode.allCases) { mode in
                 modeChip(mode)
             }
-
-            // 「角色」那颗按钮在模式**左边**（用户：「在语音聊天、视频聊天、图文聊天左侧
-            // 添加『角色』按钮」）—— 它随阶段 5 一起进来，这里先留出位置。
 
             if let leadingAccessory {
                 leadingAccessory
@@ -63,6 +66,50 @@ struct CardChatModeBar: View {
         // 各自再补一次间距必然会漂 —— 而右列那条横线的 y 正是按"页头总高"算出来的
         //（`contentColumnHeaderRuleY`）。间距住在这里，三页就一定是同一个总高。
         .padding(.bottom, NotchSupport.cardChatModeBandBottomSpacing)
+    }
+
+    // MARK: - 角色
+
+    /// 「角色」那颗按钮 —— **在四个模式的左边**（用户：「在语音聊天、视频聊天、图文聊天
+    /// 左侧添加「角色」按钮」）。
+    ///
+    /// 它显示当前选中的角色名，所以「现在是谁在跟我说话」不用点开就知道。
+    private var roleChip: some View {
+        let role = preferences.resolvedRole(forCardID: cardID, kind: cardKind, mode: currentMode)
+        let isRoleListOpen = preferences.openRoleListCardID == cardID
+        return Button {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            preferences.openRoleListCardID = isRoleListOpen ? nil : cardID
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "person.crop.circle")
+                    .font(.system(size: 11))
+                Text(role.displayName)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .lineLimit(1)
+                Image(systemName: isRoleListOpen ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .foregroundColor(.white.opacity(0.8))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(isRoleListOpen ? 0.12 : 0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help("换一个角色（它就是一段提示词）")
+    }
+
+    private var currentMode: CardChatMode {
+        preferences.mode(forCardID: cardID, kind: cardKind)
     }
 
     /// 一颗模式。观感与对话页那两颗「连续对话 / 临时对话」同一套
@@ -103,5 +150,149 @@ struct CardChatModeBar: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .help(mode.helpText)
+    }
+}
+
+/// 点开「角色」之后那块清单。
+///
+/// **它必须是独立的一个视图，而且由 sheet 根来画**（不是模式条自己的 `.overlay`）。
+/// 原因只有一个但很硬：模式条只有 36pt 高，清单挂在它的 `.overlay` 上时画得出、**收不到
+/// 点击** —— 实测点「管理角色…」会穿透到下面那一行预设按钮上（把预设菜单点开了），
+/// 也就是说那块清单看着能点、其实点不动。真正接得住的是右列那一整块（sheet 根的
+/// `overlay`），那里的 frame 足够大。
+///
+/// 展开状态因此住在 `CardChatPreferenceModel.openRoleListCardID` 上 —— 一条模式条和三页
+/// 共用的东西，状态放谁那儿都会漂，放模型上只有一个来源。
+struct CardChatRoleListPanel: View {
+
+    let cardID: String
+    let cardKind: CardKind
+    @ObservedObject var preferences: CardChatPreferenceModel
+
+    /// 清单里的行：**内容随模式变**（用户：「用户选择图文聊天时即使用此角色。用户选择
+    /// 语音聊天或视频聊天时，角色列表变化，不再包含图文聊天角色，而是用户独立设计的角色」）。
+    private var mode: CardChatMode {
+        preferences.mode(forCardID: cardID, kind: cardKind)
+    }
+
+    var body: some View {
+        let choices = preferences.roleChoices(for: mode, kind: cardKind)
+        let selectedID = preferences.resolvedRole(forCardID: cardID, kind: cardKind, mode: mode).id
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text("角色")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                Spacer(minLength: 4)
+                Button { preferences.openRoleListCardID = nil } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.55))
+                        .frame(width: 18, height: 18)
+                        .background(Circle().fill(Color.white.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                .pointerCursor()
+                .help("收起角色列表")
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+
+            Divider().overlay(Color.white.opacity(0.08))
+
+            ForEach(choices) { choice in
+                row(choice, isSelected: choice.id == selectedID, choiceCount: choices.count)
+            }
+
+            Divider().overlay(Color.white.opacity(0.08))
+
+            Button {
+                preferences.openRoleListCardID = nil
+                preferences.openRoleSettingsAction?()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 10.5))
+                    Text("管理角色…")
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(.white.opacity(0.72))
+                .padding(.horizontal, 10)
+                .frame(height: 32)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .help("打开设置里的角色页：新建、改名、写提示词")
+        }
+        .frame(width: 250)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(DS.Colors.surface2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
+    }
+
+    /// 清单里的一行。
+    ///
+    /// 「默认角色」（= 这个 Agent 自己的系统提示词）**不可改、不可删、置顶**，这是用户
+    /// 明确要求的；这一行显示的是**当下生效的那份提示词**有多少字，而不是内容 —— 那几千字
+    /// 放在一个下拉里没人读，要看它去「设置 → 对话与记忆 → 系统提示词」。
+    private func row(_ choice: CardChatRoleChoice,
+                     isSelected: Bool,
+                     choiceCount: Int) -> some View {
+        // 文本 / 图文模式只有「默认角色」这一个，点它没有意义，所以那一行不是按钮而是说明。
+        let isSelectable = !(choice.source == .agentPreset && choiceCount == 1)
+        return Button {
+            guard isSelectable else { return }
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            preferences.setVoiceRoleID(choice.id, forCardID: cardID)
+            preferences.openRoleListCardID = nil
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 11))
+                    .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.25))
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(choice.displayName)
+                        .font(.system(size: 12.5, weight: isSelected ? .semibold : .regular))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    Text(subtitle(for: choice))
+                        .font(.system(size: 10.5))
+                        .foregroundColor(.white.opacity(0.40))
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 4)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 40)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .disabled(!isSelectable)
+        .help(subtitle(for: choice))
+    }
+
+    private func subtitle(for choice: CardChatRoleChoice) -> String {
+        switch choice.source {
+        case .agentPreset:
+            return mode.isVoiceLike
+                ? "这个 Agent 自己的提示词"
+                : "这个 Agent 自己的系统提示词（不可改）"
+        case .userRole:
+            return "你自己设计的角色 · \(choice.promptText.count) 字"
+        case .builtInVoiceRole:
+            return "还没有自己的角色，先用内置这条 · \(choice.promptText.count) 字"
+        }
     }
 }

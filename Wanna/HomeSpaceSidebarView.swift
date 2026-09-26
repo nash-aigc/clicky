@@ -64,6 +64,13 @@ struct HomeSpaceSidebarView: View {
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
 
+    /// 「角色」那一行：点一下直接跳到设置里的**角色编辑页**（新建 / 改名 / 写提示词）。
+    /// 与上面两条同一个形状 —— 侧栏只负责带路，页面还是设置里那一页。
+    ///
+    /// 用户 2026-09-26 把语音 / 视频做成了**卡片的两个模式**，选用角色的地方因此搬到
+    /// 卡片页头上去了（`CardChatModeBar`）；这一行只留下"设计角色"这一件事。
+    var openRoleSettingsAction: () -> Void = {}
+
     @State private var hoveringSessionID: UUID?
     @State private var renamingSessionID: UUID?
     @State private var renameDraft: String = ""
@@ -366,11 +373,15 @@ struct HomeSpaceSidebarView: View {
                     title: "角色",
                     systemImage: "person.crop.circle",
                     isHighlighted: false,
-                    help: "语音 / 视频聊天用的角色预设"
+                    help: "设计角色：它就是一段提示词，语音 / 视频模式下跟着卡片一起用"
                 ) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
+                    // **改成进设置里的角色页**（2026-09-26）。原先它把右列切到「语音聊天」
+                    // 那一页 —— 而语音 / 视频现在是**卡片的两个模式**，那张卡片页上就有一个
+                    // 角色按钮负责选用；留着两条路能连语音聊天，只会让人分不清哪一条算数。
+                    // 这一行因此只做一件事：去写角色（新建、改名、提示词）。
                     showsSettings = false
-                    agentSessionManager.selectedSidebarSection = .voiceChat
+                    openRoleSettingsAction()
                 }
 
                 NotchBarActionButton(

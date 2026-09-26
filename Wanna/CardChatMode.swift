@@ -33,7 +33,7 @@ import Foundation
 import Combine
 
 /// 一张卡片的聊天模式。
-nonisolated enum CardChatMode: String, CaseIterable, Sendable, Equatable {
+nonisolated enum CardChatMode: String, CaseIterable, Sendable, Equatable, Identifiable {
     /// 纯文字：不截屏，走 Agent 原本的管线。
     case text
     /// 图文：截屏 + 文字，走 Agent 原本的管线（**主循环的默认**）。
@@ -52,6 +52,10 @@ nonisolated enum CardChatMode: String, CaseIterable, Sendable, Equatable {
         case .video: return "视频"
         }
     }
+
+    /// `ForEach` 要的 id。用 rawValue 而不是 `self` —— 模式的 rawValue 就是它落到
+    /// `AppSettings.json` 里的那个字符串，两处同一个来源。
+    var id: String { rawValue }
 
     var helpText: String {
         switch self {

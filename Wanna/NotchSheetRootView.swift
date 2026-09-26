@@ -194,6 +194,12 @@ struct NotchSheetRootView: View {
                                     // `selectedSettingsPage`。
                                     selectedSettingsPage = .recording
                                     showsSettings = true
+                                },
+                                // 「角色」那一行现在只去设计角色（语音 / 视频的选用在卡片页头上，
+                                // 见 `CardChatModeBar`）—— 同一个入口形状，指向角色编辑页。
+                                openRoleSettingsAction: {
+                                    selectedSettingsPage = .voiceChatRoles
+                                    showsSettings = true
                                 }
                             )
                             .frame(width: Self.expandedSidebarWidth)
@@ -302,6 +308,21 @@ struct NotchSheetRootView: View {
                                 .frame(height: 1)
                                 .offset(y: NotchSupport.contentColumnHeaderRuleY)
                         }
+                        // **角色清单画在这一层**（2026-09-26）：它挂在模式条上的话，
+                        // 那条只有 36pt 高，清单画得出、却**收不到点击**（实测点「管理角色…」
+                        // 穿透到了下面那行预设按钮上）。这一层是整块右列，frame 够大，
+                        // 而 `.overlay` 不参与布局 —— 清单浮在内容上，正文不会被推下去。
+                        .overlay(alignment: .topLeading) {
+                            if let openCardID = cardChatPreferences.openRoleListCardID,
+                               openCardID == activeCardID {
+                                CardChatRoleListPanel(cardID: openCardID,
+                                                      cardKind: activeCardKind,
+                                                      preferences: cardChatPreferences)
+                                    .padding(.leading, NotchSupport.contentColumnHorizontalMargin)
+                                    .offset(y: NotchSupport.sheetHeaderTopInset
+                                            + NotchSupport.cardChatModeBandHeight)
+                            }
+                        }
                     }
 
                     // 窗口顶栏那几颗按钮。压在两列**之上**：右边三颗（收起侧栏 /
@@ -339,6 +360,12 @@ struct NotchSheetRootView: View {
             }
         }
         .onAppear {
+            // 「管理角色…」（三页共用那条模式条上的入口）要打开设置里的角色页 ——
+            // 只有这里知道怎么开，所以把动作装给那个模型一次。
+            cardChatPreferences.openRoleSettingsAction = {
+                selectedSettingsPage = .voiceChatRoles
+                showsSettings = true
+            }
             consumeRequestedSettingsPageIfNeeded()
             openVoiceChatSectionIfASessionIsLive()
         }
@@ -359,6 +386,14 @@ struct NotchSheetRootView: View {
     private func openVoiceChatSectionIfASessionIsLive() {
         guard !showsSettings else { return }
         guard voiceChatController.connectionPhase != .idle else { return }
+        // **卡片绑定的会话要回到它那张卡片。** 语音 / 视频现在是卡片的两个模式，所以一场
+        // 跑着的会话属于某张卡片 —— 把用户丢到旧的那个「语音聊天」分区（那一页不归任何
+        // 卡片）等于让他在一个跟这场会话无关的页面里看着它跑。
+        if let binding = voiceChatController.boundCardIdentity {
+            agentSessionManager.selectedSidebarSection =
+                binding.cardKind == .mainLoop ? .conversations : .agents
+            return
+        }
         agentSessionManager.selectedSidebarSection = .voiceChat
     }
 

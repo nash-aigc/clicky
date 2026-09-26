@@ -25,6 +25,19 @@ final class CardChatPreferenceModel: ObservableObject {
     /// 与 `VoiceChatSessionView` 里 `favouriteRevision` 同一个手法。
     @Published private(set) var revision: Int = 0
 
+    /// 「管理角色…」要打开设置里的角色页 —— 而"怎么打开设置"只有 sheet 根知道
+    ///（`showsSettings` / `selectedSettingsPage` 住在那里）。由 `NotchSheetRootView`
+    /// 在出现时装进来：三个内容列共用同一条模式条，各自把这件事一路传下去只会多三处可能漏。
+    var openRoleSettingsAction: (() -> Void)?
+
+    /// 哪一个卡片的角色清单是展开的（nil = 都没开）。
+    ///
+    /// **展开状态放在这里而不是各页的 `@State`**：清单必须画在比那条页头带更大的范围里
+    ///（不然它收不到点击 —— 实测：挂在模式条的 `.overlay` 上时，点击会**穿透**到下面
+    /// 那一行预设按钮上，清单看着能点、其实点不动）。真正能接住的容器在 sheet 根那一层
+    ///（右列那一整块），所以状态跟着上去了，清单也由那里画。
+    @Published var openRoleListCardID: String?
+
     private var observers: [NSObjectProtocol] = []
 
     private init() {
@@ -62,7 +75,13 @@ final class CardChatPreferenceModel: ObservableObject {
             // 文本 / 图文：只有 Agent 自己那一个，置顶、不可改。
             return [Self.agentPresetChoice(for: kind)]
         }
-        let userRoles = VoiceChatRoleStore.allRoles().filter { !$0.isDefault }
+        // **按 id 排除内置那条，不能只看 `isDefault`**：磁盘上那条内置角色的
+        // `isDefault` 实测是 **false**（2026-09-26 的 `VoiceChatRoles.json`），所以只看那个
+        // 标志会把它当成"用户自己设计的角色"列出来 —— 界面上就是一个叫「默认角色」、
+        // 副标题却写着「你自己设计的角色」的行。id 才是它稳定的身份。
+        let userRoles = VoiceChatRoleStore.allRoles().filter {
+            $0.id != VoiceChatRole.defaultRoleID && !$0.isDefault
+        }
         guard !userRoles.isEmpty else {
             // 一个都没建过 —— 用语音子系统那条内置默认角色兜底，否则这个模式没法跑
             //（没有角色 = 组装提示词的第二部分是空的，模型会被要求"作为某个角色"却
