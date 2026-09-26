@@ -150,6 +150,28 @@ macOS notch-based companion app. Lives entirely in the notch (no dock icon, no m
 
 This fork talks to Alibaba Cloud Bailian (Model Studio) directly. The the earlier Cloudflare Worker proxy is no longer in the request path — the API key lives in a gitignored plist on the user's machine.
 
+## 当前状态（2026-09-27 记，用户口述）
+
+> **整个排版重新设计，工程完全正常。合并了语音、语音 agent 和 screen 三种模式为全新的模式。
+> 当前主页面排版为最终版本设置，页面排版暂定。**
+
+拆开说清这几句指的是什么，免得下次读到的人猜：
+
+- **「三种模式合并成新的模式」**：侧栏原来那个「对话 / Agent / 语音聊天」分区切换器**没有了** ——
+  现在侧栏是**卡片**（一张卡片 = 一个 Agent 主体），每张卡片各有四个**聊天模式**
+  （文本 / 图文 / 语音 / 视频，见 `CardChatMode`）。原来那三个分区不再各自是一个页面，
+  而是同一张卡片上的四种用法：文本 / 图文走这条 Agent 自己的管线（工具、MCP、执行都在），
+  语音 / 视频走语音聊天子系统（只带会话记录 + 角色，不执行任务）。所以「screen」那个分区
+  变成了「图文」这个模式，「语音 agent」变成了「语音 / 视频」两个模式。
+- **「主页面排版为最终版本」**：主页面 = 刘海展开的那块面板（左卡片列 + 右内容列）。
+  它的几何已经是**量出来的**，不是调出来的：两侧页头总高 **64**（= 录音带的高度：刘海 32 +
+  转写条 32），分割线与录音带下沿**同一条线**；侧栏宽 **207**，使它的右边缘与录音带左边缘
+  **重合**（684.5 = 684.5，实测）。这一带的常量都在 `NotchSupport` 里，且各自带一条
+  「怎么算出来的」注释 —— 改之前先读那几行。
+- **「设置页面排版暂定」**：设置那十页仍是旧排版（每页自己一格一格的 `SettingsCard`），
+  不在这一轮的重设计范围内，**没有跟着改**，所以别拿主页面的那套「表格」去要求它。
+- **「工程完全正常」**：`xcodebuild … build` 通过、`WannaTests` 全绿、真机跑着没有崩溃报告。
+
 ## Architecture
 
 - **App Type**: Notch-only (`LSUIElement=true`), no dock icon, no main window, no menu bar icon
