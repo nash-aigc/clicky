@@ -1354,6 +1354,34 @@ final class LongFormRecorderController: ObservableObject {
 
     // MARK: - 开始 / 停止
 
+    /// **刘海右侧那颗按钮被点了一下** —— 收起态的全局监听与展开态的 SwiftUI 按钮都走这里。
+    ///
+    /// 用户 2026-09-26：「刘海屏右侧的录音按钮，在录音时点击它应停止录音并进入转写模式，
+    /// 现在点击没有功能，需要让它点击后自动停止录音」。
+    ///
+    /// 四态一一对应，**没有任何一条会掉到"开始录音"上去**：
+    ///
+    ///   * 润色中 / 倒计时中 → **放弃这一场**（已经转写的文字与录音文件都保留，只是不进剪贴板、
+    ///     不粘贴 —— 这正是他要的「点击数字自动取消转写，但已转写的内容或录音文件必须保留」）；
+    ///   * 录音中 → 停止并进入转写；
+    ///   * 其它 → 开始录（接着上一场）。
+    ///
+    /// **这一处必须唯一。** 原来这份判断在两个地方各写了一遍（收起态监听的闭包、展开态那颗
+    /// SwiftUI 按钮），而两处的「润色中」那一支都误留了一段**构造视图**的代码
+    ///（`ShimmeringPolishText(text:)`）—— 它既不取消也不 `return`，于是往下**掉进了"开始录音"**
+    /// ✗。这就是"点了没反应、甚至更糟"的来源：一处逻辑写两遍，错也只错在其中一遍，而
+    /// 用户看到的是同一个按钮。
+    func handleWingButtonTap() {
+        publishDiagnostic("右侧按钮被点：润色=\(isPolishingTranscript) 倒计时=\(isFinalizingTranscript) 录音=\(isRecording) 会话=\(isSessionActive)")
+        if isPolishingTranscript || isFinalizingTranscript {
+            cancelCurrentRecording()
+        } else if isRecording {
+            stopRecording()
+        } else {
+            startRecording(resumingCurrentSession: isSessionActive)
+        }
+    }
+
     func toggleRecording() {
         if isRecording {
             stopRecording()

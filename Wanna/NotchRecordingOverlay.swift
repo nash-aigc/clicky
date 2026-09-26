@@ -213,29 +213,13 @@ struct NotchRecordingBandView: View {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
             Button {
-                // 倒计时期间点它 = **放弃这一场**（用户：「如果在显示数字的过程中，
-                // 用户点击这个数字……就自动取消转写，包括弹窗等全都自动取消，
-                // 也不需要粘贴到剪贴板，直接放弃这次任务」）。
-                if recorder.isPolishingTranscript {
-                    // **AI 润色中** —— 一道光扫过文字。
-                    //
-                    // 用户 2026-09-25 改的要求：「改为蓝白或蓝绿色彩光效果，光波在文字上
-                    // 移动，移动时文字略微凸起或变化，**字号保持不变**」（原来那版是
-                    // 字号忽大忽小，已经不是他要的了）。
-                    //
-                    // 字距：`AI` 和 `润色` 之间用一个 **thin space**（U+2009），
-                    // 比普通空格窄、又不至于挨在一起 —— 用户：「缩小"AI"与"润色"之间的
-                    // 字间距，保留一点空隙，不要完全挨着」。
-                    ShimmeringPolishText(text: "AI\u{2009}润色中")
-                } else if recorder.isFinalizingTranscript {
-                    LongFormRecorderController.shared.cancelCurrentRecording()
-                    return
-                }
-                if recorder.isRecording {
-                    LongFormRecorderController.shared.stopRecording()
-                } else {
-                    LongFormRecorderController.shared.startRecording(resumingCurrentSession: true)
-                }
+                // 收起态走全局监听（面板 `ignoresMouseEvents`），展开态走这一颗 ——
+                // **两条路都收敛到控制器那一个方法**，所以不可能再像原来那样两处各写一遍、
+                // 其中一处还写着写着掉进"开始录音"。
+                //
+                // （那两段误留的 `ShimmeringPolishText(text:)` 曾经长在这里：它是**显示**用的
+                // 视图，被错当成动作粘进了判断里 —— 既不取消也不 return，于是往下开了一场新录音。）
+                LongFormRecorderController.shared.handleWingButtonTap()
             } label: {
                 RecordingWaveformLabel(
                     level: recorder.isSpeechDetected ? recorder.audioLevel : heldLevel,
@@ -1377,12 +1361,22 @@ final class NotchRecordingOverlayController {
         let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
         if isExpanded || collapsedWingHitRects.isEmpty {
             if let m = collapsedWingMonitor { NSEvent.removeMonitor(m); collapsedWingMonitor = nil }
+            // DIAGNOSTIC (2026-09-26)：两翼点击"没反应"时，第一件事是看监听到底装没装。
+            if collapsedWingMonitor != nil || collapsedWingHitRects.isEmpty {
+                NSLog("[LongForm] 两翼监听：卸下（展开=\(isExpanded) 矩形数=\(collapsedWingHitRects.count)）")
+            }
             return
         }
         guard collapsedWingMonitor == nil else { return }
+        NSLog("[LongForm] 两翼监听：装上（右=\(collapsedWingHitRects.count > 1 ? NSStringFromRect(collapsedWingHitRects[1]) : "-")）")
         collapsedWingMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
             guard let self else { return }
             let point = NSEvent.mouseLocation
+            // **只记"没命中"**：命中是常态，每次都打会把这个文件淹掉；而"点了没反应"
+            // 恰恰就是这一行能回答的问题（2026-09-26 排查右翼时就是靠它）。
+            if self.collapsedWingHitRects.firstIndex(where: { $0.contains(point) }) == nil {
+                NSLog("[LongForm] 全局点击 @\(NSStringFromPoint(point)) 没命中任何一翼（左=\(self.collapsedWingHitRects.first.map { NSStringFromRect($0) } ?? "-")）")
+            }
 
             // 摄像头小窗：按**视图发布的真实矩形**派发。
             //
@@ -1405,21 +1399,8 @@ final class NotchRecordingOverlayController {
                     SoundEffectPlayer.shared.play(.recordingEditorOpened)
                     LongFormRecorderController.shared.toggleTranscriptEditor()
                 } else {
-                    let recorder = LongFormRecorderController.shared
-                    if recorder.isPolishingTranscript {
-                    // **AI 润色中** —— 一道光扫过文字。
-                    //
-                    // 用户 2026-09-25 改的要求：「改为蓝白或蓝绿色彩光效果，光波在文字上
-                    // 移动，移动时文字略微凸起或变化，**字号保持不变**」（原来那版是
-                    // 字号忽大忽小，已经不是他要的了）。
-                    //
-                    // 字距：`AI` 和 `润色` 之间用一个 **thin space**（U+2009），
-                    // 比普通空格窄、又不至于挨在一起 —— 用户：「缩小"AI"与"润色"之间的
-                    // 字间距，保留一点空隙，不要完全挨着」。
-                    ShimmeringPolishText(text: "AI\u{2009}润色中")
-                } else if recorder.isFinalizingTranscript { recorder.cancelCurrentRecording() }
-                    else if recorder.isRecording { recorder.stopRecording() }
-                    else { recorder.startRecording(resumingCurrentSession: true) }
+                    // 右翼 = 那一颗录音按钮（与展开态那颗同一个处理入口）。
+                    LongFormRecorderController.shared.handleWingButtonTap()
                 }
             }
         }
