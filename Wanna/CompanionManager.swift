@@ -873,6 +873,15 @@ final class CompanionManager: ObservableObject {
         // invisible on the desktop until it finished.
         _ = agentHUDController
 
+        // **那一排按钮点开的面板，同样必须在有人点之前就存在。**
+        //
+        // 它是个单例，而**它的 `init` 才是装订阅的地方**（`manualPanelID` 一变就开面板）。
+        // 2026-09-26 用户报「点击它之后没有下拉菜单」，查到最后是这一行缺失：
+        // `AgentPanelController` 在全仓**没有任何引用**，于是那个单例从来没被创建过、
+        // 订阅从来没装上 —— 点按钮时 `togglePanel` 确实把 id 写进去了，**只是没人在听**。
+        // 单例不是"用了才活"的；没人碰的懒汉单例就是一块死代码。
+        _ = AgentPanelController.shared
+
         // The panel used to read the configuration through computed properties —
         // the configuration is resolved per request, so there is nothing cached to
         // invalidate on a change; observers only need a signal to re-render. A

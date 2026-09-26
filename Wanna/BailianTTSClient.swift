@@ -542,6 +542,20 @@ final class BailianTTSClient {
     ///   Comes from the app settings (说 → 长回答分段合成). The documented service
     ///   cap for `input.text` is 600 characters and the store clamps to that, so
     ///   an oversized value can never reach the request.
+    /// 这段文字有没有**能读出来的内容**。
+    ///
+    /// 判据是「有没有字母或数字」，**不是 `isEmpty`**。官方错误码页写明
+    /// `InvalidParameter` + 「Please ensure input text is valid」的成因是
+    /// **没有发送待合成文本**（[错误码 - 百炼](https://help.aliyun.com/zh/model-studio/error-code)），
+    /// 而一个只含换行、空白、标点、或者零宽字符（模型偶尔吐 `\u{200B}`）的段，
+    /// 在服务端看来同样是"没有文本" —— 2026-09-26 用户底部那条红字就是它。
+    ///
+    /// 这种段**跳过就好，不该当错误报**：它本来就没什么可读的。
+    /// 注意 Swift 里 `Character.isLetter` 对中日韩汉字为真，所以中文正文不会误伤。
+    static func hasSpeakableContent(_ text: String) -> Bool {
+        text.contains { $0.isLetter || $0.isNumber }
+    }
+
     static func splitIntoSpeakableChunks(
         _ text: String,
         maximumCharactersPerChunk: Int
@@ -584,7 +598,8 @@ final class BailianTTSClient {
             chunks.append(currentChunk)
         }
 
-        return chunks
+        // 没有可读内容的块不发（整段合成这条路的收口）。见 `hasSpeakableContent`。
+        return chunks.filter(Self.hasSpeakableContent)
     }
 
     /// Splits on sentence-ending punctuation, keeping the punctuation attached to
@@ -1050,6 +1065,12 @@ final class BailianTTSClient {
         // MARK: Synthesis and playback pipeline
 
         private func enqueueSegment(_ segment: String) {
+            // **没有可读内容的段不发。** 官方错误码页写明 `InvalidParameter` +
+            // 「Please ensure input text is valid」的成因是"没有发送待合成文本"，
+            // 而一个只含换行/空白/标点/零宽字符的段在服务端看来同样是"没有文本"
+            //（2026-09-26 用户底部那条红字）。跳过而不是报错 —— 它本来就没什么可读的。
+            // 计数器不加、日志也不打：这个段不存在。
+            guard BailianTTSClient.hasSpeakableContent(segment) else { return }
             queuedSegmentCount += 1
             // TEMPORARY PROBE (2026-09-25)：带上绝对时间戳，才能与 `CascadeVoiceEngine`
             // 那条尺子（回合开始 / 首字 / 首段入队）以及 `aecprobe` 的 `chunkStart`
