@@ -340,7 +340,7 @@ final class AgentSessionManager: ObservableObject {
     /// Sends one user instruction to an agent — the whole turn lifecycle in
     /// one call: gate checks, spawn-or-reuse the subprocess, write the turn to
     /// stdin, record it.
-    func sendTurn(_ turnText: String, to agentID: UUID) {
+    func sendTurn(_ turnText: String, to agentID: UUID, attachesScreenshot: Bool = false) {
         let trimmedText = turnText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
 
@@ -389,24 +389,70 @@ final class AgentSessionManager: ObservableObject {
         lastAgentErrorMessage = nil
 
         Task {
-            await self.deliverTurn(trimmedText, toAgent: agent)
+            await self.deliverTurn(trimmedText, toAgent: agent, attachesScreenshot: attachesScreenshot)
+        }
+    }
+
+    /// 把这一轮的屏幕截图写成一个文件，返回路径（失败返回 nil）。
+    ///
+    /// **为什么是"文件 + 路径"，而不是把图塞进 stdin 的协议里**：`--input-format
+    /// stream-json` 至今**没有官方文档**（官方仓库里那个 issue 就是在要这份文档，社区流传的几份
+    /// 都是逆向出来的）。往一个没有文档的协议里加一种 content block 正是这个仓库不允许的猜 ——
+    /// 猜错的两种结果（静默忽略 / 直接报错）都要等用户真用一次才发现。
+    ///
+    /// 写文件走的是**有文档的那条路**：claude 自己的 Read 工具能读图片、并把它作为图像交给模型，
+    /// 所以它**真的看得到**这块屏幕。落点是 App 自己的目录（不污染用户的项目文件夹），
+    /// 文件名带时间戳所以一轮一张、不会互相覆盖。
+    private func writeScreenshotForTurn() async -> String? {
+        do {
+            let captures = try await CompanionScreenCaptureUtility.captureAllScreensAsJPEG()
+            guard let first = captures.first else { return nil }
+            let directory = AppSupportDirectory.folderURL?
+                .appendingPathComponent("AgentScreenshots", isDirectory: true)
+            guard let directory else { return nil }
+            try FileManager.default.createDirectory(at: directory,
+                                                    withIntermediateDirectories: true)
+            let stamp = ISO8601DateFormatter().string(from: Date())
+                .replacingOccurrences(of: ":", with: "-")
+            let fileURL = directory.appendingPathComponent("截图-\(stamp).jpg")
+            try first.imageData.write(to: fileURL, options: .atomic)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600],
+                                                   ofItemAtPath: fileURL.path)
+            return fileURL.path
+        } catch {
+            print("⚠️ Agent 这轮的截图没落盘：\(error)")
+            return nil
         }
     }
 
     /// Spawn-or-reuse and write. Split out of `sendTurn` so the recording
     /// above happens synchronously and this part can await the (blocking)
     /// executable resolution.
-    private func deliverTurn(_ turnText: String, toAgent agent: AgentSession) async {
+    private func deliverTurn(_ turnText: String,
+                             toAgent agent: AgentSession,
+                             attachesScreenshot: Bool) async {
+        // 「图文」模式这一轮带屏幕：先把截图落盘，再把路径写进这一轮的话里。
+        // **在重试之前算好** —— 下面若因进程刚死而重启一次，用的是同一份（截图一次就够）。
+        var deliveredText = turnText
+        if attachesScreenshot, let screenshotPath = await writeScreenshotForTurn() {
+            deliveredText = """
+            这一轮带了屏幕截图：\(screenshotPath)
+            （需要看屏幕时用它 —— 你有读文件的能力，不要猜屏幕上有什么。）
+
+            \(turnText)
+            """
+        }
+
         do {
             let processBridge = try await ensureProcess(for: agent)
-            let wasWritten = processBridge.sendUserTurn(turnText)
+            let wasWritten = processBridge.sendUserTurn(deliveredText)
             if !wasWritten {
                 // The process died between the alive-check and the write —
                 // relaunch once (with --resume) and try again rather than
                 // reporting a failure the user did not cause.
                 processesByAgentID[agent.id] = nil
                 let relaunchedBridge = try await ensureProcess(for: agent)
-                guard relaunchedBridge.sendUserTurn(turnText) else {
+                guard relaunchedBridge.sendUserTurn(deliveredText) else {
                     throw AgentProcessError.turnDeliveryFailed
                 }
             }

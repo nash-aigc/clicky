@@ -716,10 +716,21 @@ struct AgentSessionView: View {
     private func submitComposerDraft(_ agent: AgentSession?) -> () -> Void {
         return {
             guard !composerDraftIsEmpty, let agent else { return }
-            agentSessionManager.sendTurn(composerDraft, to: agent.id)
+            // 「图文」模式这一轮带屏幕（用户：「Claude Code 默认文本模式，用户也可选择
+            // 图文模式进行截屏」）。模式是卡片上的，所以在这里读、作为参数交下去。
+            agentSessionManager.sendTurn(composerDraft,
+                                         to: agent.id,
+                                         attachesScreenshot: currentCardChatMode?.sendsScreenshot == true)
             composerDraft = ""
             composerFieldIsFocused = false
         }
+    }
+
+    /// 这张卡片此刻的模式（不从卡片进来时是 nil）。
+    private var currentCardChatMode: CardChatMode? {
+        guard let agent = agentSessionManager.selectedAgent else { return nil }
+        let cardKind: CardKind = agent.name == AgentCardModel.reviewAgentName ? .review : .claudeCode
+        return cardChatPreferences.mode(forCardID: agent.id.uuidString, kind: cardKind)
     }
 
     // MARK: - Bubbles (cloned geometry from NotchHomeView)
