@@ -40,6 +40,14 @@ pkill -TERM -f "$APP_DIR/Wanna.app/Contents/MacOS/Wanna" || true
 open "$APP_DIR/Wanna.app"
 ```
 
+**用户机器上跑的那一份是 `/Applications/Wanna.app`，而它必须整包同步。** 2026-09-26 实测踩到：`Wanna.app/Contents/MacOS/Wanna` 只有 59 KB —— **真正的代码在同一个 bundle 里的 `Wanna.debug.dylib`（34 MB）**，主二进制只是个入口。所以 `cp .../Wanna.app/Contents/MacOS/Wanna /Applications/Wanna.app/Contents/MacOS/` 会**静默无效**：进程起来了、日志照打，跑的却全是旧代码（表现为「改了没反应」，而且哈希对比主二进制还显示两边一致，因为它确实一致）。同步用整包工具：
+
+```bash
+ditto "$APP_DIR/Wanna.app" /Applications/Wanna.app   # 或 rsync -a --delete
+```
+
+另外两条按上面的流程走时要知道：`$APP_DIR` 里那份**不会**自动同步到 `/Applications`（CLAUDE.md 的流程 `open "$APP_DIR/Wanna.app"` 开的是 DerivedData 那份，用户自己双击的是 `/Applications` 那份，两边会各自漂移）；而从终端直接跑 bundle 里的可执行文件（`"$APP_DIR/Wanna.app/Contents/MacOS/Wanna" > 日志 2>&1 &`）能把 `print` 探针落盘，这是量延迟时唯一能看到 App 内部打点的方式，要用 pty 转发（`script` 的日志是块缓冲的，直接重定向也会因为 stdout 非 tty 而块缓冲）。
+
 **④ 一步都不能省。** macOS 不会给正在运行的进程换代码——这是设计，不是 bug（[`开发经验/10-踩过的坑.md`](开发经验/10-踩过的坑.md) F3）。只做 ①②③ 就宣布做完，用户屏幕上跑的还是旧代码，他只会看到「为什么我没看到任何功能」。这个项目真的这么错过一次，不要再犯。
 
 （这里曾经要把 `WannaApp.swift` 从文件列表里 `grep -v` 掉：那个文件是唯一 `import Sparkle` 的，而裸 `swiftc` 解析不了 SwiftPM 的 Sparkle 模块。2026-09-26 把 Sparkle 整个删掉之后这条 workaround 一并去掉了 —— 实测全量 typecheck `EXIT=0`、0 error。若将来再引入任何 SPM 依赖，这条限制会以同样的方式回来。）
