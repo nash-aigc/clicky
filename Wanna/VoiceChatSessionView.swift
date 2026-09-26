@@ -409,36 +409,44 @@ struct VoiceChatSessionView: View {
                 if cardID == nil {
                     channelSegmentedControl
                 }
+
+                // **连接放最左侧**（用户 2026-09-26：「（语音、视频）模式，连接通话的按钮，
+                // 放最左侧，右侧是其他的」）。
+                connectButton
+
                 currentVoiceLabel
 
                 Spacer(minLength: 8)
 
-                deviceToggleButton(
-                    title: "摄像头",
-                    systemImage: "video",
-                    isOn: controller.isCameraEnabled,
-                    isSupported: controller.selectedModeSupportsCamera,
-                    unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了摄像头",
-                    help: "摄像头（下次连接生效）"
-                ) {
-                    controller.setCameraEnabled(!controller.isCameraEnabled)
-                }
+                // **语音模式自动隐藏摄像头 / 屏幕**（用户：「语音聊天，自动隐藏（屏幕、
+                // 摄像头）的按钮」）：语音那一档永远没有画面，留两颗灰按钮只是占地方。
+                // 判据用的是模式自己的能力位，不是再看一遍聊天类型 —— 一处定义。
+                if showsDeviceToggles {
+                    deviceToggleButton(
+                        title: "摄像头",
+                        systemImage: "video",
+                        isOn: controller.isCameraEnabled,
+                        isSupported: controller.selectedModeSupportsCamera,
+                        unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了摄像头",
+                        help: "摄像头（下次连接生效）"
+                    ) {
+                        controller.setCameraEnabled(!controller.isCameraEnabled)
+                    }
 
-                deviceToggleButton(
-                    title: "屏幕",
-                    systemImage: "rectangle.on.rectangle",
-                    isOn: controller.isScreenSharingEnabled,
-                    isSupported: controller.selectedModeSupportsScreenSharing,
-                    unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了屏幕",
-                    help: "屏幕（下次连接生效）"
-                ) {
-                    controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
+                    deviceToggleButton(
+                        title: "屏幕",
+                        systemImage: "rectangle.on.rectangle",
+                        isOn: controller.isScreenSharingEnabled,
+                        isSupported: controller.selectedModeSupportsScreenSharing,
+                        unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了屏幕",
+                        help: "屏幕（下次连接生效）"
+                    ) {
+                        controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
+                    }
                 }
 
                 speedMenuButton
                     .background(headerAnchorReporter(.speed))
-
-                connectButton
             }
             .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
             .frame(height: NotchSupport.contentColumnHeaderBandHeight, alignment: .center)
@@ -461,6 +469,11 @@ struct VoiceChatSessionView: View {
             // onAppear —— 这里重读一次，两颗开关就不会拿着上一个模式的值。
             controller.reloadDeviceSwitches()
             syncChannelToCardChatMode()
+            // 卡片页上这一页显示的就是**那张卡片的历史**（用户：「所有的模式，必须使用完全
+            // 相同的对话历史，无缝切换不同的对话模式」）—— 还没按「连接」也该看得到。
+            if let cardID {
+                controller.showCardHistory(cardID: cardID, cardKind: cardKind)
+            }
         }
         // 模式条上换了模式（语音 ↔ 视频）：聊天类型跟着走。**用 `onChange` 而不是
         // 只在点按钮时同步**，因为模式也可能在别处被改（另一页点的那一下），
@@ -468,6 +481,16 @@ struct VoiceChatSessionView: View {
         .onChange(of: currentCardChatMode) { _, _ in
             syncChannelToCardChatMode()
         }
+    }
+
+    /// 摄像头 / 屏幕两颗要不要画。
+    ///
+    /// 用户 2026-09-26：「语音聊天，自动隐藏（屏幕、摄像头）的按钮」。判据取模式的
+    /// `carriesImages` —— 从卡片进来时这一页只可能是语音 / 视频，所以实际效果就是
+    /// **视频才画、语音不画**；不从卡片进来时保持原样（那一页由聊天类型分段控件决定）。
+    private var showsDeviceToggles: Bool {
+        guard let mode = currentCardChatMode else { return true }
+        return mode.carriesImages
     }
 
     /// 这张卡片此刻选的是哪种模式（不从卡片进来时是 nil）。
@@ -492,9 +515,8 @@ struct VoiceChatSessionView: View {
         if controller.selectedRoleID != roleID {
             controller.selectRole(roleID)
         }
-        guard let channel = currentCardChatMode?.voiceChatChannel,
-              controller.selectedChannel != channel else { return }
-        controller.selectChannel(channel)
+        guard let channel = currentCardChatMode?.voiceChatChannel else { return }
+        controller.alignChannelForCardMode(channel)
     }
 
     /// **连接 / 连接中 / 挂断** —— 这一页唯一能开始一场会话的入口。
@@ -664,19 +686,9 @@ struct VoiceChatSessionView: View {
         .foregroundStyle(DS.Colors.success)
     }
 
-    /// 当前那一行音色的**昵称**（克隆音色显示用户起的名字，系统音色显示它的中文名）。
+    /// 页头那个音色名 —— 就是**当前选中那一行**的昵称，走的同一份实现。
     private var currentVoiceNickname: String {
-        let engine = controller.selectedMode
-        let voiceID = controller.effectiveVoiceID(for: engine)
-        // 克隆音色的昵称是本地存的（官方不保存备注），系统音色用内置表里的中文名。
-        if let nickname = VoiceLibraryStore.nickname(forCustomVoiceID: voiceID), !nickname.isEmpty {
-            return nickname
-        }
-        if let option = VoiceCatalog.systemVoices(for: engine, model: controller.voiceTableModelID(for: engine))
-            .first(where: { $0.id == voiceID }) {
-            return option.displayName
-        }
-        return voiceID
+        voiceNickname(for: controller.selectedMode)
     }
 
     // MARK: - 模式两行（全双工 / 三段式）
@@ -693,14 +705,19 @@ struct VoiceChatSessionView: View {
 
             Spacer(minLength: 8)
 
-            // 位置名 + 音色是**右侧那一组**：两行都靠右对齐，右缘与音色按钮对齐
-            // （用户 2026-09-24：「都要靠右对齐，这两行每一行的内容都要靠右对齐」）。
+            // **这一行选中的音色名**（用户 2026-09-26：「将任何模式中选中的音色，显示在对应
+            // 的模式的音色按钮的左侧，比如：全双工、三段式，没有选中全双工，音色文字=暗色，
+            // 选中后=绿色」）。
             //
-            // 位置名**一直显示**，两行的区别只是明暗（用户 2026-09-24：「无论用户选择的是
-            // 全双工还是三段式，「识别、理解、表达」这几个字都要一直显示，只是亮一点、
-            // 暗一点的区别。你现在给隐藏了」）—— 常显让用户随时看得到两种模式的结构差异。
-            modeSummary(engine, preset: preset)
-                .opacity(isSelected ? 1 : 0.42)
+            // 它取代了原来的「识别=理解=表达 / 识别｜理解｜表达」那两段说明文字 ——
+            // 用户同一条要求里说「（识别、理解、表达）这个说明文字，全部删除，两行的说明
+            // 文字，全部删除」。位置留给更有用的一件事实：**这一行接着会用哪个音色**。
+            Text(voiceNickname(for: engine))
+                .font(.system(size: Self.headerControlFontSize))
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: 150)
+                .foregroundStyle(isSelected ? DS.Colors.success : DS.Colors.textSecondary.opacity(0.5))
 
             voiceRowButton(engine, isSelected: isSelected, capability: capability)
                 .background(headerAnchorReporter(
@@ -907,50 +924,20 @@ struct VoiceChatSessionView: View {
             .joined(separator: " · ")
     }
 
-    /// 行右侧的模型显示。
+    /// 某一行的音色**昵称**（克隆音色显示用户起的名字，系统音色显示内置表里的中文名）。
     ///
-    /// · **全双工**：预设名 ｜ 模型（绿色，等宽）—— 一个模型包办三件事，所以只显示一个。
-    /// · **三段式**：识别 / 理解 / 表达 三个位置，白标签 + 绿模型值，放不下就截断。
-    /// 行右侧的**位置名**。
-    ///
-    /// 用户 2026-09-24 的两轮调整合起来是：
-    /// 「直接只显示「识别、理解、表达」这几个文字即可，**不用写这些模型**，让用户知道
-    /// 大概是这么个逻辑、这么个实践方法就可以了」＋「三段式应该用**分隔线竖线**，
-    /// 而不是顿号」＋「字体都应该大一点，跟「音色」按钮里的字体相同」。
-    ///
-    /// 所以这里只表达**结构**：三段式是三个独立位置（竖线分隔），全双工是一个模型
-    /// 包办三者（等号相连）。具体用哪个模型看预设下拉 —— 那里有完整组合。
-    /// 字号统一取 `headerControlFontSize`（整页一致，用户要求「整个页面的字号应该保持一致」）。
-    @ViewBuilder
-    private func modeSummary(_ engine: VoiceChatEngine, preset: VoiceChatPreset) -> some View {
-        switch engine {
-        case .duplexVoice, .omni:
-            // 识别=理解=表达：等号表示"同一个模型"
-            Text("识别=理解=表达")
-                .font(.system(size: Self.headerControlFontSize))
-                .foregroundStyle(DS.Colors.textSecondary)
-                .lineLimit(1)
-
-        case .threeStage:
-            // 识别 | 理解 | 表达：竖线表示"三个独立的位置"
-            HStack(spacing: 6) {
-                Text("识别")
-                modeSummarySeparator
-                Text("理解")
-                modeSummarySeparator
-                Text("表达")
-            }
-            .font(.system(size: Self.headerControlFontSize))
-            .foregroundStyle(DS.Colors.textSecondary)
-            .lineLimit(1)
+    /// 两行各取各的：全双工那一行显示全双工会用哪个音色，三段式那一行显示三段式那个 ——
+    /// 它们本来就是两套（`effectiveVoiceID(for:)` 走能力层）。
+    private func voiceNickname(for engine: VoiceChatEngine) -> String {
+        let voiceID = controller.effectiveVoiceID(for: engine)
+        if let nickname = VoiceLibraryStore.nickname(forCustomVoiceID: voiceID), !nickname.isEmpty {
+            return nickname
         }
-    }
-
-    /// 位置名之间的竖线分隔（用户：「三段式应该用分隔线竖线，而不是顿号」）。
-    private var modeSummarySeparator: some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.14))
-            .frame(width: 1, height: 12)
+        if let option = VoiceCatalog.systemVoices(for: engine, model: controller.voiceTableModelID(for: engine))
+            .first(where: { $0.id == voiceID }) {
+            return option.displayName
+        }
+        return voiceID
     }
 
     /// 行尾的音色按钮。
@@ -1800,7 +1787,12 @@ struct VoiceChatSessionView: View {
     /// 是用户 2026-09-23 的「宽度和高度都应该大一点，方便用户点击」。原来那 30 是
     /// 跟侧栏的 `NotchBarActionButton` 取齐的，现在不齐了 —— 这一排的点击频率比
     /// 侧栏高得多，用户的判断优先。
-    private static let headerControlHeight: CGFloat = 34
+    /// 页头按钮的高度 —— **唯一的定义在 `NotchSupport`**：模式条那排与这一页这几颗
+    /// 必须完全相同（用户：「所有的模式按钮，高度增大，让它们完全相同，因为都是在分隔线
+    /// 上面」），两处各存一个数字就一定会漂。
+    private static var headerControlHeight: CGFloat {
+        NotchSupport.contentHeaderControlHeight
+    }
     private static let headerControlHorizontalPadding: CGFloat = 12
     private static let headerControlFontSize: CGFloat = 12
 

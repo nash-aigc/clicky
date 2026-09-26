@@ -2393,8 +2393,7 @@ final class CompanionManager: ObservableObject {
     /// started. A running job is interrupted the same way a new spoken
     /// question would interrupt it, since `sendTranscriptToVisionChat…`
     /// cancels the current task at its top.
-    /// 键盘提问。`sendsScreenshot` 来自输入框上方那行「屏幕」的勾选（默认勾）——
-    /// 不勾就是纯文字提问，模型不会收到任何截图。
+    /// 键盘提问。`sendsScreenshot` 来自卡片的聊天模式（图文 = 带截图，文本 = 不带）。
     func submitTypedQuestion(_ text: String, sendsScreenshot: Bool = true) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -2403,6 +2402,17 @@ final class CompanionManager: ObservableObject {
         liveTranscriptText = ""
         sendTranscriptToVisionChatWithScreenshot(transcript: trimmed,
                                                  sendsScreenshot: sendsScreenshot)
+    }
+
+    /// 当前主循环卡片这个模式**吃不吃图**（用户：「（文本、语音）都是只能保留文字，
+    /// 因为他们的模型不支持视频或文件等等」）。
+    ///
+    /// 拿不到活动会话时返回 true —— 那种情况下的行为与加这个判断之前完全一致。
+    private var mainLoopChatModeCarriesImages: Bool {
+        let sessionID = ConversationSessionsStore.activeSession().id.uuidString
+        return AppSettingsStore.snapshot()
+            .cardChatMode(forCardID: sessionID, kind: .mainLoop)
+            .carriesImages
     }
 
     // MARK: - 回答时持续监听（连续追问）
@@ -2643,6 +2653,19 @@ final class CompanionManager: ObservableObject {
 
     private func sendTranscriptToVisionChatWithScreenshot(transcript: String,
                                                           sendsScreenshot: Bool = true) {
+        // **这个模式吃不吃图 —— 判据放在这里，一条路都绕不过去**（2026-09-26）。
+        //
+        // 用户报的是「文本聊天的时候（现在能看到屏幕，应该不能看到才对）」。根因是截图这一侧
+        // 原先只看调用方传进来的 `sendsScreenshot`，而**按住快捷键那条路根本不传**
+        //（它一直吃默认的 true）—— 于是"文本模式不看屏幕"只在输入框那条路上成立，
+        // 说一句话提问照样把屏幕发出去。用户给的理由是模型的限制：「（文本、语音）都是只能
+        // 保留文字，因为他们的模型不支持视频或文件等等」—— 所以这不是偏好，是这条路的能力边界。
+        //
+        // 在这里算一次（而不是在 Task 里随时读设置）：一轮之内设置被改也不该中途换判据。
+        let deliversScreenshot = sendsScreenshot && mainLoopChatModeCarriesImages
+        if sendsScreenshot && !deliversScreenshot {
+            print("🚫 主循环「文本」模式：这一轮不带截图（这个模式的模型不吃图）")
+        }
         // **任务在跑的时候，新问题只打断"正在说的话"，不打断任务。**
         // 用户 2026-09-26：「刚才让 AI 去在桌面上写一个文件。那么 AI 没有写完的时候，
         // 用户有另外一个需求…这两个任务都需要完成。但是因为用户的两个任务之间的间距太紧，
@@ -2917,8 +2940,9 @@ final class CompanionManager: ObservableObject {
                     // 提问上（3 秒内新鲜）。只在 step 1 消费，且圈选优先——
                     // 预截图里没有用户的圈，圈着提问时宁可用现截。
                     let screenCaptures: [CompanionScreenCapture]
-                    if !sendsScreenshot {
-                        // **用户把「屏幕」关掉了**（输入框上方那行的勾选，2026-09-26）：
+                    if !deliversScreenshot {
+                        // **用户把「屏幕」关掉了**，或者卡片正处在**文本 / 语音**模式
+                        //（那两个模式的模型不吃图，见上面 `deliversScreenshot`）：
                         // 这一轮就是纯文字 —— 不截屏，也**不消费预截图**
                         //（「追问时自动截屏 / 说到屏幕立即截屏」抓的那张留给下一轮用，
                         // 它服务的是"要看屏幕"的提问，而这一轮明确说不要）。

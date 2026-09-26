@@ -92,7 +92,8 @@ struct CardChatModeBar: View {
             }
             .foregroundColor(.white.opacity(0.8))
             .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            // 与四颗模式、以及页头那排按钮同一个高度（见 `modeChip` 上那段）。
+            .frame(height: NotchSupport.contentHeaderControlHeight)
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(Color.white.opacity(isRoleListOpen ? 0.12 : 0.06))
@@ -133,7 +134,9 @@ struct CardChatModeBar: View {
             }
             .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.55))
             .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            // **高度与页头那排按钮完全相同**（用户：「所有的模式按钮，高度增大，让它们
+            // 完全相同」）—— 取的是同一个常量，不是又写一个数。
+            .frame(height: NotchSupport.contentHeaderControlHeight)
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(Color.white.opacity(isSelected ? 0.10 : 0.05))

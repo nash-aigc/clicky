@@ -316,9 +316,17 @@ nonisolated enum NotchSupport {
 
     // MARK: - 「角色 + 四个模式」那一排（2026-09-26）
 
-    /// 模式行自己的高度。取 30 与侧栏那颗切换器同高（`sidebarSectionSwitcherButtonHeight`）
-    /// —— 两处的按钮看起来才像同一套控件；四颗两字标签 + 一颗「角色」在这一格里放得下。
-    static let cardChatModeBandHeight: CGFloat = 30
+    /// 右列页头里**所有按钮**的高度（模式条那排 + 各页自己那排）。
+    ///
+    /// 用户 2026-09-26：「（所有的模式按钮，高度增大，让它们完全相同，因为都是在分隔线
+    /// 上面）」—— 两排都在同一条分割线之上，按钮却一个 22 一个 34，看起来是两套控件。
+    /// 所以高度**只在这里定义一次**：模式条读它、语音页那颗音色/摄像头/连接也读它，
+    /// 「完全相同」就成了结构上的事实，而不是两处各调一次数字。
+    static let contentHeaderControlHeight: CGFloat = 34
+
+    /// 模式行自己的高度。与侧栏那颗切换器同高、也等于页头按钮的高度 ——
+    /// 三个数从此刻起是同一个。
+    static let cardChatModeBandHeight: CGFloat = contentHeaderControlHeight
 
     /// 模式行与它下面那行页头之间的细缝。
     static let cardChatModeBandBottomSpacing: CGFloat = 6

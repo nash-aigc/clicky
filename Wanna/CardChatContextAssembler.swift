@@ -41,6 +41,10 @@ nonisolated enum CardChatContextAssembler {
 
     /// 最多附几张截图。它们只在内存里留得住（`userScreenshots` 不落盘），所以拿得到几张
     /// 是运气问题；有就带上，没有就只有文字。
+    ///
+    /// **只有 `includesScreenshots` 为真时才用得上** —— 语音那条路**只带文字**
+    ///（用户：「语音聊天，去除对话历史里面的图片、文件等格式，只保留文本格式的历史内容」，
+    /// 理由是模型不吃：「（文本、语音）都是只能保留文字，因为他们的模型不支持视频或文件等等」）。
     static let maximumScreenshots = 3
 
     // MARK: - 形状
@@ -76,7 +80,8 @@ nonisolated enum CardChatContextAssembler {
 
     static func assemble(role: CardChatRoleChoice,
                          turns: [Turn],
-                         cardTitle: String) -> AssembledContext {
+                         cardTitle: String,
+                         includesScreenshots: Bool = false) -> AssembledContext {
         let kept = mostRecentTurnsWithinBudget(turns)
         var sections: [String] = []
         if !kept.isEmpty {
@@ -87,13 +92,17 @@ nonisolated enum CardChatContextAssembler {
         }
 
         // 截图只从**带进去的那几轮**里取，而且要新的在前 —— 与历史同一个方向。
+        // `includesScreenshots` 默认关：语音这条路只带文字（见 `maximumScreenshots` 上那段），
+        // 只有视频那条才要画面。
         var screenshots: [ConversationHistoryScreenshot] = []
-        for turn in kept.reversed() {
-            for screenshot in turn.screenshots {
-                guard screenshots.count < maximumScreenshots else { break }
-                screenshots.append(screenshot)
+        if includesScreenshots {
+            for turn in kept.reversed() {
+                for screenshot in turn.screenshots {
+                    guard screenshots.count < maximumScreenshots else { break }
+                    screenshots.append(screenshot)
+                }
+                if screenshots.count >= maximumScreenshots { break }
             }
-            if screenshots.count >= maximumScreenshots { break }
         }
 
         return AssembledContext(systemPrompt: sections.joined(separator: "\n\n"),

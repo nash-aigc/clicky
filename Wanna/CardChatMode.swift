@@ -78,6 +78,22 @@ nonisolated enum CardChatMode: String, CaseIterable, Sendable, Equatable, Identi
     /// 文本 / 图文 —— 走 Agent 自己的管线，工具与系统提示词都在。
     var usesAgentCapability: Bool { !isVoiceLike }
 
+    /// **这个模式的模型吃不吃图。** 只有图文（截图）与视频（摄像头 / 屏幕）吃。
+    ///
+    /// 用户 2026-09-26 把理由说得很清楚：「（文本、语音）都是只能（保留文字），因为
+    /// 他们的模型，不支持视频或文件等等」。所以它不只是"要不要截屏"，而是**这一条路上
+    /// 到底能不能有图** —— 两个出口：
+    ///
+    ///   * 主循环那条管线（图文以外的模式一律不截屏，见
+    ///     `CompanionManager.sendTranscriptToVisionChatWithScreenshot`）；
+    ///   * 语音 / 视频组装历史时带不带图（`CardChatContextAssembler` 的
+    ///     `includesScreenshots`）—— 语音那条**只带文字**，视频才带画面。
+    ///
+    /// 语音聊天那条"永远不开画面"的闸门是另一层（按聊天类型判的），两者方向一致、互不依赖。
+    var carriesImages: Bool {
+        self == .imageText || self == .video
+    }
+
     /// 这一轮要不要截图。只有图文要 —— 文本「即不截屏」是用户的原话。
     var sendsScreenshot: Bool { self == .imageText }
 

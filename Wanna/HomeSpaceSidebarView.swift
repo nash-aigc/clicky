@@ -47,6 +47,9 @@ struct HomeSpaceSidebarView: View {
     /// 它自己订阅四份数据源的通知并重算整棵树 —— 见 `AgentCardModel`。
     @StateObject private var cardModel = AgentCardModel()
 
+    /// 每张卡片的聊天模式 —— 卡片右侧那颗「通话」读它（高亮与否），点它写它。
+    @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
+
     /// 哪些「卡片 # 栏」是展开的（纯界面状态，不进任何模型）。
     @State private var expandedTaskColumns: Set<String> = []
 
@@ -63,13 +66,6 @@ struct HomeSpaceSidebarView: View {
     var openRecordingSettingsAction: () -> Void = {}
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
-
-    /// 「角色」那一行：点一下直接跳到设置里的**角色编辑页**（新建 / 改名 / 写提示词）。
-    /// 与上面两条同一个形状 —— 侧栏只负责带路，页面还是设置里那一页。
-    ///
-    /// 用户 2026-09-26 把语音 / 视频做成了**卡片的两个模式**，选用角色的地方因此搬到
-    /// 卡片页头上去了（`CardChatModeBar`）；这一行只留下"设计角色"这一件事。
-    var openRoleSettingsAction: () -> Void = {}
 
     @State private var hoveringSessionID: UUID?
     @State private var renamingSessionID: UUID?
@@ -88,21 +84,28 @@ struct HomeSpaceSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // **顶部那一条 = 搜索 + 新建 + 录音**（2026-09-26 用户重排）。
+            //
+            // 它同时承担另一件事：**让左列的分割线落在与右列同一个 y 上**。所以这一块
+            // 的高度不是"内容多高就多高"，而是 `contentColumnHeaderRuleY` 减掉让开刘海
+            // 的那一段 —— 那条线由 sheet 根横跨两列画一根（用户：「分割线贯穿左侧、右侧」），
+            // 左列只要保证自己在这条线之上结束就行。
+            sidebarHeaderBand
+
             // **顶部 = 卡片区**（2026-09-26 用户重新设计）。
             //
             // 原来的「对话 / Agent / 语音聊天」三按钮切换器没有了：用户要的是
             // 「顶部：卡片列表，显示当前正在使用的卡片（主循环卡片）」，而卡片
             // 底下按**任务状态**分四栏（进行中 / 任务完成 / 任务失败 / 历史任务）。
-            // 卡片 = 一个 Agent 主体（见 `AgentCardModel` 与 `CardKind`），所以
-            // 「对话」和「Agent」两个分区被它一并取代；「语音聊天」是角色列表、
-            // 不是任务，所以它退成底部的「角色」那一行。
+            // 卡片 = 一个 Agent 主体（见 `AgentCardModel` 与 `CardKind`）。
             cardArea
 
             Spacer(minLength: 0)
 
-            // 分割线下方 = 「历史归档」与「角色」两条去别处的路。
-            diversionRows
-
+            // **左下角一行三颗：设置 · 历史 · 复盘**（用户 2026-09-26：「左侧底部分别是
+            // （设置、历史、复盘，显示在同一行）」）。原来「角色」也在这里，同一条要求里
+            // 被删掉了（「左侧的角色按钮删除，这是之前的设计思路，现在不需要了」）——
+            // 角色的选用现在在卡片页头上，设计角色走 设置 → 角色。
             bottomActionRow
         }
         // 完全不透明（用户 2026-09-23：「整个弹出窗口调整为完全不透明，现在
@@ -112,86 +115,104 @@ struct HomeSpaceSidebarView: View {
         .background(DS.Colors.surface3)
     }
 
-    // MARK: - 卡片区（2026-09-26）
+    // MARK: - 顶部那一条（搜索 · 新建 · 录音）
 
-    /// 搜索框 + 卡片列表。搜索接到 `cardModel.searchQuery`（卡片标题或它的任务命中）。
-    private var cardArea: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            cardSearchRow
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(cardModel.cards) { card in
-                        cardRow(card)
-                        // 四栏固定序（`TaskColumn.allCases` = 进行中 → 完成 → 失败 → 历史），
-                        // 空的栏不画 —— 用户要的是「按状态」，不是四行空标题。
-                        ForEach(TaskColumn.allCases, id: \.self) { column in
-                            let tasks = card.tasks(in: column)
-                            if !tasks.isEmpty {
-                                taskColumnSection(card: card, column: column, tasks: tasks)
-                            }
-                        }
-                    }
-
-                    if cardModel.cards.isEmpty {
-                        Text(cardModel.searchQuery.isEmpty ? "还没有卡片" : "没有匹配的卡片")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.35))
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.vertical, 18)
-                    }
-                }
-                .padding(.top, 2)
-            }
-        }
-    }
-
-    /// 卡片区的搜索 + 「＋」（＋ = 新建主对话；用户要求「点击新建时，之前的对话
-    /// 自动归档，左侧列表保持干净」—— 归档那一步在 `createSession` 里）。
-    private var cardSearchRow: some View {
+    /// 搜索框 + 「＋」（新建主对话）+ 「录音」。
+    ///
+    /// 高度**由那条分割线倒推**：`contentColumnHeaderRuleY - sheetHeaderTopInset`。所以
+    /// 搜索框跟着变高（用户：「左侧输入框高度增大」），三颗都在这条带子里垂直居中。
+    private var sidebarHeaderBand: some View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.4))
                 TextField("搜索卡片或任务", text: $cardModel.searchQuery)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12.5))
                     .foregroundColor(.white)
             }
-            .padding(.horizontal, 8)
-            .frame(height: 26)
+            .padding(.horizontal, 9)
+            .frame(height: NotchSupport.contentHeaderControlHeight)
             .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.white.opacity(0.06))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
             )
 
-            Button(action: {
+            // 「＋」= 新建主对话（用户要求「点击新建时，之前的对话自动归档，
+            // 左侧列表保持干净」—— 归档那一步在 `createSession` 里）。
+            sidebarBandIconButton(systemImage: "plus",
+                                  help: "新建主对话（当前这条会自动归档）") {
                 SoundEffectPlayer.shared.play(.sidebarButton)
                 sessionsModel.createSession()
                 agentSessionManager.selectedSidebarSection = .conversations
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.75))
-                    .frame(width: 26, height: 26)
-                    .background(Circle().fill(Color.white.opacity(0.08)))
             }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .help("新建主对话（当前这条会自动归档）")
+
+            // **「录音」搬到侧栏顶部的右侧、靠右对齐**（用户 2026-09-26：「录音按钮放在
+            // 左侧边栏，顶部的右侧，靠右对齐」）—— 它原先挤在左下角那三行里。
+            sidebarBandIconButton(systemImage: "record.circle",
+                                  help: "录音历史与设置") {
+                SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                openRecordingSettingsAction()
+            }
         }
         .padding(.horizontal, 10)
         // **顶部要留出刘海那条带子**（用户 2026-09-26：「搜索框有点太高了，太靠上边了」）。
         // 面板的顶边就是屏幕的顶边，刘海本身占着上面 32pt —— 不留这一条，搜索框就
-        // 顶进刘海底下、看着像贴在天花板上。用的还是内容列那三个页头用的同一个常量
-        // （`sheetHeaderTopInset`），三处对齐同一个数。
+        // 顶进刘海底下、看着像贴在天花板上。
         .padding(.top, NotchSupport.sheetHeaderTopInset)
-        .padding(.bottom, 8)
+        .frame(height: NotchSupport.contentColumnHeaderRuleY, alignment: .top)
+    }
+
+    /// 顶带里的一颗圆形图标按钮（＋ 与 录音 同一套形状）。
+    private func sidebarBandIconButton(systemImage: String,
+                                       help: String,
+                                       action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundColor(.white.opacity(0.75))
+                .frame(width: NotchSupport.contentHeaderControlHeight,
+                       height: NotchSupport.contentHeaderControlHeight)
+                .background(Circle().fill(Color.white.opacity(0.08)))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
+    }
+
+    // MARK: - 卡片区（2026-09-26）
+
+    /// 卡片列表。搜索接到 `cardModel.searchQuery`（卡片标题或它的任务命中）。
+    private var cardArea: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(cardModel.cards) { card in
+                    cardRow(card)
+                    // 四栏固定序（`TaskColumn.allCases` = 进行中 → 完成 → 失败 → 历史），
+                    // 空的栏不画 —— 用户要的是「按状态」，不是四行空标题。
+                    ForEach(TaskColumn.allCases, id: \.self) { column in
+                        let tasks = card.tasks(in: column)
+                        if !tasks.isEmpty {
+                            taskColumnSection(card: card, column: column, tasks: tasks)
+                        }
+                    }
+                }
+
+                if cardModel.cards.isEmpty {
+                    Text(cardModel.searchQuery.isEmpty ? "还没有卡片" : "没有匹配的卡片")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.35))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 18)
+                }
+            }
+            .padding(.top, 4)
+        }
     }
 
     /// 一张卡片：标题 + 状态点 +（仅主循环卡片）「设为默认」。
@@ -218,6 +239,16 @@ struct HomeSpaceSidebarView: View {
             }
 
             Spacer(minLength: 4)
+
+            // **「通话」**（用户 2026-09-26：「左侧卡片的右侧，分别添加（通话的图标按钮），
+            // 点击后=自动切换成（语音：全双工语音模式），也能在设置页面设置（全双工、
+            // 三段式，等音色设置）」）。
+            //
+            // 它做的三件事：把这张卡片的模式切到**语音**、把引擎备成**全双工语音**、
+            // 然后切到这张卡片（右列随之显示语音页）。**不自动连接** —— 他说的那一下是
+            // 「切换成」，开麦留给他按页头那颗「连接」。引擎与音色都能在「设置 → 角色」
+            // 里改（那一页的聊天节就是干这个的）。
+            callButton(card)
 
             // **「设为默认」只出现在主循环卡片上。** 用户明确要求「新建的 Claude Code
             // 类型卡片不可设为默认」—— 兜底那条线不是「我的主对话」。
@@ -264,6 +295,29 @@ struct HomeSpaceSidebarView: View {
             SoundEffectPlayer.shared.play(.notchRevealed)
             cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
         }
+    }
+
+    /// 卡片右侧那颗「通话」。
+    ///
+    /// 它自己不认识引擎：模式写进设置、引擎由 `VoiceChatController.prepareCallForCard`
+    /// 备好（那一步里顺序很讲究，见那里的注释），最后切到这张卡片。
+    private func callButton(_ card: AgentCardModel.Card) -> some View {
+        let isCalling = cardChatPreferences.mode(forCardID: card.entityID, kind: card.kind) == .voice
+        return Button {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            cardChatPreferences.setMode(.voice, forCardID: card.entityID)
+            voiceChatController.prepareCallForCard(cardID: card.entityID, cardKind: card.kind)
+            cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
+        } label: {
+            Image(systemName: "phone.fill")
+                .font(.system(size: 10.5))
+                .foregroundColor(isCalling ? DS.Colors.success : .white.opacity(0.45))
+                .frame(width: 20, height: 20)
+                .background(Circle().fill(Color.white.opacity(isCalling ? 0.10 : 0.05)))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help("跟它通话：切到语音模式（全双工语音）。引擎与音色在「设置 → 角色」里改")
     }
 
     /// 当前的卡片：主循环看「是不是当前活动会话」，两个 agent 卡片看「是不是选中的代理」。
@@ -358,46 +412,6 @@ struct HomeSpaceSidebarView: View {
         case .doneUnverified: return Color(red: 0.95, green: 0.78, blue: 0.35)
         case .failed: return Color(red: 0.95, green: 0.45, blue: 0.42)
         }
-    }
-
-    /// 分割线下方那两条：历史归档、角色。
-    private var diversionRows: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .overlay(Color.white.opacity(0.08))
-
-            // **角色与复盘并排**（用户 2026-09-26：「复盘 agent 放在左侧下面（分割线
-            // 上面）」）—— 两者都是"去别处"的固定入口，不是跟着任务长出来的卡片。
-            HStack(spacing: 4) {
-                NotchBarActionButton(
-                    title: "角色",
-                    systemImage: "person.crop.circle",
-                    isHighlighted: false,
-                    help: "设计角色：它就是一段提示词，语音 / 视频模式下跟着卡片一起用"
-                ) {
-                    SoundEffectPlayer.shared.play(.notchRevealed)
-                    // **改成进设置里的角色页**（2026-09-26）。原先它把右列切到「语音聊天」
-                    // 那一页 —— 而语音 / 视频现在是**卡片的两个模式**，那张卡片页上就有一个
-                    // 角色按钮负责选用；留着两条路能连语音聊天，只会让人分不清哪一条算数。
-                    // 这一行因此只做一件事：去写角色（新建、改名、提示词）。
-                    showsSettings = false
-                    openRoleSettingsAction()
-                }
-
-                NotchBarActionButton(
-                    title: "复盘",
-                    systemImage: "chart.line.uptrend.xyaxis",
-                    isHighlighted: false,
-                    help: "跟复盘 agent 聊：它读的是复盘文件夹里的材料"
-                ) {
-                    SoundEffectPlayer.shared.play(.notchRevealed)
-                    showsSettings = false
-                    cardModel.openReviewAgent(agentSessionManager: agentSessionManager)
-                }
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.top, 8)
     }
 
     // MARK: - Section switcher
@@ -591,30 +605,19 @@ struct HomeSpaceSidebarView: View {
         )
     }
 
-    /// 侧栏最底部一行：左「设置」右「归档」，两颗都是长方形按钮。2026-09-23
-    /// 用户先要求「左侧顶部只显示归档和设置按钮：归档放左、设置放右、设置做
-    /// 成长方形按钮，把用户名、本地模式、图标都删掉」——原本这里是一张账号卡
-    /// （首字母圆盘 + 本机用户名 + 「本地模式」 + 一颗圆形齿轮），本机没有账号
-    /// 服务支撑它；随后又要求「把左侧顶部的归档和设置按钮移动到左侧最下面」，
-    /// 顶部让给了三个分区按钮。同一天稍后又要求两颗按钮对调位置
-    /// （「把左侧边的设置按钮和归档按钮两个位置调换一下」），设置因此落在左边
-    /// ——它正对着设置页里那颗同为长方形、同为 30pt 高的「返回」，两个入口在同一
-    /// 条竖直线上，来回不跳。
+    /// **左下角一行三颗：设置 · 历史 · 复盘**（用户 2026-09-26：「左侧底部分别是
+    /// （设置、历史、复盘，显示在同一行）」）。
     ///
-    /// 顶上那条分隔线是随下移一起加的：这一行下面是 `Spacer`，列表短的时候
-    /// 还好，长的时候最后一行会直接贴到按钮上，分不清哪是列表哪是操作。
-    /// 左下角这三行：**设置 → 历史归档 → 录音**，自上而下。
+    /// 这一行换过好几次：账号卡 → 「设置/归档」并排 → 竖着三行（设置/历史/录音）。
+    /// 现在回到**并排**，但要读成"一条清单"的那三件事仍然在：设置（去设置）、
+    /// 历史（去归档页）、复盘（去复盘 agent）。**「录音」挪到顶上那条带子的右端**了
+    /// （用户：「录音按钮放在左侧边栏，顶部的右侧，靠右对齐」），**「角色」删掉了**
+    /// （用户：「左侧的角色按钮删除，这是之前的设计思路，现在不需要了」）。
     ///
-    /// 用户 2026-09-26 定的顺序（「这个历史归档应该放在左下角，左下边设置，然后是历史
-    /// 归档，然后是录音，应该是这样一个逻辑」）。原来是「设置 / 录音」并排一行、归档
-    /// 在它们上面 —— 并排读起来是"两个平级的入口"，而他要的是**一条竖着的清单**：
-    /// 先设置，再归档，再录音。所以三行同宽、左对齐，一行一件事。
-    ///
-    /// 归档那一行仍然只是把设置打开并落到归档页（`SettingsPage.archive`）：
-    /// 用户 2026-09-24 曾要求把它搬进设置，2026-09-26 又要求侧栏里给出入口 ——
-    /// 两者不冲突，入口在这儿，页面还是那一页，当年删掉的整窗接管不复活。
+    /// 三颗等宽（`HStack` + `maxWidth: .infinity`）：等宽才读得出"并排"，
+    /// 否则文字长短不同、右缘参差，又变回三个各自为政的按钮。
     private var bottomActionRow: some View {
-        VStack(spacing: 2) {
+        HStack(spacing: 4) {
             NotchBarActionButton(
                 title: "设置",
                 systemImage: "gearshape",
@@ -625,8 +628,6 @@ struct HomeSpaceSidebarView: View {
                 showsSettings = true
             }
 
-            // 名字用「历史」（用户 2026-09-26：「名称替换成：设置、历史、录音」）——
-            // 三个字变成两个字，与其他两行一样短，一列读下来才是齐的。
             NotchBarActionButton(
                 title: "历史",
                 systemImage: "archivebox",
@@ -638,13 +639,14 @@ struct HomeSpaceSidebarView: View {
             }
 
             NotchBarActionButton(
-                title: "录音",
-                systemImage: "record.circle",
-                isHighlighted: showsSettings,
-                help: "录音历史与设置"
+                title: "复盘",
+                systemImage: "chart.line.uptrend.xyaxis",
+                isHighlighted: false,
+                help: "跟复盘 agent 聊：它读的是复盘文件夹里的材料"
             ) {
-                SoundEffectPlayer.shared.play(.recordingEditorOpened)
-                openRecordingSettingsAction()
+                SoundEffectPlayer.shared.play(.notchRevealed)
+                showsSettings = false
+                cardModel.openReviewAgent(agentSessionManager: agentSessionManager)
             }
         }
         .padding(.horizontal, 10)

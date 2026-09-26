@@ -195,12 +195,6 @@ struct NotchSheetRootView: View {
                                     selectedSettingsPage = .recording
                                     showsSettings = true
                                 },
-                                // 「角色」那一行现在只去设计角色（语音 / 视频的选用在卡片页头上，
-                                // 见 `CardChatModeBar`）—— 同一个入口形状，指向角色编辑页。
-                                openRoleSettingsAction: {
-                                    selectedSettingsPage = .voiceChatRoles
-                                    showsSettings = true
-                                }
                             )
                             .frame(width: Self.expandedSidebarWidth)
                         }
@@ -293,21 +287,6 @@ struct NotchSheetRootView: View {
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        // 右列那条贯穿的横线，与侧栏切换器下面那条分割线**同一个 y**
-                        // ——用户 2026-09-23：「每一个页面的右侧增加一条线…这条线应该
-                        // 从左到右贯穿，而且必须是一条直线…右侧的正文内容显示在这条线
-                        // 下面，线上面是相关的参数部分」。横向完全贯穿（不留边），所以
-                        // 它与侧栏自己那条线拼起来是一整条，而不是两截。
-                        //
-                        // 画在这里而不是画进三个内容视图：三页的页头高度不同，但这条线
-                        // 必须落在同一个 y 上，只有一列一个 overlay 才能保证这件事。
-                        // 页头各自按 `contentColumnHeaderBandHeight` 排到线下为止。
-                        .overlay(alignment: .top) {
-                            Rectangle()
-                                .fill(Color.white.opacity(0.08))
-                                .frame(height: 1)
-                                .offset(y: NotchSupport.contentColumnHeaderRuleY)
-                        }
                         // **角色清单画在这一层**（2026-09-26）：它挂在模式条上的话，
                         // 那条只有 36pt 高，清单画得出、却**收不到点击**（实测点「管理角色…」
                         // 穿透到了下面那行预设按钮上）。这一层是整块右列，frame 够大，
@@ -323,6 +302,19 @@ struct NotchSheetRootView: View {
                                             + NotchSupport.cardChatModeBandHeight)
                             }
                         }
+                    }
+                    // **那条贯穿的横线画在这里 —— 横跨左右两列**（2026-09-26）。
+                    //
+                    // 用户：「分割线（贯穿左侧、右侧）」。原先它挂在右列那个 `VStack` 上，
+                    // 所以只从两列之间那道竖线开始往右走；左列顶上那条是侧栏自己另一条、
+                    // 另一个 y，两条接不上。挂在**装着两列的 `ZStack`** 上就只有一个来源，
+                    // 从左边缘一直到右边缘是同一根线。两列的页头都按
+                    // `contentColumnHeaderRuleY` 排版，所以内容仍然正好从线下开始。
+                    .overlay(alignment: .top) {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(height: 1)
+                            .offset(y: NotchSupport.contentColumnHeaderRuleY)
                     }
 
                     // 窗口顶栏那几颗按钮。压在两列**之上**：右边三颗（收起侧栏 /

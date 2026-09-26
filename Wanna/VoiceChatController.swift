@@ -581,6 +581,109 @@ final class VoiceChatController: ObservableObject {
         return CardChatContextAssembler.assemble(role: role, turns: turns, cardTitle: cardTitle)
     }
 
+    /// **把这一页显示的历史换成那张卡片的历史**（2026-09-26）。
+    ///
+    /// 用户的两条要求在这里是同一件事：「全新对话后，（文字、图文、视频、语音）聊天历史，
+    /// 必须全部清空」+「所有的模式，必须使用完全相同的对话历史，无缝切换不同的对话模式」。
+    ///
+    /// 这一页原先显示的是**控制器自己那份 `transcriptEntries`** —— 它跨会话、跨卡片累积，
+    /// 于是「新建」之后这一页还挂着上一段的记录，而那正是用户看到的问题。现在它是从卡片
+    /// 记录里重建出来的：新建的会话是空的，所以这里也就是空的。
+    ///
+    /// **只重建文字**（`ActionTagParser` 去过标签），不带任何图 —— 语音这条路的模型不吃图。
+    private func rebuildTranscript(fromCard binding: CardVoiceBinding) {
+        guard let entityID = UUID(uuidString: binding.cardID) else { return }
+        var rebuilt: [VoiceChatTranscriptEntry] = []
+
+        switch binding.cardKind {
+        case .mainLoop:
+            if let session = ConversationSessionsStore.allSessionsIncludingArchived()
+                .first(where: { $0.id == entityID }) {
+                for entry in session.entries {
+                    appendHistoryPair(question: entry.userTranscript,
+                                      answer: entry.displayResponse ?? entry.assistantResponse,
+                                      into: &rebuilt)
+                }
+            }
+        case .claudeCode, .review:
+            if let agent = AgentSessionStore.allAgents().first(where: { $0.id == entityID }) {
+                for entry in agent.transcript where entry.kind != .toolActivity {
+                    let text = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !text.isEmpty else { continue }
+                    rebuilt.append(VoiceChatTranscriptEntry(isUser: entry.kind == .userMessage,
+                                                           text: text))
+                }
+            }
+        }
+        transcriptEntries = rebuilt
+    }
+
+    private func appendHistoryPair(question: String,
+                                   answer: String,
+                                   into rebuilt: inout [VoiceChatTranscriptEntry]) {
+        let trimmedQuestion = question.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAnswer = ActionTagParser.speakableTextFromStreamedReply(answer)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedQuestion.isEmpty {
+            rebuilt.append(VoiceChatTranscriptEntry(isUser: true, text: trimmedQuestion))
+        }
+        if !trimmedAnswer.isEmpty {
+            rebuilt.append(VoiceChatTranscriptEntry(isUser: false, text: trimmedAnswer))
+        }
+    }
+
+    /// 切到语音 / 视频模式时调它：**只换显示，不连接**。
+    ///
+    /// 页面 `onAppear` 走这一条 —— 用户还没按「连接」，但也该看到这段会话聊过什么。
+    func showCardHistory(cardID: String, cardKind: CardKind) {
+        guard connectionPhase == .idle else { return }
+        rebuildTranscript(fromCard: CardVoiceBinding(cardID: cardID, cardKind: cardKind))
+    }
+
+    /// 卡片上那颗「通话」按钮：**把这一场准备成「语音 + 全双工语音」**。
+    ///
+    /// 用户 2026-09-26：「左侧卡片的右侧，分别添加（通话的图标按钮），点击后=自动切换成
+    /// （语音：全双工语音模式）」。
+    ///
+    /// **顺序是有意的**：先把角色对到**这张卡片选的那个**，再改引擎 —— `selectMode` 写的是
+    /// `currentRole`，角色还没对上就改，改的是上一张卡片的角色（而那正是"设置里改了、
+    /// 用的时候没变"那一类问题）。这三步各自都会落盘，所以页头、预设两行、
+    /// 以及「设置 → 角色」里看到的因此是同一个状态。
+    ///
+    /// 它**不连接** —— 用户说的是「切换成」，而开麦这种动作留给他自己按那颗「连接」
+    /// （那也正是页头上那颗按钮存在的意义）。
+    func prepareCallForCard(cardID: String, cardKind: CardKind) {
+        let roleID = CardChatPreferenceModel.shared
+            .resolvedRole(forCardID: cardID, kind: cardKind, mode: .voice).id
+        selectRole(roleID)
+        selectChannel(.voice)
+        selectMode(.duplexVoice)
+    }
+
+    /// **按卡片的模式把聊天类型摆正**（2026-09-26）。
+    ///
+    /// 为什么不能只是"看看控制器里是什么"：**角色的 `chatChannel` 是跨卡片共享的**
+    ///（角色共享、而模式是每张卡片各记各的），所以同一个角色完全可能在另一张卡片上被设成了
+    /// 视频。2026-09-26 实测到的就是这一档：卡片是**语音**模式，而全双工那一行显示的是
+    /// **全模态 3.8 Flash**、音色是 **Tina**（视频那一组的），因为角色里存的还是视频。
+    ///
+    /// 而判据也不能是控制器内存里那个 `selectedChannel` —— 它默认就是 `.voice`，拿它比
+    /// 会把"角色里是视频"这种不匹配永远修不回来（正是上面那次的成因）。
+    ///
+    /// **只在角色里确实不一样时才写**：`selectChannel` 会清掉用户选的那条预设、回落到该组
+    /// 的默认预设 —— 无条件调它等于每次进这一页都把预设选择抹掉一次。
+    func alignChannelForCardMode(_ channel: VoiceChatChannel) {
+        guard currentRole.chatChannel != channel.rawValue else {
+            // 角色已经对了，只是控制器内存里那个值可能还没跟上（它要到连接时才从角色读回来）。
+            if selectedChannel != channel {
+                selectedChannel = channel
+                reloadDeviceSwitches()
+            }
+            return
+        }
+        selectChannel(channel)
+    }
+
     /// 这一轮写回卡片的历史。
     ///
     /// 用户：「聊天记录和会话记录显示在右侧，并添加到主模型或 Claude Code 模型的历史记录中」
@@ -653,6 +756,10 @@ final class VoiceChatController: ObservableObject {
         // 会话记录的文本」，而且每轮重算等于把整段历史每句话都重发一遍。
         self.cardBinding = cardBinding
         self.cardAssembledContext = cardBinding.map { assembleCardContext(binding: $0) }
+        // 这一页显示的历史 = 那张卡片的历史（新建过对话的话，这里因此是空的）。
+        if let cardBinding {
+            rebuildTranscript(fromCard: cardBinding)
+        }
         if let cardAssembledContext {
             // 「它到底看到了多少」唯一可核对的数：几轮、几张图、提示词多长。
             print("💬 语音聊天：卡片上下文 \(cardAssembledContext.logLine)")
