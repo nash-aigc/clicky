@@ -550,6 +550,32 @@ final class NotchWindowController {
 
         if panelModel.isFullscreenSuppressed { return }
 
+        // **刘海左侧那一排临时 agent 的按钮。**
+        //
+        // 判在 pill 之前：它们在 pill 左边、两者不重叠，顺序本身不影响结果，
+        // 但写死了能保证以后有人把 pill 的命中区放大时，agent 按钮不会被吃掉
+        //（和下面那颗挂断按钮同一个理由）。
+        //
+        // 命中矩形由 `NotchSupport` 从**屏幕坐标**算 —— 和视图里的摆放读的是同一个
+        // 函数，所以画在哪就点在哪，不存在第二份需要同步的算术。这一点是刻意的：
+        // 这个仓库在「画的和点的各算一遍」上被打过一次（`trailingWingOriginX` 那次，
+        // 画出来的红电话和它的点击目标差了 71pt，屏幕上完全看不出来）。
+        if !panelModel.isExpanded, !panelModel.isFullscreenSuppressed,
+           let agentIndex = screenPresences.compactMap({ presence -> Int? in
+               for index in 0..<NotchSupport.maximumVisibleAgentButtons {
+                   guard let frame = NotchSupport.agentButtonFrame(on: presence.screen,
+                                                                   indexFromNotch: index) else { break }
+                   if frame.contains(clickLocation) { return index }
+               }
+               return nil
+           }).first {
+            let agents = AgentActivityBoard.shared.agents
+            if agentIndex < agents.count {
+                AgentActivityBoard.shared.togglePanel(agents[agentIndex].id)
+            }
+            return
+        }
+
         // 语音聊天进行中，右翼就是不展开刘海的那颗挂断按钮（用户 2026-09-23
         // 第 6 条：「如果用户已经点击连接或当前处于连接状态，菜单栏刘海屏右侧
         // 应显示一个挂断动画，或者保留菜单栏当前样式风格，把它做成挂断按钮，
