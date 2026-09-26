@@ -83,6 +83,9 @@ struct NotchHomeView: View {
         return cardChatPreferences.mode(forCardID: cardID, kind: .mainLoop).sendsScreenshot
     }
 
+    /// 「语速」那一列档位开没开（输入框上方那一行的最右一颗）。
+    @State private var isSpeedPanelOpen = false
+
     @State private var composerDraft: String = ""
 
     /// The composer's 展开 button (user's request): the field grows to 30% of
@@ -171,6 +174,7 @@ struct NotchHomeView: View {
             // 两条情况走同一个动作：先翻转设置，再让 manager 停这一条 ——
             // `silenceActiveReplyAudio` 的门禁是「这一条回复还在跑（或还在播）」，
             // 情况 1 下两者都不成立，它是 no-op。
+            speedPanelIfOpen
             composerRow
 
             // The last error's verbatim API text. The deleted menu bar panel
@@ -889,6 +893,11 @@ struct NotchHomeView: View {
             if composerConversationMode == .temporary {
                 screenshotChip
             }
+
+            // **「语速」在「声音」右边**（用户 2026-09-26：「无论哪一种模式……右侧都应该有
+            // 一个"声音语速"的按钮」）。十档与「说（播报）」那一页读同一个设置，
+            // 档位表在 `SpeechSpeedLevels` 里只写了一遍。
+            SpeechSpeedChip(isPanelOpen: $isSpeedPanelOpen)
             soundChip
         }
     }
@@ -1013,6 +1022,21 @@ struct NotchHomeView: View {
                 companionManager.silenceActiveReplyAudio()
             }
         })
+    }
+
+    /// 语速那一列，画在输入框上方（**参与布局、往上顶**，与设置里那块「音色」面板同一套）——
+    /// 内容列底部没有空间往下弹，而 `.overlay` 伸到父视图外面的部分收不到点击
+    ///（见 开发经验/10-踩过的坑.md D14），所以不参与布局的浮层在这一行行不通。
+    @ViewBuilder
+    private var speedPanelIfOpen: some View {
+        if isSpeedPanelOpen {
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                SpeechSpeedChip.panel(isPanelOpen: $isSpeedPanelOpen)
+            }
+            .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
+            .padding(.bottom, 6)
+        }
     }
 
     private var composerRow: some View {

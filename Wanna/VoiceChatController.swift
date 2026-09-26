@@ -722,7 +722,14 @@ final class VoiceChatController: ObservableObject {
     /// 记 true：那一位的含义是「这条回复可以被回放给视觉模型」—— 语音这一轮是用户真的问过、
     /// 真的答过的对话，回放它正是他要的「切回图文继续聊」，而不是要过滤掉的那种
     /// 「答了一句、什么都没做」的空转。
+    /// **「临时对话」**（用户 2026-09-26：四种模式的输入框上方都要有「连续对话 / 临时对话 /
+    /// 新建」）。这一页的"临时"就是**这一场不写回卡片的历史** —— 说得通、也只有一处要改：
+    /// 回写那一步跳过即可（转写、播报、刘海上的显示全都照旧）。
+    @Published var isTemporaryVoiceConversation = false
+
     private func recordTurnToBoundCard(answerEntryID: UUID, answer: String) {
+        // 临时对话：这一轮**不写回**（对话本身照常进行，只是不留在卡片里）。
+        guard !isTemporaryVoiceConversation else { return }
         guard let cardBinding else { return }
         let trimmedAnswer = answer.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedAnswer.isEmpty else { return }

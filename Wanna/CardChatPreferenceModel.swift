@@ -63,8 +63,13 @@ final class CardChatPreferenceModel: ObservableObject {
         // 什么、写完的表长什么样。2026-09-26 就是靠这一行抓到「写得进、读不出」那个
         // 解码 bug 的（只加 `CodingKeys` 忘了加 `init(from:)` 那两行）。
         print("🎛 [mode] card=\(cardID.prefix(8)) → \(mode.rawValue)")
-        save(AppSettingsStore.snapshot().withCardChatMode(mode, forCardID: cardID),
-             what: "聊天模式（\(mode.displayName)）")
+        var settings = AppSettingsStore.snapshot().withCardChatMode(mode, forCardID: cardID)
+        // **文本模式默认静音**（用户 2026-09-26：「文本模式默认静音，即默认声音关闭」）。
+        //
+        // 落到 `voiceReplyMuted` 上 —— 与设置页、输入框上方那颗「声音」是**同一个开关**，
+        // 所以切换模式之后那颗按钮显示的也是静音态，不会两处打架。切到别的模式就回到默认开。
+        settings.voiceReplyMuted = (mode == .text)
+        save(settings, what: "聊天模式（\(mode.displayName)）")
     }
 
     // MARK: - 角色

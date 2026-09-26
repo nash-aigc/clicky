@@ -2162,6 +2162,18 @@ struct VoiceChatSessionView: View {
     /// 他要的话再说，那是一个新的子系统（临时语音会话不写历史），不是一行 UI。
     private var voiceComposerControlsRow: some View {
         HStack(spacing: 6) {
+            // **四种模式的输入框上方是同一排**（用户 2026-09-26：「无论哪一种模式，文本、
+            // 图文、语音、视频，输入框上方都应该有一个"连续对话 / 临时对话 / 新建"的按钮，
+            // 右侧都应该有一个"声音语速"的按钮」）。
+            //
+            // 这一页的「临时对话」= **这一场不写回卡片的历史**（见
+            // `VoiceChatController.isTemporaryVoiceConversation`）：语音这条路没有"另一段
+            // 对话"可以去，而"临时"在这里的确切含义就是"不留下"。
+            voiceConversationModeChip(title: "连续对话", isTemporary: false,
+                                      help: "这一段会记进这张卡片的历史")
+            voiceConversationModeChip(title: "临时对话", isTemporary: true,
+                                      help: "这一段不写进任何历史，挂断就散了")
+
             composerChip(title: "新建",
                          systemImage: "plus",
                          isOn: false,
@@ -2173,11 +2185,6 @@ struct VoiceChatSessionView: View {
             }
 
             Spacer(minLength: 6)
-
-            Text("针对语音对话")
-                .font(.system(size: 10.5))
-                .foregroundColor(.white.opacity(0.38))
-                .fixedSize()
 
             // 开 = 正常说话；关 = 只出文字（模型那边 `modalities: ["text"]`）。
             composerChip(title: "声音",
@@ -2203,6 +2210,41 @@ struct VoiceChatSessionView: View {
             .background(headerAnchorReporter(.speed))
 
         }
+    }
+
+    /// 「连续对话 / 临时对话」那一对 —— 选中的那颗打勾并变绿（与关键词页那一对同一个样子）。
+    private func voiceConversationModeChip(title: String,
+                                           isTemporary: Bool,
+                                           help: String) -> some View {
+        let isSelected = controller.isTemporaryVoiceConversation == isTemporary
+        return Button {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            controller.isTemporaryVoiceConversation = isTemporary
+        } label: {
+            HStack(spacing: 4) {
+                if isSelected {
+                    Image(systemName: "checkmark").font(.system(size: 9, weight: .bold))
+                }
+                Text(title).font(.system(size: 11.5))
+            }
+            .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.65))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.white.opacity(isSelected ? 0.10 : 0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .strokeBorder(isSelected ? DS.Colors.success.opacity(0.5)
+                                             : Color.white.opacity(0.08),
+                                  lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
     }
 
     /// 一行里的一颗（形状与另外两页那排一致：11.5pt 字、7pt 圆角、亮底 + 描边）。
