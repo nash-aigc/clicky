@@ -182,14 +182,16 @@ struct HomeSpaceSidebarView: View {
     }
 
     private var sidebarTopButtonRows: some View {
-        VStack(spacing: Self.topButtonRowSpacing) {
+        // **两行之间用一条横格线分开**（用户 2026-09-26 深夜：「加一点边线，就是边框线，
+        // 让用户知道这个分界线在哪里」）—— 表格的那条中间线就是它。
+        VStack(spacing: 0) {
             // 第 1 行：**设置 · 折叠 · 历史 · 添加**。
             //
             // 「设置按钮要放在上面这一行，放在折叠的左侧」（他的补充）—— 所以设置在最左，
             // 折叠第 2。折叠那颗以前是**窗口级**画在面板左上角的，现在搬进这一行：
             // 它就该和这些按钮排在一起，而不是浮在它们上面（浮着的那颗已经删掉，
             // 右侧那颗窗口级的「收起侧栏」还在，两颗动作本来相同）。
-            HStack(spacing: NotchSupport.sidebarTopRowSpacing) {
+            HStack(spacing: 0) {
                 // **折叠在最左，设置第 2**（用户 2026-09-26：「左侧顶部第一行最左侧应为折叠
                 // 按钮（当前写错了），第二个是设置」—— 上一轮他说"设置放在折叠的左侧"，
                 // 这一轮更正回来了）。
@@ -197,14 +199,17 @@ struct HomeSpaceSidebarView: View {
                 // 图形的形式。这是我刚才说错了」）—— 一排文字里它是个图标，因为它表示的是
                 // 一个方向动作，而不是一个去处。
                 sidebarCollapseIconButton()
+                TableVerticalRule()
                 sidebarTopButton(title: "设置", isOn: showsSettings) {
                     SoundEffectPlayer.shared.play(.sidebarButton)
                     showsSettings = true
                 }
+                TableVerticalRule()
                 sidebarTopButton(title: "历史", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     openArchiveAction()
                 }
+                TableVerticalRule()
                 // **「添加」先问清是哪一类**（用户 2026-09-26：「你在添加的时候，需要让用户
                 // 选择创建哪一类的 agent。你现在是直接添加，这是不对的」）—— 它现在只是把
                 // 那个表单叫出来，建什么由表单决定。表单画在 sheet 根上，因为侧栏 194pt
@@ -220,17 +225,21 @@ struct HomeSpaceSidebarView: View {
             // 「角色」是他这一轮点名要回来的（上一轮他删过一次）：它对应**设置里的角色页**
             //（「对应的关系就是在设置页面里面这个角色」）—— 也就是设计角色的地方；
             // 语音 / 视频模式下**选用**哪个角色在卡片页头上，两条路各管一件事。
-            HStack(spacing: NotchSupport.sidebarTopRowSpacing) {
+            TableHorizontalRule()
+
+            HStack(spacing: 0) {
                 sidebarTopButton(title: "角色", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     showsSettings = false
                     openRoleSettingsAction()
                 }
+                TableVerticalRule()
                 sidebarTopButton(title: "复盘", isOn: false) {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     showsSettings = false
                     cardModel.openReviewAgent(agentSessionManager: agentSessionManager)
                 }
+                TableVerticalRule()
                 sidebarTopButton(title: "录音", isOn: false) {
                     SoundEffectPlayer.shared.play(.recordingEditorOpened)
                     openRecordingSettingsAction()
@@ -239,6 +248,9 @@ struct HomeSpaceSidebarView: View {
         }
         .padding(.horizontal, NotchSupport.cornerControlInset)
         .padding(.top, 4)
+        // **底下这 3pt 是算出来的**：两行要正好落在 0…64（与右侧、与录音带下沿同一条线），
+        // 而 4 + 28 + 1（那条横格线）+ 28 = 61，差 3。
+        .padding(.bottom, 3)
     }
 
     /// 第 1 行最左那颗「折叠」——**图标形态**，其余照 `sidebarTopButton` 的尺寸走，
@@ -287,17 +299,10 @@ struct HomeSpaceSidebarView: View {
             // **只有名称、没有图标**（用户 2026-09-26：「左侧边栏的按钮全部显示为名称，
             // 不使用图标，以便压缩宽度」）—— 两个字的标签比"图标 + 间距 + 文字"窄一截，
             // 侧栏缩到 240 之后靠它才放得下四颗。
-            // **无边框、像一张表**（用户 2026-09-26 深夜：「把它做成一个完全无边框的效果，
-            // 就是极简风格、没有边框的一套，类似于一个表格的感觉」）。
-            //
-            // 去掉了底色和描边之后，一格里只剩下字；而字要**尽可能大**
-            //（「每一个文字尽可能大一点，不要在文字里面留很大的边距」）—— 所以字号从 12
-            // 提到 14、横向内边距压到 2。选中态只剩颜色（绿 = 这一页开着）。
+            // **一格 = 只有字**（共用的 `tableCellText`）：无底色、无描边、点上去就是这一格。
+            // 字号 14（原来是 12）—— 去掉那些装饰之后，字号提上去而高度不动。
             Text(title)
-                .font(.system(size: 14, weight: isOn ? .semibold : .regular))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.88))
+                .tableCellText(isOn: isOn, fontSize: 14)
                 .frame(maxWidth: .infinity)
                 .frame(height: Self.topButtonHeight)
                 .contentShape(Rectangle())

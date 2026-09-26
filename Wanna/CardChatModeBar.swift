@@ -47,16 +47,21 @@ struct CardChatModeBar: View {
     }
 
     private var baseRow: some View {
-        HStack(spacing: 6) {
+        // **和左边那张表同一套**（用户 2026-09-26 深夜：「右侧顶部的文本、语音、视频、通话，
+        // 以及右侧音色角色的收缩展开，也做成这样一个效果吧」）：无底色、无圆角、格与格之间
+        // 一条 1pt 竖线。
+        HStack(spacing: 0) {
             ForEach(CardChatMode.allCases) { mode in
                 modeChip(mode)
+                TableVerticalRule(rowHeight: NotchSupport.contentHeaderControlHeight)
             }
 
             if let leadingAccessory {
                 leadingAccessory
+                TableVerticalRule(rowHeight: NotchSupport.contentHeaderControlHeight)
             }
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 0)
 
             if let trailingAccessory {
                 trailingAccessory
@@ -96,29 +101,13 @@ struct CardChatModeBar: View {
             // 而是通过边缘高亮以及按钮高亮的方式来显示」）。选中 = 底色更亮 + 绿色描边 +
             // 绿字；未选中 = 几乎透明的底 + 极淡的边。对号还会让被选中的那颗**变宽**，
             // 于是它右边那几颗的位置会跟着挪 —— 现在四颗宽度恒定，点起来不跳。
+            // **一格 = 只有字**（共用的 `tableCellText`）—— 底色与描边都去掉了，
+            // 所以"选中"只能靠颜色（绿字），格线负责说清"这一格到哪为止"。
             Text(mode.displayName)
-                .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
-                .lineLimit(1)
-                .fixedSize()
-                .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.55))
+                .tableCellText(isOn: isSelected, fontSize: 13)
                 .padding(.horizontal, 10)
-                // **高度与页头那排按钮完全相同**（用户：「所有的模式按钮，高度增大，让它们
-                // 完全相同」）—— 取的是同一个常量，不是又写一个数。
                 .frame(height: NotchSupport.contentHeaderControlHeight)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(isSelected
-                              ? DS.Colors.success.opacity(0.16)
-                              : Color.white.opacity(0.05))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(isSelected
-                                      ? DS.Colors.success.opacity(0.75)
-                                      : Color.white.opacity(0.08),
-                                      lineWidth: isSelected ? 1.5 : 1)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -283,28 +272,16 @@ struct CardChatRoleChip: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "person.crop.circle")
-                    .font(.system(size: 11))
-                // **只写"角色"两个字**（用户 2026-09-26：「角色按钮只显示"角色"两个字，
-                // 左侧加个图标就可以了」）—— 当前是哪个角色写在点开的那份清单里，
-                // 那一行才是它该出现的地方；按钮上写角色名会让宽度随角色名长短跳。
+                    .font(.system(size: 12))
                 Text("角色")
-                    .font(.system(size: 11.5, weight: .medium))
-                    .lineLimit(1)
+                    .tableCellText(fontSize: 13)
                 Image(systemName: isRoleListOpen ? "chevron.up" : "chevron.down")
                     .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.6))
             }
-            .foregroundColor(.white.opacity(0.8))
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 10)
             .frame(height: NotchSupport.contentHeaderControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.white.opacity(isRoleListOpen ? 0.12 : 0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()

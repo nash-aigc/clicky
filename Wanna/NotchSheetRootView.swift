@@ -562,26 +562,15 @@ struct NotchSheetRootView: View {
             isVoicePickerPresented.toggle()
             if isVoicePickerPresented { loadCustomVoicesForPickerIfNeeded() }
         } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: 4) {
                 Image(systemName: "waveform")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 12))
                 Text(currentVoiceDisplayName)
-                    .font(.system(size: 12, weight: .medium))
-                    .lineLimit(1)
+                    .tableCellText(isOn: isVoicePickerPresented, fontSize: 13)
             }
-            .foregroundColor(isVoicePickerPresented ? DS.Colors.success : .white.opacity(0.9))
-            .padding(.horizontal, 12)
-            .frame(height: 34)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(isVoicePickerPresented ? 0.14 : 0.08))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(isVoicePickerPresented
-                                  ? DS.Colors.success.opacity(0.5) : Color.clear,
-                                  lineWidth: 1)
-            )
+            .padding(.horizontal, 10)
+            .frame(height: NotchSupport.contentHeaderControlHeight)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -816,24 +805,19 @@ struct NotchSheetRootView: View {
                 await textCallController.start(cardID: cardID, cardKind: cardKind)
             }
         } label: {
-            Image(systemName: isCalling ? "phone.down.fill" : "phone.fill")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40)
-                                           : DS.Colors.success)
-                .padding(.horizontal, 12)
-                .frame(height: 34)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40).opacity(0.18)
-                                        : Color.white.opacity(0.08))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40).opacity(0.5)
-                                                : DS.Colors.success.opacity(0.35),
-                                      lineWidth: 1)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            HStack(spacing: 4) {
+                Image(systemName: isCalling ? "phone.down.fill" : "phone.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40)
+                                               : DS.Colors.success)
+                Text(isCalling ? "挂断" : "通话")
+                    .tableCellText(isOn: isCalling, fontSize: 13)
+                    .foregroundColor(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40)
+                                               : DS.Colors.success)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: NotchSupport.contentHeaderControlHeight)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
