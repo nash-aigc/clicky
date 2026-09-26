@@ -784,6 +784,16 @@ final class NotchWindowController {
         // 用户 2026-09-26：「现在录音的时候，如果窗口隐藏，录音刘海右侧的按钮是可以被点击的…
         // 但窗口打开的情况下，它也应该可以被点击。现在是不可以被点击的。刘海左侧，在窗口打开的
         // 时候，也应该能被点击。」
+        // **「Notion 笔记」那颗按钮**：与两翼同一个理由（画在点击穿透的面板里）——
+        // 命中的矩形由 `NotchSupport` 从屏幕坐标算，和视图那一处是同一份算术。
+        if LongFormRecorderController.shared.showsNotionNoteButtons,
+           let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }),
+           let buttonFrame = NotchSupport.notionNoteButtonFrame(on: presence.screen),
+           buttonFrame.contains(clickLocation) {
+            LongFormRecorderController.shared.handleNotionNoteButtonTap()
+            return
+        }
+
         // **录音两翼：展开、收起两态都认，而且只认这一处。**
         //
         // ⚠️ **它必须排在下面 `if panelModel.isExpanded { … }` 之前。** 那一段处理完

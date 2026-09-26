@@ -50,8 +50,15 @@ struct NotchRecordingBandView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            band
-            if recorder.isTranscriptExpanded {
+            // **保存中（第三态）：整条带子连同左右两翼一起收掉**，屏幕上只留最左边那颗
+            // 按钮显示「保存中…」（用户 2026-09-27：「然后这个刘海他就应该消失…只保留最左侧
+            // 这个…最干净」）。
+            if !recorder.isSavingNotionNote {
+                band
+            }
+            if recorder.isSavingNotionNote {
+                EmptyView()
+            } else if recorder.isTranscriptExpanded {
                 expandedTranscriptPanel
             } else {
                 VStack(spacing: 0) {
@@ -120,12 +127,16 @@ struct NotchRecordingBandView: View {
         if recorder.notionNoteSaved {
             notionNoteButton(title: "已保存笔记", systemImage: "checkmark",
                              tint: DS.Colors.success) {
-                recorder.openNotionNotePage()
+                recorder.handleNotionNoteButtonTap()
             }
+        } else if recorder.isSavingNotionNote {
+            // 保存中：只报状态，点了也没有别的意思（真正的收尾在那条异步链上）。
+            notionNoteButton(title: "保存中", systemImage: "arrow.triangle.2.circlepath",
+                             tint: DS.Colors.success) {}
         } else {
             notionNoteButton(title: "取消", systemImage: "xmark",
                              tint: Color(red: 0.95, green: 0.42, blue: 0.40)) {
-                recorder.cancelNotionNote()
+                recorder.handleNotionNoteButtonTap()
             }
             .help("取消这条笔记，这一场按普通录音处理（不点就会存进 Notion）")
         }
@@ -139,8 +150,10 @@ struct NotchRecordingBandView: View {
                 Text(title).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
             }
             .foregroundColor(tint)
-            .padding(.horizontal, 12)
-            .frame(height: 30)
+            // **宽度写死**：三种状态的文案长短不同，不钉住按钮会左右跳、命中区也跟着漂
+            //（矩形在 `NotchSupport.notionNoteButtonFrame`，两边是同一个数）。
+            .frame(width: NotchSupport.notionNoteButtonSize.width,
+                   height: NotchSupport.notionNoteButtonSize.height)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.black.opacity(0.78))

@@ -1384,6 +1384,9 @@ final class LongFormRecorderController: ObservableObject {
     @Published private(set) var notionNoteCancelled = false
     /// 已经写进 Notion 了 —— 那个位置换成「已保存笔记 ✓」，点它打开页面。
     @Published private(set) var notionNoteSaved = false
+    /// **正在保存**（第三态）：刘海那条带子整个收掉，只留最左边那颗按钮显示「保存中…」
+    ///（用户 2026-09-27：「然后这个刘海他就应该消失…只保留最左侧这个…保存中」）。
+    @Published private(set) var isSavingNotionNote = false
     /// 那两个按钮上要显示的错误（保存失败时说出来，不静默）。
     @Published private(set) var notionNoteFailure: String?
 
@@ -1485,11 +1488,26 @@ final class LongFormRecorderController: ObservableObject {
         publishDiagnostic("用户点了保存笔记")
     }
 
-    /// 「取消笔记」：这一场按**普通录音**处理，不写 Notion。
+    /// 「取消」：这一场按**普通录音**处理，不写 Notion。
+    ///
+    /// **取消是彻底的**（用户 2026-09-27：「只要用户点击取消，就完全的取消，甚至取消后后台的
+    /// 这个什么一秒钟检测一次这个代码…就直接取消掉」）：按钮收掉、检测表停掉、并且
+    /// `notionNoteCancelled` 一旦为真就**再也不会让按钮回来**（哪怕用户最后又说了一次关键词）。
     func cancelNotionNote() {
         notionNoteCancelled = true
         showsNotionNoteButtons = false
-        publishDiagnostic("用户取消了笔记，按普通录音处理")
+        stopNotionKeywordWatch()
+        publishDiagnostic("用户取消了笔记：按钮收掉、检测停掉，这一场按普通录音处理")
+    }
+
+    /// **点那颗按钮** —— 三种状态各自的意思。控制器（全局监听）接走点击之后调它，
+    /// 因为面板是点击穿透的，SwiftUI 那层收不到。
+    func handleNotionNoteButtonTap() {
+        if notionNoteSaved {
+            openNotionNotePage()
+        } else if !isSavingNotionNote {
+            cancelNotionNote()
+        }
     }
 
     /// 把这一场整理成一页笔记写进 Notion。
@@ -1661,6 +1679,7 @@ final class LongFormRecorderController: ObservableObject {
         notionNoteCancelled = false
         notionNoteSaved = false
         notionNoteFailure = nil
+        isSavingNotionNote = false
         isTranscriptExpanded = false
         transcriptDraftText = nil
         isSessionActive = false
@@ -2498,7 +2517,10 @@ final class LongFormRecorderController: ObservableObject {
             // 用户第 8 条：**原文**进剪贴板、**不粘贴**（他要的是能直接去别处粘贴）。
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
+            // **第三态**：带子收掉、只留那颗按钮显示「保存中…」（见 `isSavingNotionNote`）。
+            isSavingNotionNote = true
             await saveNotionNote(rawText: text)
+            isSavingNotionNote = false
             // 「已保存笔记」在原「取消」的位置显示 5 秒 —— 这 5 秒里那块带子不能收，
             // 否则用户根本看不到保存的结果（用户第 5 + 7 条合起来就是这个意思）。
             if notionNoteSaved {

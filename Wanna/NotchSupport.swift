@@ -364,6 +364,30 @@ nonisolated enum NotchSupport {
     /// 所以这两个矩形搬到这里：**两处读同一份**（录音带自己在收起态判、刘海控制器在展开态判），
     /// 各写一份必然漂。宽度取**两翼自己的宽度**（86 / 88），不含刘海 —— 含进去的话，
     /// 点刘海左边那十几个点就会被当成"点左翼"，展开态下"点刘海收起"就失灵了。
+    /// **「Notion 笔记」那颗按钮在屏幕上的矩形**（2026-09-27）。
+    ///
+    /// 它画在录音带那块面板里，而那块面板收起态是**点击穿透**的（`ignoresMouseEvents = true`）
+    /// —— 所以画在里面的 SwiftUI 按钮**永远收不到点击**（用户报的「它是取消，但是我无法点击」
+    /// 就是这个）。与两翼同一个解法：**画在哪由视图算，点在哪由控制器的全局监听用屏幕矩形接**，
+    /// 两边读同一个函数。
+    ///
+    /// 宽度**写死**：那三种状态（取消 / 保存中 / 已保存笔记）的文案长短不同，
+    /// 不钉住的话按钮会左右跳、命中区也跟着漂。
+    static let notionNoteButtonSize = CGSize(width: 104, height: 30)
+
+    static func notionNoteButtonFrame(on screen: NSScreen) -> CGRect? {
+        guard let notch = notchRect(on: screen) else { return nil }
+        let bandWidth = leadingWingWidth + notch.width + trailingWingWidth
+        let panelWidth = min(bandWidth * 2, screen.frame.width - 40)
+        let panelLeft = screen.frame.minX + notch.minX + notch.width / 2 - panelWidth / 2
+        // 与视图里那段 `.padding(.trailing, bandWidth * 1.5 + 10)` 是**同一处算术**：
+        // 带子左边缘 = panelLeft + 0.5 × bandWidth，按钮右边缘再往左 10。
+        let rightEdge = panelLeft + bandWidth * 0.5 - 10
+        let top = screen.frame.maxY - notch.height + (notch.height - notionNoteButtonSize.height) / 2
+        return CGRect(x: rightEdge - notionNoteButtonSize.width, y: top,
+                      width: notionNoteButtonSize.width, height: notionNoteButtonSize.height)
+    }
+
     static func recordingWingFrames(on screen: NSScreen) -> (leading: CGRect, trailing: CGRect)? {
         guard let notch = notchRect(on: screen) else { return nil }
         let top = screen.frame.maxY
