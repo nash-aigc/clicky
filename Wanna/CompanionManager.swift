@@ -130,6 +130,10 @@ final class CompanionManager: ObservableObject {
     /// —— 一问一答（第 1 步就结束）不算任务 ✓，它本来就该被下一个问题打断 ✓。
     private var isAgentJobRunning = false
 
+    /// **同一个任务连续失败了几次** —— 兜底的判据就靠它（见 `MainLoopFailurePolicy`：
+    /// 那个文件是这件事唯一的旋钮）。做成一次就归零，交给 Claude Code 之后也归零。
+    private var mainLoopConsecutiveFailures = 0
+
     /// **回答任务槽的代次。** 从 2026-09-26 起可能有两轮同时在跑（任务在后台继续、
     /// 新一轮已经开始 ✗），所以"我结束的时候把槽清掉"必须确认**槽还是我的** ——
     /// 否则旧任务收尾时会把新一轮的句柄清掉，而那个句柄正是"观察者要不要让位"的判据，
@@ -2327,6 +2331,47 @@ final class CompanionManager: ObservableObject {
     /// A reply that carries action tags turns the turn into an agent loop: the
     /// actions execute, a fresh screenshot goes out with an automatic continuation
     /// prompt (no new user speech), and the cycle repeats until a reply carries no
+    /// **兜底：把这个任务交给 Claude Code。**
+    ///
+    /// 用户的原话：「在主循环任务失败的时候，自动地去分配给 Claude Code 这个更强的
+    /// Agent」；「这个任务就自动地从咱们设计的主循环会话移动到 Claude Code 这个卡片里面」。
+    ///
+    /// 四件事，缺一件复盘就读不出来：
+    ///   1. 先把失败原因落盘（`recordFailure`）—— 那是「我该升级哪里」的直接证据；
+    ///   2. 派发时带**简报**（原始请求 + 已经试过的步骤 + 卡在哪），不重问一遍：Claude Code
+    ///      很重、token 很贵，让它从头把走过的路再走一遍是纯浪费；
+    ///   3. **把任务迁到那张 Claude Code 卡片**（`handOffTask` 会同时写归属、原因、
+    ///      收掉旧尝试、开一条新尝试，并立刻落盘）；
+    ///   4. 连续失败计数归零 —— 交出去之后这条线的账结了。
+    private func handOffToClaudeCode(taskID: String, request: String, failureReason: String) async {
+        let board = AgentActivityBoard.shared
+        board.recordFailure(failureReason, forTaskID: taskID)
+        let alreadyTriedSteps = board.agents.first { $0.id == taskID }?.steps ?? []
+
+        let briefing = MainLoopFailurePolicy.handoffBriefing(originalRequest: request,
+                                                             steps: alreadyTriedSteps,
+                                                             failureReason: failureReason)
+        let dispatchOutcome = agentSessionManager.spawnAndSendFirstTurn(
+            name: MainLoopFailurePolicy.fallbackAgentName,
+            firstTurnText: briefing)
+        print("🪂 兜底派发：\(dispatchOutcome)")
+
+        // 同一个名字会复用同一个代理，所以这里查到的就是那张卡片。
+        guard let fallbackCard = agentSessionManager.sessions.first(where: {
+            $0.name.caseInsensitiveCompare(MainLoopFailurePolicy.fallbackAgentName) == .orderedSame
+        }) else {
+            print("🪂 派发之后没找到「\(MainLoopFailurePolicy.fallbackAgentName)」那张卡片，任务先留在原卡片")
+            return
+        }
+        board.handOffTask(taskID,
+                          to: .claudeCode,
+                          cardID: fallbackCard.id.uuidString,
+                          reason: failureReason,
+                          externalAgentKind: "claudeCode")
+        mainLoopConsecutiveFailures = 0
+        showTaskCompletionNotice("这件事我的主循环没做成，已经交给 Claude Code 了", holdSeconds: 3.5)
+    }
+
     /// action tags or `maximumAutonomousActionSteps` is reached. Only the loop's
     /// last reply is spoken, and the whole job is recorded to history as a single
     /// turn — the user's words against every step's raw reply, tags and all.
@@ -3380,6 +3425,36 @@ final class CompanionManager: ObservableObject {
                                                          settings: appSettings)
                     }
                     AgentActivityBoard.shared.finishTask(id, status: status)
+
+                    // **兜底**（2026-09-26）：这一轮没做成、而且是连续第 N 次，
+                    // 就把任务交给 Claude Code。判定与阈值全在
+                    // `MainLoopFailurePolicy` —— 那是这件事唯一的旋钮，
+                    // 因为用户说得很清楚：他要**持续升级主循环、逐步弱化 Claude Code**，
+                    // 所以这个数将来要一路往上调，必须只有一个地方能调。
+                    if status == .failed {
+                        mainLoopConsecutiveFailures += 1
+                    } else {
+                        mainLoopConsecutiveFailures = 0
+                    }
+                    let reachedStepCap = stepCount >= Self.maximumAutonomousActionSteps
+                    let outcome = MainLoopFailurePolicy.TurnOutcome(
+                        stepCount: stepCount,
+                        hitStepCap: reachedStepCap,
+                        threwError: lastErrorMessage != nil || Task.isCancelled,
+                        wasATask: true,
+                        failureReason: lastErrorMessage
+                            ?? (reachedStepCap ? "撞到步数上限（\(stepCount) 步）还没做完" : nil))
+                    switch MainLoopFailurePolicy.verdict(
+                        for: outcome,
+                        consecutiveFailuresIncludingThisTurn: mainLoopConsecutiveFailures) {
+                    case .completed:
+                        mainLoopConsecutiveFailures = 0
+                    case .unfinished(let reason):
+                        print("🔁 主循环没做成（连续第 \(mainLoopConsecutiveFailures) 次）：\(reason)")
+                    case .handOff(let reason):
+                        await handOffToClaudeCode(taskID: id, request: transcript,
+                                                  failureReason: reason)
+                    }
                 }
 
                 // Record the whole job as ONE conversation turn against the user's
