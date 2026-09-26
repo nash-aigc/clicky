@@ -69,14 +69,8 @@ struct HomeSpaceSidebarView: View {
     /// 由卡片最左侧那颗状态按钮切换 —— 见 `statusButton`。
     @State private var collapsedTaskCards: Set<String> = []
 
-    /// 正在改哪张卡片的备注（纯界面状态）。标题那一路复用 `renamingSessionID` /
-    /// `renamingAgentID`（那一套本来就管着两个列表的改名），备注不属于那两个 store，
-    /// 所以它自己一份。
-    @State private var editingNoteCardID: String?
-    @State private var noteDraft: String = ""
-
-    /// 卡片上两个可编辑的格子 —— 只用于"失焦即提交"（用户点开别处时那一格要落地）。
-    private enum CardEditableField: Hashable { case cardTitle, cardNote }
+    /// 卡片上那个可编辑的格子 —— 只用于"失焦即提交"（用户点开别处时那一格要落地）。
+    private enum CardEditableField: Hashable { case cardTitle }
     @FocusState private var focusedCardField: CardEditableField?
 
     /// 「历史归档」那一行：归档页面住在设置里（`SettingsPage.archive`），
@@ -154,7 +148,6 @@ struct HomeSpaceSidebarView: View {
         // 动作是点开别的地方 —— 那一格就此消失，敲的字要是没落地，他会以为记下了。
         .onChange(of: focusedCardField) { _, newField in
             guard newField == nil else { return }
-            if editingNoteCardID != nil { commitCardNote() }
             if renamingSessionID != nil || renamingAgentID != nil { commitRename() }
         }
     }
@@ -361,14 +354,15 @@ struct HomeSpaceSidebarView: View {
         .padding(.bottom, 10)
     }
 
-    /// 一张卡片。**两行**（用户 2026-09-26：「左侧边栏这个卡片应该分两行。第一行是标题，
-    /// 标题可以被修改，默认是 claude code，第一行还有一个收藏按钮，最左侧还有一个状态按钮。
-    /// 第二行显示一些备注。」）：
+    /// 一张卡片。**两行**（用户 2026-09-26 的定稿：「删除备注的功能，只保留标题，（第一行），
+    /// 第二行显示（状态、收藏按钮）」）：
     ///
-    /// - 第一行：**最左那颗状态按钮** + 标题（双击可改）+ 类型标记 +「收藏」+「通话」；
-    /// - 第二行：备注（双击可写）。
+    /// - 第一行：**标题**（双击可改，默认是 claude code）；
+    /// - 第二行：**状态按钮 + 收藏按钮**（`callButton` 在右侧横跨两行）。
     ///
-    /// 两颗按钮（收藏 / 通话）横跨两行居中 —— 通话那颗是 48pt 的方块，本来就比两行字高。
+    /// 备注那一版做过又被删掉：两行装不下「状态 + 标题 + 收藏 + 通话」四件东西，标题会被
+    /// 挤成「我…」（实测侧栏 194pt，四件的固定开销约 132pt）；把状态与收藏挪到第二行之后，
+    /// 标题独占整行，**宽度就够了，侧栏不用加宽**。
     private func cardRow(_ card: AgentCardModel.Card) -> some View {
         // **三档**：选中（右列正在显示它）> 悬停（可以点）> 普通。
         //
@@ -378,21 +372,26 @@ struct HomeSpaceSidebarView: View {
         let isSelectedCard = isCurrent(card)
         let isHoveredCard = hoveredCardID == card.id
         return HStack(alignment: .center, spacing: 6) {
-            statusButton(card)
-
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
+                // 第一行：**标题**（双击可改）。
                 cardTitleLine(card)
-                cardNoteLine(card)
+                // 第二行：**状态 + 收藏**（Claude Code 卡片另有那枚类型标记）。
+                HStack(spacing: 6) {
+                    statusButton(card)
+                    if card.kind == .mainLoop {
+                        favouriteButton(card)
+                    }
+                    // **类型标记也在第二行**：它原本跟标题同一行，实测把标题挤成「W…」——
+                    // 那 70pt 的胶囊与标题在同一个 HStack 里争的正是标题最需要的宽度，
+                    // 而第二行本来就空着（状态 24 + 收藏 22 + 标记 70 = 116，放得下）。
+                    if card.kind == .claudeCode {
+                        claudeCodeBadge
+                    }
+                    Spacer(minLength: 0)
+                }
             }
 
             Spacer(minLength: 4)
-
-            // **「收藏」在左，「通话」在最右**（用户 2026-09-26：「把右侧的收藏按钮放在
-            // 通话按钮的左侧，把通话按钮放在右侧」）。只出现在主循环卡片上 —— 用户明确
-            // 要求「新建的 Claude Code 类型卡片不可设为默认」，兜底那条线不是「我的主对话」。
-            if card.kind == .mainLoop {
-                favouriteButton(card)
-            }
 
             // **「通话」**（用户 2026-09-26：「左侧卡片的右侧，分别添加（通话的图标按钮），
             // 点击后=自动切换成（语音：全双工语音模式），也能在设置页面设置（全双工、
@@ -530,15 +529,12 @@ struct HomeSpaceSidebarView: View {
                     // 只高亮底和边、字还是同一个亮度，两张卡片看着仍然是一对。
                     .foregroundColor(.white)
                     .lineLimit(1)
-
-                if card.kind == .claudeCode {
-                    Text("Claude Code")
-                        .font(.system(size: 9.5, weight: .medium))
-                        .foregroundColor(.white.opacity(0.55))
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1.5)
-                        .background(Capsule().fill(Color.white.opacity(0.08)))
-                }
+                    // **宁可缩一点、不要截断**：标题那一行的可用宽度是
+                    // 侧栏 184 − 卡片内边距 9 − 通话按钮 48 − 间距 ≈ 117pt，而
+                    // 「我喜欢谁，刚才说过」这种 9 字标题在 13.5pt 下要 ~122pt —— 差几个
+                    // 百分点。实测过：截断会变成「我喜欢谁，刚…」，缩 10% 还能整句读。
+                    .minimumScaleFactor(0.78)
+                    .allowsTightening(true)
             }
             .contentShape(Rectangle())
             .onTapGesture(count: 2) { beginRenaming(card) }
@@ -546,31 +542,16 @@ struct HomeSpaceSidebarView: View {
         }
     }
 
-    /// 第二行的**备注** —— 也是双击可改（用户：「第二行显示一些备注」）。
-    ///
-    /// 没写过时显示一句灰提示而不是留空：留空的话这一行和"卡片只有一行"看不出区别，
-    /// 用户不会知道这里可以写东西。
-    @ViewBuilder
-    private func cardNoteLine(_ card: AgentCardModel.Card) -> some View {
-        if editingNoteCardID == card.id {
-            TextField("备注", text: $noteDraft)
-                .textFieldStyle(.plain)
-                .font(.system(size: 10.5))
-                .foregroundColor(.white.opacity(0.85))
-                .focused($focusedCardField, equals: .cardNote)
-                .onSubmit { commitCardNote() }
-        } else {
-            Text(card.note.isEmpty ? "双击写备注…" : card.note)
-                .font(.system(size: 10.5))
-                .foregroundColor(.white.opacity(card.note.isEmpty ? 0.28 : 0.55))
-                .lineLimit(1)
-                .contentShape(Rectangle())
-                .onTapGesture(count: 2) {
-                    editingNoteCardID = card.id
-                    noteDraft = card.note
-                }
-                .help(card.note.isEmpty ? "双击写一条备注" : "双击改这条备注")
-        }
+    /// Claude Code 卡片上那枚类型标记 —— **一处实现**，第二行与（将来的）别处共用。
+    private var claudeCodeBadge: some View {
+        Text("Claude Code")
+            .font(.system(size: 9.5, weight: .medium))
+            .foregroundColor(.white.opacity(0.55))
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1.5)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
     }
 
     /// 「收藏」（原来那颗「设为默认」的星）。
@@ -617,14 +598,6 @@ struct HomeSpaceSidebarView: View {
             renamingSessionID = nil
         }
         focusedCardField = .cardTitle
-    }
-
-    /// 提交备注。**空串 = 抹掉**（`withCardNote` 里就是这么写的）。
-    private func commitCardNote() {
-        guard let cardID = editingNoteCardID else { return }
-        cardModel.setNote(noteDraft, forCardID: cardID)
-        editingNoteCardID = nil
-        noteDraft = ""
     }
 
     /// 这张卡片是不是**右列正在显示的那张** —— 选中态由它决定。

@@ -64,9 +64,6 @@ final class AgentCardModel: ObservableObject {
         /// 背后那条 `ConversationSession` / `AgentSession` 的 id。
         let entityID: String
         let title: String
-        /// **卡片的备注**（用户 2026-09-26：「第二行显示一些备注」）。空串 = 没写过。
-        /// 它住在 `AppSettings`（按卡片 id），不写进对话本身 —— 理由见 `AppSettings.cardNotes`。
-        let note: String
         /// 只有主循环卡片可能为 true —— 用户明确要求 Claude Code 卡片不参与「设为默认」。
         let isDefault: Bool
         /// 四栏。只放非空的栏由视图决定，这里保证四栏都在（顺序由 `TaskColumn.allCases` 定）。
@@ -143,7 +140,6 @@ final class AgentCardModel: ObservableObject {
                               kind: .mainLoop,
                               entityID: cardID,
                               title: session.title,
-                              note: AppSettingsStore.snapshot().cardNote(forCardID: cardID),
                               isDefault: defaultSessionID == cardID,
                               tasksByColumn: columns(forCardKind: .mainLoop,
                                                      cardID: cardID,
@@ -170,7 +166,6 @@ final class AgentCardModel: ObservableObject {
                               kind: .claudeCode,
                               entityID: cardID,
                               title: agent.name,
-                              note: AppSettingsStore.snapshot().cardNote(forCardID: cardID),
                               isDefault: false,          // 兜底卡片永不参与「设为默认」
                               tasksByColumn: columns(forCardKind: .claudeCode,
                                                      cardID: cardID,
@@ -240,7 +235,7 @@ final class AgentCardModel: ObservableObject {
             }
             guard matching.values.contains(where: { !$0.isEmpty }) else { return nil }
             return Card(id: card.id, kind: card.kind, entityID: card.entityID,
-                        title: card.title, note: card.note,
+                        title: card.title,
                         isDefault: card.isDefault, tasksByColumn: matching)
         }
     }
@@ -341,18 +336,6 @@ final class AgentCardModel: ObservableObject {
             try AppSettingsStore.save(AppSettingsStore.snapshot().withDefaultSessionID(cardID))
         } catch {
             print("⚠️ Wanna: 记不住默认会话（\(cardID)）—— \(error)")
-        }
-    }
-
-    /// 卡片第二行那条**备注**的写入（空串 = 抹掉）。
-    ///
-    /// 与 `setDefault` 同一条口径：写失败只留日志，不让侧栏崩 —— 这是用户刚敲进去的
-    /// 一行字，写不进磁盘要说出来，但不该连界面一起带走。
-    func setNote(_ note: String, forCardID cardID: String) {
-        do {
-            try AppSettingsStore.save(AppSettingsStore.snapshot().withCardNote(note, forCardID: cardID))
-        } catch {
-            print("⚠️ Wanna: 记不住备注（\(cardID)）—— \(error)")
         }
     }
 
