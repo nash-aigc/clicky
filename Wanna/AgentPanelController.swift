@@ -100,8 +100,11 @@ final class AgentPanelController {
             created.backgroundColor = .clear
             created.hasShadow = true
             created.hidesOnDeactivate = false
-            // 和刘海面板同层 —— 它属于刘海那一套，不该浮到菜单之上。
-            created.level = NotchSupport.notchPanelWindowLevel
+            // **比刘海面板高一层。** 同层的话它是**排在展开面板后面**的 —— 实测
+            //（2026-09-26）：面板确实开了（窗口 320×277 在 341,38），但屏幕上看到的
+            // 是展开面板的内容，任务面板被它整块盖住。高一层的代价只是它压在刘海里，
+            // 而它本来就是从刘海那排按钮里点出来的。
+            created.level = NotchSupport.notchPanelWindowLevel + 1
             created.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
             created.isReleasedWhenClosed = false
             created.animationBehavior = .none
@@ -158,7 +161,11 @@ private struct AgentDetailView: View {
                 }
                 .padding(11)
             }
-            .frame(maxHeight: 300)
+            // **必须是定高，不能是 `maxHeight`。** `ScrollView` 的 fittingSize 高度是 0，
+            // 于是 `show()` 里那个 `min(380, hostingView.fittingSize.height)` 把整块面板
+            // 压成 37pt —— 屏幕上只剩一条表头（2026-09-26 实测：窗口 320×37，
+            // 正文一个字都看不见）。定高之后内容真的在窗口里。
+            .frame(height: 240)
         }
         .frame(width: 320)
         .background(
