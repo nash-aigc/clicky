@@ -3020,6 +3020,14 @@ final class CompanionManager: ObservableObject {
                     // when TTS begins, which is seconds later. Keyed on the empty
                     // accumulated text rather than a one-shot flag so the semantics
                     // stay "the first real content arrived".
+                    // DIAGNOSTIC (2026-09-26)：**这一轮到底带了什么上下文**。
+                    //
+                    // 用户报「新建对话之后好像还是保留着上下文」，而那份新会话在盘上明明只有
+                    // 一条记录、summary 也是空的 —— 也就是说**如果还有残留，它在别处**。
+                    // 这一行把"送出去的那两样"打印出来：带了几轮、摘要多长、系统提示词多长、
+                    // 有没有截图、有没有屏幕上下文。下一次提问就能定位它到底藏在哪里。
+                    print("🧠 本轮上下文：历史 \(stepHistory.count) 轮 · 摘要 \(compressedHistorySummary.count) 字 · 系统提示词 \(Self.companionSystemPrompt(for: appSettings).count) 字 · 截图 \(labeledImages.count) 张 · 屏幕上下文 \((pendingAccessibilityContext?.count ?? 0)) 字 · 会话=\(turnSessionID.uuidString.prefix(8))")
+
                     var announcedAnswerStart = false
                     var (fullResponseText, _) = try await visionChatAPI.analyzeImageStreaming(
                         images: labeledImages,

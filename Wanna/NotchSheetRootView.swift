@@ -284,13 +284,16 @@ struct NotchSheetRootView: View {
                         // 而 `.overlay` 不参与布局 —— 清单浮在内容上，正文不会被推下去。
                         // 角色清单开在**页头那颗按钮下面**（三页都一样 —— 那颗「角色」现在恒在
                         // 页头最右，所以清单只有一个方向：往下）。
-                        .overlay(alignment: .topLeading) {
+                        // **弹窗靠右**，与那颗「角色」在同一侧（用户 2026-09-26：「角色按钮的下拉
+                        // 弹窗位置不对。角色按钮现在在最右侧，弹窗应该也在最右侧，现在却在最左侧」）。
+                        // 它原来跟着 `.topLeading` 走 —— 那是"角色在模式条最左"时代的锚点。
+                        .overlay(alignment: .topTrailing) {
                             if let openCardID = cardChatPreferences.openRoleListCardID,
                                openCardID == activeCardID {
                                 CardChatRoleListPanel(cardID: openCardID,
                                                       cardKind: activeCardKind,
                                                       preferences: cardChatPreferences)
-                                    .padding(.leading, NotchSupport.contentColumnHorizontalMargin)
+                                    .padding(.trailing, NotchSupport.contentColumnHorizontalMargin)
                                     .padding(.top, NotchSupport.sheetHeaderTopInset
                                               + NotchSupport.cardChatModeBandHeight)
                             }
