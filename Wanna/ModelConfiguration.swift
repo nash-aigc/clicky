@@ -495,6 +495,58 @@ nonisolated extension ModelConfiguration {
         status(of: role).resolvedRole
     }
 
+    /// **换一个服务商 / 模型来跑某个角色** —— 卡片自己选的那个「用哪个 AI」。
+    ///
+    /// 与 `status(of:)` 同一套构造（同一份 URL 归一化、同一份路径来源），只是服务商与模型名
+    /// 由调用方给。任何一步不成立 —— 服务商被删了、它不支持这个角色、URL 或 Key 空了、
+    /// 路径拼不出来 —— 一律返回 nil，调用方**回落到全局那份**：一张卡片上存了一个已经失效的
+    /// 选择，不该让这张卡片从此问不了问题。
+    func resolvedRole(_ role: ModelRole, providerID: UUID, modelID: String) -> ResolvedModelRole? {
+        let trimmedModelID = modelID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedModelID.isEmpty,
+              let provider = providers.first(where: { $0.id == providerID }),
+              provider.supports(role) else { return nil }
+        let normalizedBaseURL = Self.normalizedBaseURL(provider.baseURL)
+        let trimmedAPIKey = provider.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedBaseURL.isEmpty, !trimmedAPIKey.isEmpty,
+              let requestPath = provider.effectiveFlavor.requestPath(for: role) else { return nil }
+        let resolvedRole = ResolvedModelRole(
+            role: role,
+            providerID: provider.id,
+            providerDisplayName: provider.displayName,
+            baseURL: normalizedBaseURL,
+            apiKey: trimmedAPIKey,
+            modelID: trimmedModelID,
+            requestPath: requestPath,
+            speechVoiceID: provider.speechVoiceID,
+            allowsVisionReasoning: provider.allowsVisionReasoning
+        )
+        return resolvedRole.requestURL != nil ? resolvedRole : nil
+    }
+
+    /// 一张卡片可以选的「AI」—— 新建卡片那个表单的下拉读它。
+    ///
+    /// 列的是**已配好的服务商 × 它们的 🧠 模型**，不是一张写死的模型表：能跑起来的组合
+    /// 只有用户自己填过的那些，列一个官方目录出来只会让人选到一个必然 404 的名字。
+    nonisolated struct VisionModelChoice: Identifiable, Equatable {
+        /// `"服务商UUID||模型名"` —— **直接就是存进 `AppSettings` 的那个值**，
+        /// 中间不再经过一层映射（存的东西和选的东西是同一个字符串）。
+        let id: String
+        let displayName: String
+    }
+
+    var visionModelChoices: [VisionModelChoice] {
+        providers.compactMap { provider in
+            guard provider.supports(.vision),
+                  let modelID = provider.modelID(for: .vision)?
+                      .trimmingCharacters(in: .whitespacesAndNewlines),
+                  !modelID.isEmpty else { return nil }
+            return VisionModelChoice(id: "\(provider.id.uuidString)||\(modelID)",
+                                     displayName: "\(provider.displayName) · \(modelID)")
+        }
+    }
+
+
     /// Trims whitespace and strips trailing slashes.
     ///
     /// Deliberately does *not* add or remove a `/v1`, and does not try to

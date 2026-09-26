@@ -650,6 +650,31 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
         return mode
     }
 
+    /// **每张卡片各自用哪个「AI」**（用户 2026-09-26：「让用户……选择哪一个 AI」）。
+    ///
+    /// 值就是 `ModelConfiguration.VisionModelChoice.id` —— `"服务商UUID||模型名"`，
+    /// 存**原始字符串**、不存枚举，理由与上面那几个字典一样：服务商被删掉、模型名被改掉
+    /// 之后，这里读出来是个解析不了的值，那就回落到全局配置，而不是让整份设置解不出来。
+    var cardVisionModelOverrides: [String: String]?
+
+    /// 这张卡片自己选的那个 AI（没选过 = nil = 用设置里全局那份）。
+    func cardVisionModelOverride(forCardID cardID: String) -> String? {
+        cardVisionModelOverrides?[cardID]
+    }
+
+    /// 复制一份、只换某张卡片的 AI。传 nil = 回到"跟全局"。
+    func withCardVisionModelOverride(_ overrideValue: String?, forCardID cardID: String) -> AppSettings {
+        var copy = self
+        var overrides = copy.cardVisionModelOverrides ?? [:]
+        if let overrideValue {
+            overrides[cardID] = overrideValue
+        } else {
+            overrides.removeValue(forKey: cardID)
+        }
+        copy.cardVisionModelOverrides = overrides
+        return copy
+    }
+
     /// 这张卡片在语音 / 视频模式下选中的角色 id（没选过是 nil）。
     func cardVoiceRoleID(forCardID cardID: String) -> String? {
         cardVoiceRoleIDs?[cardID]
@@ -1429,6 +1454,7 @@ nonisolated extension AppSettings {
         case defaultSessionID
         case cardChatModeRawValues
         case cardVoiceRoleIDs
+        case cardVisionModelOverrides
         case voiceChatSpeaksReplies
         case reviewAgentReadsProject
         case reviewAgentWritesProject
@@ -1573,6 +1599,8 @@ nonisolated extension AppSettings {
                                                              forKey: .cardChatModeRawValues)
         cardVoiceRoleIDs = try container.decodeIfPresent([String: String].self,
                                                         forKey: .cardVoiceRoleIDs)
+        cardVisionModelOverrides = try container.decodeIfPresent([String: String].self,
+                                                                 forKey: .cardVisionModelOverrides)
         voiceChatSpeaksReplies = try container.decodeIfPresent(Bool.self,
                                                               forKey: .voiceChatSpeaksReplies) ?? defaults.voiceChatSpeaksReplies
         // 两个都是"没设过 = 关"（仓规 E1：`Bool?` + `decodeIfPresent`）。

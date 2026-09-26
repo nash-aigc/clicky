@@ -63,6 +63,13 @@ nonisolated struct AgentSession: Identifiable, Codable, Equatable {
     var createdAt: Date
     var updatedAt: Date
 
+    /// **这个 agent 用哪个模型**（用户 2026-09-26：「让用户……选择哪一个 AI」）。
+    ///
+    /// 值就是 claude CLI `--model` 认的那个写法（`fable` / `opus` / `sonnet`，
+    /// 或者一个完整模型名）。nil = 不传这个参数 = CLI 自己的默认 —— 这也是绝大多数
+    /// 已有记录的形态，所以它必须是 Optional 且 `decodeIfPresent`。
+    var modelAlias: String?
+
     private enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -74,6 +81,7 @@ nonisolated struct AgentSession: Identifiable, Codable, Equatable {
         case accumulatedCostUSD
         case createdAt
         case updatedAt
+        case modelAlias
     }
 
     init(id: UUID = UUID(), name: String, projectFolderPath: String) {
@@ -101,6 +109,7 @@ nonisolated struct AgentSession: Identifiable, Codable, Equatable {
         accumulatedCostUSD = try container.decodeIfPresent(Double.self, forKey: .accumulatedCostUSD)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        modelAlias = try container.decodeIfPresent(String.self, forKey: .modelAlias)
     }
 }
 

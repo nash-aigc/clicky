@@ -200,6 +200,10 @@ struct NotchSheetRootView: View {
                                     isSessionSidebarCollapsed.toggle()
                                     SoundEffectPlayer.shared.play(.sidebarButton)
                                 },
+                                addCardAction: {
+                                    // 建卡片这件事只有这一处入口：侧栏那颗「添加」。
+                                    isAddCardFormOpen = true
+                                },
                             )
                             .frame(width: Self.expandedSidebarWidth)
                         }
@@ -292,6 +296,25 @@ struct NotchSheetRootView: View {
                         // 弹窗位置不对。角色按钮现在在最右侧，弹窗应该也在最右侧，现在却在最左侧」）。
                         // 它原来跟着 `.topLeading` 走 —— 那是"角色在模式条最左"时代的锚点。
                         .overlay(alignment: .topTrailing) {
+                            if isAddCardFormOpen {
+                                AddCardFormView(
+                                    dismissAction: { isAddCardFormOpen = false },
+                                    createMainAgent: { title, visionModelChoiceID in
+                                        createMainAgentCard(title: title,
+                                                            visionModelChoiceID: visionModelChoiceID)
+                                    },
+                                    createClaudeCodeAgent: { title, folderPath, modelAlias in
+                                        createClaudeCodeCard(title: title,
+                                                             projectFolderPath: folderPath,
+                                                             modelAlias: modelAlias)
+                                    },
+                                    pickFolder: { completion in
+                                        pickProjectFolder(completion: completion)
+                                    }
+                                )
+                                .padding(.top, NotchSupport.sheetHeaderTopInset)
+                                .padding(.trailing, NotchSupport.contentColumnHorizontalMargin)
+                            }
                             if let openCardID = cardChatPreferences.openRoleListCardID,
                                openCardID == activeCardID {
                                 CardChatRoleListPanel(cardID: openCardID,
@@ -499,6 +522,9 @@ struct NotchSheetRootView: View {
     // 不属于某一次输入。
     /// 音色弹窗开着没有。
     @State private var isVoicePickerPresented = false
+
+    /// 新建卡片那张表单开着没有（「添加」按下去就开）。
+    @State private var isAddCardFormOpen = false
     /// 临时对话（阶段 4）：它自己的会话，**不碰主对话的任何状态**。
     @StateObject private var temporaryConversation = TemporaryConversationModel()
     /// 克隆音色（打开弹窗时拉一次；拉不到就只显示系统音色 + 一行说明）。
@@ -740,6 +766,55 @@ struct NotchSheetRootView: View {
                         cardKind: activeCardKind,
                         trailingAccessory: AnyView(voiceChip),
                         preferences: cardChatPreferences)
+    }
+    // MARK: - 新建卡片（「添加」那张表单的三件事）
+
+    /// **主 Agent**：一条新的主对话，外加它自己那份「用哪个 AI」。
+    ///
+    /// 标题与模型是**分开落的**：标题进 `ConversationSessionsStore`（那是会话自己的字段），
+    /// 模型进 `AppSettings.cardVisionModelOverrides`（那是"这张卡片的偏好"）。两边都用
+    /// 新建出来的会话 id 当键 —— 卡片 id 就是它。
+    private func createMainAgentCard(title: String, visionModelChoiceID: String?) {
+        let newSession = sessionsModel.createSession(title: title)
+        if let visionModelChoiceID {
+            var settings = AppSettingsStore.snapshot()
+            settings = settings.withCardVisionModelOverride(visionModelChoiceID,
+                                                            forCardID: newSession.id.uuidString)
+            try? AppSettingsStore.save(settings)
+        }
+        agentSessionManager.selectedSidebarSection = .conversations
+        sessionsModel.selectSession(newSession.id)
+        print("🃏 [add] 新建主 Agent 卡片 \(newSession.id.uuidString.prefix(8)) · 模型=\(visionModelChoiceID ?? "跟全局")")
+    }
+
+    /// **Claude Code**：一条新的 agent 记录 + 它的项目文件夹 + 它的模型。
+    private func createClaudeCodeCard(title: String, projectFolderPath: String, modelAlias: String?) {
+        let newAgent = AgentSessionStore.createAgent(name: title, projectFolderPath: projectFolderPath)
+        if let modelAlias {
+            AgentSessionStore.setModelAlias(modelAlias, forAgentID: newAgent.id)
+        }
+        // 卡片的聊天模式跟 `CardChatMode.defaultMode(for:)` 走（Claude Code 默认文本）——
+        // 这里不写它，就是让那一条默认值继续做唯一的一份真相。
+        agentSessionManager.selectedSidebarSection = .agents
+        agentSessionManager.selectAgent(newAgent.id)
+        print("🃏 [add] 新建 Claude Code 卡片 \(newAgent.id.uuidString.prefix(8)) · 文件夹=\(projectFolderPath) · 模型=\(modelAlias ?? "CLI 默认")")
+    }
+
+    /// 选项目文件夹：**先让弹窗让位，再升起 `NSOpenPanel`，回来再把它放回去。**
+    ///
+    /// 与 Agent 页那颗「打开」同一条路（`hideSheetAction` / `revealSheetAction`）——
+    /// 一个盖住屏幕顶部的 810pt 弹窗下面，`NSOpenPanel` 是点不动的。
+    private func pickProjectFolder(completion: @escaping (String?) -> Void) {
+        hideSheetAction()
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "选择"
+        panel.message = "选一个文件夹：这个 agent 就跑在里面，读写都在这里面"
+        let response = panel.runModal()
+        revealSheetAction()
+        completion(response == .OK ? panel.url?.path : nil)
     }
 }
 

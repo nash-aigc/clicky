@@ -102,6 +102,10 @@ struct HomeSpaceSidebarView: View {
 
     /// 第 1 行那颗「折叠」（收起侧栏）。动作住在窗口控制器里 —— 侧栏只负责把点击报上去。
     var toggleSidebarCollapseAction: () -> Void = {}
+
+    /// 第 1 行那颗「添加」：把「新建卡片」那张表单叫出来。
+    /// 表单本身由 sheet 根画（侧栏 194pt 放不下），所以这里只往上报一下。
+    var addCardAction: () -> Void = {}
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
 
@@ -199,10 +203,13 @@ struct HomeSpaceSidebarView: View {
                     SoundEffectPlayer.shared.play(.notchRevealed)
                     openArchiveAction()
                 }
+                // **「添加」先问清是哪一类**（用户 2026-09-26：「你在添加的时候，需要让用户
+                // 选择创建哪一类的 agent。你现在是直接添加，这是不对的」）—— 它现在只是把
+                // 那个表单叫出来，建什么由表单决定。表单画在 sheet 根上，因为侧栏 194pt
+                // 放不下一张要填三样东西的表。
                 sidebarTopButton(title: "添加", isOn: false) {
                     SoundEffectPlayer.shared.play(.sidebarButton)
-                    sessionsModel.createSession()
-                    agentSessionManager.selectedSidebarSection = .conversations
+                    addCardAction()
                 }
             }
 

@@ -62,7 +62,8 @@ nonisolated final class ClaudeAgentProcess {
     static func launchArguments(
         sessionID: UUID,
         permissionArguments: [String],
-        resumesThread: Bool
+        resumesThread: Bool,
+        modelAlias: String? = nil
     ) -> [String] {
         var arguments = [
             "-p",
@@ -81,6 +82,12 @@ nonisolated final class ClaudeAgentProcess {
         // turn forever — the permission mode's own arguments decide what is
         // auto-approved (see `AgentPermissionMode.cliArguments`).
         arguments += ["--permission-prompts", "none"]
+        // **这个 agent 自己选的模型**（卡片上那个「用哪个 AI」）。没选过就不传 ——
+        // 传空串会让 CLI 直接报错，而"没选"的语义本来就是"用 CLI 的默认"。
+        if let trimmedModelAlias = modelAlias?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !trimmedModelAlias.isEmpty {
+            arguments += ["--model", trimmedModelAlias]
+        }
         arguments += permissionArguments
         return arguments
     }
@@ -186,19 +193,22 @@ nonisolated final class ClaudeAgentProcess {
     func launch(
         executablePath: String,
         projectFolderPath: String,
-        permissionArguments: [String]
+        permissionArguments: [String],
+        modelAlias: String? = nil
     ) throws {
         try parsingQueue.sync { try launchSynchronously(
             executablePath: executablePath,
             projectFolderPath: projectFolderPath,
-            permissionArguments: permissionArguments
+            permissionArguments: permissionArguments,
+            modelAlias: modelAlias
         ) }
     }
 
     private func launchSynchronously(
         executablePath: String,
         projectFolderPath: String,
-        permissionArguments: [String]
+        permissionArguments: [String],
+        modelAlias: String?
     ) throws {
         guard process == nil || process?.isRunning == false else {
             return // Already live — the manager asked to reuse.
@@ -218,7 +228,8 @@ nonisolated final class ClaudeAgentProcess {
         launchedProcess.arguments = Self.launchArguments(
             sessionID: agentID,
             permissionArguments: permissionArguments,
-            resumesThread: sessionAlreadyExists
+            resumesThread: sessionAlreadyExists,
+            modelAlias: modelAlias
         )
 
         // The agent works inside the user's chosen project folder — the CLI's

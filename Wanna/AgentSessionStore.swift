@@ -90,6 +90,19 @@ nonisolated enum AgentSessionStore {
         return newAgent
     }
 
+    /// 改这个 agent 用的模型（卡片上那个「用哪个 AI」）。nil = 回到 CLI 默认。
+    ///
+    /// 改完要重启进程才生效（`--model` 是启动参数）—— 调用方负责在下一次开火时
+    /// 重新 `launch`，这里只管记录。
+    static func setModelAlias(_ modelAlias: String?, forAgentID agentID: UUID) {
+        mutate { storedSessions in
+            guard let index = storedSessions.agents.firstIndex(where: { $0.id == agentID }) else { return }
+            let trimmed = modelAlias?.trimmingCharacters(in: .whitespacesAndNewlines)
+            storedSessions.agents[index].modelAlias = (trimmed?.isEmpty == true) ? nil : trimmed
+            storedSessions.agents[index].updatedAt = Date()
+        }
+    }
+
     /// Deletes an agent. Its subprocess is the manager's responsibility — this
     /// only removes the record.
     static func deleteAgent(_ agentID: UUID) {

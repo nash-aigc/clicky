@@ -142,6 +142,16 @@ final class ConversationSessionsModel: ObservableObject {
         _ = ConversationSessionsStore.createSession()
     }
 
+    /// **建一条带标题的新会话，并把 id 交回去。**
+    ///
+    /// 与上面那个无参版的分工：「添加 → 主 Agent」那条路既要一个标题（用户填的），
+    /// 也要拿到 id —— 新建出来那张卡片的「用哪个 AI」要按这个 id 存进 `AppSettings`。
+    /// 无参版继续给侧栏那颗「＋」用（它不需要 id）。
+    @discardableResult
+    func createSession(title: String) -> ConversationSession {
+        ConversationSessionsStore.createSession(title: title)
+    }
+
     /// Moves a session to 归档 — the sidebar's delete. Soft: the record stays on
     /// disk until `purgeSession`.
     func deleteSession(_ sessionID: UUID) {

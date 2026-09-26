@@ -504,7 +504,9 @@ final class AgentSessionManager: ObservableObject {
         try processBridge.launch(
             executablePath: resolution.path,
             projectFolderPath: agent.projectFolderPath,
-            permissionArguments: permissionArguments
+            permissionArguments: permissionArguments,
+            // **这个 agent 自己选的模型**（卡片上那个「用哪个 AI」）—— nil = CLI 的默认。
+            modelAlias: agent.modelAlias
         )
 
         processesByAgentID[agent.id] = processBridge

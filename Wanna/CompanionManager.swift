@@ -2465,6 +2465,21 @@ final class CompanionManager: ObservableObject {
             .carriesImages
     }
 
+    /// **这张卡片自己选的那个 AI**，解析成一次请求能用的角色；没选过、或那个选择已经失效
+    /// （服务商被删、模型名被清空）就返回 nil —— 调用方随即跟全局配置走。
+    ///
+    /// 失效回落是刻意的：卡片上存的是一个字符串，而设置页可以把一个服务商整个删掉。
+    /// 那时候该发生的是"这张卡片回到默认模型"，不是"这张卡片再也问不了问题"。
+    private func visionRoleOverride(forCardID cardID: String) -> ResolvedModelRole? {
+        guard let rawOverride = AppSettingsStore.snapshot().cardVisionModelOverride(forCardID: cardID) else {
+            return nil
+        }
+        let parts = rawOverride.components(separatedBy: "||")
+        guard parts.count == 2, let providerID = UUID(uuidString: parts[0]) else { return nil }
+        return ModelConfigurationStore.snapshot()
+            .resolvedRole(.vision, providerID: providerID, modelID: parts[1])
+    }
+
     // MARK: - 回答时持续监听（连续追问）
 
     /// Arms the continuous-listening window the moment an answer's playback
@@ -3104,6 +3119,8 @@ final class CompanionManager: ObservableObject {
                         conversationHistory: stepHistory,
                         conversationSummary: compressedHistorySummary,
                         userPrompt: userPromptForThisTurn,
+                        // **这张卡片自己选的 AI**（没选过就是 nil = 跟设置里全局那份）。
+                        roleOverride: visionRoleOverride(forCardID: turnSessionID.uuidString),
                         onTextChunk: { [weak self] accumulatedText in
                             // The vision client hands over the whole accumulated answer,
                             // not just the new piece. Assigning it (rather than appending)

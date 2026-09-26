@@ -300,11 +300,14 @@ class BailianVisionChatAPI {
         conversationSummary: String = "",
         userPrompt: String,
         modelIDOverride: String? = nil,
+        /// **这张卡片自己选的那个 AI**（`AppSettings.cardVisionModelOverride`）。
+        /// 给了就用它，连服务商一起换；没给就照旧从全局配置里解析 🧠。
+        roleOverride: ResolvedModelRole? = nil,
         onTextChunk: @MainActor @Sendable (String) -> Void
     ) async throws -> (text: String, duration: TimeInterval) {
         let startTime = Date()
 
-        let resolvedVisionRole = try resolveVisionRole(modelIDOverride: modelIDOverride)
+        let resolvedVisionRole = try roleOverride ?? resolveVisionRole(modelIDOverride: modelIDOverride)
         var request = try makeAPIRequest(for: resolvedVisionRole)
 
         var body: [String: Any] = [
