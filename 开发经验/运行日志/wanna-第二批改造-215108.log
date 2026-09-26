@@ -1,0 +1,18 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 2 exchanges from session 「。」
+2026-09-26 21:51:08.846 Wanna[32073:2909410] [Recording] 按保留天数清理了 7 个文件
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790430682.244
+⏱️ [expand] 内容就位 +81ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +132ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.5ms
+⏱️ [hitch] main thread busy for 323ms

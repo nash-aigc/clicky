@@ -530,6 +530,16 @@ final class VoiceChatController: ObservableObject {
     /// 而不是旧的「语音聊天」分区。
     var boundCardIdentity: CardVoiceBinding? { cardBinding }
 
+    /// **这张卡片现在是不是正连着这一场语音 / 视频通话** —— 卡片上那颗通话按钮的绿色
+    /// 高亮读它。
+    ///
+    /// 注意它问的不是"这张卡片的模式是不是语音"（那是 `CardChatPreferenceModel` 的事）：
+    /// 模式是"我打算用哪种方式"，而高亮要说的是"这一通正在打"。两件事混起来之后，
+    /// 一张只是**选过**语音模式的卡片会一直亮着绿电话（2026-09-26 实测到的那一版）。
+    func isCalling(cardID: String) -> Bool {
+        connectionPhase != .idle && cardBinding?.cardID == cardID
+    }
+
     /// 连接时组装好的上下文（会话记录 + 角色提示词）。nil = 不是从卡片进来的。
     private var cardAssembledContext: CardChatContextAssembler.AssembledContext?
 

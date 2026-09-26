@@ -1,0 +1,1107 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 16 exchanges from session 「屏幕上有什么」
+2026-09-26 20:53:24.955 Wanna[55703:2720721] [Recording] 按保留天数清理了 1 个文件
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427215.928
+⏱️ [expand] 内容就位 +79ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +136ms
+🔬 [card] 冷启动完整排版：66 字 → 60 unit / 3 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：52 字 → 40 unit / 2 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：143 字 → 140 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：99 字 → 98 unit / 4 行，耗时 1.9ms
+🔬 [card] 冷启动完整排版：189 字 → 182 unit / 7 行，耗时 3.5ms
+🔬 [card] 冷启动完整排版：66 字 → 60 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：52 字 → 40 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：143 字 → 140 unit / 6 行，耗时 3.1ms
+🔬 [card] 冷启动完整排版：99 字 → 98 unit / 4 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：189 字 → 182 unit / 7 行，耗时 3.5ms
+🔬 [card] 冷启动完整排版：54 字 → 53 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：81 字 → 80 unit / 4 行，耗时 1.5ms
+🔬 [card] 冷启动完整排版：103 字 → 97 unit / 4 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：70 字 → 68 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：50 字 → 44 unit / 2 行，耗时 0.9ms
+⏱️ [hitch] main thread busy for 589ms
+⏱️ [hitch] main thread busy for 177ms
+🎛 [mode] card=D25C2B40 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+⏱️ [hitch] main thread busy for 264ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [hitch] main thread busy for 90ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.3ms
+⏱️ [hitch] main thread busy for 67ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427533.874
+⏱️ [expand] 内容就位 +18ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +59ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.3ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 122ms
+⏱️ [hitch] main thread busy for 193ms
+🎛 [mode] card=D25C2B40 → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 85ms
+⏱️ [hitch] main thread busy for 81ms
+🎛 [mode] card=D25C2B40 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 42ms
+🎛 [mode] card=D25C2B40 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 147ms
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 45ms
+💬 语音聊天：卡片上下文 历史 7 轮、截图 0 张、提示词 3037 字
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc（族=三段式）画面=不允许
+   说明=无
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback)
+⏱️ [hitch] main thread busy for 48ms
+🔊 [aecprobe] t=1790427559.338 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790427559.404 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 780ms（屏幕=0 摄像头=0）
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [cascade] 回合开始 t=1790427559.413
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+⏱️ [hitch] main thread busy for 46ms
+🎙️ [aecprobe] t=1790427559.625 event=level botSpeaking=true level=0.190 peak0.5s=0.190 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.679 event=level botSpeaking=true level=0.190 peak0.5s=0.190 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.732 event=level botSpeaking=true level=0.205 peak0.5s=0.205 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.783 event=level botSpeaking=true level=0.205 peak0.5s=0.205 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.834 event=level botSpeaking=true level=0.213 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.886 event=level botSpeaking=true level=0.213 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.941 event=level botSpeaking=true level=0.153 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427559.994 event=level botSpeaking=true level=0.153 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.045 event=level botSpeaking=true level=0.110 peak0.5s=0.213 utteranceActive=no
+⏱️ [cascade] 首字 +650ms
+⏱️ [cascade] 首段入队 +650ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🎙️ [aecprobe] t=1790427560.098 event=level botSpeaking=true level=0.110 peak0.5s=0.213 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790427560.122
+🔊 TTS 请求 t=1790427560.133 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 2 字
+🎙️ [aecprobe] t=1790427560.153 event=level botSpeaking=true level=0.079 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.207 event=level botSpeaking=true level=0.079 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.261 event=level botSpeaking=true level=0.075 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.312 event=level botSpeaking=true level=0.075 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.365 event=level botSpeaking=true level=0.071 peak0.5s=0.213 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.417 event=level botSpeaking=true level=0.070 peak0.5s=0.153 utteranceActive=no
+🎙️ [aecprobe] t=1790427560.468 event=level botSpeaking=true level=0.070 peak0.5s=0.153 utteranceActive=no
+🔊 [aecprobe] t=1790427560.747 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (75KB)
+🎙️ [aecprobe] t=1790427561.261 event=level botSpeaking=true level=0.588 peak0.5s=0.588 utteranceActive=no
+🎙️ [aecprobe] t=1790427561.314 event=level botSpeaking=true level=0.588 peak0.5s=0.588 utteranceActive=no
+🎙️ [aecprobe] t=1790427561.372 event=level botSpeaking=true level=0.614 peak0.5s=0.614 utteranceActive=no
+🎙️ [aecprobe] t=1790427561.424 event=level botSpeaking=true level=0.442 peak0.5s=0.614 utteranceActive=no
+🎙️ [aecprobe] t=1790427561.424 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.614, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790427561.425 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790427561.528 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [cascade] 回合开始 t=1790427564.967
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790427565.074 event=speakersRestored
+🎙️ [aecprobe] t=1790427565.339 event=level botSpeaking=true level=0.557 peak0.5s=0.557 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.392 event=level botSpeaking=true level=0.557 peak0.5s=0.557 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.446 event=level botSpeaking=true level=0.496 peak0.5s=0.557 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.500 event=level botSpeaking=true level=0.496 peak0.5s=0.557 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.552 event=level botSpeaking=true level=0.718 peak0.5s=0.718 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.607 event=level botSpeaking=true level=0.718 peak0.5s=0.718 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.660 event=level botSpeaking=true level=0.544 peak0.5s=0.718 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.713 event=level botSpeaking=true level=0.544 peak0.5s=0.718 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.765 event=level botSpeaking=true level=0.882 peak0.5s=0.882 utteranceActive=no
+⏱️ [cascade] 首字 +840ms
+⏱️ [cascade] 首段入队 +840ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.2ms
+🎙️ [aecprobe] t=1790427565.819 event=level botSpeaking=true level=0.635 peak0.5s=0.882 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.888 event=level botSpeaking=true level=0.635 peak0.5s=0.882 utteranceActive=no
+🎙️ [aecprobe] t=1790427565.888 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.882, transcript: "你们看。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790427565.905 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio never started
+🎙️ [aecprobe] t=1790427565.947 event=level botSpeaking=true level=0.659 peak0.5s=0.882 utteranceActive=yes
+🗣️ Streaming speech: queued segment 1 (4 chars) t=1790427565.990
+🔊 TTS 请求 t=1790427566.012 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 4 字
+🎙️ [aecprobe] t=1790427566.012 event=level botSpeaking=true level=0.659 peak0.5s=0.882 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.071 event=level botSpeaking=true level=0.474 peak0.5s=0.882 utteranceActive=yes
+⏱️ [hitch] main thread busy for 232ms
+🎙️ [aecprobe] t=1790427566.130 event=level botSpeaking=true level=0.341 peak0.5s=0.882 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.195 event=level botSpeaking=true level=0.341 peak0.5s=0.882 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.250 event=level botSpeaking=true level=0.246 peak0.5s=0.882 utteranceActive=yes
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [hitch] main thread busy for 65ms
+🗣️ Streaming speech: queued segment 2 (39 chars) t=1790427566.313
+🎙️ [aecprobe] t=1790427566.314 event=level botSpeaking=true level=0.246 peak0.5s=0.882 utteranceActive=yes
+🔊 TTS 请求 t=1790427566.333 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 39 字
+🎙️ [aecprobe] t=1790427566.378 event=level botSpeaking=true level=0.177 peak0.5s=0.659 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.436 event=level botSpeaking=true level=0.127 peak0.5s=0.659 utteranceActive=yes
+⏱️ [hitch] main thread busy for 166ms
+🎙️ [aecprobe] t=1790427566.503 event=level botSpeaking=true level=0.127 peak0.5s=0.659 utteranceActive=yes
+🔊 [aecprobe] t=1790427566.549 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (67KB)
+🎙️ [aecprobe] t=1790427566.560 event=level botSpeaking=true level=0.092 peak0.5s=0.659 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.630 event=level botSpeaking=true level=0.066 peak0.5s=0.474 utteranceActive=yes
+🗣️ Streaming speech: queued segment 3 (33 chars) t=1790427566.667
+🔊 TTS 请求 t=1790427566.685 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 33 字
+🎙️ [aecprobe] t=1790427566.686 event=level botSpeaking=true level=0.066 peak0.5s=0.341 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.748 event=level botSpeaking=true level=0.048 peak0.5s=0.341 utteranceActive=yes
+⏱️ [hitch] main thread busy for 96ms
+🎙️ [aecprobe] t=1790427566.802 event=level botSpeaking=true level=0.048 peak0.5s=0.246 utteranceActive=yes
+🎙️ [aecprobe] t=1790427566.865 event=level botSpeaking=true level=0.044 peak0.5s=0.246 utteranceActive=yes
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：93 字 → 86 unit / 3 行，耗时 1.7ms
+🎙️ [aecprobe] t=1790427566.948 event=level botSpeaking=true level=0.044 peak0.5s=0.177 utteranceActive=yes
+⏱️ [hitch] main thread busy for 239ms
+🗣️ Streaming speech: queued segment 4 (33 chars) t=1790427567.062
+⏱️ [hitch] main thread busy for 41ms
+🗣️ Streaming speech: queued segment 5 (30 chars) t=1790427567.414
+⏱️ [hitch] main thread busy for 143ms
+⏱️ [hitch] main thread busy for 62ms
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🗣️ Streaming speech: queued segment 6 (41 chars) t=1790427567.859
+⏱️ [hitch] main thread busy for 197ms
+🔊 [aecprobe] t=1790427568.055 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (292KB)
+🔊 TTS 请求 t=1790427568.063 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 33 字
+🔬 [cascade] 文字仍在增长：202 字（本任务已取消=false，距回合开始 +3157ms）
+⏱️ [hitch] main thread busy for 119ms
+🗣️ Streaming speech: queued segment 7 (38 chars) t=1790427568.322
+⏱️ [hitch] main thread busy for 214ms
+⏱️ [hitch] main thread busy for 62ms
+🗣️ Streaming speech: queued segment 8 (31 chars) t=1790427568.699
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [cascade] 回合开始 t=1790427568.982
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 [aecprobe] t=1790427568.983 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [cascade] 首字 +603ms
+⏱️ [cascade] 首段入队 +603ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 60ms
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790427569.809
+🔊 TTS 请求 t=1790427569.834 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 2 字
+⏱️ [hitch] main thread busy for 158ms
+🗣️ Streaming speech: queued segment 2 (43 chars) t=1790427570.110
+🔊 TTS 请求 t=1790427570.131 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 43 字
+🔊 [aecprobe] t=1790427570.293 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (56KB)
+⏱️ [hitch] main thread busy for 296ms
+🗣️ Streaming speech: queued segment 3 (36 chars) t=1790427570.607
+🔊 TTS 请求 t=1790427570.629 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 36 字
+⏱️ [hitch] main thread busy for 281ms
+🗣️ Streaming speech: queued segment 4 (31 chars) t=1790427570.929
+⏱️ [hitch] main thread busy for 112ms
+⏱️ [hitch] main thread busy for 176ms
+🗣️ Streaming speech: queued segment 5 (30 chars) t=1790427571.244
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 51ms
+🔊 [aecprobe] t=1790427571.678 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (435KB)
+🔊 TTS 请求 t=1790427571.687 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 31 字
+🗣️ Streaming speech: queued segment 6 (37 chars) t=1790427571.697
+⏱️ [hitch] main thread busy for 97ms
+🔬 [cascade] 文字仍在增长：201 字（本任务已取消=false，距回合开始 +2906ms）
+🗣️ Streaming speech: queued segment 7 (30 chars) t=1790427572.005
+⏱️ [hitch] main thread busy for 115ms
+⏱️ [hitch] main thread busy for 135ms
+⏱️ [hitch] main thread busy for 46ms
+🗣️ Streaming speech: queued segment 8 (30 chars) t=1790427572.400
+⏱️ [hitch] main thread busy for 97ms
+🗣️ Streaming speech: queued segment 9 (33 chars) t=1790427572.857
+⏱️ [hitch] main thread busy for 519ms
+🗣️ Streaming speech: queued segment 10 (30 chars) t=1790427573.207
+🗣️ Streaming speech: queued segment 11 (31 chars) t=1790427573.519
+⏱️ [hitch] main thread busy for 365ms
+🗣️ Streaming speech: queued segment 12 (35 chars) t=1790427573.952
+⏱️ [hitch] main thread busy for 505ms
+⏱️ [hitch] main thread busy for 92ms
+🔬 [cascade] 文字仍在增长：401 字（本任务已取消=false，距回合开始 +5392ms）
+⏱️ [hitch] main thread busy for 93ms
+🗣️ Streaming speech: queued segment 13 (40 chars) t=1790427574.476
+⏱️ [hitch] main thread busy for 136ms
+🗣️ Streaming speech: queued segment 14 (35 chars) t=1790427574.896
+⏱️ [hitch] main thread busy for 66ms
+🗣️ Streaming speech: queued segment 15 (31 chars) t=1790427575.194
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790427575.320 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 174ms
+🔬 [card] 冷启动完整排版：66 字 → 60 unit / 3 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：52 字 → 40 unit / 2 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：143 字 → 140 unit / 6 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：99 字 → 98 unit / 4 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：189 字 → 182 unit / 7 行，耗时 3.4ms
+🔬 [card] 冷启动完整排版：54 字 → 53 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：81 字 → 80 unit / 4 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：103 字 → 97 unit / 4 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：70 字 → 68 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：50 字 → 44 unit / 2 行，耗时 0.9ms
+⏱️ [hitch] main thread busy for 384ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+⏱️ [hitch] main thread busy for 212ms
+🔬 [card] 冷启动完整排版：66 字 → 60 unit / 3 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：52 字 → 40 unit / 2 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：143 字 → 140 unit / 6 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：99 字 → 98 unit / 4 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：189 字 → 182 unit / 7 行，耗时 3.4ms
+🔬 [card] 冷启动完整排版：54 字 → 53 unit / 2 行，耗时 1.2ms
+🔬 [card] 冷启动完整排版：81 字 → 80 unit / 4 行，耗时 1.6ms
+🔬 [card] 冷启动完整排版：103 字 → 97 unit / 4 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：70 字 → 68 unit / 3 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：50 字 → 44 unit / 2 行，耗时 0.8ms
+⏱️ [hitch] main thread busy for 278ms
+⏱️ [hitch] main thread busy for 52ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 8.0ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+⏱️ [hitch] main thread busy for 209ms
+🎛 [mode] card=3B49F9AA → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 102ms
+🎛 [mode] card=3B49F9AA → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 66ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.1ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.6ms
+⏱️ [hitch] main thread busy for 208ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427614.768
+⏱️ [expand] 内容就位 +27ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +61ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.9ms
+⏱️ [hitch] main thread busy for 295ms
+🎛 [mode] card=3B49F9AA → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [hitch] main thread busy for 43ms
+2026-09-26 21:00:20.540 Wanna[55703:2720672] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-26 21:00:20.548 Wanna[55703:2720672] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 65ms
+⏱️ [hitch] main thread busy for 47ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🗣️ Streaming speech: queued segment 1 (10 chars) t=1790427624.426
+🔊 TTS 请求 t=1790427624.440 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 10 字
+⏱️ [hitch] main thread busy for 90ms
+🎯 Element pointing: no element
+🧠 Conversation history: 1 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 2 (21 chars) t=1790427624.642
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 0.8ms
+🔊 TTS 请求 t=1790427624.681 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 21 字
+⏱️ [hitch] main thread busy for 72ms
+🔊 [aecprobe] t=1790427625.184 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (105KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 [aecprobe] t=1790427627.143 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (198KB)
+🔊 [aecprobe] t=1790427630.657 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 47ms
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+⏱️ [hitch] main thread busy for 41ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.3ms
+🗣️ Streaming speech: queued segment 1 (4 chars) t=1790427637.483
+🔊 TTS 请求 t=1790427637.500 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 4 字
+⏱️ [hitch] main thread busy for 40ms
+🗣️ Streaming speech: queued segment 2 (30 chars) t=1790427637.690
+🔊 TTS 请求 t=1790427637.699 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 30 字
+⏱️ [hitch] main thread busy for 78ms
+🗣️ Streaming speech: queued segment 3 (31 chars) t=1790427637.826
+⏱️ [hitch] main thread busy for 59ms
+🎯 Element pointing: no element
+🧠 Conversation history: 2 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 4 (27 chars) t=1790427638.136
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.3ms
+🔊 [aecprobe] t=1790427638.208 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (75KB)
+⏱️ [hitch] main thread busy for 130ms
+🔊 TTS 请求 t=1790427639.658 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 31 字
+🔊 [aecprobe] t=1790427639.661 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (221KB)
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.3ms
+⏱️ [hitch] main thread busy for 48ms
+🎙️ [aecprobe] t=1790427643.299 event=level botSpeaking=true level=0.280 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.353 event=level botSpeaking=true level=0.280 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.408 event=level botSpeaking=true level=0.202 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.459 event=level botSpeaking=true level=0.202 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.513 event=level botSpeaking=true level=0.145 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.567 event=level botSpeaking=true level=0.145 peak0.5s=0.280 utteranceActive=no
+🔊 TTS 请求 t=1790427643.577 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 27 字
+🔊 [aecprobe] t=1790427643.579 event=chunkStart segment 3
+🔊 Bailian TTS: playing segment 3 (206KB)
+🎙️ [aecprobe] t=1790427643.620 event=level botSpeaking=true level=0.105 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.674 event=level botSpeaking=true level=0.105 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.725 event=level botSpeaking=true level=0.075 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.778 event=level botSpeaking=true level=0.075 peak0.5s=0.280 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.833 event=level botSpeaking=true level=0.284 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.909 event=level botSpeaking=true level=0.205 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427643.968 event=level botSpeaking=true level=0.205 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.020 event=level botSpeaking=true level=0.147 peak0.5s=0.284 utteranceActive=no
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427644.064
+⏱️ [expand] 内容就位 +34ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +57ms
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.6ms
+⏱️ [hitch] main thread busy for 75ms
+🎙️ [aecprobe] t=1790427644.138 event=level botSpeaking=true level=0.147 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.258 event=level botSpeaking=true level=0.076 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.313 event=level botSpeaking=true level=0.076 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.366 event=level botSpeaking=true level=0.076 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.417 event=level botSpeaking=true level=0.055 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.471 event=level botSpeaking=true level=0.055 peak0.5s=0.284 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.523 event=level botSpeaking=true level=0.040 peak0.5s=0.205 utteranceActive=no
+🎙️ [aecprobe] t=1790427644.577 event=level botSpeaking=true level=0.040 peak0.5s=0.205 utteranceActive=no
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.3ms
+🔊 [aecprobe] t=1790427647.227 event=chunkStart segment 4
+🔊 Bailian TTS: playing segment 4 (288KB)
+🎙️ [aecprobe] t=1790427649.427 event=level botSpeaking=true level=0.229 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.481 event=level botSpeaking=true level=0.229 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.536 event=level botSpeaking=true level=0.165 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.589 event=level botSpeaking=true level=0.165 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.648 event=level botSpeaking=true level=0.119 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.703 event=level botSpeaking=true level=0.085 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.755 event=level botSpeaking=true level=0.085 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.807 event=level botSpeaking=true level=0.092 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.859 event=level botSpeaking=true level=0.092 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.910 event=level botSpeaking=true level=0.092 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427649.961 event=level botSpeaking=true level=0.092 peak0.5s=0.229 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.014 event=level botSpeaking=true level=0.066 peak0.5s=0.165 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.067 event=level botSpeaking=true level=0.066 peak0.5s=0.165 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.441 event=level botSpeaking=true level=0.369 peak0.5s=0.369 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.494 event=level botSpeaking=true level=0.265 peak0.5s=0.369 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.546 event=level botSpeaking=true level=0.265 peak0.5s=0.369 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.597 event=level botSpeaking=true level=0.265 peak0.5s=0.369 utteranceActive=no
+🎙️ [aecprobe] t=1790427650.597 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.369, transcript: "。")
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🔊 [aecprobe] t=1790427650.602 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+📸 Companion: pre-captured 1 screen(s) — follow-up speech detected
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790427650.895 event=speakersMuted
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🎙️ BuddyDictationManager: listening transcript too short to send (0 content chars: "。")
+🎙️ 对话页面：这个问题太短，没有发送（。）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790427651.934 event=speakersRestored
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427659.416
+⏱️ [expand] 内容就位 +44ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +75ms
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.3ms
+⏱️ [hitch] main thread busy for 93ms
+⏱️ [hitch] main thread busy for 158ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+⏱️ [hitch] main thread busy for 229ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 54ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 56ms
+🎙️ BuddyDictationManager: continuous listening window closing (listening window expired); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 337ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427757.886
+⏱️ [expand] 内容就位 +25ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +55ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.1ms
+⏱️ [hitch] main thread busy for 110ms
+⏱️ [hitch] main thread busy for 168ms
+🎛 [mode] card=3B49F9AA → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.1ms
+⏱️ [hitch] main thread busy for 171ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427791.960
+⏱️ [expand] 内容就位 +28ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +48ms
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.1ms
+⏱️ [hitch] main thread busy for 61ms
+⏱️ [hitch] main thread busy for 153ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.4ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.5ms
+⏱️ [hitch] main thread busy for 238ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 79ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427822.442
+⏱️ [expand] 内容就位 +30ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +76ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 5.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 8.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.0ms
+⏱️ [hitch] main thread busy for 319ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 103ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 89ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427886.045
+⏱️ [expand] 内容就位 +21ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +49ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 8.0ms
+⏱️ [hitch] main thread busy for 106ms
+⏱️ [hitch] main thread busy for 189ms
+⏱️ [hitch] main thread busy for 63ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427942.787
+⏱️ [expand] 内容就位 +25ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +57ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 5.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 8.9ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.2ms
+⏱️ [hitch] main thread busy for 307ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427967.341
+⏱️ [expand] 内容就位 +23ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +52ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 6.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 10.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 5.3ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+⏱️ [hitch] main thread busy for 306ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790427999.645
+⏱️ [expand] 内容就位 +24ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +58ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.8ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.6ms
+⏱️ [hitch] main thread busy for 311ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428013.338
+⏱️ [expand] 内容就位 +29ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +73ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 5.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.9ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.3ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.0ms
+⏱️ [hitch] main thread busy for 315ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428034.537
+⏱️ [expand] 内容就位 +36ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +68ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.2ms
+⏱️ [hitch] main thread busy for 312ms
+⏱️ [hitch] main thread busy for 281ms
+⏱️ [expand] 重内容就位 +36767ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.2ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+⏱️ [hitch] main thread busy for 206ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428098.158
+⏱️ [expand] 内容就位 +23ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +59ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 6.2ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 8.9ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+⏱️ [hitch] main thread busy for 309ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428116.350
+⏱️ [expand] 内容就位 +30ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +70ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 9.0ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+⏱️ [hitch] main thread busy for 295ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428139.837
+⏱️ [expand] 内容就位 +23ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +52ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.2ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.5ms
+⏱️ [hitch] main thread busy for 108ms
+⏱️ [hitch] main thread busy for 175ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428150.607
+⏱️ [expand] 内容就位 +28ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +61ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.7ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.7ms
+⏱️ [hitch] main thread busy for 308ms
+⏱️ [hitch] main thread busy for 76ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 70ms
+🎛 [mode] card=3B49F9AA → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.4ms
+⏱️ [hitch] main thread busy for 163ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.1ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+⏱️ [hitch] main thread busy for 229ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 68ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 220ms
+⏱️ [expand] 重内容就位 +20009ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+⏱️ [hitch] main thread busy for 207ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [hitch] main thread busy for 69ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428216.983
+⏱️ [expand] 内容就位 +25ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +56ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.5ms
+⏱️ [hitch] main thread busy for 270ms
+⏱️ [hitch] main thread busy for 78ms
+🎛 [mode] card=3B49F9AA → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：31 字 → 31 unit / 1 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：92 字 → 62 unit / 4 行，耗时 1.2ms
+⏱️ [hitch] main thread busy for 164ms
+🎛 [mode] card=3B49F9AA → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 50ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.6ms
+⏱️ [hitch] main thread busy for 255ms
+🎛 [mode] card=3B49F9AA → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 72ms
+🎛 [mode] card=3B49F9AA → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 73ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428295.258
+⏱️ [expand] 内容就位 +30ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +62ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.6ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 8.8ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：249 字 → 241 unit / 9 行，耗时 4.5ms
+🔬 [card] 冷启动完整排版：481 字 → 450 unit / 18 行，耗时 7.3ms
+⏱️ [hitch] main thread busy for 307ms
+⏱️ [hitch] main thread busy for 78ms
+⏱️ [hitch] main thread busy for 116ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428513.156
+⏱️ [expand] 内容就位 +35ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +47ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428516.816
+⏱️ [expand] 内容就位 +35ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +45ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428523.455
+⏱️ [expand] 内容就位 +29ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +41ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790428526.425
+⏱️ [expand] 内容就位 +27ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +36ms
+⏱️ [hitch] main thread busy for 79ms
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790428536.601 event=speakersMuted
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🔊 [aecprobe] t=1790428537.214 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790428537.270 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: recognition session started
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: 。
+⏱️ [hitch] main thread busy for 60ms
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+📸 Companion: pre-captured screen discarded (stale)
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790428538.711 event=speakersRestored
+🌐 Bailian streaming request: 0.4MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.7ms
+🗣️ Streaming speech: queued segment 1 (10 chars) t=1790428539.483
+🔊 TTS 请求 t=1790428539.486 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 10 字
+🎯 Element pointing: no element
+🧠 Conversation history: 1 exchanges (limit 10)
+🔊 [aecprobe] t=1790428540.221 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (97KB)
+🎙️ BuddyDictationManager: continuous listening requested
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback)
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+🔊 [aecprobe] t=1790428542.018 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback idle
+🎙️ BuddyDictationManager: continuous listening ended
+🎙️ BuddyDictationManager: start requested (keyboardShortcut)
+🎙️ BuddyDictationManager: opening transcription provider Bailian Realtime ASR
+🎙️ BuddyDictationManager: provider ready, starting audio engine
+🎙️ BuddyDictationManager: recognition session started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790428547.938 event=speakersMuted
+🎙️ BuddyDictationManager: stop requested (keyboardShortcut)
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+🗣️ Companion sending transcript: 嗯。
+❌ Buddy dictation error (Bailian Realtime ASR): Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🌐 Bailian streaming request: 0.3MB, 1 image(s), model=deepseek-flash @ DeepSeek
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790428551.572 event=speakersRestored
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.4ms
+🗣️ Streaming speech: queued segment 1 (5 chars) t=1790428552.012
+🔊 TTS 请求 t=1790428552.013 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 5 字
+🎯 Element pointing: no element
+🧠 Conversation history: 2 exchanges (limit 10)
+🗣️ Streaming speech: queued segment 2 (10 chars) t=1790428552.019
+🔊 TTS 请求 t=1790428552.020 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-zjm-7f08616cacf844bbbb165213d739f060 文本 10 字
+🎙️ BuddyDictationManager: continuous listening window closing (talk shortcut pressed while busy (pure stop)); playback still active
+🔊 Streaming speech: stopPlayback() while between segments (synthesis gap) — abandoning the rest of the reply
+🔊 CompanionManager: 3 分钟没有活动，释放音频引擎
+🔊 VoicePlaybackEngine: engine released — voice processing off, nothing else is ducked
+⏱️ [hitch] main thread busy for 322ms
+2026-09-26 21:20:15.931 Wanna[55703:2720672] [LongForm] 麦克风权限：已授权
+2026-09-26 21:20:15.936 Wanna[55703:2720672] [LongForm] 🎙️ 起录体检 · 设备=MacBook Pro麦克风 [id=91] 1ch · 音量=1.00 · 静音=否
+2026-09-26 21:20:15.996 Wanna[55703:2720672] [LongForm] 开始录音 2026-09-26-212015-B793 · 档位 volc.seedasr.sauc.duration · 判重窗口 0ms
+2026-09-26 21:20:16.017 Wanna[55703:2720672] [LongForm] AUHAL 已启动 · 设备=MacBook Pro麦克风 [id=91] · 48000.0Hz 1ch
+2026-09-26 21:20:16.022 Wanna[55703:2720672] [LongForm] 转换器按实际交付格式建立：48000.0Hz 1ch 帧容量=8192
+2026-09-26 21:20:16.022 Wanna[55703:2720672] [LongForm] 第 1 块：165 帧 峰值=0/32768 (0.000) 累计零块=1/1
+⏱️ [hitch] main thread busy for 116ms
+2026-09-26 21:20:16.527 Wanna[55703:2720672] [LongForm] 第 50 块：171 帧 峰值=1250/32768 (0.038) 累计零块=2/50
+2026-09-26 21:20:17.060 Wanna[55703:2720672] [LongForm] 第 100 块：171 帧 峰值=1163/32768 (0.035) 累计零块=2/100
+2026-09-26 21:20:17.594 Wanna[55703:2720672] [LongForm] 第 150 块：170 帧 峰值=3952/32768 (0.121) 累计零块=2/150
+2026-09-26 21:20:18.128 Wanna[55703:2720672] [LongForm] 第 200 块：171 帧 峰值=1865/32768 (0.057) 累计零块=2/200
+2026-09-26 21:20:18.158 Wanna[55703:2720672] [LongForm] 新段 @连接后2.2s 音频位置1152ms 上行67KB 「呃」
+2026-09-26 21:20:18.662 Wanna[55703:2720672] [LongForm] 第 250 块：171 帧 峰值=8349/32768 (0.255) 累计零块=2/250
+2026-09-26 21:20:19.194 Wanna[55703:2720672] [LongForm] 第 300 块：170 帧 峰值=8116/32768 (0.248) 累计零块=2/300
+2026-09-26 21:20:19.727 Wanna[55703:2720672] [LongForm] 第 350 块：171 帧 峰值=3526/32768 (0.108) 累计零块=2/350
+2026-09-26 21:20:20.262 Wanna[55703:2720672] [LongForm] 第 400 块：171 帧 峰值=1501/32768 (0.046) 累计零块=2/400
+2026-09-26 21:20:20.794 Wanna[55703:2720672] [LongForm] 第 450 块：170 帧 峰值=1303/32768 (0.040) 累计零块=2/450
+2026-09-26 21:20:21.328 Wanna[55703:2720672] [LongForm] 第 500 块：171 帧 峰值=1226/32768 (0.037) 累计零块=2/500
+2026-09-26 21:20:21.861 Wanna[55703:2720672] [LongForm] 第 550 块：171 帧 峰值=4745/32768 (0.145) 累计零块=2/550
+2026-09-26 21:20:22.394 Wanna[55703:2720672] [LongForm] 第 600 块：170 帧 峰值=5245/32768 (0.160) 累计零块=2/600
+2026-09-26 21:20:22.928 Wanna[55703:2720672] [LongForm] 第 650 块：171 帧 峰值=1483/32768 (0.045) 累计零块=2/650
+2026-09-26 21:20:23.463 Wanna[55703:2720672] [LongForm] 第 700 块：171 帧 峰值=5522/32768 (0.169) 累计零块=2/700
+2026-09-26 21:20:23.993 Wanna[55703:2720672] [LongForm] 第 750 块：170 帧 峰值=6117/32768 (0.187) 累计零块=2/750
+2026-09-26 21:20:24.526 Wanna[55703:2720672] [LongForm] 第 800 块：171 帧 峰值=5862/32768 (0.179) 累计零块=2/800
+2026-09-26 21:20:25.061 Wanna[55703:2720672] [LongForm] 第 850 块：171 帧 峰值=3020/32768 (0.092) 累计零块=2/850
+2026-09-26 21:20:25.594 Wanna[55703:2720672] [LongForm] 第 900 块：170 帧 峰值=1636/32768 (0.050) 累计零块=2/900
+2026-09-26 21:20:26.126 Wanna[55703:2720672] [LongForm] 第 950 块：171 帧 峰值=2943/32768 (0.090) 累计零块=2/950
+2026-09-26 21:20:26.660 Wanna[55703:2720672] [LongForm] 第 1000 块：171 帧 峰值=9377/32768 (0.286) 累计零块=2/1000
+2026-09-26 21:20:27.193 Wanna[55703:2720672] [LongForm] 第 1050 块：170 帧 峰值=1676/32768 (0.051) 累计零块=2/1050
+2026-09-26 21:20:27.726 Wanna[55703:2720672] [LongForm] 第 1100 块：171 帧 峰值=3827/32768 (0.117) 累计零块=2/1100
+2026-09-26 21:20:28.260 Wanna[55703:2720672] [LongForm] 第 1150 块：171 帧 峰值=1831/32768 (0.056) 累计零块=2/1150
+2026-09-26 21:20:28.794 Wanna[55703:2720672] [LongForm] 第 1200 块：170 帧 峰值=899/32768 (0.027) 累计零块=2/1200
+2026-09-26 21:20:29.327 Wanna[55703:2720672] [LongForm] 第 1250 块：171 帧 峰值=9351/32768 (0.285) 累计零块=2/1250
+2026-09-26 21:20:29.789 Wanna[55703:2720672] [LongForm] 新段 @连接后13.9s 音频位置12802ms 上行430KB 「我我」
+2026-09-26 21:20:29.861 Wanna[55703:2720672] [LongForm] 第 1300 块：171 帧 峰值=6582/32768 (0.201) 累计零块=2/1300
+2026-09-26 21:20:30.394 Wanna[55703:2720672] [LongForm] 第 1350 块：170 帧 峰值=2469/32768 (0.075) 累计零块=2/1350
+2026-09-26 21:20:30.926 Wanna[55703:2720672] [LongForm] 第 1400 块：171 帧 峰值=5654/32768 (0.173) 累计零块=2/1400
+2026-09-26 21:20:31.460 Wanna[55703:2720672] [LongForm] 第 1450 块：171 帧 峰值=1263/32768 (0.039) 累计零块=2/1450
+2026-09-26 21:20:31.995 Wanna[55703:2720672] [LongForm] 第 1500 块：170 帧 峰值=1549/32768 (0.047) 累计零块=2/1500
+2026-09-26 21:20:32.527 Wanna[55703:2720672] [LongForm] 第 1550 块：171 帧 峰值=5401/32768 (0.165) 累计零块=2/1550
+2026-09-26 21:20:33.061 Wanna[55703:2720672] [LongForm] 第 1600 块：171 帧 峰值=1516/32768 (0.046) 累计零块=2/1600
+2026-09-26 21:20:33.593 Wanna[55703:2720672] [LongForm] 第 1650 块：170 帧 峰值=5234/32768 (0.160) 累计零块=2/1650
+2026-09-26 21:20:34.127 Wanna[55703:2720672] [LongForm] 第 1700 块：171 帧 峰值=4377/32768 (0.134) 累计零块=2/1700
+2026-09-26 21:20:34.661 Wanna[55703:2720672] [LongForm] 第 1750 块：171 帧 峰值=5850/32768 (0.179) 累计零块=2/1750
+2026-09-26 21:20:35.193 Wanna[55703:2720672] [LongForm] 第 1800 块：170 帧 峰值=5226/32768 (0.159) 累计零块=2/1800
+2026-09-26 21:20:35.728 Wanna[55703:2720672] [LongForm] 第 1850 块：171 帧 峰值=4331/32768 (0.132) 累计零块=2/1850
+2026-09-26 21:20:36.260 Wanna[55703:2720672] [LongForm] 第 1900 块：171 帧 峰值=7493/32768 (0.229) 累计零块=2/1900
+2026-09-26 21:20:36.794 Wanna[55703:2720672] [LongForm] 第 1950 块：170 帧 峰值=1021/32768 (0.031) 累计零块=2/1950
+2026-09-26 21:20:37.331 Wanna[55703:2720672] [LongForm] 第 2000 块：171 帧 峰值=870/32768 (0.027) 累计零块=2/2000
+2026-09-26 21:20:37.860 Wanna[55703:2720672] [LongForm] 第 2050 块：171 帧 峰值=7809/32768 (0.238) 累计零块=2/2050
+2026-09-26 21:20:38.393 Wanna[55703:2720672] [LongForm] 第 2100 块：170 帧 峰值=1911/32768 (0.058) 累计零块=2/2100
+2026-09-26 21:20:38.525 Wanna[55703:2720672] [LongForm] 新段 @连接后22.6s 音频位置21412ms 上行703KB 「那么」
+2026-09-26 21:20:38.927 Wanna[55703:2720672] [LongForm] 第 2150 块：171 帧 峰值=1937/32768 (0.059) 累计零块=2/2150
+2026-09-26 21:20:39.460 Wanna[55703:2720672] [LongForm] 第 2200 块：171 帧 峰值=1150/32768 (0.035) 累计零块=2/2200
+2026-09-26 21:20:39.993 Wanna[55703:2720672] [LongForm] 第 2250 块：170 帧 峰值=5055/32768 (0.154) 累计零块=2/2250
+2026-09-26 21:20:40.361 Wanna[55703:2720672] [LongForm] 新段 @连接后24.4s 音频位置23702ms 上行761KB 「有」
+2026-09-26 21:20:40.527 Wanna[55703:2720672] [LongForm] 第 2300 块：171 帧 峰值=2163/32768 (0.066) 累计零块=2/2300
+2026-09-26 21:20:41.060 Wanna[55703:2720672] [LongForm] 第 2350 块：171 帧 峰值=1735/32768 (0.053) 累计零块=2/2350
+2026-09-26 21:20:41.595 Wanna[55703:2720672] [LongForm] 第 2400 块：170 帧 峰值=8355/32768 (0.255) 累计零块=2/2400
+2026-09-26 21:20:42.128 Wanna[55703:2720672] [LongForm] 第 2450 块：171 帧 峰值=8225/32768 (0.251) 累计零块=2/2450
+2026-09-26 21:20:42.660 Wanna[55703:2720672] [LongForm] 第 2500 块：171 帧 峰值=2154/32768 (0.066) 累计零块=2/2500
+2026-09-26 21:20:43.195 Wanna[55703:2720672] [LongForm] 第 2550 块：170 帧 峰值=7472/32768 (0.228) 累计零块=2/2550
+2026-09-26 21:20:43.726 Wanna[55703:2720672] [LongForm] 第 2600 块：171 帧 峰值=6630/32768 (0.202) 累计零块=2/2600
+2026-09-26 21:20:44.260 Wanna[55703:2720672] [LongForm] 第 2650 块：171 帧 峰值=2599/32768 (0.079) 累计零块=2/2650
+2026-09-26 21:20:44.794 Wanna[55703:2720672] [LongForm] 第 2700 块：170 帧 峰值=1279/32768 (0.039) 累计零块=2/2700
+2026-09-26 21:20:45.328 Wanna[55703:2720672] [LongForm] 第 2750 块：171 帧 峰值=5036/32768 (0.154) 累计零块=2/2750
+2026-09-26 21:20:45.863 Wanna[55703:2720672] [LongForm] 第 2800 块：171 帧 峰值=1398/32768 (0.043) 累计零块=2/2800
+2026-09-26 21:20:46.394 Wanna[55703:2720672] [LongForm] 第 2850 块：170 帧 峰值=1553/32768 (0.047) 累计零块=2/2850
+2026-09-26 21:20:46.928 Wanna[55703:2720672] [LongForm] 第 2900 块：171 帧 峰值=4820/32768 (0.147) 累计零块=2/2900
+2026-09-26 21:20:47.462 Wanna[55703:2720672] [LongForm] 第 2950 块：171 帧 峰值=2077/32768 (0.063) 累计零块=2/2950
+2026-09-26 21:20:47.994 Wanna[55703:2720672] [LongForm] 第 3000 块：170 帧 峰值=1042/32768 (0.032) 累计零块=2/3000
+2026-09-26 21:20:48.528 Wanna[55703:2720672] [LongForm] 第 3050 块：171 帧 峰值=1556/32768 (0.047) 累计零块=2/3050
+2026-09-26 21:20:49.060 Wanna[55703:2720672] [LongForm] 第 3100 块：171 帧 峰值=992/32768 (0.030) 累计零块=2/3100
+2026-09-26 21:20:49.594 Wanna[55703:2720672] [LongForm] 第 3150 块：170 帧 峰值=6572/32768 (0.201) 累计零块=2/3150
+2026-09-26 21:20:50.127 Wanna[55703:2720672] [LongForm] 第 3200 块：171 帧 峰值=2962/32768 (0.090) 累计零块=2/3200
+2026-09-26 21:20:50.241 Wanna[55703:2720672] [LongForm] 新段 @连接后34.3s 音频位置33152ms 上行1069KB 「代码」
+2026-09-26 21:20:50.664 Wanna[55703:2720672] [LongForm] 第 3250 块：171 帧 峰值=1721/32768 (0.053) 累计零块=2/3250
+2026-09-26 21:20:51.195 Wanna[55703:2720672] [LongForm] 第 3300 块：170 帧 峰值=931/32768 (0.028) 累计零块=2/3300
+2026-09-26 21:20:51.728 Wanna[55703:2720672] [LongForm] 第 3350 块：171 帧 峰值=3504/32768 (0.107) 累计零块=2/3350
+2026-09-26 21:20:52.262 Wanna[55703:2720672] [LongForm] 第 3400 块：171 帧 峰值=2885/32768 (0.088) 累计零块=2/3400
+2026-09-26 21:20:52.497 Wanna[55703:2720672] [LongForm] 新段 @连接后36.6s 音频位置35501ms 上行1140KB 「人」
+2026-09-26 21:20:52.795 Wanna[55703:2720672] [LongForm] 第 3450 块：170 帧 峰值=1541/32768 (0.047) 累计零块=2/3450
+2026-09-26 21:20:53.327 Wanna[55703:2720672] [LongForm] 第 3500 块：171 帧 峰值=1625/32768 (0.050) 累计零块=2/3500
+2026-09-26 21:20:53.860 Wanna[55703:2720672] [LongForm] 第 3550 块：171 帧 峰值=2019/32768 (0.062) 累计零块=2/3550
+2026-09-26 21:20:54.393 Wanna[55703:2720672] [LongForm] 第 3600 块：170 帧 峰值=4988/32768 (0.152) 累计零块=2/3600
+2026-09-26 21:20:54.781 Wanna[55703:2720672] [LongForm] 新段 @连接后38.8s 音频位置37692ms 上行1211KB 「还是」
+2026-09-26 21:20:54.927 Wanna[55703:2720672] [LongForm] 第 3650 块：171 帧 峰值=1876/32768 (0.057) 累计零块=2/3650
+2026-09-26 21:20:55.460 Wanna[55703:2720672] [LongForm] 第 3700 块：171 帧 峰值=1632/32768 (0.050) 累计零块=2/3700
+2026-09-26 21:20:55.995 Wanna[55703:2720672] [LongForm] 第 3750 块：170 帧 峰值=1205/32768 (0.037) 累计零块=2/3750
+2026-09-26 21:20:56.527 Wanna[55703:2720672] [LongForm] 第 3800 块：171 帧 峰值=5305/32768 (0.162) 累计零块=2/3800
+2026-09-26 21:20:57.060 Wanna[55703:2720672] [LongForm] 第 3850 块：171 帧 峰值=2144/32768 (0.065) 累计零块=2/3850
+2026-09-26 21:20:57.595 Wanna[55703:2720672] [LongForm] 第 3900 块：170 帧 峰值=7546/32768 (0.230) 累计零块=2/3900
+2026-09-26 21:20:58.127 Wanna[55703:2720672] [LongForm] 第 3950 块：171 帧 峰值=6277/32768 (0.192) 累计零块=2/3950
+2026-09-26 21:20:58.660 Wanna[55703:2720672] [LongForm] 第 4000 块：171 帧 峰值=2669/32768 (0.081) 累计零块=2/4000
+2026-09-26 21:20:59.193 Wanna[55703:2720672] [LongForm] 第 4050 块：170 帧 峰值=5229/32768 (0.160) 累计零块=2/4050
+2026-09-26 21:20:59.727 Wanna[55703:2720672] [LongForm] 第 4100 块：171 帧 峰值=3049/32768 (0.093) 累计零块=2/4100
+2026-09-26 21:21:00.260 Wanna[55703:2720672] [LongForm] 第 4150 块：171 帧 峰值=1096/32768 (0.033) 累计零块=2/4150
+2026-09-26 21:21:00.796 Wanna[55703:2720672] [LongForm] 第 4200 块：170 帧 峰值=1964/32768 (0.060) 累计零块=2/4200
+2026-09-26 21:21:01.327 Wanna[55703:2720672] [LongForm] 第 4250 块：171 帧 峰值=1729/32768 (0.053) 累计零块=2/4250
+2026-09-26 21:21:01.861 Wanna[55703:2720672] [LongForm] 第 4300 块：171 帧 峰值=1004/32768 (0.031) 累计零块=2/4300
+2026-09-26 21:21:02.395 Wanna[55703:2720672] [LongForm] 第 4350 块：170 帧 峰值=876/32768 (0.027) 累计零块=2/4350
+2026-09-26 21:21:02.927 Wanna[55703:2720672] [LongForm] 第 4400 块：171 帧 峰值=1200/32768 (0.037) 累计零块=2/4400
+2026-09-26 21:21:03.462 Wanna[55703:2720672] [LongForm] 第 4450 块：171 帧 峰值=1157/32768 (0.035) 累计零块=2/4450
+2026-09-26 21:21:03.994 Wanna[55703:2720672] [LongForm] 第 4500 块：170 帧 峰值=1244/32768 (0.038) 累计零块=2/4500
+2026-09-26 21:21:04.527 Wanna[55703:2720672] [LongForm] 第 4550 块：171 帧 峰值=1321/32768 (0.040) 累计零块=2/4550
+2026-09-26 21:21:05.060 Wanna[55703:2720672] [LongForm] 第 4600 块：171 帧 峰值=1171/32768 (0.036) 累计零块=2/4600
+2026-09-26 21:21:05.593 Wanna[55703:2720672] [LongForm] 第 4650 块：170 帧 峰值=1035/32768 (0.032) 累计零块=2/4650
+2026-09-26 21:21:06.127 Wanna[55703:2720672] [LongForm] 第 4700 块：171 帧 峰值=1452/32768 (0.044) 累计零块=2/4700
+2026-09-26 21:21:06.660 Wanna[55703:2720672] [LongForm] 第 4750 块：171 帧 峰值=7832/32768 (0.239) 累计零块=2/4750
+2026-09-26 21:21:07.072 Wanna[55703:2720672] [LongForm] 新段 @连接后51.1s 音频位置50112ms 上行1595KB 「还是说」
+2026-09-26 21:21:07.194 Wanna[55703:2720672] [LongForm] 第 4800 块：170 帧 峰值=1865/32768 (0.057) 累计零块=2/4800
+2026-09-26 21:21:07.727 Wanna[55703:2720672] [LongForm] 第 4850 块：171 帧 峰值=3939/32768 (0.120) 累计零块=2/4850
+2026-09-26 21:21:08.260 Wanna[55703:2720672] [LongForm] 第 4900 块：171 帧 峰值=9128/32768 (0.279) 累计零块=2/4900
+2026-09-26 21:21:08.793 Wanna[55703:2720672] [LongForm] 第 4950 块：170 帧 峰值=1425/32768 (0.043) 累计零块=2/4950
+2026-09-26 21:21:09.328 Wanna[55703:2720672] [LongForm] 第 5000 块：171 帧 峰值=1209/32768 (0.037) 累计零块=2/5000
+2026-09-26 21:21:09.860 Wanna[55703:2720672] [LongForm] 第 5050 块：171 帧 峰值=4501/32768 (0.137) 累计零块=2/5050
+2026-09-26 21:21:10.393 Wanna[55703:2720672] [LongForm] 第 5100 块：170 帧 峰值=7882/32768 (0.241) 累计零块=2/5100
+2026-09-26 21:21:10.927 Wanna[55703:2720672] [LongForm] 第 5150 块：171 帧 峰值=3316/32768 (0.101) 累计零块=2/5150
+2026-09-26 21:21:11.461 Wanna[55703:2720672] [LongForm] 第 5200 块：171 帧 峰值=2719/32768 (0.083) 累计零块=2/5200
+2026-09-26 21:21:11.994 Wanna[55703:2720672] [LongForm] 第 5250 块：170 帧 峰值=1318/32768 (0.040) 累计零块=2/5250
+2026-09-26 21:21:12.527 Wanna[55703:2720672] [LongForm] 第 5300 块：171 帧 峰值=9090/32768 (0.277) 累计零块=2/5300
+2026-09-26 21:21:13.060 Wanna[55703:2720672] [LongForm] 第 5350 块：171 帧 峰值=5838/32768 (0.178) 累计零块=2/5350
+2026-09-26 21:21:13.155 Wanna[55703:2720672] [LongForm] 新段 @连接后57.2s 音频位置56372ms 上行1785KB 「我觉得」
+2026-09-26 21:21:13.593 Wanna[55703:2720672] [LongForm] 第 5400 块：170 帧 峰值=8833/32768 (0.270) 累计零块=2/5400
+2026-09-26 21:21:14.127 Wanna[55703:2720672] [LongForm] 第 5450 块：171 帧 峰值=2299/32768 (0.070) 累计零块=2/5450
+2026-09-26 21:21:14.660 Wanna[55703:2720672] [LongForm] 第 5500 块：171 帧 峰值=1191/32768 (0.036) 累计零块=2/5500
+2026-09-26 21:21:15.194 Wanna[55703:2720672] [LongForm] 第 5550 块：170 帧 峰值=6277/32768 (0.192) 累计零块=2/5550
+2026-09-26 21:21:15.727 Wanna[55703:2720672] [LongForm] 第 5600 块：171 帧 峰值=6839/32768 (0.209) 累计零块=2/5600
+2026-09-26 21:21:16.260 Wanna[55703:2720672] [LongForm] 第 5650 块：171 帧 峰值=5312/32768 (0.162) 累计零块=2/5650
+2026-09-26 21:21:16.794 Wanna[55703:2720672] [LongForm] 第 5700 块：170 帧 峰值=4719/32768 (0.144) 累计零块=2/5700
+2026-09-26 21:21:17.326 Wanna[55703:2720672] [LongForm] 第 5750 块：171 帧 峰值=5989/32768 (0.183) 累计零块=2/5750
+2026-09-26 21:21:17.861 Wanna[55703:2720672] [LongForm] 第 5800 块：171 帧 峰值=2301/32768 (0.070) 累计零块=2/5800
+2026-09-26 21:21:18.393 Wanna[55703:2720672] [LongForm] 第 5850 块：170 帧 峰值=1463/32768 (0.045) 累计零块=2/5850
+2026-09-26 21:21:18.927 Wanna[55703:2720672] [LongForm] 第 5900 块：171 帧 峰值=4766/32768 (0.145) 累计零块=2/5900
+2026-09-26 21:21:19.415 Wanna[55703:2720672] [LongForm] 新段 @连接后63.5s 音频位置62661ms 上行1981KB 「那」
+2026-09-26 21:21:19.459 Wanna[55703:2720672] [LongForm] 第 5950 块：171 帧 峰值=6570/32768 (0.201) 累计零块=2/5950
+2026-09-26 21:21:19.994 Wanna[55703:2720672] [LongForm] 第 6000 块：170 帧 峰值=6171/32768 (0.188) 累计零块=2/6000
+2026-09-26 21:21:20.527 Wanna[55703:2720672] [LongForm] 第 6050 块：171 帧 峰值=877/32768 (0.027) 累计零块=2/6050
+2026-09-26 21:21:21.061 Wanna[55703:2720672] [LongForm] 第 6100 块：171 帧 峰值=6344/32768 (0.194) 累计零块=2/6100
+2026-09-26 21:21:21.593 Wanna[55703:2720672] [LongForm] 第 6150 块：170 帧 峰值=1127/32768 (0.034) 累计零块=2/6150
+2026-09-26 21:21:22.127 Wanna[55703:2720672] [LongForm] 第 6200 块：171 帧 峰值=1056/32768 (0.032) 累计零块=2/6200
+2026-09-26 21:21:22.660 Wanna[55703:2720672] [LongForm] 第 6250 块：171 帧 峰值=7232/32768 (0.221) 累计零块=2/6250
+2026-09-26 21:21:23.194 Wanna[55703:2720672] [LongForm] 第 6300 块：170 帧 峰值=2703/32768 (0.082) 累计零块=2/6300
+2026-09-26 21:21:23.355 Wanna[55703:2720672] [LongForm] 新段 @连接后67.4s 音频位置66292ms 上行2104KB 「什么」
+2026-09-26 21:21:23.727 Wanna[55703:2720672] [LongForm] 第 6350 块：171 帧 峰值=5671/32768 (0.173) 累计零块=2/6350
+2026-09-26 21:21:24.261 Wanna[55703:2720672] [LongForm] 第 6400 块：171 帧 峰值=1642/32768 (0.050) 累计零块=2/6400
+2026-09-26 21:21:24.795 Wanna[55703:2720672] [LongForm] 第 6450 块：170 帧 峰值=1966/32768 (0.060) 累计零块=2/6450
+2026-09-26 21:21:25.328 Wanna[55703:2720672] [LongForm] 第 6500 块：171 帧 峰值=1551/32768 (0.047) 累计零块=2/6500
+2026-09-26 21:21:25.861 Wanna[55703:2720672] [LongForm] 第 6550 块：171 帧 峰值=1341/32768 (0.041) 累计零块=2/6550
+2026-09-26 21:21:26.395 Wanna[55703:2720672] [LongForm] 第 6600 块：170 帧 峰值=1034/32768 (0.032) 累计零块=2/6600
+2026-09-26 21:21:26.927 Wanna[55703:2720672] [LongForm] 第 6650 块：171 帧 峰值=2973/32768 (0.091) 累计零块=2/6650
+2026-09-26 21:21:27.460 Wanna[55703:2720672] [LongForm] 第 6700 块：171 帧 峰值=4468/32768 (0.136) 累计零块=2/6700
+2026-09-26 21:21:27.995 Wanna[55703:2720672] [LongForm] 第 6750 块：170 帧 峰值=7587/32768 (0.232) 累计零块=2/6750
+2026-09-26 21:21:28.527 Wanna[55703:2720672] [LongForm] 第 6800 块：171 帧 峰值=1434/32768 (0.044) 累计零块=2/6800
+⏱️ [hitch] main thread busy for 94ms
+2026-09-26 21:21:29.008 Wanna[55703:2720672] [LongForm] 末包定稿结束（定稿已到）
+2026-09-26 21:21:29.021 Wanna[55703:2720672] [LongForm] 录音结束：413 字，72.8 秒
+2026-09-26 21:21:29.022 Wanna[55703:2720672] [LongForm] 自定义风格：1 条风格 + 截图有 + 摄像头0 帧，开始重写
+2026-09-26 21:21:31.296 Wanna[55703:2720672] [LongForm] 自定义风格：重写完成，366 字（原文 412 字）
+2026-09-26 21:21:31.299 Wanna[55703:2720672] [LongForm] 写润色文本 2026-09-26-212015-B793.polished.txt：送入 366 字，读回 366 字
+⏱️ [hitch] main thread busy for 68ms
+log: simulating key press: (code: 9, flags: 1048576)
+log: key press simulation complete.
+2026-09-26 21:21:31.726 Wanna[55703:2720672] [LongForm] 已执行粘贴
+⏱️ [hitch] main thread busy for 51ms
+2026-09-26 21:22:34.162 Wanna[55703:2720672] [LongForm] 麦克风权限：已授权
+2026-09-26 21:22:34.167 Wanna[55703:2720672] [LongForm] 🎙️ 起录体检 · 设备=MacBook Pro麦克风 [id=91] 1ch · 音量=1.00 · 静音=否
+2026-09-26 21:22:34.236 Wanna[55703:2720672] [LongForm] 开始录音 2026-09-26-212234-A7B1 · 档位 volc.seedasr.sauc.duration · 判重窗口 0ms
+2026-09-26 21:22:34.246 Wanna[55703:2720672] [LongForm] AUHAL 已启动 · 设备=MacBook Pro麦克风 [id=91] · 48000.0Hz 1ch
+⏱️ [hitch] main thread busy for 128ms
+2026-09-26 21:22:34.247 Wanna[55703:2720672] [LongForm] 转换器按实际交付格式建立：48000.0Hz 1ch 帧容量=8192
+2026-09-26 21:22:34.471 Wanna[55703:2720672] [LongForm] 第 6850 块：171 帧 峰值=1194/32768 (0.036) 累计零块=2/6850
+2026-09-26 21:22:35.005 Wanna[55703:2720672] [LongForm] 第 6900 块：170 帧 峰值=5885/32768 (0.180) 累计零块=2/6900
+2026-09-26 21:22:35.437 Wanna[55703:2720672] [LongForm] 新段 @连接后1.3s 音频位置162ms 上行37KB 「你」
+2026-09-26 21:22:35.538 Wanna[55703:2720672] [LongForm] 第 6950 块：171 帧 峰值=4160/32768 (0.127) 累计零块=2/6950
+2026-09-26 21:22:36.071 Wanna[55703:2720672] [LongForm] 第 7000 块：171 帧 峰值=6648/32768 (0.203) 累计零块=2/7000
+2026-09-26 21:22:36.604 Wanna[55703:2720672] [LongForm] 第 7050 块：170 帧 峰值=1353/32768 (0.041) 累计零块=2/7050
+2026-09-26 21:22:37.138 Wanna[55703:2720672] [LongForm] 第 7100 块：171 帧 峰值=2977/32768 (0.091) 累计零块=2/7100
+2026-09-26 21:22:37.671 Wanna[55703:2720672] [LongForm] 第 7150 块：171 帧 峰值=8224/32768 (0.251) 累计零块=2/7150
+2026-09-26 21:22:38.204 Wanna[55703:2720672] [LongForm] 第 7200 块：170 帧 峰值=3892/32768 (0.119) 累计零块=2/7200
+2026-09-26 21:22:38.738 Wanna[55703:2720672] [LongForm] 第 7250 块：171 帧 峰值=5276/32768 (0.161) 累计零块=2/7250
+2026-09-26 21:22:39.270 Wanna[55703:2720672] [LongForm] 第 7300 块：171 帧 峰值=1582/32768 (0.048) 累计零块=2/7300
+2026-09-26 21:22:39.805 Wanna[55703:2720672] [LongForm] 第 7350 块：170 帧 峰值=1825/32768 (0.056) 累计零块=2/7350
+2026-09-26 21:22:40.337 Wanna[55703:2720672] [LongForm] 第 7400 块：171 帧 峰值=1383/32768 (0.042) 累计零块=2/7400
+2026-09-26 21:22:40.872 Wanna[55703:2720672] [LongForm] 第 7450 块：171 帧 峰值=1116/32768 (0.034) 累计零块=2/7450
+2026-09-26 21:22:41.405 Wanna[55703:2720672] [LongForm] 第 7500 块：170 帧 峰值=1276/32768 (0.039) 累计零块=2/7500
+2026-09-26 21:22:41.938 Wanna[55703:2720672] [LongForm] 第 7550 块：171 帧 峰值=1446/32768 (0.044) 累计零块=2/7550
+2026-09-26 21:22:42.471 Wanna[55703:2720672] [LongForm] 第 7600 块：171 帧 峰值=947/32768 (0.029) 累计零块=2/7600
+2026-09-26 21:22:43.005 Wanna[55703:2720672] [LongForm] 第 7650 块：170 帧 峰值=964/32768 (0.029) 累计零块=2/7650
+2026-09-26 21:22:43.538 Wanna[55703:2720672] [LongForm] 第 7700 块：171 帧 峰值=1032/32768 (0.031) 累计零块=2/7700
+2026-09-26 21:22:44.071 Wanna[55703:2720672] [LongForm] 第 7750 块：171 帧 峰值=1345/32768 (0.041) 累计零块=2/7750
+2026-09-26 21:22:44.606 Wanna[55703:2720672] [LongForm] 第 7800 块：170 帧 峰值=1323/32768 (0.040) 累计零块=2/7800
+2026-09-26 21:22:45.137 Wanna[55703:2720672] [LongForm] 第 7850 块：171 帧 峰值=11676/32768 (0.356) 累计零块=2/7850
+2026-09-26 21:22:45.646 Wanna[55703:2720672] [LongForm] 新段 @连接后11.5s 音频位置10612ms 上行356KB 「然后」
+2026-09-26 21:22:45.671 Wanna[55703:2720672] [LongForm] 第 7900 块：171 帧 峰值=7407/32768 (0.226) 累计零块=2/7900
+2026-09-26 21:22:46.204 Wanna[55703:2720672] [LongForm] 第 7950 块：170 帧 峰值=5653/32768 (0.173) 累计零块=2/7950
+2026-09-26 21:22:46.738 Wanna[55703:2720672] [LongForm] 第 8000 块：171 帧 峰值=1678/32768 (0.051) 累计零块=2/8000
+2026-09-26 21:22:47.271 Wanna[55703:2720672] [LongForm] 第 8050 块：171 帧 峰值=4271/32768 (0.130) 累计零块=2/8050
+2026-09-26 21:22:47.805 Wanna[55703:2720672] [LongForm] 第 8100 块：170 帧 峰值=13374/32768 (0.408) 累计零块=2/8100
+2026-09-26 21:22:48.338 Wanna[55703:2720672] [LongForm] 第 8150 块：171 帧 峰值=1350/32768 (0.041) 累计零块=2/8150
+2026-09-26 21:22:48.872 Wanna[55703:2720672] [LongForm] 第 8200 块：171 帧 峰值=9481/32768 (0.289) 累计零块=2/8200
+2026-09-26 21:22:49.408 Wanna[55703:2720672] [LongForm] 第 8250 块：170 帧 峰值=7817/32768 (0.239) 累计零块=2/8250
+2026-09-26 21:22:49.938 Wanna[55703:2720672] [LongForm] 第 8300 块：171 帧 峰值=6952/32768 (0.212) 累计零块=2/8300
+2026-09-26 21:22:50.471 Wanna[55703:2720672] [LongForm] 第 8350 块：171 帧 峰值=4286/32768 (0.131) 累计零块=2/8350
+2026-09-26 21:22:51.005 Wanna[55703:2720672] [LongForm] 第 8400 块：170 帧 峰值=4053/32768 (0.124) 累计零块=2/8400
+2026-09-26 21:22:51.538 Wanna[55703:2720672] [LongForm] 第 8450 块：171 帧 峰值=1381/32768 (0.042) 累计零块=2/8450
+2026-09-26 21:22:52.071 Wanna[55703:2720672] [LongForm] 第 8500 块：171 帧 峰值=2058/32768 (0.063) 累计零块=2/8500
+2026-09-26 21:22:52.605 Wanna[55703:2720672] [LongForm] 第 8550 块：170 帧 峰值=8089/32768 (0.247) 累计零块=2/8550
+2026-09-26 21:22:53.058 Wanna[55703:2720672] [LongForm] 新段 @连接后18.9s 音频位置17812ms 上行587KB 「然后」
+2026-09-26 21:22:53.138 Wanna[55703:2720672] [LongForm] 第 8600 块：171 帧 峰值=3868/32768 (0.118) 累计零块=2/8600
+2026-09-26 21:22:53.671 Wanna[55703:2720672] [LongForm] 第 8650 块：171 帧 峰值=1272/32768 (0.039) 累计零块=2/8650
+2026-09-26 21:22:54.205 Wanna[55703:2720672] [LongForm] 第 8700 块：170 帧 峰值=1395/32768 (0.043) 累计零块=2/8700
+2026-09-26 21:22:54.738 Wanna[55703:2720672] [LongForm] 第 8750 块：171 帧 峰值=7941/32768 (0.242) 累计零块=2/8750
+2026-09-26 21:22:55.072 Wanna[55703:2720672] [LongForm] 新段 @连接后20.9s 音频位置20191ms 上行650KB 「api」
+2026-09-26 21:22:55.271 Wanna[55703:2720672] [LongForm] 第 8800 块：171 帧 峰值=6237/32768 (0.190) 累计零块=2/8800
+2026-09-26 21:22:55.804 Wanna[55703:2720672] [LongForm] 第 8850 块：170 帧 峰值=993/32768 (0.030) 累计零块=2/8850
+2026-09-26 21:22:56.339 Wanna[55703:2720672] [LongForm] 第 8900 块：171 帧 峰值=3741/32768 (0.114) 累计零块=2/8900
+2026-09-26 21:22:56.871 Wanna[55703:2720672] [LongForm] 第 8950 块：171 帧 峰值=1210/32768 (0.037) 累计零块=2/8950
+2026-09-26 21:22:57.404 Wanna[55703:2720672] [LongForm] 第 9000 块：170 帧 峰值=1133/32768 (0.035) 累计零块=2/9000
+2026-09-26 21:22:57.937 Wanna[55703:2720672] [LongForm] 第 9050 块：171 帧 峰值=7421/32768 (0.226) 累计零块=2/9050
+2026-09-26 21:22:58.471 Wanna[55703:2720672] [LongForm] 第 9100 块：171 帧 峰值=1402/32768 (0.043) 累计零块=2/9100
+2026-09-26 21:22:59.004 Wanna[55703:2720672] [LongForm] 第 9150 块：170 帧 峰值=6170/32768 (0.188) 累计零块=2/9150
+2026-09-26 21:22:59.410 Wanna[55703:2720672] [LongForm] 新段 @连接后25.2s 音频位置23172ms 上行786KB 「那么目前」
+2026-09-26 21:22:59.538 Wanna[55703:2720672] [LongForm] 第 9200 块：171 帧 峰值=3102/32768 (0.095) 累计零块=2/9200
+2026-09-26 21:23:00.071 Wanna[55703:2720672] [LongForm] 第 9250 块：171 帧 峰值=1232/32768 (0.038) 累计零块=2/9250
+2026-09-26 21:23:00.604 Wanna[55703:2720672] [LongForm] 第 9300 块：170 帧 峰值=1136/32768 (0.035) 累计零块=2/9300
+2026-09-26 21:23:01.138 Wanna[55703:2720672] [LongForm] 第 9350 块：171 帧 峰值=984/32768 (0.030) 累计零块=2/9350
+2026-09-26 21:23:01.672 Wanna[55703:2720672] [LongForm] 第 9400 块：171 帧 峰值=4482/32768 (0.137) 累计零块=2/9400
+2026-09-26 21:23:02.175 Wanna[55703:2720672] [LongForm] 新段 @连接后28.0s 音频位置26912ms 上行872KB 「嗯」
+2026-09-26 21:23:02.204 Wanna[55703:2720672] [LongForm] 第 9450 块：170 帧 峰值=2491/32768 (0.076) 累计零块=2/9450
+2026-09-26 21:23:02.738 Wanna[55703:2720672] [LongForm] 第 9500 块：171 帧 峰值=5138/32768 (0.157) 累计零块=2/9500
+2026-09-26 21:23:03.271 Wanna[55703:2720672] [LongForm] 第 9550 块：171 帧 峰值=2364/32768 (0.072) 累计零块=2/9550
+2026-09-26 21:23:03.805 Wanna[55703:2720672] [LongForm] 第 9600 块：170 帧 峰值=2929/32768 (0.089) 累计零块=2/9600
+2026-09-26 21:23:04.338 Wanna[55703:2720672] [LongForm] 第 9650 块：171 帧 峰值=2622/32768 (0.080) 累计零块=2/9650
+2026-09-26 21:23:04.872 Wanna[55703:2720672] [LongForm] 第 9700 块：171 帧 峰值=3177/32768 (0.097) 累计零块=2/9700
+2026-09-26 21:23:05.405 Wanna[55703:2720672] [LongForm] 第 9750 块：170 帧 峰值=7931/32768 (0.242) 累计零块=2/9750
+2026-09-26 21:23:05.937 Wanna[55703:2720672] [LongForm] 第 9800 块：171 帧 峰值=1499/32768 (0.046) 累计零块=2/9800
+2026-09-26 21:23:06.471 Wanna[55703:2720672] [LongForm] 第 9850 块：171 帧 峰值=2478/32768 (0.076) 累计零块=2/9850
+2026-09-26 21:23:07.005 Wanna[55703:2720672] [LongForm] 第 9900 块：170 帧 峰值=1342/32768 (0.041) 累计零块=2/9900
+2026-09-26 21:23:07.538 Wanna[55703:2720672] [LongForm] 第 9950 块：171 帧 峰值=6578/32768 (0.201) 累计零块=2/9950
+2026-09-26 21:23:08.044 Wanna[55703:2720672] [LongForm] 新段 @连接后33.9s 音频位置33091ms 上行1056KB 「最好」
+2026-09-26 21:23:08.071 Wanna[55703:2720672] [LongForm] 第 10000 块：171 帧 峰值=6013/32768 (0.184) 累计零块=2/10000
+2026-09-26 21:23:08.605 Wanna[55703:2720672] [LongForm] 第 10050 块：170 帧 峰值=1635/32768 (0.050) 累计零块=2/10050
+2026-09-26 21:23:09.137 Wanna[55703:2720672] [LongForm] 第 10100 块：171 帧 峰值=1770/32768 (0.054) 累计零块=2/10100
+2026-09-26 21:23:09.671 Wanna[55703:2720672] [LongForm] 第 10150 块：171 帧 峰值=6788/32768 (0.207) 累计零块=2/10150
+2026-09-26 21:23:10.204 Wanna[55703:2720672] [LongForm] 第 10200 块：170 帧 峰值=1245/32768 (0.038) 累计零块=2/10200
+⏱️ [hitch] main thread busy for 77ms
+2026-09-26 21:23:10.572 Wanna[55703:2720672] [LongForm] 末包定稿结束（定稿已到）
+2026-09-26 21:23:10.581 Wanna[55703:2720672] [LongForm] 录音结束：191 字，36.1 秒
+2026-09-26 21:23:10.581 Wanna[55703:2720672] [LongForm] 自定义风格：1 条风格 + 截图有 + 摄像头0 帧，开始重写
+2026-09-26 21:23:12.283 Wanna[55703:2720672] [LongForm] 自定义风格：重写完成，177 字（原文 190 字）
+2026-09-26 21:23:12.285 Wanna[55703:2720672] [LongForm] 写润色文本 2026-09-26-212234-A7B1.polished.txt：送入 177 字，读回 177 字
+⏱️ [hitch] main thread busy for 66ms
+log: simulating key press: (code: 9, flags: 1048576)
+log: key press simulation complete.
+2026-09-26 21:23:12.695 Wanna[55703:2720672] [LongForm] 已执行粘贴
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790429006.997
+⏱️ [expand] 内容就位 +31ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +52ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 64ms

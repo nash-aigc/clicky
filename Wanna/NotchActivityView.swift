@@ -907,7 +907,7 @@ struct NotchPanelRootSwitchingView: View {
                         hangUpAction: {
                             // 走"任何一通语音会话"的漏斗：Ask 页那通电话不在
                             // `voiceChatController` 里（它是独立管线）。
-                            companionManager.hangUpAnyActiveVoiceSession()
+                            companionManager.hangUpAnyActiveCall()
                         }
                     )
                 }

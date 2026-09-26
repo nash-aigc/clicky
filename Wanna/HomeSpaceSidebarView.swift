@@ -27,6 +27,14 @@ struct HomeSpaceSidebarView: View {
     /// The 语音聊天 subsystem — that section's role-preset list reads
     /// its published presets and connection phase, and its rows select.
     @ObservedObject var voiceChatController: VoiceChatController
+
+    /// **文本 / 图文那一通电话**（`TextCallController`）—— 卡片上那颗通话按钮在非语音
+    /// 模式下走它。`@ObservedObject`：通话状态一变，绿色高亮要跟着变。
+    @ObservedObject var textCallController: TextCallController
+
+    /// 挂断那一下走 `CompanionManager.hangUpAnyActiveCall()` —— 两条通话共用一个挂断，
+    /// 侧栏不需要知道现在在打哪一通。可选是因为侧栏在预览/测试里可能没有它。
+    var companionManager: CompanionManager?
     @Binding var showsSettings: Bool
 
     /// **分阶段加载：列表是否已经可以进场。**
@@ -615,16 +623,43 @@ struct HomeSpaceSidebarView: View {
 
     /// 卡片右侧那颗「通话」。
     ///
-    /// 它自己不认识引擎：模式写进设置、引擎由 `VoiceChatController.prepareCallForCard`
-    /// 备好（那一步里顺序很讲究，见那里的注释），最后切到这张卡片。
+    /// **它按卡片的模式分两条完全不同的路**（用户 2026-09-26）：
+    ///
+    /// - **语音 / 视频**：切到语音模式 → 备好引擎 → 连上那一场（`startCallForCard`）。
+    /// - **文本 / 图文**：打一通**文本电话** —— 用语音识别替用户说话，识别到就把这句话
+    ///   发出去，走的是这张卡片原本的文本管线（见 `TextCallController`）。用户的原话是
+    ///   「文本模式和图文模式的通话按钮路线是使用语音识别的形式……替用户发送文本，不用
+    ///   手动输入」。
+    ///
+    /// 两条都**再按一次就是挂断**：一颗只会拨号、不会挂断的电话按钮没有意义，而刘海右侧
+    /// 那颗挂断离侧栏很远（`hangUpAnyActiveCall`）。
     private func callButton(_ card: AgentCardModel.Card) -> some View {
-        let isCalling = cardChatPreferences.mode(forCardID: card.entityID, kind: card.kind) == .voice
+        let mode = cardChatPreferences.mode(forCardID: card.entityID, kind: card.kind)
+        // **高亮说的是"这一通正在打"**，不是"这张卡片选了语音模式" —— 后者会让一张只是
+        // 选过语音模式的卡片一直亮着绿电话（实测到的那一版）。
+        let isCalling = mode.isVoiceLike
+            ? voiceChatController.isCalling(cardID: card.entityID)
+            : textCallController.isCalling(cardID: card.entityID)
         return Button {
             SoundEffectPlayer.shared.play(.sidebarButton)
-            cardChatPreferences.setMode(.voice, forCardID: card.entityID)
-            // **连上，不只是备好** —— 见上面那段注释里用户的原话。摆正配置与连接写在一起
-            //（`startCallForCard`），顺序反了就按上一个角色的配置去连。
-            voiceChatController.startCallForCard(cardID: card.entityID, cardKind: card.kind)
+            if isCalling {
+                companionManager?.hangUpAnyActiveCall()
+                return
+            }
+            if mode.isVoiceLike {
+                cardChatPreferences.setMode(.voice, forCardID: card.entityID)
+                // **连上，不只是备好** —— 摆正配置与连接写在一起（`startCallForCard`），
+                // 顺序反了就按上一个角色的配置去连。
+                voiceChatController.startCallForCard(cardID: card.entityID, cardKind: card.kind)
+            } else {
+                // 视图是值类型，没有 `[weak self]` —— `start` 是 async 的，所以这里的
+                // 捕获按值拿走控制器引用（它是一个 `@MainActor` 类，生命周期由
+                // `CompanionManager` 持有，不依赖这个视图活着）。
+                let controller = textCallController
+                Task { @MainActor in
+                    await controller.start(cardID: card.entityID, cardKind: card.kind)
+                }
+            }
             cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
         } label: {
             // **正方形 + 圆角、图形更大、贴着上/下/右边缘**（用户 2026-09-26：「卡片里的
@@ -1028,6 +1063,14 @@ struct HomeSpaceSidebarRailView: View {
     @ObservedObject var sessionsModel: ConversationSessionsModel
     @ObservedObject var agentSessionManager: AgentSessionManager
     @ObservedObject var voiceChatController: VoiceChatController
+
+    /// **文本 / 图文那一通电话**（`TextCallController`）—— 卡片上那颗通话按钮在非语音
+    /// 模式下走它。`@ObservedObject`：通话状态一变，绿色高亮要跟着变。
+    @ObservedObject var textCallController: TextCallController
+
+    /// 挂断那一下走 `CompanionManager.hangUpAnyActiveCall()` —— 两条通话共用一个挂断，
+    /// 侧栏不需要知道现在在打哪一通。可选是因为侧栏在预览/测试里可能没有它。
+    var companionManager: CompanionManager?
     @Binding var showsSettings: Bool
 
     /// 顶上那颗「展开」——动作住在窗口控制器里，侧栏只把点击报上去。

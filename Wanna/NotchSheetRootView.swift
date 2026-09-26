@@ -160,6 +160,8 @@ struct NotchSheetRootView: View {
                                 sessionsModel: sessionsModel,
                                 agentSessionManager: agentSessionManager,
                                 voiceChatController: voiceChatController,
+                                textCallController: companionManager.textCallController,
+                                companionManager: companionManager,
                                 showsSettings: $showsSettings,
                                 toggleSidebarCollapseAction: {
                                     isSessionSidebarCollapsed.toggle()
@@ -171,6 +173,8 @@ struct NotchSheetRootView: View {
                                 sessionsModel: sessionsModel,
                                 agentSessionManager: agentSessionManager,
                                 voiceChatController: voiceChatController,
+                                textCallController: companionManager.textCallController,
+                                companionManager: companionManager,
                                 showsSettings: $showsSettings,
                                 // 分阶段加载：第一拍只建侧栏的骨架（切换器、搜索、
                                 // 底部按钮），列表留空 —— 列表是随会话数增长的那部分。

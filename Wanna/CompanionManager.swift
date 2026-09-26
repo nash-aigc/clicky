@@ -293,8 +293,58 @@ final class CompanionManager: ObservableObject {
     /// 为什么需要它：那两处挂断原先直接调 `voiceChatController.disconnectCurrentSession()`，
     /// 而 Ask 页的语音电话**不在**那个控制器里（它是自己的管线），于是对 Ask 那通电话
     /// 点挂断什么都不发生 —— 用户 2026-09-25 报的正是这个。
-    func hangUpAnyActiveVoiceSession() {
+    func hangUpAnyActiveCall() {
+        // **刘海右侧那颗电话是两条通话共用的挂断。** 只能有一条在跑（连续监听只有一份
+        // 窗口），所以这里不需要判断"哪一个在通话" —— 两条都挂，没在跑的那条是空操作。
+        textCallController.stop()
         voiceChatController.disconnectCurrentSession()
+    }
+
+    /// 文本 / 图文模式下那一通「电话」——说一句话 = 在这张卡片的输入框里打一行字并回车。
+    ///
+    /// 它的全部理由与边界写在 `TextCallController` 里；这里只做分派，因为**只有这个类
+    /// 同时认识两条文本管线**：主循环那条（`submitTypedQuestion`）和 Claude Code 那条
+    /// （`agentSessionManager.sendTurn`）。卡片上的通话按钮按模式分流到语音聊天或到这里。
+    lazy var textCallController: TextCallController = {
+        TextCallController(
+            dictationManager: buddyDictationManager,
+            sendQuestion: { [weak self] text, cardID, cardKind in
+                self?.sendTextCallQuestion(text, cardID: cardID, cardKind: cardKind)
+            },
+            interruptActiveResponse: { [weak self] in
+                self?.interruptActiveResponse()
+            },
+            isResponseRunning: { [weak self] in
+                guard let self else { return false }
+                return self.currentResponseTask != nil || self.bailianTTSClient.isPlaying
+            },
+            setNotchOverride: { [weak self] overridePhase in
+                self?.notchWindowController?.setExternalSessionOverride(overridePhase)
+            },
+            noteVoiceActivity: { [weak self] in
+                self?.noteVoiceActivity()
+            },
+            presentFailure: { [weak self] failureText in
+                self?.lastErrorMessage = failureText
+            }
+        )
+    }()
+
+    /// 把通话里听到的一句话，交给**这张卡片本该用的那条路**。
+    ///
+    /// 截不截屏由卡片的模式决定（图文要截图、文本不要）——与用户在输入框里打字时
+    /// 完全同一条判断，所以通话与手打不会有两套行为。
+    private func sendTextCallQuestion(_ text: String, cardID: String, cardKind: CardKind) {
+        let mode = AppSettingsStore.snapshot().cardChatMode(forCardID: cardID, kind: cardKind)
+        switch cardKind {
+        case .mainLoop:
+            submitTypedQuestion(text, sendsScreenshot: mode.sendsScreenshot)
+        case .claudeCode, .review:
+            guard let agentID = UUID(uuidString: cardID) else { return }
+            agentSessionManager.sendTurn(text,
+                                         to: agentID,
+                                         attachesScreenshot: mode.sendsScreenshot)
+        }
     }
 
     lazy var voiceChatController: VoiceChatController = {
@@ -1717,7 +1767,7 @@ final class CompanionManager: ObservableObject {
             // 「按住说话」——而两者**共用同一台音频引擎的麦克风 tap**，于是会话的
             // 上行被顶掉、半死不活（用户报的那条服务端报错很可能就是这条路径的产物）。
             if voiceChatController.connectionPhase != .idle {
-                hangUpAnyActiveVoiceSession()
+                hangUpAnyActiveCall()
                 shortcutPressBeganAt = nil
                 return
             }
@@ -2431,6 +2481,12 @@ final class CompanionManager: ObservableObject {
         // 只有语音回答那条路会调到这里（会话不走那条路），所以这是**预防**，
         // 不是已发生的故障——但一旦将来有人在这里加一个入口，它就会变成故障。
         guard voiceChatController.connectionPhase == .idle else { return }
+        // **文本 / 图文通话进行中：同理，那块麦克风是通话的。**
+        //
+        // 这条不是预防性的空话：通话跑的正是这条管线，所以每一次回答开始播放都会走到
+        // 这里 —— 放行下去就会给通话的窗口排一个到期任务，到点把它的耳朵摘掉，
+        // 屏幕上留下一个还在说「通话中」、其实已经听不见的刘海。
+        guard !textCallController.isActive else { return }
 
         let appSettings = AppSettingsStore.snapshot()
         guard appSettings.continuousListeningEnabled else { return }

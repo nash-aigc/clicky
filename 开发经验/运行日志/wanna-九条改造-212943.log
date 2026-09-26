@@ -1,0 +1,195 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 2 exchanges from session 「。」
+2026-09-26 21:29:44.427 Wanna[2397:2838567] [Recording] 按保留天数清理了 16 个文件
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790429390.309
+⏱️ [expand] 内容就位 +76ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +124ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 241ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790429398.422
+⏱️ [expand] 内容就位 +43ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +66ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 224ms
+🎛 [mode] card=D85625C7 → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 67ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 47ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 173ms
+🎛 [mode] card=D85625C7 → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 68ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 63ms
+🎛 [mode] card=D85625C7 → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 89ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 57ms
+🎛 [mode] card=D85625C7 → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 57ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 57ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 40ms
+🎛 [mode] card=D85625C7 → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 57ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 142ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 45ms
+🎛 [mode] card=D85625C7 → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 47ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 77ms
+⏱️ [hitch] main thread busy for 135ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 242ms
+⏱️ [expand] 重内容就位 +34332ms
+⏱️ [hitch] main thread busy for 98ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 161ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 256ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 125ms
+⏱️ [hitch] main thread busy for 47ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+⏱️ [hitch] main thread busy for 258ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 80ms
+💬 语音聊天：卡片上下文 历史 2 轮、截图 0 张、提示词 244 字
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 90ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian
+🎧 [event] session.updated（配置被接受）
+🔊 [aecprobe] t=1790429455.354 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790429455.482 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790429455.483 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790429455.604] id=resp_CLlOYQTUpSe
+🧾 [ai-text +2字] resp=resp_CLlOY 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🧾 [ai-text +1字] resp=resp_CLlOY 累计3字：「。」
+⏱️ [hitch] main thread busy for 54ms
+🎙️ 上行块 #2（2720B）已发出
+🎙️ 上行块 #3（3200B）已发出
+🔊 [ai-audio首块 t=1790429456.316] resp=resp_CLlOY
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_CLlOY 官方全文 3 字（累积值 3 字）
+🎧 [response.done] id=resp_CLlOYQTUpSe
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #50（64B）已发出
+🎧 [event t=1790429458.821] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「我」
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790429460.499] id=resp_CLlOZ95Ir4s
+🧾 [ai-text +2字] resp=resp_CLlOZ 累计2字：「我们」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🧾 [ai-text +2字] resp=resp_CLlOZ 累计4字：「刚才」
+🧾 [ai-text +1字] resp=resp_CLlOZ 累计5字：「在」
+⏱️ [hitch] main thread busy for 51ms
+🧾 [ai-text +2字] resp=resp_CLlOZ 累计7字：「互相」
+🧾 [ai-text +3字] resp=resp_CLlOZ 累计10字：「打招呼」
+🧾 [ai-text +1字] resp=resp_CLlOZ 累计11字：「。」
+🎧 [user-transcript] item=item_CLlOZLm 「刚才跟你聊的是什么呀？」
+🎙️ 上行块 #100（3200B）已发出
+🧾 [ai-text-done] resp=resp_CLlOZ 官方全文 11 字（累积值 11 字）
+🎧 [response.done] id=resp_CLlOZ95Ir4s
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 44ms
+2026-09-26 21:31:05.298 Wanna[2397:2838546] TSM AdjustCapsLockLEDForKeyTransitionHandling - _ISSetPhysicalKeyboardCapsLockLED Inhibit
+2026-09-26 21:31:05.311 Wanna[2397:2838546] error messaging the mach port for IMKCFRunLoopWakeUpReliable
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 82ms
+🎛 [mode] card=D85625C7 → text
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.2ms
+⏱️ [hitch] main thread busy for 185ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+⏱️ [hitch] main thread busy for 49ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：11 字 → 11 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：11 字 → 11 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 183ms

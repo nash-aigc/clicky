@@ -1,0 +1,24 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 2 exchanges from session 「我喜欢谁，刚才说过」
+2026-09-26 23:33:27.267 Wanna[79277:3291838] [Recording] 按保留天数清理了 8 个文件
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790436818.194
+⏱️ [expand] 内容就位 +70ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +122ms
+🔬 [card] 冷启动完整排版：62 字 → 62 unit / 2 行，耗时 1.4ms
+🔬 [card] 冷启动完整排版：46 字 → 46 unit / 2 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：62 字 → 62 unit / 2 行，耗时 1.3ms
+🔬 [card] 冷启动完整排版：46 字 → 46 unit / 2 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 260ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790436829.877
+⏱️ [expand] 内容就位 +25ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +54ms
+🔬 [card] 冷启动完整排版：62 字 → 62 unit / 2 行，耗时 1.8ms
+🔬 [card] 冷启动完整排版：46 字 → 46 unit / 2 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 71ms

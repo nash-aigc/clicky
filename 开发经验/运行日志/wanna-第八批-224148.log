@@ -1,0 +1,624 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 2 exchanges from session 「。」
+⏱️ [hitch] main thread busy for 52ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790433727.509
+⏱️ [expand] 内容就位 +50ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +114ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 282ms
+⏱️ [hitch] main thread busy for 59ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 55ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790433759.613
+⏱️ [expand] 内容就位 +22ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +48ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.6ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.4ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.1ms
+⏱️ [hitch] main thread busy for 323ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790433762.905
+⏱️ [expand] 内容就位 +22ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +64ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.3ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.2ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.4ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.2ms
+⏱️ [hitch] main thread busy for 364ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.0ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 4 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 3 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 9 行，耗时 5.3ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 3 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 4 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 210ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 9 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 3 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 4 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.1ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 209ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 9 行，耗时 4.7ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 3 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 4 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 9 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 3 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 4 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 189ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 9 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 3 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 4 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.9ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+⏱️ [hitch] main thread busy for 221ms
+⏱️ [hitch] main thread busy for 168ms
+⏱️ [hitch] main thread busy for 72ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790433855.375
+⏱️ [expand] 内容就位 +20ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +58ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.3ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.2ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 273ms
+⏱️ [hitch] main thread busy for 55ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 119ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790434031.468
+⏱️ [expand] 内容就位 +27ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +52ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.2ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 0.9ms
+⏱️ [hitch] main thread busy for 298ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790434032.854
+⏱️ [expand] 内容就位 +19ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +57ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.8ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.1ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 0.9ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：248 字 → 81 unit / 4 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：301 字 → 107 unit / 5 行，耗时 1.1ms
+⏱️ [hitch] main thread busy for 332ms
+💬 语音聊天：卡片上下文 历史 2 轮、截图 0 张、提示词 244 字
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=三段式 预设=voice.threeStage.standard（标准三段式）
+   识别=qwen-audio-3.1-realtime-plus 理解=deepseek-flash 表达=qwen-audio-3.1-tts-flash
+   音色=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc（族=三段式）画面=不允许
+   说明=无
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🎙️ BuddyDictationManager: continuous listening requested
+⏱️ [hitch] main thread busy for 99ms
+🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback)
+🔊 [aecprobe] t=1790434045.862 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790434045.930 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🎙️ BuddyDictationManager: listening tap installed on the shared TTS engine
+🎙️ BuddyDictationManager: continuous listening started
+💬 [voicechat] 采集就绪 总耗时 1368ms（屏幕=0 摄像头=0）
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已开始（角色「默认角色」，模式 三段式）
+⏱️ [cascade] 回合开始 t=1790434045.944
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🎙️ [aecprobe] t=1790434046.154 event=level botSpeaking=true level=0.200 peak0.5s=0.200 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.206 event=level botSpeaking=true level=0.200 peak0.5s=0.200 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.260 event=level botSpeaking=true level=0.208 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.313 event=level botSpeaking=true level=0.208 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.364 event=level botSpeaking=true level=0.207 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.416 event=level botSpeaking=true level=0.207 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.468 event=level botSpeaking=true level=0.149 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.522 event=level botSpeaking=true level=0.149 peak0.5s=0.208 utteranceActive=no
+⏱️ [cascade] 首字 +578ms
+⏱️ [cascade] 首段入队 +578ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.2ms
+🎙️ [aecprobe] t=1790434046.573 event=level botSpeaking=true level=0.107 peak0.5s=0.208 utteranceActive=no
+🗣️ Streaming speech: queued segment 1 (2 chars) t=1790434046.620
+💬 语音聊天：这一轮已写回卡片 D85625C7
+🔊 TTS 请求 t=1790434046.632 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 2 字
+🎙️ [aecprobe] t=1790434046.632 event=level botSpeaking=true level=0.107 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.686 event=level botSpeaking=true level=0.077 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.738 event=level botSpeaking=true level=0.077 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.790 event=level botSpeaking=true level=0.077 peak0.5s=0.208 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.841 event=level botSpeaking=true level=0.077 peak0.5s=0.207 utteranceActive=no
+🎙️ [aecprobe] t=1790434046.891 event=level botSpeaking=true level=0.080 peak0.5s=0.207 utteranceActive=no
+🔊 [aecprobe] t=1790434047.249 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (75KB)
+🔊 [aecprobe] t=1790434048.678 event=chunkEnd (the whole reply played)
+🔊 Streaming speech: playback loop exited (the whole reply played); 0 unplayed segment(s) dropped, first audio had started
+🎙️ [aecprobe] t=1790434049.115 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.711, transcript: "嗯。")
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790434049.522 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [cascade] 回合开始 t=1790434053.455
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790434053.632 event=speakersRestored
+⏱️ [cascade] 首字 +667ms
+⏱️ [cascade] 首段入队 +667ms
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.3ms
+🗣️ Streaming speech: queued segment 1 (8 chars) t=1790434054.245
+🔊 TTS 请求 t=1790434054.267 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 8 字
+⏱️ [hitch] main thread busy for 77ms
+🗣️ Streaming speech: queued segment 2 (16 chars) t=1790434054.437
+💬 语音聊天：这一轮已写回卡片 D85625C7
+🔊 TTS 请求 t=1790434054.449 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 16 字
+🔊 [aecprobe] t=1790434054.802 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (116KB)
+🎙️ [aecprobe] t=1790434056.466 event=level botSpeaking=true level=0.318 peak0.5s=0.318 utteranceActive=no
+🎙️ [aecprobe] t=1790434056.517 event=level botSpeaking=true level=0.318 peak0.5s=0.318 utteranceActive=no
+🎙️ [aecprobe] t=1790434056.572 event=level botSpeaking=true level=0.724 peak0.5s=0.724 utteranceActive=no
+🎙️ [aecprobe] t=1790434056.626 event=level botSpeaking=true level=0.724 peak0.5s=0.724 utteranceActive=no
+🎙️ [aecprobe] t=1790434056.626 event=bargeIn trigger=mic level
+🎙️ BuddyDictationManager: continuous listening detected speech (mic level, recent mic peak 0.724, transcript: "嗯。")
+🔊 Streaming speech: barge-in — 丢掉剩下的音频，这一轮继续
+🔊 [aecprobe] t=1790434056.626 event=chunkEnd (playback task cancelled)
+🔊 Streaming speech: playback loop exited (playback task cancelled); 0 unplayed segment(s) dropped, first audio had started
+🔇 SystemSpeakerMuteCoordinator: system speakers MUTED for recording (was unmuted before)
+🔇 [aecprobe] t=1790434056.732 event=speakersMuted
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] speech resumed — the silence countdown is reset
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence began — the 1.0s auto-send countdown starts now
+⏱️ [listen] silence lasted 1.0s — requesting the final transcript
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+[Bailian ASR] ❌ Session failed: The operation couldn’t be completed. Socket is not connected
+⏱️ [cascade] 回合开始 t=1790434061.159
+🌐 Bailian streaming request: 0.0MB, 0 image(s), model=deepseek-flash @ DeepSeek
+❌ BuddyDictationManager: continuous listening session error: Error Domain=NSPOSIXErrorDomain Code=57 "Socket is not connected" UserInfo={NSErrorFailingURLStringKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime, NSErrorFailingURLKey=wss://ws-5f7g2kbjmzklf24t.cn-beijing.maas.aliyuncs.com/api-ws/v1/realtime?model=qwen3-asr-flash-realtime}
+🔊 SystemSpeakerMuteCoordinator: system speakers RESTORED after recording
+🔊 [aecprobe] t=1790434061.284 event=speakersRestored
+⏱️ [cascade] 首字 +666ms
+⏱️ [cascade] 首段入队 +666ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.4ms
+⏱️ [hitch] main thread busy for 79ms
+🗣️ Streaming speech: queued segment 1 (7 chars) t=1790434061.927
+🔊 TTS 请求 t=1790434061.949 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 7 字
+⏱️ [hitch] main thread busy for 58ms
+⏱️ [hitch] main thread busy for 94ms
+🗣️ Streaming speech: queued segment 2 (51 chars) t=1790434062.326
+🔊 TTS 请求 t=1790434062.344 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 51 字
+🔊 [aecprobe] t=1790434062.546 event=chunkStart segment 1
+🔊 Bailian TTS: playing segment 1 (90KB)
+⏱️ [hitch] main thread busy for 139ms
+⏱️ [hitch] main thread busy for 80ms
+🗣️ Streaming speech: queued segment 3 (42 chars) t=1790434062.743
+🔊 TTS 请求 t=1790434062.763 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 42 字
+⏱️ [hitch] main thread busy for 82ms
+🗣️ Streaming speech: queued segment 4 (43 chars) t=1790434063.208
+⏱️ [hitch] main thread busy for 98ms
+🗣️ Streaming speech: queued segment 5 (30 chars) t=1790434063.527
+⏱️ [hitch] main thread busy for 178ms
+🔬 [cascade] 文字仍在增长：200 字（本任务已取消=false，距回合开始 +2649ms）
+⏱️ [hitch] main thread busy for 167ms
+🗣️ Streaming speech: queued segment 6 (38 chars) t=1790434063.951
+⏱️ [hitch] main thread busy for 90ms
+🔊 [aecprobe] t=1790434064.238 event=chunkStart segment 2
+🔊 Bailian TTS: playing segment 2 (502KB)
+🔊 TTS 请求 t=1790434064.259 model=qwen-audio-3.1-tts-flash voice=qwen-audio-3.1-tts-flash-vw8746920-16183cca32794211901f1a03414d2bfc 文本 43 字
+🗣️ Streaming speech: queued segment 7 (32 chars) t=1790434064.259
+⏱️ [hitch] main thread busy for 54ms
+⏱️ [hitch] main thread busy for 53ms
+⏱️ [hitch] main thread busy for 159ms
+🗣️ Streaming speech: queued segment 8 (37 chars) t=1790434064.657
+⏱️ [hitch] main thread busy for 142ms
+⏱️ [hitch] main thread busy for 48ms
+🗣️ Streaming speech: queued segment 9 (44 chars) t=1790434065.091
+⏱️ [hitch] main thread busy for 117ms
+🗣️ Streaming speech: queued segment 10 (31 chars) t=1790434065.390
+⏱️ [hitch] main thread busy for 167ms
+⏱️ [hitch] main thread busy for 75ms
+🗣️ Streaming speech: queued segment 11 (36 chars) t=1790434065.767
+⏱️ [hitch] main thread busy for 159ms
+🔬 [cascade] 文字仍在增长：401 字（本任务已取消=false，距回合开始 +4713ms）
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 45ms
+🗣️ Streaming speech: queued segment 12 (40 chars) t=1790434066.206
+⏱️ [hitch] main thread busy for 59ms
+🗣️ Streaming speech: queued segment 13 (31 chars) t=1790434066.499
+🗣️ Streaming speech: queued segment 14 (11 chars) t=1790434066.649
+⏱️ [hitch] main thread busy for 148ms
+🔬 [cascade] cancelCurrentTurn（有任务=true，已取消=false）
+🔊 Streaming speech: stopPlayback() while a segment was playing — abandoning the rest of the reply
+🎙️ BuddyDictationManager: continuous listening ended
+💬 语音聊天：会话已结束
+🔊 [aecprobe] t=1790434069.240 event=chunkEnd (stopPlayback())
+🔊 Streaming speech: playback loop exited (stopPlayback()); 0 unplayed segment(s) dropped, first audio had started
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 57ms
+⏱️ [hitch] main thread busy for 52ms
+💬 语音聊天：卡片上下文 历史 4 轮、截图 0 张、提示词 304 字
+💬 语音聊天开始连接：聊天类型=语音聊天 模式=全双工 预设=voice.duplex.3_0flash（全双工 3.0 Flash）
+   识别=qwen-audio-3.0-realtime-flash 理解=qwen-audio-3.0-realtime-flash 表达=qwen-audio-3.0-realtime-flash
+   音色=longanqian（族=全双工）画面=不允许
+   说明=无
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.3ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 120ms
+🎧 [event] session.created
+💬 全双工会话：model=qwen-audio-3.0-realtime-flash voice=longanqian 声音=开
+🎧 [event] session.updated（配置被接受）
+🎙️ 全双工会话：麦克风 tap 已装好（共享播放引擎）
+💬 语音聊天：全双工语音会话已开始（角色「默认角色」，模型 qwen-audio-3.0-realtime-flash，音色 longanqian）
+🎙️ 全双工会话：第一块上行音频已就绪（2720 字节）
+🎙️ 上行块 #1（2720B）已发出
+🎧 [response.created t=1790434073.254] id=resp_GCQoIbohedE
+🧾 [ai-text +2字] resp=resp_GCQoI 累计2字：「你好」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🎙️ 上行块 #2（2720B）已发出
+🎙️ 上行块 #3（3200B）已发出
+🔊 [ai-audio首块 t=1790434074.426] resp=resp_GCQoI
+💬 语音聊天：第一段音频已开始播 —— 状态切到「已连接」
+🧾 [ai-text-done] resp=resp_GCQoI 官方全文 2 字（累积值 2 字）
+🎧 [response.done] id=resp_GCQoIbohedE
+🎙️ 上行块 #50（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790434076.615] speech_started（服务端听到用户开口）
+🎧 [user-transcript-delta] 首个增量事件已到达 —— text「」 stash「你」
+🎙️ 上行块 #100（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790434079.052] id=resp_GCQoYlGIVnv
+🧾 [ai-text +2字] resp=resp_GCQoY 累计2字：「北京」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计4字：「近期」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计6字：「迎来」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计9字：「新一轮」
+⏱️ [hitch] main thread busy for 58ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计11字：「文旅」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计13字：「热潮」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计14字：「，」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计16字：「各大」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计19字：「博物馆」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计20字：「和」
+🧾 [ai-text +4字] resp=resp_GCQoY 累计24字：「历史文化」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计26字：「街区」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计28字：「游客」
+🧾 [ai-text +4字] resp=resp_GCQoY 累计32字：「络绎不绝」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计33字：「。」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计34字：「为」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计36字：「提升」
+⏱️ [hitch] main thread busy for 137ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计38字：「游览」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计40字：「体验」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计41字：「，」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计42字：「市」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计44字：「交通」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计46字：「部门」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计48字：「优化」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计49字：「了」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计51字：「多条」
+🧾 [ai-text +4字] resp=resp_GCQoY 累计55字：「公交线路」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计56字：「，」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计57字：「并」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计60字：「增加了」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计62字：「夜间」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计64字：「地铁」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计66字：「服务」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计67字：「。」
+⏱️ [hitch] main thread busy for 148ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计69字：「同时」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计70字：「，」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计73字：「北京市」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计75字：「政府」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计78字：「发布了」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计80字：「新的」
+🧾 [ai-text +4字] resp=resp_GCQoY 累计84字：「空气质量」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计86字：「预报」
+⏱️ [hitch] main thread busy for 115ms
+🧾 [ai-text +1字] resp=resp_GCQoY 累计87字：「，」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计89字：「提醒」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计91字：「市民」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计92字：「在」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计94字：「周末」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计96字：「外出」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计97字：「时」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计99字：「注意」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计101字：「防护」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计102字：「。」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计104字：「此外」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计105字：「，」
+⏱️ [hitch] main thread busy for 61ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计107字：「北京」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计110字：「冬奥会」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计112字：「遗产」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计114字：「场馆」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计116字：「持续」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计118字：「开放」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计119字：「，」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计122字：「吸引了」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计124字：「大量」
+⏱️ [hitch] main thread busy for 63ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计126字：「市民」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计127字：「和」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计129字：「游客」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计131字：「参与」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计133字：「冰雪」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计135字：「运动」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计137字：「体验」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计138字：「。」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计140字：「城市」
+⏱️ [hitch] main thread busy for 232ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计142字：「整体」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计144字：「运行」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计146字：「平稳」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计148字：「有序」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计149字：「，」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计151字：「各项」
+🎧 [user-transcript] item=item_GCQoEZ2 「你给我说一个关于北京的新闻，200个字。」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计153字：「民生」
+🧾 [ai-text +4字] resp=resp_GCQoY 累计157字：「保障措施」
+🧾 [ai-text +4字] resp=resp_GCQoY 累计161字：「落实到位」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计162字：「，」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计165字：「展现出」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计167字：「首都」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计168字：「的」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计170字：「活力」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计171字：「与」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计173字：「温度」
+⏱️ [hitch] main thread busy for 72ms
+🧾 [ai-text +1字] resp=resp_GCQoY 累计174字：「。」
+🎙️ 上行块 #150（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790434083.929] speech_started（服务端听到用户开口）
+🧾 [ai-text-done] resp=resp_GCQoY 官方全文 174 字（累积值 0 字）
+🔬 [card] 冷启动完整排版：174 字 → 174 unit / 6 行，耗时 4.7ms
+🎧 [response.done] id=resp_GCQoYlGIVnv
+⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略
+⚠️ 全双工会话：打断时的 cancel 冗余（服务端那一轮已结束）—— 忽略
+🎙️ 上行块 #200（3200B）已发出
+🎙️ 上行块 #250（64B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790434087.627] id=resp_GCQoF1rWsrL
+🧾 [ai-text +2字] resp=resp_GCQoF 累计176字：「北京」
+🧾 [ai-text +1字] resp=resp_GCQoF 累计177字：「新」
+🧾 [ai-text +1字] resp=resp_GCQoF 累计178字：「来」
+🧾 [ai-text +2字] resp=resp_GCQoF 累计180字：「的是」
+🧾 [ai-text +3字] resp=resp_GCQoF 累计183字：「新一轮」
+🧾 [ai-text +2字] resp=resp_GCQoF 累计185字：「文旅」
+🧾 [ai-text +2字] resp=resp_GCQoF 累计187字：「热潮」
+🧾 [ai-text +1字] resp=resp_GCQoF 累计188字：「。」
+⏱️ [hitch] main thread busy for 66ms
+🎧 [user-transcript] item=item_GCQoUbb 「什么意思？北京新来什么？」
+🧾 [ai-text-done] resp=resp_GCQoF 官方全文 14 字（累积值 188 字）
+🎧 [response.done] id=resp_GCQoF1rWsrL
+🎙️ 上行块 #300（3200B）已发出
+🎧 [event t=1790434092.316] speech_started（服务端听到用户开口）
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎙️ 上行块 #350（3200B）已发出
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790434093.953] id=resp_GCQoYYHtS22
+🧾 [ai-text +2字] resp=resp_GCQoY 累计2字：「北京」
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.3ms
+🧾 [ai-text +2字] resp=resp_GCQoY 累计4字：「最近」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计7字：「迎来了」
+🧾 [ai-text +3字] resp=resp_GCQoY 累计10字：「新一轮」
+⏱️ [hitch] main thread busy for 57ms
+🧾 [ai-text +1字] resp=resp_GCQoY 累计11字：「的」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计13字：「文旅」
+🧾 [ai-text +2字] resp=resp_GCQoY 累计15字：「热潮」
+🧾 [ai-text +1字] resp=resp_GCQoY 累计16字：「。」
+🎧 [user-transcript] item=item_GCQoRKs 「哦，北京什么热肠？」
+🧾 [ai-text-done] resp=resp_GCQoY 官方全文 16 字（累积值 16 字）
+🎧 [response.done] id=resp_GCQoYYHtS22
+🎙️ 上行块 #400（2720B）已发出
+🎙️ 上行块 #450（64B）已发出
+🎙️ 全双工会话：本地判定用户开口 —— 就地停声
+🎧 [event t=1790434098.926] speech_started（服务端听到用户开口）
+🎧 [event] speech_stopped（服务端判定用户说完）
+🎧 [event] committed（用户音频已提交）
+🎧 [response.created t=1790434100.144] id=resp_GCQoIR1H3ZA
+🧾 [ai-text +3字] resp=resp_GCQoI 累计3字：「意思是」
+🔬 [card] 冷启动完整排版：3 字 → 3 unit / 1 行，耗时 0.3ms
+🧾 [ai-text +2字] resp=resp_GCQoI 累计5字：「北京」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计7字：「最近」
+⏱️ [hitch] main thread busy for 62ms
+🧾 [ai-text +3字] resp=resp_GCQoI 累计10字：「吸引了」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计12字：「很多」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计14字：「游客」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计15字：「，」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计17字：「大家」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计18字：「去」
+⏱️ [hitch] main thread busy for 102ms
+🧾 [ai-text +3字] resp=resp_GCQoI 累计21字：「博物馆」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计22字：「、」
+🧾 [ai-text +4字] resp=resp_GCQoI 累计26字：「历史文化」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计28字：「街区」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计30字：「游玩」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计31字：「，」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计33字：「城市」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计34字：「里」
+⏱️ [hitch] main thread busy for 149ms
+🧾 [ai-text +3字] resp=resp_GCQoI 累计37字：「充满了」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计39字：「旅游」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计40字：「和」
+🧾 [ai-text +3字] resp=resp_GCQoI 累计43字：「文化的」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计45字：「热闹」
+🧾 [ai-text +2字] resp=resp_GCQoI 累计47字：「气氛」
+🧾 [ai-text +1字] resp=resp_GCQoI 累计48字：「。」
+🎧 [user-transcript] item=item_GCQoMV7 「什么意思啊？」
+🎙️ 上行块 #500（64B）已发出
+🔬 [cascade] cancelCurrentTurn（有任务=false，已取消=false）
+💬 语音聊天：会话已结束
+⏱️ [hitch] main thread busy for 56ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.5ms
+⏱️ [hitch] main thread busy for 224ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：174 字 → 174 unit / 6 行，耗时 3.8ms
+🔬 [card] 冷启动完整排版：188 字 → 188 unit / 6 行，耗时 3.9ms
+🔬 [card] 冷启动完整排版：16 字 → 16 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：48 字 → 48 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.6ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：174 字 → 174 unit / 6 行，耗时 3.7ms
+🔬 [card] 冷启动完整排版：188 字 → 188 unit / 6 行，耗时 3.9ms
+🔬 [card] 冷启动完整排版：16 字 → 16 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：48 字 → 48 unit / 2 行，耗时 1.0ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.5ms
+⏱️ [hitch] main thread busy for 312ms
+🎛 [mode] card=D85625C7 → imageText
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.6ms
+⏱️ [hitch] main thread busy for 177ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.3ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.7ms
+⏱️ [hitch] main thread busy for 241ms
+🎛 [mode] card=D85625C7 → video
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.7ms
+⏱️ [hitch] main thread busy for 121ms
+🎛 [mode] card=D85625C7 → voice
+🔬 [frame] 展开中窗口被改：h=837.0（比最终矮 -0.9）y=280.0（比最终低 0.9）
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.5ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.7ms
+🔬 [card] 冷启动完整排版：10 字 → 10 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：15 字 → 15 unit / 1 行，耗时 0.4ms
+🔬 [card] 冷启动完整排版：2 字 → 2 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：24 字 → 24 unit / 1 行，耗时 0.6ms
+⏱️ [hitch] main thread busy for 138ms
+⏱️ [hitch] main thread busy for 60ms
