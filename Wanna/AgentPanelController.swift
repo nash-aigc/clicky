@@ -52,6 +52,15 @@ final class AgentPanelController {
 
     private var panelContentObservation: AnyCancellable?
 
+    /// **「取消这个任务」的落点。** 面板不认识 `CompanionManager`，而"停止正在跑的活"
+    /// 只有它做得到 —— 所以按这个仓库既有的做法注入一个闭包（同
+    /// `LongFormAudioCapture.onSilentInputNeedsDeviceSwitch`）。
+    ///
+    /// 用户 2026-09-26 的要求：任务不该被"我下一次提问"打断，**只该被手动打断** ——
+    /// 「要想打断它的话，只有用户点击这个左侧这个图标，然后点击这个取消任务」。
+    /// 这就是那个入口。
+    nonisolated(unsafe) static var cancelRunningJob: (() -> Void)?
+
     private var panel: NSPanel?
     private var hostingView: NSHostingView<AgentDetailView>?
     /// 面板正在展示哪一个 agent。看板那边关掉它时要用。
@@ -194,6 +203,22 @@ private struct AgentDetailView: View {
             }
             .buttonStyle(.plain)
             .help("复制这个 agent 的 ID")
+
+            // **取消任务**：只在这条任务还没结束（还在跑）时出现。
+            // 它是"手动打断"的唯一入口 —— 用户的模型是「任务只能被手动打断」。
+            if agent.status == .running {
+                Button {
+                    AgentPanelController.cancelRunningJob?()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "stop.circle")
+                        Text("取消任务").font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundColor(DS.Colors.destructive)
+                }
+                .buttonStyle(.plain)
+                .help("停掉这条正在跑的任务")
+            }
 
             Button(action: close) {
                 Image(systemName: "xmark")

@@ -881,6 +881,11 @@ final class CompanionManager: ObservableObject {
         // 订阅从来没装上 —— 点按钮时 `togglePanel` 确实把 id 写进去了，**只是没人在听**。
         // 单例不是"用了才活"的；没人碰的懒汉单例就是一块死代码。
         _ = AgentPanelController.shared
+        // 面板上那颗「取消任务」落到这里 —— 它就是既有的"停止"路径（停播报、停流式、
+        // 取消当前响应任务），只是现在有了一个**只在任务面板里**的入口。
+        AgentPanelController.cancelRunningJob = { [weak self] in
+            Task { @MainActor in self?.interruptActiveResponse() }
+        }
 
 
         // The panel used to read the configuration through computed properties —
