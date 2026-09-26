@@ -37,6 +37,12 @@ struct HomeSpaceSidebarView: View {
     /// 见 `NotchPanelModel.isSheetContentReady`。
     var showsSectionList: Bool = true
 
+    /// 任务区里展开了哪几个「文件夹」（一个目标派的多个 agent）。**纯界面的状态** ——
+    /// 和看板无关：关掉侧栏就该忘掉。
+    @State private var expandedTaskGroups: Set<String> = []
+    /// 状态点呼吸的相位。**整区共用一个** —— 每颗点各起一条动画会各自飘，看起来像坏了。
+    @State private var isTaskDotBreathing = false
+
     /// 「录音」快捷入口：点一下直接跳到设置里的录音页。
     ///
     /// 用户 2026-09-25：「主页面设置按钮的右侧显示一个录音按钮，点击后自动跳转到
@@ -78,6 +84,12 @@ struct HomeSpaceSidebarView: View {
 
             // 三个分区共用同一行「搜索 + ＋」（用户要求三个页面顺序一致）。
             searchRow
+
+            // **任务区。** 用户 2026-09-26：「之前说的左侧，我的意思是在窗口里面也要能看到…
+            // 窗口里面应该也能看到。我之前说的是在窗口的侧边栏显示文件夹，就是相关的任务…
+            // 而且这个任务在左侧边栏的卡片样式应该跟其他的是不一样的，用户能够直接区分 ——
+            // 高度、图标、状态、呼吸灯这些东西」。
+            taskSection
 
             // 分阶段加载：第一拍只建上面那几行骨架，列表留到第二拍
             //（见 `showsSectionList`）。`Spacer` 仍在，所以底部那一行不会跳。
@@ -259,6 +271,127 @@ struct HomeSpaceSidebarView: View {
         case .conversations: return "新建会话"
         case .agents: return "选一个项目文件夹，新建一个 Agent"
         case .voiceChat: return "角色由本地保存，可以新建和改提示词"
+        }
+    }
+
+    // MARK: - 任务（刘海左侧那一排的同源视图）
+
+    /// 侧栏里的任务区。**和会话行长得不一样是要求，不是风格** —— 用户要靠"高度、图标、
+    /// 状态、呼吸灯"一眼分清"这是一次派出去的活"还是"一轮对话"。
+    ///
+    /// 同一个目标派出去的多个 agent 折成一个文件夹（`sidebarGroups`）：
+    /// 一组一行、点开看成员，组行显示"最坏的那个状态"（有失败就红、有在跑就呼吸）。
+    @ViewBuilder
+    private var taskSection: some View {
+        let groups = AgentActivityBoard.shared.sidebarGroups
+        if !groups.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("任务")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.7)
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
+                    .padding(.bottom, 4)
+
+                ForEach(groups) { group in
+                    if group.isFolder {
+                        taskFolderRow(group)
+                        if expandedTaskGroups.contains(group.id) {
+                            ForEach(group.members) { member in
+                                taskRow(member, indented: true)
+                            }
+                        }
+                    } else if let onlyMember = group.members.first {
+                        taskRow(onlyMember, indented: false)
+                    }
+                }
+            }
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                    isTaskDotBreathing = true
+                }
+            }
+        }
+    }
+
+    private func taskFolderRow(_ group: AgentActivityBoard.SidebarGroup) -> some View {
+        let isOpen = expandedTaskGroups.contains(group.id)
+        return Button {
+            if isOpen { expandedTaskGroups.remove(group.id) } else { expandedTaskGroups.insert(group.id) }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: isOpen ? "folder.fill" : "folder")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(DS.Colors.accent.opacity(0.85))
+                    .frame(width: 18)
+                Text("\(group.members.count) 个任务")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(DS.Colors.textSecondary)
+                Spacer(minLength: 4)
+                taskStatusDot(group.worstStatus, size: 7)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .rotationEffect(.degrees(isOpen ? 90 : 0))
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 34)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+    }
+
+    /// 一个任务一行。**高度 44（会话行是随内容的）、左边一颗渐变图标块、右边一颗会呼吸的
+    /// 状态点** —— 这三样加起来就是"一眼分得清"。
+    private func taskRow(_ agent: EphemeralAgent, indented: Bool) -> some View {
+        HStack(spacing: 8) {
+            if indented { Spacer().frame(width: 12) }
+            // 图标块：和桌面 HUD 的 chip 同一个语汇（渐变 + id 前两位），所以两处认得出是同一个东西。
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(DS.Colors.accentGradient)
+                .frame(width: 22, height: 22)
+                .overlay(
+                    Image(systemName: "wand.and.stars")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.95))
+                )
+            VStack(alignment: .leading, spacing: 1) {
+                Text(agent.title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(DS.Colors.textPrimary)
+                    .lineLimit(1)
+                Text(agent.id)
+                    .font(.system(size: 9.5, weight: .medium).monospaced())
+                    .foregroundColor(DS.Colors.textTertiary)
+            }
+            Spacer(minLength: 4)
+            taskStatusDot(agent.status, size: 8)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 44)
+        .contentShape(Rectangle())
+    }
+
+    /// 状态点。**跑着和失败会呼吸**（用户：「失败或者没有完成，应该有一个呼吸的效果，
+    /// 或者通过颜色变化，让用户能够知道」）；做完的两种是静态的。
+    @ViewBuilder
+    private func taskStatusDot(_ status: EphemeralAgent.Status, size: CGFloat) -> some View {
+        let isUnsettled = status == .running || status == .failed
+        Circle()
+            .fill(taskStatusColor(status))
+            .frame(width: size, height: size)
+            .opacity(isUnsettled && isTaskDotBreathing ? 0.45 : 1)
+            .animation(isUnsettled ? .easeInOut(duration: 0.9) : .default, value: isTaskDotBreathing)
+    }
+
+    private func taskStatusColor(_ status: EphemeralAgent.Status) -> Color {
+        switch status {
+        case .running: return DS.Colors.accent
+        case .doneVerified: return DS.Colors.success
+        case .doneUnverified: return DS.Colors.warning
+        case .failed: return DS.Colors.destructive
         }
     }
 

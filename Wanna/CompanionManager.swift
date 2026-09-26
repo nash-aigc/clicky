@@ -2743,6 +2743,11 @@ final class CompanionManager: ObservableObject {
                 /// 那一排是给「派出去干的活」用的，而用户的原话是「每一个用户的任务都是
                 /// 一个临时的任务」。所以只有真的干活了（派活、或者执行了动作）才建。
                 var ephemeralAgentID: String?
+
+                /// **这一轮任务的分组 id** —— 同一个目标派出去的多个 agent 共用一个，
+                /// 侧栏里因此折叠成一个「文件夹」（用户 2026-09-26 的要求）。
+                /// **一轮生成一次**，不是每派一次生成一次。
+                let turnGroupID = UUID().uuidString
                 var unexecutedActionCountFromPreviousStep = 0
 
                 /// 这条任务里**已经拒过一次「没写名字的点击」**。
@@ -2941,7 +2946,7 @@ final class CompanionManager: ObservableObject {
                     if let role = dispatchRequest.subAgentRequest {
                         dispatchedRole = role
                         // 派活 = 这件事交给别人去做了，这一刻它值得在刘海左侧占一个位置。
-                        ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript)
+                        ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript, groupID: turnGroupID)
                         AgentActivityBoard.shared.appendStep(
                             "交给\(role.displayName) agent 去做", to: ephemeralAgentID!)
                         AgentActivityBoard.shared.appendToolCall(
@@ -3146,7 +3151,7 @@ final class CompanionManager: ObservableObject {
                         // **执行了动作 = 也是一个任务**（不一定要派活）。用户问
                         // 「帮我点一下」时主 agent 可能自己就把标签写了。
                         if ephemeralAgentID == nil {
-                            ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript)
+                            ephemeralAgentID = AgentActivityBoard.shared.beginTask(request: transcript, groupID: turnGroupID)
                         }
                         if let id = ephemeralAgentID {
                             AgentActivityBoard.shared.appendToolCall(

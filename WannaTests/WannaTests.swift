@@ -94,6 +94,32 @@ struct WannaTests {
         #expect(hitRect.width > hitRect.height, "用户要的是长方形（宽 > 高）")
     }
 
+    /// **同一个目标派出去的多个 agent = 侧栏里的一个文件夹。**
+    ///
+    /// 用户 2026-09-26：「一个目标需要同时调用多个 agent 来执行…那在左侧列表是不是应该
+    /// 去做一个关联？自动创建一个文件夹、一个分组，把同一个任务派发出来的多个子 agent
+    /// 全部放在这一组上」。判据有两条，缺一条都不算对：**同组的折在一起**、
+    /// **没组的自己一行且不画成文件夹**。
+    @Test func tasksFromOneGoalAreGrouped() async throws {
+        let board = AgentActivityBoard.shared
+        let groupID = UUID().uuidString
+        let first = board.beginTask(request: "第一个子任务", groupID: groupID)
+        let second = board.beginTask(request: "第二个子任务", groupID: groupID)
+        let solo = board.beginTask(request: "没分组的独立任务")
+
+        let groups = board.sidebarGroups
+        let folder = groups.first { $0.members.contains { $0.id == first } }
+        #expect(folder?.members.count == 2, "同组两个应该在一个文件夹里")
+        #expect(folder?.members.contains { $0.id == second } == true)
+        #expect(folder?.isFolder == true, "多于一个就该按文件夹画")
+
+        let soloGroup = groups.first { $0.members.contains { $0.id == solo } }
+        #expect(soloGroup?.members.count == 1)
+        #expect(soloGroup?.isFolder == false, "没组的自己一行，不该画成文件夹")
+
+        for id in [first, second, solo] { board.finishTask(id, status: .doneVerified) }
+    }
+
     /// **点那一排小按钮 → 弹出面板**，这条链必须真的通。
     ///
     /// 2026-09-26 它两半都是坏的：命中矩形离按钮 98.5pt（几何，上面那条锁着），

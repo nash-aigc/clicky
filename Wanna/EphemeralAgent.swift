@@ -62,13 +62,22 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
     /// **工具/动作调用**。面板里**折叠** —— 用户明确要求，它们太长。
     var toolCalls: [String]
 
+    /// **同一个目标派出去的多个 agent 归一组。**
+    ///
+    /// 用户 2026-09-26：「用户的一个目标需要同时调用多个 agent 来执行…那在左侧列表是不是
+    /// 应该去做一个关联？自动创建一个文件夹、一个分组，把同一个任务派发出来的多个子 agent
+    /// 全部放在这一组上」。一组 = 一轮提问里派出去的所有活儿（id 由那一轮生成）。
+    var groupID: String?
+
     init(id: String = EphemeralAgent.makeID(),
          title: String,
          request: String,
+         groupID: String? = nil,
          startedAt: Date = Date()) {
         self.id = id
         self.title = title
         self.request = request
+        self.groupID = groupID
         self.startedAt = startedAt
         self.status = .running
         self.steps = []
@@ -117,6 +126,41 @@ final class AgentActivityBoard: ObservableObject {
 
     /// 新的在前 —— 左侧按钮从刘海往左排，最新的离刘海最近（最容易被看到）。
     @Published private(set) var agents: [EphemeralAgent] = []
+
+    /// **侧栏那棵树**：同一组的折成一个「文件夹」，没组的各自一行。
+    ///
+    /// 用户的要求是「同一个任务派发出来的多个子 agent 全部放在这一组上能够看到，
+    /// 然后也可以打断」—— 所以这是**显示用的分组**，不改 `agents` 的顺序或身份：
+    /// 关掉这一页它就不存在了。
+    var sidebarGroups: [SidebarGroup] {
+        var order: [String] = []
+        var byGroup: [String: [EphemeralAgent]] = [:]
+        for agent in agents {
+            let key = agent.groupID ?? agent.id          // 没组的自己一组
+            if byGroup[key] == nil { order.append(key) }
+            byGroup[key, default: []].append(agent)
+        }
+        return order.compactMap { key in
+            guard let members = byGroup[key] else { return nil }
+            return SidebarGroup(id: key,
+                                members: members,
+                                isFolder: members.count > 1 || members.first?.groupID != nil)
+        }
+    }
+
+    struct SidebarGroup: Identifiable {
+        let id: String
+        let members: [EphemeralAgent]
+        /// 一组多于一个、或者组里那个是"被派活派出来的"，就按文件夹画。
+        let isFolder: Bool
+        var isRunning: Bool { members.contains { $0.status == .running } }
+        var worstStatus: EphemeralAgent.Status {
+            if members.contains(where: { $0.status == .failed }) { return .failed }
+            if members.contains(where: { $0.status == .running }) { return .running }
+            if members.contains(where: { $0.status == .doneUnverified }) { return .doneUnverified }
+            return .doneVerified
+        }
+    }
     /// 哪些 agent 的卡片正在展开。用 id 而不是给 struct 加字段：展开是**界面的**状态，
     /// 不是任务的属性 —— 任务不该知道自己正被显示着。
     @Published private(set) var expandedIDs: Set<String> = []
@@ -125,9 +169,11 @@ final class AgentActivityBoard: ObservableObject {
 
     /// 一次任务开始。返回它的 id，调用方后面用它来追加步骤。
     @discardableResult
-    func beginTask(request: String) -> String {
+    func beginTask(request: String, groupID: String? = nil) -> String {
         pruneExpired()
-        let agent = EphemeralAgent(title: Self.shortTitle(from: request), request: request)
+        let agent = EphemeralAgent(title: Self.shortTitle(from: request),
+                                   request: request,
+                                   groupID: groupID)
         agents.insert(agent, at: 0)
         SoundEffectPlayer.appendToDiagnosticLog(
             "临时 agent \(agent.id) 开始：\(agent.title)")
