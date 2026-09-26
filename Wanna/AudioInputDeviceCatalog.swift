@@ -150,4 +150,64 @@ nonisolated enum AudioInputDeviceCatalog {
         guard status == noErr, !(value as String).isEmpty else { return nil }
         return value as String
     }
+
+    private static func pidProperty(of object: AudioObjectID) -> pid_t? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioProcessPropertyPID,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectHasProperty(object, &address) else { return nil }
+        var value = pid_t(0)
+        var size = UInt32(MemoryLayout<pid_t>.size)
+        let status = AudioObjectGetPropertyData(object, &address, 0, nil, &size, &value)
+        return status == noErr ? value : nil
+    }
+
+    private static func isRunningInput(_ object: AudioObjectID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioProcessPropertyIsRunningInput,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        guard AudioObjectHasProperty(object, &address) else { return false }
+        var value = UInt32(0)
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        let status = AudioObjectGetPropertyData(object, &address, 0, nil, &size, &value)
+        return status == noErr && value != 0
+    }
+
+    /// **此刻正在开麦克风的进程** —— 把「录不到声音」变成「是 X 占着麦克风」。
+    ///
+    /// 走 `kAudioHardwarePropertyProcessObjectList`（macOS 14.2+）逐个读
+    /// `kAudioProcessPropertyIsRunningInput`。判据是「真的在开麦」，**不是**「在放音」——
+    /// 后者几乎所有软件都为真，报出来等于没说。
+    ///
+    /// 为什么它和这个文件是一伙的：一个设备好不好用，有一半取决于**谁在用**。
+    /// 2026-09-26 实测，全部录音都录成零的那段时间里，唯一 `IsRunningInput` 为真的
+    /// 就是那个第三方听写软件（`闪电说`），而「谁占着」正是用户唯一能立刻行动的信息。
+    ///
+    /// 返回 bundle id + pid。**名字留给调用方去取** —— 那是 AppKit 的事，而这里刻意
+    /// 只有 CoreAudio，好在任何线程上调。
+    static func processesCurrentlyCapturingInput() -> [(bundleIdentifier: String, processID: pid_t)] {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyProcessObjectList,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        var size = UInt32(0)
+        guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject),
+                                             &address, 0, nil, &size) == noErr, size > 0 else {
+            return []
+        }
+        let count = Int(size) / MemoryLayout<AudioObjectID>.size
+        var objects = [AudioObjectID](repeating: 0, count: count)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject),
+                                         &address, 0, nil, &size, &objects) == noErr else {
+            return []
+        }
+        return objects.compactMap { object in
+            guard isRunningInput(object) else { return nil }
+            return (bundleIdentifier: stringProperty(of: object,
+                                                     selector: kAudioProcessPropertyBundleID) ?? "",
+                    processID: pidProperty(of: object) ?? -1)
+        }
+    }
 }

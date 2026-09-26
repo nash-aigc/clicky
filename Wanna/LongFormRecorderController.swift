@@ -74,6 +74,20 @@ nonisolated final class LongFormAudioCapture {
     private var converterInputFormat: AVAudioFormat?
     private var isRunning = false
 
+    /// **候选输入设备队列** —— 控制器在起采之前排好，`start()` 只用第一个。
+    ///
+    /// 为什么要一串而不是一个：2026-09-26 实测，内置麦克风会被**别的软件**搞成
+    /// 「对谁都只给数字零」，之后连启动都返回 `kAudioHardwareNotRunningError`；
+    /// 而同一时刻、同一份代码，iPhone 连续互通那个麦克风录得到真实声音（峰值
+    /// 984/32768）。所以稳的做法不是赌某一个设备，而是**换到那个能给样本的**。
+    ///
+    /// 队列由 `LongFormRecorderController.inputDeviceCandidates(for:)` 排序：
+    /// 用户选定的 → 系统默认 → 其余真设备。
+    var candidateInputDevices: [AudioInputDevice] = []
+    private var candidateDeviceIndex = 0
+    /// 本场换过几次设备。**只给日志和界面看**，不参与任何判断。
+    private(set) var inputDeviceSwitchCount = 0
+
     /// 一块 PCM（16kHz 单声道 PCM16）。在音频线程上调用。
     var onPCMChunk: ((Data) -> Void)?
     /// 平滑后的电平（0…1）和「这一刻是否在说话」。在音频线程上调用。
@@ -100,13 +114,31 @@ nonisolated final class LongFormAudioCapture {
     ///（设备可以中途被拔掉），而告警要回答的正是「我当时绑的是谁」。
     private var boundInputDeviceName = "（还没绑定）"
 
-    /// 连续多少块没声音就报警。一块约 100ms，100 块 ≈ 10 秒 ——
-    /// 短到来得及反应，长到不会被一句话里的停顿触发。
-    static let silentBufferAlarmThreshold = 100
+    /// 实测的块速率：**每秒 90 块**（850 块跨 9.386 秒），也就是一块 ≈ 11ms。
+    ///
+    /// 这个数字原先写着「一块约 100ms」—— **错了约 9 倍**，而它一路把给用户看的
+    /// 文案也带错了（「连续十秒没有任何声音」其实只过了 1.1 秒）。一块是 16kHz 下
+    /// 171 帧，171 / 16000 = 10.7ms，和实测吻合。
+    static let buffersPerSecond = 90.0
 
-    /// 连续静音到阈值时喊一次（整场只喊一次）。参数是当时绑的设备名 ——
-    /// 「绑到哪个设备」是分清「绑错了」和「麦克风静音了」的唯一依据。
-    var onSilentInputDetected: ((String) -> Void)?
+    /// 连续多少块**全零**才判定「这个设备根本没在交付采样」。90 块 ≈ 1 秒。
+    ///
+    /// 判据是「精确的零」，不是「安静」—— 这两件事必须分清：
+    /// 健康设备**永远有底噪**（实测安静房间里 188 块里只有 0~3 块全零、峰值
+    /// 246/32768），坏掉的设备是**一个 bit 都不动**（187/187 块全零、录音里
+    /// 850 块零块 0 个）。所以「连续一秒的精确零」只有一种解释：设备不产出采样。
+    /// 用它当换设备的判据是安全的 —— 用户只是停一下不说话，绝不会触发。
+    static let silentBufferAlarmThreshold = 90
+
+    /// 连续全零到阈值时喊一次，请控制器**换一个输入设备**。参数是当时绑的设备名。
+    ///
+    /// **在音频线程上调用**（和 `onDiagnostic` 一样），所以接收方必须立刻返回，
+    /// 把真正的工作甩到别的线程 —— 换设备要停 unit、重新认设备、重启，实测慢的时候
+    /// 是秒级，那些都不能在实时线程上做，也不该占主线程。
+    ///
+    /// 它取代了原来的 `onSilentInputDetected`：原来只是**报**一句「这段录下来会是空的」，
+    /// 现在是先**修**（换设备接着录），修不动了才报。
+    var onSilentInputNeedsDeviceSwitch: ((String) -> Void)?
 
     /// 绑好设备之后回一句「绑到了谁」。**静态是因为绑定函数是静态的**
     ///（它没有实例，而起采路径上第一个用到它的地方在实例建好之前）。
@@ -169,13 +201,18 @@ nonisolated final class LongFormAudioCapture {
 
     private var smoothedLevel: Double = 0
 
+    /// 目标格式的对象形态 —— 采集、转换、落盘要的是同一个东西，只是
+    /// `targetSampleRate` 那三个数字是给服务端和文件头用的，这个是给转换器用的。
+    ///
+    /// **提到静态**是因为起采被拆成了两半（`start()` 选设备、`bindAndStartCapture`
+    /// 建单元），换设备时会再进来一次 —— 每进来一次就各建一个没有意义。
+    static let targetAVAudioFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
+                                                   sampleRate: Double(targetSampleRate),
+                                                   channels: AVAudioChannelCount(targetChannelCount),
+                                                   interleaved: false)!
+
     func start() throws {
         guard !isRunning else { return }
-
-        let targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16,
-                                         sampleRate: Double(Self.targetSampleRate),
-                                         channels: AVAudioChannelCount(Self.targetChannelCount),
-                                         interleaved: false)!
 
         // **采集走 AUHAL，不走 `AVAudioEngine`。**
         //
@@ -203,12 +240,30 @@ nonisolated final class LongFormAudioCapture {
         // AUHAL（`kAudioUnitSubType_HALOutput`）在 `AudioUnitInitialize` **之前**
         // 认下设备，之后一直保持。探针实测：干净状态与语音处理跑过之后**都是**
         // `48000Hz 1ch`、回调 375 次、峰值正常 —— 不再随别人变。
-        guard let chosenDevice = Self.chosenInputDevice() else {
+        guard let firstDevice = candidateInputDevices.first ?? Self.chosenInputDevice() else {
             onDiagnostic?("AUHAL 失败①：系统里找不到任何输入设备")
             throw LongFormRecorderError.microphoneUnavailable
         }
-        let boundName = "\(chosenDevice.name) [id=\(chosenDevice.id)]"
+        // 队列可能只有一个（用户明确选了某个设备）—— 也要补进去，好让
+        // `switchToNextCandidateDevice()` 知道「已经试过谁」。
+        if candidateInputDevices.isEmpty { candidateInputDevices = [firstDevice] }
+        candidateDeviceIndex = 0
+        inputDeviceSwitchCount = 0
+        try bindAndStartCapture(on: firstDevice)
+    }
+
+    /// **在指定设备上**建 AUHAL 并起采 —— `start()` 与换设备共用这一份。
+    ///
+    /// 拆出来的理由就是这个顺序**错一步都是静默失败**：`SetRenderCallback` 装错时
+    /// 每一步都返回 0、格式也读得到，但回调一次都不触发。两处各写一遍必然漂。
+    private func bindAndStartCapture(on device: AudioInputDevice) throws {
+        let boundName = "\(device.name) [id=\(device.id)]"
         boundInputDeviceName = boundName
+        // 换了设备，上一个设备的连续静音计数、转换器和它的输入格式都必须重来 ——
+        // 留着旧的会让「这个设备一开始就是零」被上一次的计数直接判死。
+        consecutiveSilentBufferCount = 0
+        converter = nil
+        converterInputFormat = nil
         Self.onBoundInputDeviceName?(boundName)
 
         var componentDescription = AudioComponentDescription(
@@ -238,7 +293,7 @@ nonisolated final class LongFormAudioCapture {
                              UInt32(MemoryLayout<UInt32>.size))
         // 认设备。**必须在 AudioUnitInitialize 之前** —— 这就是它和 AVAudioEngine
         // 的全部区别，也是它不会被丢掉的原因。
-        var deviceID = chosenDevice.id
+        var deviceID = device.id
         AudioUnitSetProperty(unit, kAudioOutputUnitProperty_CurrentDevice,
                              kAudioUnitScope_Global, 0, &deviceID,
                              UInt32(MemoryLayout<AudioDeviceID>.size))
@@ -269,7 +324,7 @@ nonisolated final class LongFormAudioCapture {
             throw LongFormRecorderError.microphoneUnavailable
         }
         halRenderBuffer = renderBuffer
-        captureTargetFormat = targetFormat
+        captureTargetFormat = Self.targetAVAudioFormat
         halUnit = unit
 
         // ★ **输入侧的回调是 `SetInputCallback`，不是 `SetRenderCallback`。**
@@ -340,6 +395,41 @@ nonisolated final class LongFormAudioCapture {
         smoothedLevel = 0
     }
 
+    /// **换到候选队列里的下一个设备，同一场录音接着录。**
+    ///
+    /// 返回新绑上的设备名；没有下一个、或者都起不来，返回 nil。
+    ///
+    /// 顺序有讲究：先 `stop()` —— 它里面第一件事就是 `AudioOutputUnitStop`，而它会
+    /// 等在途的输入回调跑完，所以返回之后 dispose 掉 unit 是安全的（`stop()` 一直是
+    /// 这个用法：`stopRecording` 也是在采集正跑着的时候调它）。然后才动 `halUnit`。
+    ///
+    /// **这个方法不保证自己不在音频线程上** —— 调用方（控制器）负责把它甩到后台队列，
+    /// 理由见 `onSilentInputNeedsDeviceSwitch`。
+    func switchToNextCandidateDevice() -> String? {
+        guard isRunning else { return nil }
+        let previousDeviceName = boundInputDeviceName
+        stop()
+
+        while candidateDeviceIndex + 1 < candidateInputDevices.count {
+            candidateDeviceIndex += 1
+            let candidate = candidateInputDevices[candidateDeviceIndex]
+            do {
+                try bindAndStartCapture(on: candidate)
+                inputDeviceSwitchCount += 1
+                onDiagnostic?("🔁 输入设备已自动换到「\(candidate.name) [id=\(candidate.id)]」"
+                              + "（原来的「\(previousDeviceName)」连续 "
+                              + "\(Self.silentBufferAlarmThreshold) 块不产出采样）")
+                return boundInputDeviceName
+            } catch {
+                // 这个也起不来就继续往后试 —— 队列里可能还有别的。
+                onDiagnostic?("换到「\(candidate.name)」失败：\(error)")
+            }
+        }
+        onDiagnostic?("输入设备换不动了：候选 \(candidateInputDevices.count) 个都试过，"
+                      + "眼下没有能用的。")
+        return nil
+    }
+
     /// 实时线程。这里只做三件事：重采样、算电平、把结果送出去。
     private func handleInputBuffer(_ buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat) {
         // 转换器按**实际交付的**格式惰性建立，格式变了就重建。
@@ -403,12 +493,19 @@ nonisolated final class LongFormAudioCapture {
         // 实测 2026-09-26：麦克风送来的全是 0 时界面一切正常、文件照写、
         // 服务端不停超时重连，**117 秒一个字都没有，全程不报任何错**，
         // 用户唯一的线索是「它不转了」，而那时已经太晚。
+        // **精确的零不是「安静」，是「这个设备没在交付采样」**（判据的理由见
+        // `silentBufferAlarmThreshold`）。所以这里不再只是喊一声：先请控制器换设备
+        //（换得动就接着录，用户无感），换不动了它才把这件事交给用户看。
         if consecutiveSilentBufferCount == Self.silentBufferAlarmThreshold {
             let device = boundInputDeviceName
-            onDiagnostic?("⚠️ 连续 \(consecutiveSilentBufferCount) 块没有任何声音"
-                          + "（约 \(consecutiveSilentBufferCount / 10) 秒）· 设备=\(device)"
-                          + " —— 麦克风很可能是静音的，或者绑到了一个不产出采样的设备上。")
-            onSilentInputDetected?(device)
+            let silentSeconds = Double(consecutiveSilentBufferCount) / Self.buffersPerSecond
+            onDiagnostic?(String(format: "⚠️ 连续 %d 块（约 %.1f 秒）没有任何声音 · 设备=%@"
+                                 + " —— 这个设备不产出采样，换下一个试试。",
+                                 consecutiveSilentBufferCount, silentSeconds, device))
+            // 归零：换过去的那个也可能不产出采样，那还要能再报一次；不归零则每来
+            // 一块都会喊一次。
+            consecutiveSilentBufferCount = 0
+            onSilentInputNeedsDeviceSwitch?(device)
         }
 
         if !hasReportedFirstBuffer || receivedBufferCount % 50 == 0 {
@@ -1156,11 +1253,17 @@ final class LongFormRecorderController: ObservableObject {
         LongFormAudioCapture.onFormatMismatchDetected = { [weak self] message in
             Task { @MainActor in self?.lastErrorMessage = message }
         }
-        capture.onSilentInputDetected = { [weak self] device in
-            Task { @MainActor in
-                self?.lastSilentInputWarning =
-                    "连续十秒没有任何声音（设备：\(device)）。这一段录下来会是空的 —— "
-                    + "检查麦克风是不是被静音了，或者到上面把输入设备改成具体的那一个。"
+        // **换设备不能在这条线程上做。** `onSilentInputNeedsDeviceSwitch` 是从音频线程
+        // 调上来的（回调那头要求「立刻返回」），而换设备要停 unit、重新认设备、重启 ——
+        // 实测慢的时候是秒级。所以甩到后台队列，回来再更新界面。
+        let captureForDeviceSwitch = capture
+        capture.onSilentInputNeedsDeviceSwitch = { [weak self] previousDevice in
+            Task.detached(priority: .userInitiated) {
+                let newDevice = captureForDeviceSwitch.switchToNextCandidateDevice()
+                await MainActor.run {
+                    self?.handleInputDeviceSwitchResult(newDevice,
+                                                        previousDevice: previousDevice)
+                }
             }
         }
 
@@ -1283,6 +1386,10 @@ final class LongFormRecorderController: ObservableObject {
             self.audioClient = client
             client.connect()
 
+            // 起采之前先把候选设备排好：用户选定的 → 系统默认 → 其余真设备。
+            // 第一个不产出采样时，看门狗会顺着这个队列往后换。见
+            // `AudioInputDeviceCatalog` 和 `LongFormAudioCapture.candidateInputDevices`。
+            capture.candidateInputDevices = Self.inputDeviceCandidates(for: settings)
             try capture.start()
 
             startedAt = Date()
@@ -1299,6 +1406,90 @@ final class LongFormRecorderController: ObservableObject {
             lastErrorMessage = error.localizedDescription
             teardownStorage()
         phase = .idle
+        }
+    }
+
+    /// 起采时按这个顺序试设备：**用户选定的 → 系统默认 → 其余真设备**。
+    ///
+    /// 为什么这么排：用户明确选过就以他为准（不选就是「跟系统默认」—— 那是绝大多数
+    /// 情况，也是本机现在的状态）；系统默认之后是兜底。兜底这一层是**实测换来的**：
+    /// 2026-09-26 内置麦被别的软件搞成「对谁都只给零、然后连起都起不来」的那一刻，
+    /// iPhone 连续互通那个麦克风是好的 —— 换过去，同一份代码就录到了真实声音
+    /// （峰值 984/32768）。
+    ///
+    /// **虚拟设备不参与兜底。** 环回声卡（录屏软件那种）天然不产出采样：没人往里送
+    /// 声音时它就是精确的零，会被看门狗当成坏设备换掉。但用户如果**在设置里明确选了**
+    /// 它（比如就是想录系统声音），那以他为准 —— 这时候换设备对他是帮倒忙。
+    static func inputDeviceCandidates(for settings: AppSettings) -> [AudioInputDevice] {
+        if let chosenDevice = AudioInputDeviceCatalog.device(withUID: settings.recordingInputDeviceUID) {
+            return [chosenDevice]
+        }
+        let allDevices = AudioInputDeviceCatalog.allInputDevices()
+        var ordered: [AudioInputDevice] = []
+        if let systemDefault = allDevices.first(where: \.isSystemDefault) {
+            ordered.append(systemDefault)
+        }
+        for device in allDevices where !device.isVirtual {
+            if !ordered.contains(where: { $0.id == device.id }) {
+                ordered.append(device)
+            }
+        }
+        return ordered
+    }
+
+    /// 自动换设备的结果。
+    ///
+    /// 成功：这一场接着录，用户只会在设置页看到一行说明 —— 正是「有问题它自己修」。
+    /// 失败：**这是唯一该让用户知道的情况**，而且必须说清三件事 —— 哪一段没了、
+    /// 谁占着麦克风、以及这不是他做错了什么。
+    private func handleInputDeviceSwitchResult(_ newDeviceName: String?, previousDevice: String) {
+        guard let newDeviceName else {
+            // 候选队列只有一个，说明**用户明确选了那个设备**（见 `inputDeviceCandidates`）。
+            // 这时候不能替他停：他可能就是要那个 —— 虚拟环回声卡本来就是「没人往里送
+            // 声音时是零」，为了录系统声音选它是正当用法。所以只报，把判断权留给他。
+            let userChoseTheDevice = !AppSettingsStore.snapshot().recordingInputDeviceUID.isEmpty
+            if !userChoseTheDevice {
+                // 没选过（跟系统默认）而所有候选都死了：这一场注定是空的，收尾并说明，
+                // 比让他录 20 分钟的静音、最后拿到一个 0 字的结果更有用。
+                // 采集这时已经停了（`switchToNextCandidateDevice` 里 stop 掉了）。
+                stopRecording()
+            }
+            let holders = microphoneHolderDisplayNames()
+            let holderSentence = holders.isEmpty
+                ? "眼下没有别的程序在开麦，问题出在这个设备本身"
+                : "现在开着麦克风的是：\(holders.joined(separator: "、"))"
+            // 兜底那一句是**唯一**该告诉用户怎么做的场合：换设备是我们能自己做的，
+            // 而设备整个被系统卡死时，只有退出占用者或重启音频系统能解 —— 不说，
+            // 用户就卡在这里了。
+            let recoverySentence = "要立刻恢复：退出上面那个 App，"
+                + "或者在终端里跑 `sudo killall coreaudiod`（重启音频系统，约 2 秒）。"
+            let message = userChoseTheDevice
+                ? "你选的「\(previousDevice)」不产出采样，这一段录下来是空的。"
+                    + "\(holderSentence)。（这一场按你的选择继续录，没有换成别的设备。）"
+                : "「\(previousDevice)」不产出采样，而且没有别的输入设备能顶上。"
+                    + "\(holderSentence)。这一段录下来是空的。\(recoverySentence)"
+            lastSilentInputWarning = message
+            lastErrorMessage = message
+            return
+        }
+        lastBoundInputDeviceName = newDeviceName
+        lastSilentInputWarning =
+            "「\(previousDevice)」不产出采样，已自动换到 \(newDeviceName) 接着录。"
+    }
+
+    /// 「现在开着麦克风的是谁」，翻译成用户看得懂的名字。
+    ///
+    /// bundle id 是 `cn.shandianshuo.desktop` 这种，对用户没有意义；能查到 App 就拿
+    /// 它的显示名（`闪电说`），查不到才退回 bundle id 或 pid。
+    private func microphoneHolderDisplayNames() -> [String] {
+        AudioInputDeviceCatalog.processesCurrentlyCapturingInput().map { holder in
+            if !holder.bundleIdentifier.isEmpty,
+               let applicationURL = NSWorkspace.shared.urlForApplication(
+                   withBundleIdentifier: holder.bundleIdentifier) {
+                return FileManager.default.displayName(atPath: applicationURL.path)
+            }
+            if !holder.bundleIdentifier.isEmpty { return holder.bundleIdentifier }
+            return "pid \(holder.processID)"
         }
     }
 
