@@ -184,6 +184,14 @@ struct NotchSheetRootView: View {
                                     selectedSettingsPage = .recording
                                     showsSettings = true
                                 },
+                                openRoleSettingsAction: {
+                                    selectedSettingsPage = .voiceChatRoles
+                                    showsSettings = true
+                                },
+                                toggleSidebarCollapseAction: {
+                                    isSessionSidebarCollapsed.toggle()
+                                    SoundEffectPlayer.shared.play(.sidebarButton)
+                                },
                             )
                             .frame(width: Self.expandedSidebarWidth)
                         }
@@ -311,9 +319,10 @@ struct NotchSheetRootView: View {
                     // 屏幕顶边，0 会钻到菜单栏底下，而 40 往下就是各页页头——这一排
                     // 不进那条带子，所以它既不挤走页头，也不会和刘海那条状态带
                     //（32 高）打架。
-                    sidebarCollapseButton
-                        .padding(.leading, Self.cornerControlInset)
-                        .padding(.top, Self.cornerControlTopInset)
+                    // **左上角那颗「收起侧栏」已经删掉**（2026-09-26 晚）：用户把这颗按钮
+                    // 排进了侧栏第 1 行（「最上面一行从左到右分别是：折叠按钮、设置按钮…」），
+                    // 所以它由侧栏自己画，不再浮在面板角上。右侧窗口那一排里那颗还在
+                    // —— 两颗的动作本来就是同一个。
                         // 一颗按钮在左边、右边各出现一次。两份都靠这个 frame 贴到
                         // ZStack 的对应边缘上（ZStack 是 `.topLeading` 对齐，所以
                         // 靠右那一份必须自己撑满再右对齐）。

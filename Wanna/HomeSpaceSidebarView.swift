@@ -76,6 +76,16 @@ struct HomeSpaceSidebarView: View {
     /// 设置页面的录音位置，即设置一个快捷跳转按钮」。做成一��闭包而不是让侧栏
     /// 自己去改 `selectedSettingsPage` —— 那一页的状态住在上层，侧栏不该伸手进去。
     var openRecordingSettingsAction: () -> Void = {}
+
+    /// 「角色」那一行：点一下直接跳到设置里的**角色编辑页**（新建 / 改名 / 写提示词）。
+    ///
+    /// 用户 2026-09-26 晚上点名要它回来（白天他删过一次）：「第 2 行再最左侧增加一个按钮，
+    /// 叫角色，对应的关系就是在设置页面里面这个角色」。所以它只做一件事：**去设计角色**；
+    /// 语音 / 视频模式下**选用**哪个角色在卡片页头上（`CardChatModeBar`）。
+    var openRoleSettingsAction: () -> Void = {}
+
+    /// 第 1 行那颗「折叠」（收起侧栏）。动作住在窗口控制器里 —— 侧栏只负责把点击报上去。
+    var toggleSidebarCollapseAction: () -> Void = {}
     /// 归档 takes the whole sheet over, the way 设置 does — see
     /// `NotchSheetRootView` — so this row only has to raise the flag.
 
@@ -96,35 +106,30 @@ struct HomeSpaceSidebarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // **「录音」在最上面那一行、靠右**（用户 2026-09-26：「放在上面，不应该跟搜索、
-            // 添加按钮放在一行…在添加按钮的上面」）。它与窗口那几颗按钮同一条带子 ——
-            // 面板顶边就是屏幕顶边，刘海占着上面 32pt，所以这一行也要让开它。
-            sidebarRecordingRow
-                .padding(.top, NotchSupport.sheetHeaderTopInset - 34)
-
-            // **顶部那一条 = 搜索 + 新建**。
+            // **分割线之上有两行按钮**（用户 2026-09-26 的最后一轮）：
             //
-            // 它同时承担另一件事：**让左列的分割线落在与右列同一个 y 上**。所以这一块
-            // 的高度不是"内容多高就多高"，而是 `contentColumnHeaderRuleY` 减掉让开刘海
-            // 的那一段 —— 那条线由 sheet 根横跨两列画一根（用户：「分割线贯穿左侧、右侧」），
-            // 左列只要保证自己在这条线之上结束就行。
-            sidebarHeaderBand
-
-            // **顶部 = 卡片区**（2026-09-26 用户重新设计）。
+            //   第 1 行：设置 · 折叠 · 历史 · 添加
+            //   第 2 行：角色 · 复盘 · 录音
+            //   ──────────────────────────────  ← 那条横线（横跨两列）
             //
-            // 原来的「对话 / Agent / 语音聊天」三按钮切换器没有了：用户要的是
-            // 「顶部：卡片列表，显示当前正在使用的卡片（主循环卡片）」，而卡片
-            // 底下按**任务状态**分四栏（进行中 / 任务完成 / 任务失败 / 历史任务）。
-            // 卡片 = 一个 Agent 主体（见 `AgentCardModel` 与 `CardKind`）。
+            // 他把原来钉在左下角那三颗（设置 / 历史 / 复盘）**全搬上来了**，理由是
+            // 「其实分割线上面有两行」—— 下面那一整块因此空出来给卡片列表。
+            // 四颗 / 三颗我都让它们**等宽**：并排读起来才是一排按钮，而不是几个长短不一的字。
+            sidebarTopButtonRows
+
+            // **卡片从那根线下面 10pt 开始**（用户 2026-09-26：「左侧卡片跟上面的风格线
+            // 重叠了，再往下来一点」）。
+            //
+            // 写成"从线的 y 倒推"而不是一个写死的数：两行按钮只占 4 + 30 + 8 + 30 = 72，
+            // 而线在 80 —— 差额就是这里要补的高度。将来谁动了按钮高度或线的位置，卡片都还在
+            // 同一个相对位置上。
+            Color.clear
+                .frame(height: max(0, NotchSupport.contentColumnHeaderRuleY + 10
+                                   - Self.topButtonRowsHeight - 4))
+
             cardArea
 
             Spacer(minLength: 0)
-
-            // **左下角一行三颗：设置 · 历史 · 复盘**（用户 2026-09-26：「左侧底部分别是
-            // （设置、历史、复盘，显示在同一行）」）。原来「角色」也在这里，同一条要求里
-            // 被删掉了（「左侧的角色按钮删除，这是之前的设计思路，现在不需要了」）——
-            // 角色的选用现在在卡片页头上，设计角色走 设置 → 角色。
-            bottomActionRow
         }
         // 完全不透明（用户 2026-09-23：「整个弹出窗口调整为完全不透明，现在
         // 是透明状态」）。原来这里是 `Color.black.opacity(0.35)` 叠在面板地面
@@ -133,88 +138,107 @@ struct HomeSpaceSidebarView: View {
         .background(DS.Colors.surface3)
     }
 
-    // MARK: - 顶部那一条（搜索 · 新建 · 录音）
+    // MARK: - 分割线之上的两行按钮
 
-    /// 顶部那一条：**只有一条空白**（用户 2026-09-26 把搜索框删掉了）。
-    ///
-    /// 它的高度仍然由那条分割线倒推（`contentColumnHeaderRuleY - sheetHeaderTopInset`），
-    /// 因为**那根线要横跨两列**、必须落在与右列同一个 y 上 —— 所以这一块哪怕什么都不画，
-    /// 也要占住那一段高度。两侧的按钮（＋ 与 录音）在上面的 `sidebarRecordingRow` 里。
-    private var sidebarHeaderBand: some View {
-        Color.clear
-            .frame(height: NotchSupport.contentColumnHeaderRuleY - NotchSupport.sheetHeaderTopInset)
+    /// 两行按钮的总高度（第 1 行 + 间距 + 第 2 行）—— 卡片区从那之后开始。
+    /// **30，不是 34**：用户给的参照是「右侧这个展开的按钮」—— 窗口右上角那颗
+    /// 「展开到全屏」，它是 30 高（`NotchBarActionButton` 的那一档）。两行合起来
+    /// 4（上边距）+ 30 + 8 + 30 = 72，正好在那条线（80）之上留出 8pt。
+    private static let topButtonHeight: CGFloat = 30
+
+    private static var topButtonRowsHeight: CGFloat {
+        topButtonHeight * 2 + topButtonRowSpacing
     }
+    private static let topButtonRowSpacing: CGFloat = 8
 
-    /// 顶带里的一排：**折叠 · 添加 · 录音**，自左向右（用户 2026-09-26：
-    /// 「把左侧边栏的添加按钮跟录音按钮全都变成长方形加圆角，靠左对齐，左边分别是折叠按钮，
-    /// 右侧是录音按钮，然后在这添加的按钮」）。
-    ///
-    /// 「折叠」那颗（收起侧栏）是**窗口级**的按钮，由 `NotchSheetRootView` 画在面板左上角
-    /// —— 位置本来就在这一排的最左边，所以这里只需要让开它的宽度，让 ＋ 与录音接在它右边。
-    /// 两颗都改成**圆角长方形**（原来 ＋ 是圆形），左对齐。
-    private var sidebarRecordingRow: some View {
-        HStack(spacing: 8) {
-            // 让开左上角那颗「收起侧栏」（30 宽 + 一点间距）。
-            Spacer(minLength: 0).frame(width: 34)
-
-            sidebarBandRectangleButton(systemImage: "plus",
-                                       help: "新建主对话（当前这条会自动归档）") {
-                SoundEffectPlayer.shared.play(.sidebarButton)
-                sessionsModel.createSession()
-                agentSessionManager.selectedSidebarSection = .conversations
+    private var sidebarTopButtonRows: some View {
+        VStack(spacing: Self.topButtonRowSpacing) {
+            // 第 1 行：**设置 · 折叠 · 历史 · 添加**。
+            //
+            // 「设置按钮要放在上面这一行，放在折叠的左侧」（他的补充）—— 所以设置在最左，
+            // 折叠第 2。折叠那颗以前是**窗口级**画在面板左上角的，现在搬进这一行：
+            // 它就该和这些按钮排在一起，而不是浮在它们上面（浮着的那颗已经删掉，
+            // 右侧那颗窗口级的「收起侧栏」还在，两颗动作本来相同）。
+            HStack(spacing: 8) {
+                sidebarTopButton(title: "设置", systemImage: "gearshape", isOn: showsSettings) {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    showsSettings = true
+                }
+                sidebarTopButton(title: nil, systemImage: "sidebar.left", isOn: false) {
+                    SoundEffectPlayer.shared.play(.notchRevealed)
+                    toggleSidebarCollapseAction()
+                }
+                sidebarTopButton(title: "历史", systemImage: "archivebox", isOn: false) {
+                    SoundEffectPlayer.shared.play(.notchRevealed)
+                    openArchiveAction()
+                }
+                sidebarTopButton(title: "添加", systemImage: "plus", isOn: false) {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    sessionsModel.createSession()
+                    agentSessionManager.selectedSidebarSection = .conversations
+                }
             }
 
-            Button {
-                SoundEffectPlayer.shared.play(.recordingEditorOpened)
-                openRecordingSettingsAction()
-            } label: {
-                Image(systemName: "waveform")
-                    .font(.system(size: 12, weight: .medium))
-                    // 只横向拉长（纵向不变）：这就是他说的"波形的长度"。
-                    .scaleEffect(x: 2.0, y: 1.0, anchor: .center)
-                    .foregroundColor(.white.opacity(0.9))
-                    .frame(width: 58, height: NotchSupport.contentHeaderControlHeight - 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.white.opacity(0.08))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            // 第 2 行：**角色 · 复盘 · 录音**。
+            //
+            // 「角色」是他这一轮点名要回来的（上一轮他删过一次）：它对应**设置里的角色页**
+            //（「对应的关系就是在设置页面里面这个角色」）—— 也就是设计角色的地方；
+            // 语音 / 视频模式下**选用**哪个角色在卡片页头上，两条路各管一件事。
+            HStack(spacing: 8) {
+                sidebarTopButton(title: "角色", systemImage: "person.crop.circle", isOn: false) {
+                    SoundEffectPlayer.shared.play(.notchRevealed)
+                    showsSettings = false
+                    openRoleSettingsAction()
+                }
+                sidebarTopButton(title: "复盘", systemImage: "chart.line.uptrend.xyaxis", isOn: false) {
+                    SoundEffectPlayer.shared.play(.notchRevealed)
+                    showsSettings = false
+                    cardModel.openReviewAgent(agentSessionManager: agentSessionManager)
+                }
+                sidebarTopButton(title: "录音", systemImage: "waveform", isOn: false) {
+                    SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                    openRecordingSettingsAction()
+                }
             }
-            .buttonStyle(.plain)
-            .pointerCursor()
-            .help("录音历史与设置")
-
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
+        .padding(.top, 4)
     }
 
-    /// 顶带里的一颗**圆角长方形**图标按钮（＋ 用的那一套）。
-    private func sidebarBandRectangleButton(systemImage: String,
-                                            help: String,
-                                            action: @escaping () -> Void) -> some View {
+    /// 上面那两行里的一颗：**等宽、等高**（`.frame(maxWidth: .infinity)` 让同一行的几颗
+    /// 平分宽度），高度取 `contentHeaderControlHeight` —— 与右列那一排完全相同（用户：
+    /// 「这三个按钮的高度都要再增大一点，跟右侧这个展开的按钮相同就可以了」）。
+    private func sidebarTopButton(title: String?,
+                                  systemImage: String,
+                                  isOn: Bool,
+                                  action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.white.opacity(0.8))
-                .frame(width: 44, height: NotchSupport.contentHeaderControlHeight - 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.white.opacity(0.08))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            HStack(spacing: 5) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 12, weight: .medium))
+                if let title {
+                    Text(title)
+                        .font(.system(size: 11.5))
+                        .lineLimit(1)
+                }
+            }
+            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.8))
+            .frame(maxWidth: .infinity)
+            .frame(height: Self.topButtonHeight)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white.opacity(isOn ? 0.12 : 0.07))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(isOn ? DS.Colors.success.opacity(0.5) : Color.white.opacity(0.12),
+                                  lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .pointerCursor()
-        .help(help)
+        .help(title ?? "收起侧栏")
     }
 
     // MARK: - 卡片区（2026-09-26）
@@ -243,7 +267,6 @@ struct HomeSpaceSidebarView: View {
                         .padding(.vertical, 18)
                 }
             }
-            .padding(.top, 4)
         }
     }
 
@@ -345,7 +368,7 @@ struct HomeSpaceSidebarView: View {
             hoveredCardID = hovering ? card.id : (hoveredCardID == card.id ? nil : hoveredCardID)
         }
         .padding(.horizontal, 6)
-        .padding(.bottom, 2)
+        .padding(.bottom, 10)
         .contentShape(Rectangle())
         .onTapGesture {
             SoundEffectPlayer.shared.play(.notchRevealed)

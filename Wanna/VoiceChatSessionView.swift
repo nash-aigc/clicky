@@ -502,10 +502,13 @@ struct VoiceChatSessionView: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: controller.selectedMode == .threeStage
-                      ? "circle"
-                      : "checkmark.circle.fill")
-                    .font(.system(size: 11, weight: .semibold))
+                // **前面那个圈删掉了**（用户 2026-09-26：「无论三段式还是全双工，只要是选中，
+                // 它这个按钮折叠之后就应该显示一个选中的状态；或者是你把这个删掉，你就显示
+                // 三段式或者全双工这三个字就可以了」）。
+                //
+                // 原来只有全双工画对勾圆、三段式画空心圆 —— 而**这一页出现的模式本来就是
+                // 选中的那个**（两行收起时不可能选到别的），所以那个圈要么永远该是勾、
+                // 要么就是画错了。删掉最干净：整颗按钮的高亮自己就说明了它是当前模式。
                 Text(controller.selectedMode.displayName)
                     .font(.system(size: Self.headerControlFontSize, weight: .medium))
                     .lineLimit(1)
@@ -1677,7 +1680,10 @@ struct VoiceChatSessionView: View {
             HStack(spacing: 5) {
                 Image(systemName: "gauge.with.needle")
                     .font(.system(size: 11, weight: .medium))
-                Text("语速 \(currentSpeedLevel)")
+                // **只写两个字**（用户 2026-09-26：语速「你就显示语速就可以了，没有必要
+                // 显示什么语速1234567，就是两个字，语速」）。档位仍然在点开的那块面板里选，
+                // 面板里每一档也仍然带自己的说明 —— 页头上少一个会变的数字而已。
+                Text("语速")
                     .font(.system(size: Self.headerControlFontSize, weight: .medium))
                     .lineLimit(1)
                 Image(systemName: "chevron.down")
