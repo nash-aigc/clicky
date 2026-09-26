@@ -164,12 +164,11 @@ final class AgentCardModel: ObservableObject {
                          sessionStartedAt: Date?) -> [TaskColumn: [CardTask]] {
         var byColumn: [TaskColumn: [CardTask]] = [:]
         for column in TaskColumn.allCases { byColumn[column] = [] }
-        for task in mergeTasks(forCardKind: cardKind,
-                               cardID: cardID,
-                               sessionStartedAt: sessionStartedAt) {
-            byColumn[TaskColumn.column(forStatus: task.status,
-                                       isArchived: isHistorical(task, sessionStartedAt: sessionStartedAt)),
-                     default: []].append(task)
+        for merged in mergeTasks(forCardKind: cardKind, cardID: cardID) {
+            byColumn[TaskColumn.column(forStatus: merged.task.status,
+                                       isArchived: isHistorical(merged.task,
+                                                                isStillOnLiveBoard: merged.isStillOnLiveBoard)),
+                     default: []].append(merged.task)
         }
         // 栏内排序：新的在前（用户没指定；时间是唯一能保证"最近发生的在最上面"的顺序）。
         for column in byColumn.keys {
@@ -178,21 +177,27 @@ final class AgentCardModel: ObservableObject {
         return byColumn
     }
 
-    /// **「历史任务」的判据**：这条任务属于这张卡片的**更早**一轮（早于当次会话的开始），
-    /// 也就是「已经翻篇、但还留在这里给你复盘」的那些。
+    /// **「历史任务」的判据**（用户 2026-09-26 定的）：「已经结束的，才叫历史」。
     ///
-    /// 计划里标了这是我的读法、请你确认 —— 若你要的是「所有已结束的」，把这一行改成
-    /// `true` 即可。
-    private func isHistorical(_ task: CardTask, sessionStartedAt: Date?) -> Bool {
-        guard let sessionStartedAt else { return false }   // Claude Code 卡片没有"当次会话"这个概念
-        return task.startedAt < sessionStartedAt
+    /// 所以四栏的分工是：
+    ///
+    ///   * **进行中** —— 还在跑（`running`）。
+    ///   * **任务完成 / 任务失败** —— 刚结束、**还活着在看板上**的那些（你正看着它落地的
+    ///     那几条，看板本身留十分钟然后自己退场）。
+    ///   * **历史任务** —— 已经结束、而且**离开看板**的那些（落盘里更早的）。
+    ///
+    /// 判据就是「它还在不在内存看板上」——`mergeTasks` 知道每条是从哪来的，所以这里
+    /// 不需要再去猜时间。用户的原话只有一句（「已经结束的，才叫历史」），这条实现让
+    /// 四个栏各自有内容、互相不重复；若你要的是「所有已结束的都进历史（与完成/失败
+    /// 重叠）」，把这一行改成 `task.finishedAt != nil` 即可。
+    private func isHistorical(_ task: CardTask, isStillOnLiveBoard: Bool) -> Bool {
+        task.finishedAt != nil && !isStillOnLiveBoard
     }
 
     /// **合并规则只有这一处。** 见文件头：落盘的那份优先（它带归因），看板只补还没落盘的。
     private func mergeTasks(forCardKind cardKind: CardKind,
-                            cardID: String,
-                            sessionStartedAt: Date?) -> [CardTask] {
-        var merged: [String: CardTask] = [:]
+                            cardID: String) -> [(task: CardTask, isStillOnLiveBoard: Bool)] {
+        var merged: [String: (task: CardTask, isStillOnLiveBoard: Bool)] = [:]
 
         for finished in FinishedTaskStore.shared.allTasks() {
             // 老记录（2026-09-26 之前）没有 `cardKind` —— 那时任务都是自研派出去的，
@@ -201,7 +206,7 @@ final class AgentCardModel: ObservableObject {
             let effectiveKind = finished.cardKind ?? .mainLoop
             let effectiveCardID = finished.cardID ?? finished.sessionID
             guard effectiveKind == cardKind, effectiveCardID == cardID else { continue }
-            merged[finished.id] = CardTask(id: finished.id,
+            merged[finished.id] = (CardTask(id: finished.id,
                                            title: finished.title,
                                            request: finished.request,
                                            status: finished.status,
@@ -210,7 +215,8 @@ final class AgentCardModel: ObservableObject {
                                            externalAgentKind: finished.externalAgentKind,
                                            wasHandedOff: finished.wasHandedOff,
                                            handoffReason: finished.handoffReason,
-                                           attemptCount: finished.attempts?.count ?? 1)
+                                           attemptCount: finished.attempts?.count ?? 1),
+                                 isStillOnLiveBoard: false)
         }
 
         for live in AgentActivityBoard.shared.agents {
@@ -218,7 +224,7 @@ final class AgentCardModel: ObservableObject {
             let effectiveKind = live.cardKind ?? .mainLoop
             let effectiveCardID = live.cardID ?? live.sessionID
             guard effectiveKind == cardKind, effectiveCardID == cardID else { continue }
-            merged[live.id] = CardTask(id: live.id,
+            merged[live.id] = (CardTask(id: live.id,
                                        title: live.title,
                                        request: live.request,
                                        status: live.status,
@@ -227,7 +233,8 @@ final class AgentCardModel: ObservableObject {
                                        externalAgentKind: live.externalAgentKind,
                                        wasHandedOff: live.handoffReason != nil,
                                        handoffReason: live.handoffReason,
-                                       attemptCount: live.attempts.count)
+                                       attemptCount: live.attempts.count),
+                                 isStillOnLiveBoard: true)
         }
 
         return Array(merged.values)
