@@ -2393,13 +2393,16 @@ final class CompanionManager: ObservableObject {
     /// started. A running job is interrupted the same way a new spoken
     /// question would interrupt it, since `sendTranscriptToVisionChat…`
     /// cancels the current task at its top.
-    func submitTypedQuestion(_ text: String) {
+    /// 键盘提问。`sendsScreenshot` 来自输入框上方那行「屏幕」的勾选（默认勾）——
+    /// 不勾就是纯文字提问，模型不会收到任何截图。
+    func submitTypedQuestion(_ text: String, sendsScreenshot: Bool = true) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         lastTranscript = trimmed
         liveTranscriptText = ""
-        sendTranscriptToVisionChatWithScreenshot(transcript: trimmed)
+        sendTranscriptToVisionChatWithScreenshot(transcript: trimmed,
+                                                 sendsScreenshot: sendsScreenshot)
     }
 
     // MARK: - 回答时持续监听（连续追问）
@@ -2638,7 +2641,8 @@ final class CompanionManager: ObservableObject {
         sendTranscriptToVisionChatWithScreenshot(transcript: trimmedTranscriptText)
     }
 
-    private func sendTranscriptToVisionChatWithScreenshot(transcript: String) {
+    private func sendTranscriptToVisionChatWithScreenshot(transcript: String,
+                                                          sendsScreenshot: Bool = true) {
         // **任务在跑的时候，新问题只打断"正在说的话"，不打断任务。**
         // 用户 2026-09-26：「刚才让 AI 去在桌面上写一个文件。那么 AI 没有写完的时候，
         // 用户有另外一个需求…这两个任务都需要完成。但是因为用户的两个任务之间的间距太紧，
@@ -2913,7 +2917,14 @@ final class CompanionManager: ObservableObject {
                     // 提问上（3 秒内新鲜）。只在 step 1 消费，且圈选优先——
                     // 预截图里没有用户的圈，圈着提问时宁可用现截。
                     let screenCaptures: [CompanionScreenCapture]
-                    if stepCount == 1,
+                    if !sendsScreenshot {
+                        // **用户把「屏幕」关掉了**（输入框上方那行的勾选，2026-09-26）：
+                        // 这一轮就是纯文字 —— 不截屏，也**不消费预截图**
+                        //（「追问时自动截屏 / 说到屏幕立即截屏」抓的那张留给下一轮用，
+                        // 它服务的是"要看屏幕"的提问，而这一轮明确说不要）。
+                        // 空数组往下是安全的：`labeledImages` 映射空集合 = 不带图。
+                        screenCaptures = []
+                    } else if stepCount == 1,
                        circleToAskController.pendingMarkedRegion == nil,
                        let preCapturedScreens = takePendingPreCapturedScreensIfFresh() {
                         print("📸 Companion: using the pre-captured screen for this question")

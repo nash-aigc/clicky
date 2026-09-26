@@ -64,6 +64,10 @@ struct NotchHomeView: View {
     }
 
     @State private var composerConversationMode: ComposerConversationMode = .continuous
+    /// 「屏幕」这一格：勾着才在发送时带截图。**连续对话默认勾**（用户要求：
+    /// 「连续对话默认屏幕勾选、声音勾选」），不写进 AppSettings —— 它是「这一次对话」
+    /// 的属性，不是全局偏好。
+    @State private var sendsScreenshotWithQuestion = true
     /// 音色弹窗开着没有。
     @State private var isVoicePickerPresented = false
     /// 临时对话（阶段 4）：它自己的会话，**不碰主对话的任何状态**。
@@ -865,6 +869,7 @@ struct NotchHomeView: View {
                 sessionsModel.createSession()
                 composerConversationMode = .continuous
             }
+            screenshotChip
             soundChip
             voiceChip
         }
@@ -930,6 +935,50 @@ struct NotchHomeView: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .help(helpText)
+    }
+
+    /// 输入框内部左下角那颗：临时对话的第二种入口。**默认不高亮**（用户要求）。
+    private var temporaryConversationChip: some View {
+        let isOn = composerConversationMode == .temporary
+        return Button(action: {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            temporaryConversation.discardEverything()
+            composerConversationMode = isOn ? .continuous : .temporary
+        }) {
+            HStack(spacing: 4) {
+                Image(systemName: isOn ? "checkmark" : "bolt.horizontal")
+                    .font(.system(size: 9, weight: .semibold))
+                Text("临时对话").font(.system(size: 11))
+            }
+            .foregroundColor(isOn ? DS.Colors.success : .white.opacity(0.45))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.white.opacity(isOn ? 0.10 : 0.04))
+            )
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(isOn ? "回到连续对话（主对话）" : "开一段临时对话：不记进任何会话，关掉就没了")
+    }
+
+    /// 「屏幕」：勾着时每次发送都带上截图（2026-09-26 接线完成）。**默认勾**。
+    ///
+    /// 关掉它之后这一轮真的不带图（`CompanionManager.submitTypedQuestion` →
+    /// `sendTranscriptToVisionChatWithScreenshot(sendsScreenshot:false)` → 不截屏、
+    /// 也不消费预截图）。写这一格时先做了「不勾就不截」那条链路再放按钮 ——
+    /// 一个按下去没反应的开关比没有更糟。
+    private var screenshotChip: some View {
+        composerRowButton(title: "屏幕",
+                          systemImage: sendsScreenshotWithQuestion
+                              ? "checkmark" : "rectangle.slash",
+                          isHighlighted: sendsScreenshotWithQuestion,
+                          helpText: sendsScreenshotWithQuestion
+                              ? "每次发送都会带上截图（点击：这一轮不看屏幕）"
+                              : "这一轮不看屏幕，纯文字提问（点击：恢复带截图）") {
+            sendsScreenshotWithQuestion.toggle()
+        }
     }
 
     /// 「声音」——就是原来输入框右下角那个静音开关，搬到这一行（用户要求）。
@@ -1160,8 +1209,12 @@ struct NotchHomeView: View {
             isResponding: companionManager.voiceState == .processing
                 || companionManager.voiceState == .responding,
             onStop: { companionManager.interruptActiveResponse() },
-            // **输入框上方那一行**（2026-09-26）：两种对话模式 + 新建 / 声音 / 音色。
+            // **输入框上方那一行**（2026-09-26）：两种对话模式 + 新建 / 屏幕 / 声音 / 音色。
             controlsRow: AnyView(composerControlsRow),
+            // 输入框内部左下角那颗「临时对话」小按钮（用户：「输入框内部最下方一行，
+            // 最左侧显示『临时对话』按钮，默认不点击」）—— 与上方那颗是同一个状态的
+            // 第二种入口：点了就切过去，再点回来。
+            bottomLeadingAccessory: AnyView(temporaryConversationChip),
             // **静音开关搬走了**（2026-09-26）：用户要求「声音按钮移至输入框上方」——
             // 它现在是上面那行里的「声音」那一格（`soundChip`），状态还是同一个
             // `companionManager.voiceReplyMuted`。**不在这里留第二颗**：同一件事两个入口，
@@ -1192,7 +1245,8 @@ struct NotchHomeView: View {
 
     private func submitComposerDraft() {
         guard !composerDraftIsEmpty else { return }
-        companionManager.submitTypedQuestion(composerDraft)
+        companionManager.submitTypedQuestion(composerDraft,
+                                            sendsScreenshot: sendsScreenshotWithQuestion)
         composerDraft = ""
         composerFieldIsFocused = false
     }
