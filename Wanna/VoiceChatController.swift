@@ -698,6 +698,21 @@ final class VoiceChatController: ObservableObject {
         }
     }
 
+    /// **语音页的对话流此刻在屏幕上吗。**
+    ///
+    /// 自动滚动前必须问它一句 —— `ScrollViewProxy.scrollTo` 在目标 id 不在树上时是
+    /// **`precondition` 崩溃（SIGTRAP）**，不是"什么都不做"。而 `scheduleScrollToBottom`
+    /// 把 proxy 捕获进一个 `Task`：那一跳之后页面完全可能已经不在了（切模式、切卡片、
+    /// 收起面板），于是崩溃。
+    ///
+    /// 2026-09-26 的两份崩溃报告都是这一处
+    ///（`VoiceChatSessionView.scrollToBottom` → `ScrollViewProxy.scrollTo` → `_assertionFailure`），
+    /// 触发点是这一天新加的「切到语音页时把记录换成那张卡片的」那一步重建。
+    ///
+    /// **它必须是控制器上的属性（引用类型），不能是视图的 `@State`**：闭包捕获的是视图
+    /// （值类型）的副本，`@State` 在闭包里读到的会是捕获那一刻的值，守卫就失效了。
+    var isVoiceTranscriptOnScreen = false
+
     /// 这一轮写回卡片的历史。
     ///
     /// 用户：「聊天记录和会话记录显示在右侧，并添加到主模型或 Claude Code 模型的历史记录中」

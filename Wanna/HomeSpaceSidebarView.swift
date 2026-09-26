@@ -47,6 +47,13 @@ struct HomeSpaceSidebarView: View {
     /// 它自己订阅四份数据源的通知并重算整棵树 —— 见 `AgentCardModel`。
     @StateObject private var cardModel = AgentCardModel()
 
+    /// 一张卡片的高度（40 的两倍，用户 2026-09-26：「高度增加两倍，方便用户点击」）。
+    private static let cardRowHeight: CGFloat = 80
+
+    /// 卡片右侧那颗通话按钮的边长 —— 卡片 80 减去上下各 4 的边距，所以它**贴着**
+    /// 卡片的上/下边缘（用户要求"上边缘、下边缘和右边缘尽可能小"）。
+    private static let callButtonSize: CGFloat = 72
+
     /// 每张卡片的聊天模式 —— 卡片右侧那颗「通话」读它（高亮与否），点它写它。
     @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
 
@@ -123,33 +130,26 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - 顶部那一条（搜索 · 新建 · 录音）
 
-    /// 搜索框 + 「＋」（新建主对话）。**「录音」不在这行了** —— 用户 2026-09-26：
-    /// 「录音按钮应该放在上面，不应该跟搜索、添加按钮放在一行…也就是在添加按钮的上面」
-    /// （见 `sidebarRecordingRow`）。
+    /// 顶部那一条：**只有一条空白**（用户 2026-09-26 把搜索框删掉了）。
     ///
-    /// 高度**由那条分割线倒推**：`contentColumnHeaderRuleY - sheetHeaderTopInset`。所以
-    /// 搜索框跟着变高（用户：「左侧输入框高度增大」），两颗都在这条带子里垂直居中。
+    /// 它的高度仍然由那条分割线倒推（`contentColumnHeaderRuleY - sheetHeaderTopInset`），
+    /// 因为**那根线要横跨两列**、必须落在与右列同一个 y 上 —— 所以这一块哪怕什么都不画，
+    /// 也要占住那一段高度。两侧的按钮（＋ 与 录音）在上面的 `sidebarRecordingRow` 里。
     private var sidebarHeaderBand: some View {
+        Color.clear
+            .frame(height: NotchSupport.contentColumnHeaderRuleY - NotchSupport.sheetHeaderTopInset)
+    }
+
+    /// 顶带里的一排：**「＋」在左、「录音」在右**，两颗都靠右对齐（用户 2026-09-26：
+    /// 「把左侧边栏的搜索框删掉，把左侧边栏的添加按钮放在顶部录音按钮的左侧」）。
+    ///
+    /// 「录音」的**波形要长一倍**（用户：「把录音按钮里的波形长度增大两倍。注意不是按钮的
+    /// 宽度，是里面波形的长度」）—— 所以是给图标做横向缩放，按钮本身不动。
+    /// 图标用音波而不是圆环：「音波可以做成一个长条，能够占满类似长方形的区域；
+    /// 圆环是圆形…颜色也是白色」。
+    private var sidebarRecordingRow: some View {
         HStack(spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.4))
-                TextField("搜索卡片或任务", text: $cardModel.searchQuery)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 12.5))
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 9)
-            .frame(height: NotchSupport.contentHeaderControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.white.opacity(0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-            )
+            Spacer(minLength: 0)
 
             // 「＋」= 新建主对话（用户要求「点击新建时，之前的对话自动归档，
             // 左侧列表保持干净」—— 归档那一步在 `createSession` 里）。
@@ -159,33 +159,16 @@ struct HomeSpaceSidebarView: View {
                 sessionsModel.createSession()
                 agentSessionManager.selectedSidebarSection = .conversations
             }
-        }
-        .padding(.horizontal, 10)
-        // **顶部要留出刘海那条带子**（用户 2026-09-26：「搜索框有点太高了，太靠上边了」）。
-        // 面板的顶边就是屏幕的顶边，刘海本身占着上面 32pt —— 不留这一条，搜索框就
-        // 顶进刘海底下、看着像贴在天花板上。
-        .padding(.top, NotchSupport.sheetHeaderTopInset)
-        .frame(height: NotchSupport.contentColumnHeaderRuleY, alignment: .top)
-    }
 
-    /// 「录音」那一颗 —— **在搜索行之上、靠右对齐**，与窗口那几颗按钮同一条带子。
-    ///
-    /// 用户 2026-09-26：「录音按钮应该放在上面，不应该跟搜索、添加按钮放在一行，它应该
-    /// 放在上面，类似于侧边栏按钮一样的位置，但靠右对齐，也就是在添加按钮的上面，
-    /// 用长方形加圆角的形式」，图标用音波：「音波可以做成一个长条，能够占满类似长方形的
-    /// 区域；圆环是圆形…颜色也是白色」。
-    ///
-    /// 所以它是一条**扁的长方形**（不是圆圈），靠右缘对齐到与 ＋ 相同的列上。
-    private var sidebarRecordingRow: some View {
-        HStack(spacing: 0) {
-            Spacer(minLength: 0)
             Button {
                 SoundEffectPlayer.shared.play(.recordingEditorOpened)
                 openRecordingSettingsAction()
             } label: {
                 Image(systemName: "waveform")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.white.opacity(0.85))
+                    .font(.system(size: 12, weight: .medium))
+                    // 只横向拉长（纵向不变）：这就是他说的"波形的长度"。
+                    .scaleEffect(x: 2.0, y: 1.0, anchor: .center)
+                    .foregroundColor(.white.opacity(0.9))
                     .frame(width: 58, height: NotchSupport.contentHeaderControlHeight - 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -315,8 +298,13 @@ struct HomeSpaceSidebarView: View {
         // 或者是你把它这个单行的样式高度大一点，现在都是不太方便点击」）。
         // 加高到 40pt 并给它一层底：单行 22pt 的行高在侧栏里既难点中，也读不出
         //「这一块是同一张卡片」—— 下面那四栏是它的内容。
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
+        // **卡片高度翻倍**（用户 2026-09-26：「左侧边栏的两个卡片高度再增加，高度增加两倍，
+        // 方便用户点击」）：40 → 80。左右内边距分开写 —— 右侧只留 4，因为通话按钮要
+        // **尽可能大、贴着卡片的上/下/右边缘**（下一条要求）。
+        .padding(.leading, 10)
+        .padding(.trailing, 4)
+        .padding(.vertical, 4)
+        .frame(height: Self.cardRowHeight, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         // **选中的那张要与另一张明显不同**（用户 2026-09-26：「现在这两个卡片样式一样，
         // 应该让它们不一样：用户选中哪张卡片，哪张卡片背景跟边缘高亮，另一张卡片就是暗色，
@@ -353,11 +341,26 @@ struct HomeSpaceSidebarView: View {
             voiceChatController.prepareCallForCard(cardID: card.entityID, cardKind: card.kind)
             cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
         } label: {
+            // **正方形 + 圆角、图形更大、贴着上/下/右边缘**（用户 2026-09-26：「卡片里的
+            // 通话按钮改成正方形加圆角的形式，里面的按钮图形要变大。按钮的上边缘、下边缘和
+            // 右边缘尽可能小，让按钮在卡片里尽可能大，方便用户点击」）。
+            // 所以它按卡片高度撑满，不再是 20pt 的小圆圈。
             Image(systemName: "phone.fill")
-                .font(.system(size: 10.5))
-                .foregroundColor(isCalling ? DS.Colors.success : .white.opacity(0.45))
-                .frame(width: 20, height: 20)
-                .background(Circle().fill(Color.white.opacity(isCalling ? 0.10 : 0.05)))
+                .font(.system(size: 22, weight: .medium))
+                .foregroundColor(isCalling ? DS.Colors.success : .white.opacity(0.5))
+                .frame(width: Self.callButtonSize, height: Self.callButtonSize)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(isCalling ? 0.14 : 0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(isCalling
+                                      ? DS.Colors.success.opacity(0.5)
+                                      : Color.white.opacity(0.10),
+                                      lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
         .pointerCursor()

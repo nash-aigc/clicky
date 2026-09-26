@@ -63,6 +63,10 @@ struct VoiceChatSessionView: View {
     /// 每张卡片的模式与角色 —— 只读它来决定"现在是不是视频模式"这类事。
     @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
 
+    /// 分割线下面那两行（全双工 / 三段式）是否展开 —— 默认收起，由页头那颗
+    /// `modeDisclosureButton` 开合（用户 2026-09-26 第 3 条）。
+    @State private var showsPresetRows = false
+
     @State private var composerFieldIsFocused = false
     @State private var composerDraft: String = ""
     /// 卡片主题（设置 → 交互）。快照进 @State，保存设置时靠
@@ -417,12 +421,14 @@ struct VoiceChatSessionView: View {
             //   三段式行：识别 / 理解 / 表达 三个位置
             // 两行都常驻；**没被选中的那一行右侧留空**（用户：「如果用户选择的模式
             // 不是全双工，右侧就不要显示任何模型，保持留空状态」），音色按钮也置灰。
-            VStack(spacing: 6) {
-                modeRow(.duplexVoice)
-                modeRow(.threeStage)
+            if showsPresetRows {
+                VStack(spacing: 6) {
+                    modeRow(.duplexVoice)
+                    modeRow(.threeStage)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 10)
             }
-            .padding(.top, 8)
-            .padding(.bottom, 10)
         }
         .padding(.top, NotchSupport.sheetHeaderTopInset)
         .onAppear {
@@ -475,9 +481,54 @@ struct VoiceChatSessionView: View {
                 }
             }
 
+            // **模式下拉**（用户 2026-09-26 第 3 条）：把「全双工 / 三段式」那两行从
+            // **常驻**改成**点开才显示**，这颗按钮负责展开/收起；位置在语速左面、靠右对齐。
+            modeDisclosureButton
+
             speedMenuButton
                 .background(headerAnchorReporter(.speed))
         }
+    }
+
+    /// 「全双工 / 三段式」那两行的展开开关。
+    ///
+    /// 标签是**当前正在跑的那一种**（用户要的正是这个信息：两行收起来之后，"现在是什么模式"
+    /// 得有个地方看得见）。收起是默认态 —— 他说的是「把当前持续显示的状态改成通过下拉按钮
+    /// 点击展开折叠」。
+    private var modeDisclosureButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                showsPresetRows.toggle()
+            }
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: controller.selectedMode == .threeStage
+                      ? "circle"
+                      : "checkmark.circle.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                Text(controller.selectedMode.displayName)
+                    .font(.system(size: Self.headerControlFontSize, weight: .medium))
+                    .lineLimit(1)
+                Image(systemName: showsPresetRows ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+            }
+            .foregroundColor(DS.Colors.success)
+            .padding(.horizontal, Self.headerControlHorizontalPadding)
+            .frame(height: Self.headerControlHeight)
+            .fixedSize(horizontal: true, vertical: false)
+            .background(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .fill(DS.Colors.success.opacity(0.14))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                    .strokeBorder(DS.Colors.success.opacity(0.45), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(showsPresetRows ? "收起全双工 / 三段式" : "展开全双工 / 三段式（换模式与预设）")
     }
 
     /// 摄像头 / 屏幕两颗要不要画。
@@ -1937,6 +1988,11 @@ struct VoiceChatSessionView: View {
                 .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
                 .padding(.top, 4)
             }
+            // **这一页在不在屏幕上** —— 自动滚动前要问的那一位（见
+            // `VoiceChatController.isVoiceTranscriptOnScreen` 上那段：`scrollTo` 对
+            // 不在树上的 id 是崩溃）。
+            .onAppear { controller.isVoiceTranscriptOnScreen = true }
+            .onDisappear { controller.isVoiceTranscriptOnScreen = false }
             // Whole-flow selection: the user asked to be able to select part of
             // a message or drag across one.
             .textSelection(.enabled)
@@ -1992,6 +2048,9 @@ struct VoiceChatSessionView: View {
     private static let transcriptBottomAnchorID = "voicechat-transcript-bottom-anchor"
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        // **先问页面还在不在**（见 `VoiceChatController.isVoiceTranscriptOnScreen`）：
+        // `scrollTo` 对不存在的 id 是崩溃而不是静默失败。
+        guard controller.isVoiceTranscriptOnScreen else { return }
         withAnimation(.easeOut(duration: 0.2)) {
             proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
         }
@@ -2004,6 +2063,7 @@ struct VoiceChatSessionView: View {
     /// 成本。Ask 与 Agent 两页早就分成这一对了（`NotchHomeView` /
     /// `AgentSessionView` 里的同名方法），这里是第三处。
     private func scrollToBottomInstantly(_ proxy: ScrollViewProxy) {
+        guard controller.isVoiceTranscriptOnScreen else { return }
         proxy.scrollTo(Self.transcriptBottomAnchorID, anchor: .bottom)
     }
 
