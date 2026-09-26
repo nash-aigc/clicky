@@ -350,6 +350,8 @@ final class CompanionManager: ObservableObject {
     /// While the 快捷键 page's shortcut recorder is armed, the global event tap
     /// has to stand down so the keys pressed to record don't start a recording.
     private var shortcutRecorderStateObserver: NSObjectProtocol?
+    /// App 激活时查一次权限 —— 见 `bindPermissionRefreshOnActivation`。
+    private var appActivationObserver: NSObjectProtocol?
     private var accessibilityCheckTimer: Timer?
     private var pendingKeyboardShortcutStartTask: Task<Void, Never>?
     /// Scheduled hide for transient cursor mode — cancelled if the user
@@ -734,6 +736,9 @@ final class CompanionManager: ObservableObject {
         }
 
         startPermissionPolling()
+        // 激活时再查一次权限 —— 见 `bindPermissionRefreshOnActivation`：
+        // 「去系统设置里授权、再切回来」那条路径靠它，不靠常驻的表。
+        bindPermissionRefreshOnActivation()
         bindVoiceStateObservation()
         bindAudioPowerLevel()
         bindShortcutTransitions()
@@ -1223,6 +1228,10 @@ final class CompanionManager: ObservableObject {
             NotificationCenter.default.removeObserver(shortcutRecorderStateObserver)
             self.shortcutRecorderStateObserver = nil
         }
+        if let appActivationObserver {
+            NotificationCenter.default.removeObserver(appActivationObserver)
+            self.appActivationObserver = nil
+        }
         accessibilityCheckTimer?.invalidate()
         accessibilityCheckTimer = nil
     }
@@ -1321,14 +1330,75 @@ final class CompanionManager: ObservableObject {
     /// Polls all permissions frequently so the UI updates live after the
     /// user grants them in System Settings. Screen Recording is the exception —
     /// macOS requires an app restart for that one to take effect.
+    ///
+    /// **2026-09-26：它不再"永远在跑"，只在还没配齐的时候跑。**
+    ///
+    /// 原先这是一张 1.5 秒、从启动响到退出的重复 Timer（上游继承来的，当年服务的是
+    /// 菜单栏面板上一排实时权限状态 —— 而那个面板在本 App 里已经不存在了）。
+    /// 每个 tick 做四件事：探四个权限、**无条件**把四个 `@Published` 值重写一遍
+    ///（`ObservableObject` 的赋值不做相等判断，所以每 tick 都会让观察者整体失效一次 ——
+    /// 而观察者里有**常驻的全屏覆盖层**，展开时还有整块面板），外加
+    /// `installCompanionPresenceIfReady()`。实测（`sample`，22 秒窗口）：光是在闭包里
+    /// 的探测就占 ~300ms 主线程（其中 `CGPreflightScreenCaptureAccess()` 约一半）。
+    ///
+    /// 但它**不是白写的**，两件事真的靠它：
+    ///   * 权限是在 App 运行期间被授予的 —— `installCompanionPresenceIfReady()` 要在
+    ///     那一刻把覆盖层和刘海装上，设置页那行「加完之后不用重启，这里的字会自己变」
+    ///     也是它兑现的；
+    ///   * 辅助功能到位之后要启动全局快捷键监听（`refreshAllPermissions` 里那一句）。
+    ///
+    /// 所以保留触发、只去掉"永远在跑"：
+    ///   * 启动时先查一次；**只有还没配齐**（少权限，或覆盖层还没装）才起表 ——
+    ///     正常机器上四个权限早就齐了，这张表一秒都不会跑；
+    ///   * 每 tick 照旧刷新 + 尝试安装，**一旦配齐立刻把表停掉**（它存在的唯一理由
+    ///     就是等一次状态跃迁，跃迁完就没有下一件事了）；
+    ///   * App 重新变成活跃时再查一次并重新评估 —— 用户去系统设置里授权、切回来，
+    ///     走的正是这条：那一刻 `didBecomeActive` 必然到，不用靠一张常驻的表去撞。
     private func startPermissionPolling() {
+        refreshPermissionsAndInstallPresenceIfNeeded()
+        armPermissionPollingIfStillNeeded()
+    }
+
+    /// 需要这张表吗：四个权限没齐、或者覆盖层/刘海还没装。
+    private var needsPermissionPolling: Bool {
+        !(allPermissionsGranted && isOverlayVisible)
+    }
+
+    private func refreshPermissionsAndInstallPresenceIfNeeded() {
+        refreshAllPermissions()
+        installCompanionPresenceIfReady()
+    }
+
+    /// 起表 —— 只在"还有东西没配上"的时候；已经起了就什么都不做。
+    private func armPermissionPollingIfStillNeeded() {
+        guard accessibilityCheckTimer == nil, needsPermissionPolling else { return }
         accessibilityCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.refreshAllPermissions()
-                // The overlay and the notch install the moment their
-                // preconditions are met — on a fresh install that is the
-                // turn the last permission lands, not the next launch.
-                self?.installCompanionPresenceIfReady()
+                guard let self else { return }
+                self.refreshPermissionsAndInstallPresenceIfNeeded()
+                if !self.needsPermissionPolling {
+                    self.accessibilityCheckTimer?.invalidate()
+                    self.accessibilityCheckTimer = nil
+                }
+            }
+        }
+    }
+
+    /// App 重新活跃时查一次权限（并重新评估要不要起表）。
+    ///
+    /// 这是「用户去系统设置里授权、再切回来」那条路径的触发点，见
+    /// `startPermissionPolling` 的说明。它代替了原先那张常驻表在那一刻的作用，
+    /// 而代价只有激活时的一次查询。
+    private func bindPermissionRefreshOnActivation() {
+        appActivationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.refreshPermissionsAndInstallPresenceIfNeeded()
+                self.armPermissionPollingIfStillNeeded()
             }
         }
     }
