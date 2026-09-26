@@ -882,6 +882,7 @@ final class CompanionManager: ObservableObject {
         // 单例不是"用了才活"的；没人碰的懒汉单例就是一块死代码。
         _ = AgentPanelController.shared
 
+
         // The panel used to read the configuration through computed properties —
         // the configuration is resolved per request, so there is nothing cached to
         // invalidate on a change; observers only need a signal to re-render. A

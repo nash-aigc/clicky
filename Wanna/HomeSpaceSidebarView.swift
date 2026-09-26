@@ -325,9 +325,13 @@ struct HomeSpaceSidebarView: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(DS.Colors.accent.opacity(0.85))
                     .frame(width: 18)
-                Text("\(group.members.count) 个任务")
-                    .font(.system(size: 12, weight: .medium))
+                // **这一组是干什么的**：用组里第一个任务的名字 + 数量 —— 光写「2 个任务」
+                // 的话用户看不出这一组在做什么（2026-09-26 自己截图核对时发现的）。
+                Text("\(group.members.first?.title ?? "一组任务") 等 \(group.members.count) 个")
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundColor(DS.Colors.textSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
                 Spacer(minLength: 4)
                 taskStatusDot(group.worstStatus, size: 7)
                 Image(systemName: "chevron.right")
@@ -362,12 +366,20 @@ struct HomeSpaceSidebarView: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(DS.Colors.textPrimary)
                     .lineLimit(1)
-                Text(agent.id)
-                    .font(.system(size: 9.5, weight: .medium).monospaced())
-                    .foregroundColor(DS.Colors.textTertiary)
+                // **id + 状态** 同一行：只画一颗小圆点的话，"状态"根本读不出来
+                //（用户要求「高度、图标、状态、呼吸灯」都要能区分 —— 2026-09-26 自查时
+                // 发现只有点、没有字）。做完的两种用静态文字，跑着/失败的带呼吸点。
+                HStack(spacing: 4) {
+                    Text(agent.id)
+                        .font(.system(size: 9.5, weight: .medium).monospaced())
+                        .foregroundColor(DS.Colors.textTertiary)
+                    Text(agent.status.displayName)
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundColor(taskStatusColor(agent.status))
+                }
             }
             Spacer(minLength: 4)
-            taskStatusDot(agent.status, size: 8)
+            taskStatusDot(agent.status, size: 10)
         }
         .padding(.horizontal, 12)
         .frame(height: 44)
