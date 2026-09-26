@@ -495,18 +495,17 @@ struct HomeSpaceSidebarView: View {
             if isCollapsed { collapsedTaskCards.remove(card.id) }
             else { collapsedTaskCards.insert(card.id) }
         } label: {
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.16))
-                    .frame(width: 24, height: 24)
-                Circle()
-                    .fill(color)
-                    .frame(width: 8, height: 8)
-                    // 只有"在跑"才呼吸 —— 静止的状态点闪起来是在喊，而它没什么可喊的。
-                    .opacity(emphasis == .running && isTaskDotBreathing ? 0.35 : 1)
-            }
-            .overlay(Circle().strokeBorder(color.opacity(0.5), lineWidth: 1))
-            .contentShape(Circle())
+            // **就是一个小圆点**（用户 2026-09-26：「第二行第一个按钮本质上是一个呼吸灯，
+            // 写一个小圆点就行，没有必要外边再套一个大环，就显示一个小圆点」）——
+            // 原来那层 24pt 的底 + 描边去掉了。**但点击区域仍是 24pt**：视觉上是一个点，
+            // 手上还是原来那么大一块可点（这是它"收起这张卡片的任务"的按钮）。
+            Circle()
+                .fill(color)
+                .frame(width: 9, height: 9)
+                // 只有"在跑"才呼吸 —— 静止的状态点闪起来是在喊，而它没什么可喊的。
+                .opacity(emphasis == .running && isTaskDotBreathing ? 0.35 : 1)
+                .frame(width: 24, height: 24)
+                .contentShape(Circle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
@@ -558,8 +557,11 @@ struct HomeSpaceSidebarView: View {
     }
 
     /// Claude Code 卡片上那枚类型标记 —— **一处实现**，第二行与（将来的）别处共用。
+    ///
+    /// 文字是「Claude」（用户 2026-09-26：「第二行 Claude Code 写一个 cloud 就行」）——
+    /// 卡片本身就叫 Claude Code，那枚标记只是区分类别，写全名在 194pt 的侧栏里太长。
     private var claudeCodeBadge: some View {
-        Text("Claude Code")
+        Text("Claude")
             .font(.system(size: 9.5, weight: .medium))
             .foregroundColor(.white.opacity(0.55))
             .lineLimit(1)

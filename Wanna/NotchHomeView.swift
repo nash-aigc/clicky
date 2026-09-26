@@ -889,6 +889,22 @@ struct NotchHomeView: View {
                 composerConversationMode = .continuous
             }
 
+            // **输入框上面也有一颗「通话」**（用户 2026-09-26：「文本模式、图文模式下，通话
+            // 按钮除了在视频模式右侧显示，还要显示在输入框的上面，显示到新建按钮的右侧。
+            // 因为用户的场景本质上就是输入，方便用户快速点击。」）。
+            //
+            // **和页头那颗是两颗，都要留着**（他的原话：「我是故意留两个通话按钮和挂断按钮的，
+            // 注意不要删除某一个，要两个都保留，它们功能是一致的」）—— 所以这里直接复用
+            // 同一个控制器与同一个挂断入口，不另写一套。
+            composerRowButton(title: isTextCallActive ? "挂断" : "通话",
+                              systemImage: isTextCallActive ? "phone.down.fill" : "phone.fill",
+                              isHighlighted: isTextCallActive,
+                              helpText: isTextCallActive
+                                  ? "挂断这通「文本通话」"
+                                  : "文本通话：说话就自动转成文字发出去，不用手打") {
+                toggleTextCall()
+            }
+
             // **这一组靠右**（用户 2026-09-26：「针对连续对话 / 屏幕 / 声音这几个，
             // 靠右对齐」）：左边管"我在哪一段对话"，右边管"这一段对话怎么看"。
             Spacer(minLength: 6)
@@ -910,8 +926,29 @@ struct NotchHomeView: View {
             // **「语速」在「声音」右边**（用户 2026-09-26：「无论哪一种模式……右侧都应该有
             // 一个"声音语速"的按钮」）。十档与「说（播报）」那一页读同一个设置，
             // 档位表在 `SpeechSpeedLevels` 里只写了一遍。
-            SpeechSpeedChip(isPanelOpen: $isSpeedPanelOpen)
+            // **「声音」在左、「语速」在右**（用户 2026-09-26：「分别是声音、语速这两个按钮，
+            // 声音在左边，语速在右边」）—— 原来是反的。
             soundChip
+            SpeechSpeedChip(isPanelOpen: $isSpeedPanelOpen)
+        }
+    }
+
+    /// 这一页那颗「通话」现在是不是通的（主循环卡片 = 当前活动会话）。
+    private var isTextCallActive: Bool {
+        guard let sessionID = sessionsModel.activeSessionID?.uuidString else { return false }
+        return companionManager.textCallController.isCalling(cardID: sessionID)
+    }
+
+    private func toggleTextCall() {
+        SoundEffectPlayer.shared.play(.sidebarButton)
+        guard let sessionID = sessionsModel.activeSessionID?.uuidString else { return }
+        if isTextCallActive {
+            companionManager.hangUpAnyActiveCall()
+            return
+        }
+        let controller = companionManager.textCallController
+        Task { @MainActor in
+            await controller.start(cardID: sessionID, cardKind: .mainLoop)
         }
     }
 

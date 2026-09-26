@@ -730,8 +730,14 @@ final class NotchWindowController {
         // 用户 2026-09-26：「现在录音的时候，如果窗口隐藏，录音刘海右侧的按钮是可以被点击的…
         // 但窗口打开的情况下，它也应该可以被点击。现在是不可以被点击的。刘海左侧，在窗口打开的
         // 时候，也应该能被点击。」
-        if panelModel.isExpanded,
-           LongFormRecorderController.shared.phase != .idle
+        // **录音两翼：展开、收起两态都认，而且只认这一处。**
+        //
+        // 原来这里带 `panelModel.isExpanded`，而收起态交给录音带自己那个全局监听 ——
+        // 于是"窗口开着时点不动"（用户 2026-09-26：「窗口打开的状态下，如果用户录音，那么
+        // 刘海屏的左侧跟右侧按钮应该具备功能，现在还是不具备功能」）。
+        // 现在**两个状态都走这里**，录音带那边那个监听整个删掉 —— 一条路，不会两处各接一半；
+        // 而点击穿透到别的 App 时（录音带 `ignoresMouseEvents`），这里的全局监听照样收得到。
+        if LongFormRecorderController.shared.phase != .idle
             || LongFormRecorderController.shared.isSessionActive,
            let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }),
            let wings = NotchSupport.recordingWingFrames(on: presence.screen) {

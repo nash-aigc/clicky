@@ -1358,58 +1358,19 @@ final class NotchRecordingOverlayController {
         return [leading, trailing]
     }
 
-    /// 收起时接管两翼点击的全局监听。0 = 左翼（展开编辑），1 = 右翼（停止/继续）。
+    /// **两翼的点击不再由这里接。**
+    ///
+    /// 2026-09-26：两翼原来在"收起态走这个全局监听、展开态走 `NotchWindowController`"两边
+    /// 各接一半，于是窗口一开就点不动（用户：「窗口打开的状态下，如果用户录音，那么刘海屏的
+    /// 左侧跟右侧按钮应该具备功能，现在还是不具备功能」）。现在**只有
+    /// `NotchWindowController.handleGlobalClick` 一处**认那两个矩形 —— 它本来就有全局监听，
+    /// 而点击穿透到别的 App 时（这块面板 `ignoresMouseEvents`）它照样收得到，所以这里不需要
+    /// 第二份。`collapsedWingHitRects` 仍然算着：它是"带子在屏幕上的哪一块"的真相，
+    /// 摄像头小窗那套几何也读它。
     private func updateCollapsedWingMonitor() {
-        let isExpanded = LongFormRecorderController.shared.isTranscriptExpanded
-        if isExpanded || collapsedWingHitRects.isEmpty {
-            if let m = collapsedWingMonitor { NSEvent.removeMonitor(m); collapsedWingMonitor = nil }
-            // DIAGNOSTIC (2026-09-26)：两翼点击"没反应"时，第一件事是看监听到底装没装。
-            if collapsedWingMonitor != nil || collapsedWingHitRects.isEmpty {
-                NSLog("[LongForm] 两翼监听：卸下（展开=\(isExpanded) 矩形数=\(collapsedWingHitRects.count)）")
-            }
-            return
-        }
-        guard collapsedWingMonitor == nil else { return }
-        NSLog("[LongForm] 两翼监听：装上（右=\(collapsedWingHitRects.count > 1 ? NSStringFromRect(collapsedWingHitRects[1]) : "-")）")
-        collapsedWingMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { [weak self] _ in
-            guard let self else { return }
-            let point = NSEvent.mouseLocation
-            // **只记"没命中"**：命中是常态，每次都打会把这个文件淹掉；而"点了没反应"
-            // 恰恰就是这一行能回答的问题（2026-09-26 排查右翼时就是靠它）。
-            if self.collapsedWingHitRects.firstIndex(where: { $0.contains(point) }) == nil {
-                NSLog("[LongForm] 全局点击 @\(NSStringFromPoint(point)) 没命中任何一翼（左=\(self.collapsedWingHitRects.first.map { NSStringFromRect($0) } ?? "-")）")
-            }
-
-            // 摄像头小窗：按**视图发布的真实矩形**派发。
-            //
-            // 标题栏里没被任何控件矩形盖住的部分（那颗 Spacer）落到 `.toggleCollapse`
-            // —— 「点这一条折叠小窗」那条既有行为就这么保住的，不需要为它专门留一个矩形。
-            if let hit = self.cameraStripHitGeometry(at: point) {
-                let control = CameraStripControl.allCases.first {
-                    hit.controls[$0]?.contains(point) == true
-                }
-                Task { @MainActor in
-                    LongFormRecorderController.shared
-                        .handleCameraStripControl(control ?? .toggleCollapse)
-                }
-                return
-            }
-
-            guard let index = self.collapsedWingHitRects.firstIndex(where: { $0.contains(point) }) else { return }
-            Task { @MainActor in
-                if index == 0 {
-                    SoundEffectPlayer.shared.play(.recordingEditorOpened)
-                    LongFormRecorderController.shared.toggleTranscriptEditor()
-                } else {
-                    // 右翼 = 那一颗录音按钮（与展开态那颗同一个处理入口）。
-                    LongFormRecorderController.shared.handleWingButtonTap()
-                }
-            }
-        }
+        if let m = collapsedWingMonitor { NSEvent.removeMonitor(m); collapsedWingMonitor = nil }
     }
 
-
-    // MARK: - 摄像头小窗：一块全屏、永不移动的点击穿透面板
 
     /// 把小窗的面板同步成「该显示就显示、该收就收」。
     ///

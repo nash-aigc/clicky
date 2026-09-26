@@ -300,6 +300,20 @@ struct NotchSheetRootView: View {
                         // 弹窗位置不对。角色按钮现在在最右侧，弹窗应该也在最右侧，现在却在最左侧」）。
                         // 它原来跟着 `.topLeading` 走 —— 那是"角色在模式条最左"时代的锚点。
                         .overlay(alignment: .topTrailing) {
+                            // **点外面就收起**（用户 2026-09-26：「角色按钮的下拉菜单，用户点击
+                            // 菜单卡片以外的内容时，菜单应该自动折叠，现在没有折叠」）。
+                            //
+                            // 做法是一层透明的背板垫在清单**下面**：点它 = 点到面板外面。
+                            // 底下的两列因此在这一刻收不到点击（这正是弹出菜单该有的行为 ——
+                            // 第一下是"关掉菜单"），而清单本身在它上面，照常可点。
+                            if cardChatPreferences.openRoleListCardID != nil || isVoicePickerPresented {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        cardChatPreferences.openRoleListCardID = nil
+                                        isVoicePickerPresented = false
+                                    }
+                            }
                             if isAddCardFormOpen {
                                 AddCardFormView(
                                     dismissAction: { isAddCardFormOpen = false },
@@ -526,6 +540,8 @@ struct NotchSheetRootView: View {
     // 不属于某一次输入。
     /// 音色弹窗开着没有。
     @State private var isVoicePickerPresented = false
+    /// 音色面板当前看的是哪一栏（系统 / 克隆）—— 与语音页那块同一个分法。
+    @State private var voicePickerCategory: String = "system"
 
     /// 新建卡片那张表单开着没有（「添加」按下去就开）。
     @State private var isAddCardFormOpen = false
@@ -584,6 +600,23 @@ struct NotchSheetRootView: View {
         return "音色"
     }
 
+    /// **面板右上那串绿色 = 当下真正会用的音色**（与语音页那块面板的绿字同一个表达：
+    /// 显示的和引擎用的是同一个数）。
+    ///
+    /// 不能直接用 `currentVoiceDisplayName` —— 那个是**标签**用的，没有覆盖时返回「音色」
+    /// 这两个字（它是按钮上的字），挂在面板上就成了"当前音色叫音色"（实测看到的就是这个）。
+    /// 这里改成：覆盖 > 设置里配的那个 > 原 id。
+    private var effectiveSpeechVoiceLabel: String {
+        let voiceID = companionManager.replyVoiceOverride
+            ?? BailianConfiguration.resolvedSpeech?.speechVoiceID
+            ?? ""
+        guard !voiceID.isEmpty else { return "未配置" }
+        if let systemVoice = VoiceCatalog.threeStageVoices.first(where: { $0.id == voiceID }) {
+            return systemVoice.displayName
+        }
+        return VoiceLibraryStore.nickname(forCustomVoiceID: voiceID) ?? voiceID
+    }
+
     private func loadCustomVoicesForPickerIfNeeded() {
         guard customVoicesForPicker.isEmpty else { return }
         Task { @MainActor in
@@ -596,53 +629,53 @@ struct NotchSheetRootView: View {
         }
     }
 
-    /// 音色弹窗。系统音色来自 `VoiceCatalog`（**当前合成模型支持的**那些），
-    /// 克隆音色来自云端列表 —— 与「设置 → 音色查看」读的是同一批数据。
+    /// 音色弹窗 —— **观感照语音页那块音色面板**（用户 2026-09-26：「图文模式、文本模式下，
+    /// 音色按钮点击之后的效果，应该参考语音模式下的音色按钮，看它的下拉菜单是怎么设计的」）：
+    /// 同一层皮、同一排分类标签（系统音色 / 克隆音色）、同一行说明、同一种卡片。
+    ///
+    /// 数据没变：系统音色来自 `VoiceCatalog`（当前合成模型支持的那些），克隆音色来自云端列表
+    /// —— 与「设置 → 音色查看」读的是同一批。
     private var voicePickerPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text("音色")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer(minLength: 4)
-                Button(action: { isVoicePickerPresented = false }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.55))
-                        .frame(width: 18, height: 18)
-                        .background(Circle().fill(Color.white.opacity(0.08)))
+        PopupPanelSurface(width: 360) {
+            PopupPanelTabRow(tabs: [.init(id: "system", title: "系统音色"),
+                                    .init(id: "cloned", title: "克隆音色")],
+                             selectedID: voicePickerCategory,
+                             onSelect: { voicePickerCategory = $0 }) {
+                // 最右边那串绿色 = **当下真正会用的音色**（与语音页那块同一个表达）。
+                HStack(spacing: 4) {
+                    Rectangle().fill(DS.Colors.success).frame(width: 2, height: 12)
+                    Text(effectiveSpeechVoiceLabel)
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(DS.Colors.success)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help("收起音色列表")
+                .frame(maxWidth: 150, alignment: .trailing)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
 
-            Divider().overlay(Color.white.opacity(0.08))
+            PopupPanelHint(text: voicePickerCategory == "system"
+                           ? "这一族模型自己的系统音色，跟着「模型」页里 👄 那个模型走。"
+                           : "你自己克隆出来的音色（官方那边不存备注，所以显示的是本地昵称）。")
 
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    voicePickerSectionLabel("系统音色")
-                    ForEach(VoiceCatalog.threeStageVoices) { voice in
-                        voicePickerRow(voiceID: voice.id,
-                                       model: currentSpeechModelID,
-                                       displayName: voice.displayName)
-                    }
-
-                    voicePickerSectionLabel("克隆音色")
-                    if let voicePickerFailureText {
+                LazyVStack(alignment: .leading, spacing: 6) {
+                    if voicePickerCategory == "system" {
+                        ForEach(VoiceCatalog.threeStageVoices) { voice in
+                            voicePickerRow(voiceID: voice.id,
+                                           model: currentSpeechModelID,
+                                           displayName: voice.displayName)
+                        }
+                        voicePickerRow(voiceID: nil, displayName: "默认（设置里那一个）")
+                    } else if let voicePickerFailureText {
                         Text(voicePickerFailureText)
                             .font(.system(size: 11))
-                            .foregroundColor(.orange.opacity(0.85))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
+                            .foregroundStyle(.orange.opacity(0.85))
+                            .padding(.top, 6)
                     } else if customVoicesForPicker.isEmpty {
                         Text("还没有克隆音色（「设置 → 音色查看 → 声音克隆」可以做一个）")
                             .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.40))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
+                            .foregroundStyle(DS.Colors.textTertiary)
+                            .padding(.top, 6)
                     } else {
                         ForEach(customVoicesForPicker) { voice in
                             // `CustomVoice` 只有 id / targetModel / createdAt / status
@@ -655,21 +688,13 @@ struct NotchSheetRootView: View {
                             )
                         }
                     }
-
-                    // 「用默认」——把覆盖清掉，回到设置里配的那个。
-                    voicePickerRow(voiceID: nil, displayName: "默认（设置里那一个）")
                 }
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
+                .padding(.bottom, 10)
             }
-            .frame(maxHeight: 220)
+            .frame(maxHeight: 260)
         }
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(DS.Colors.surface2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-        )
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
     }
 
@@ -691,39 +716,29 @@ struct NotchSheetRootView: View {
 
     private func voicePickerRow(voiceID: String?, model: String = "", displayName: String) -> some View {
         let isSelected = companionManager.replyVoiceOverride == voiceID
-        return HStack(spacing: 6) {
-            Image(systemName: isSelected ? "checkmark" : "circle")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.25))
-                .frame(width: 12)
-
-            Text(displayName)
-                .font(.system(size: 12))
-                .foregroundColor(.white.opacity(0.85))
-                .lineLimit(1)
-
-            Spacer(minLength: 4)
-
+        return PopupPanelCard(title: displayName,
+                              subtitle: voiceID ?? "设置里配的那一个",
+                              isSelected: isSelected) {
             if let voiceID {
-                Button(action: {
+                PopupPanelCardButton(systemImage: "play.fill",
+                                     kind: .secondary,
+                                     helpText: "试听") {
                     SoundEffectPlayer.shared.play(.sidebarButton)
                     previewVoice(voiceID, model: model)
-                }) {
-                    Image(systemName: "play.circle")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.55))
                 }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help("试听")
+            }
+            PopupPanelCardButton(systemImage: isSelected ? "checkmark" : "checkmark.circle",
+                                 kind: isSelected ? .primary : .secondary,
+                                 helpText: isSelected ? "正在用它" : "用这个音色") {
+                SoundEffectPlayer.shared.play(.sidebarButton)
+                companionManager.replyVoiceOverride = voiceID
+                isVoicePickerPresented = false
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .contentShape(Rectangle())
         .onTapGesture {
             SoundEffectPlayer.shared.play(.sidebarButton)
             companionManager.replyVoiceOverride = voiceID
+            isVoicePickerPresented = false
         }
     }
 
@@ -768,12 +783,14 @@ struct NotchSheetRootView: View {
     private var topBar: some View {
         CardChatModeBar(cardID: activeCardID ?? "",
                         cardKind: activeCardKind,
-                        trailingAccessory: AnyView(
-                            HStack(spacing: 6) {
-                                voiceChip
-                                textCallChip
-                            }
-                        ),
+                        // **通话按钮在「视频」右边那一格**（用户 2026-09-26：「文本、图片和图文
+                        // 模式，通话按钮应该还是显示在视频按钮的右侧，跟语音、视频的按钮同一个
+                        // 位置才对。你那个位置错误。」）——所以我那颗从行尾挪到了
+                        // `leadingAccessory`：语音 / 视频页那颗 connect 按钮就住在这个槽里
+                        //（`VoiceChatSessionView` 的 `leadingAccessory: connectButton`），
+                        // 两种模式下按钮落在同一个像素位置上。
+                        leadingAccessory: AnyView(textCallChip),
+                        trailingAccessory: AnyView(voiceChip),
                         preferences: cardChatPreferences)
     }
 

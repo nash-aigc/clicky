@@ -2234,6 +2234,29 @@ struct VoiceChatSessionView: View {
                 ConversationSessionsStore.createSession()
             }
 
+            // **输入框上面也有一颗「通话」**（用户 2026-09-26：「图文模式、文本模式、视频模式、
+            // 语音模式，都应该在输入框上面、新建按钮右侧添加一个通话按钮。注意它的大小宽度
+            // 要跟新建按钮的样式一样」）。这一页它就是页头那颗「连接」的同一件事 ——
+            // 同一个 `connectToRole` / `disconnectCurrentSession`，两个入口，功能一致。
+            composerChip(title: controller.isCalling(cardID: cardID ?? "") ? "挂断" : "通话",
+                         systemImage: controller.isCalling(cardID: cardID ?? "")
+                             ? "phone.down.fill" : "phone.fill",
+                         isOn: controller.isCalling(cardID: cardID ?? ""),
+                         help: controller.isCalling(cardID: cardID ?? "")
+                             ? "挂断这一场语音聊天"
+                             : "开始这一场语音聊天") {
+                if controller.isCalling(cardID: cardID ?? "") {
+                    controller.disconnectCurrentSession()
+                } else {
+                    controller.connectToRole(
+                        roleIDForConnect,
+                        cardBinding: cardID.map {
+                            VoiceChatController.CardVoiceBinding(cardID: $0, cardKind: cardKind)
+                        }
+                    )
+                }
+            }
+
             Spacer(minLength: 6)
 
             // 开 = 正常说话；关 = 只出文字（模型那边 `modalities: ["text"]`）。
@@ -2249,7 +2272,11 @@ struct VoiceChatSessionView: View {
             // **语速在「声音」右边**（用户 2026-09-26：「把语速按钮放在输入框的上面…放在
             // 声音按钮的右侧，也做成一个菜单的形式」）。它打开的还是原来那块语速面板
             //（`.speed` 锚点，位置由视图自己的 frame 发布上去 —— 换了个位置也跟得上）。
-            composerChip(title: "语速",
+            // **带上档位数字**（用户 2026-09-26：「要显示语速 6 或语速 7 什么的。但是现在
+            // 语音跟视频这两个模式下，语速应该调一下，应该显示语速 6 或语速 7 或语速 8
+            // 这个东西」）—— 与文本 / 图文那一排的 `SpeechSpeedChip` 一致，都用
+            // `SpeechSpeedLevels` 那一份表。
+            composerChip(title: "语速 \(SpeechSpeedLevels.currentLevel(forRate: AppSettingsStore.snapshot().speechPlaybackRate))",
                          systemImage: "gauge.with.needle",
                          isOn: isSpeedMenuOpen,
                          help: "十档语速，直接改全局「说（播报）」的语速") {

@@ -151,17 +151,20 @@ struct CardChatRoleListPanel: View {
     var body: some View {
         let choices = preferences.roleChoices(for: mode, kind: cardKind)
         let selectedID = preferences.resolvedRole(forCardID: cardID, kind: cardKind, mode: mode).id
-        VStack(alignment: .leading, spacing: 0) {
+        // **观感照语音页那块音色面板**（用户 2026-09-26：「角色按钮的下拉菜单，整个 UI 风格
+        // 也应该参考语音模式下音色按钮的下拉菜单的风格，包括颜色、样式、卡片这些」）：
+        // 同一层皮（`PopupPanelSurface`）、同一种卡片（`PopupPanelCard`）、同一套右边的小按钮。
+        PopupPanelSurface(width: 320) {
             HStack(spacing: 6) {
                 Text("角色")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textPrimary)
                 Spacer(minLength: 4)
                 Button { preferences.openRoleListCardID = nil } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.55))
-                        .frame(width: 18, height: 18)
+                        .foregroundStyle(DS.Colors.textSecondary)
+                        .frame(width: 20, height: 20)
                         .background(Circle().fill(Color.white.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
@@ -169,13 +172,20 @@ struct CardChatRoleListPanel: View {
                 .help("收起角色列表")
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
 
-            Divider().overlay(Color.white.opacity(0.08))
+            PopupPanelHint(text: mode.isVoiceLike
+                           ? "这一段对话里它扮演的角色。语音 / 视频只把这段会话记录和这个角色当上下文。"
+                           : "这一页用它自己的系统提示词 —— 文本 / 图文模式下 Agent 的全部能力都在。")
 
-            ForEach(choices) { choice in
-                row(choice, isSelected: choice.id == selectedID, choiceCount: choices.count)
+            VStack(spacing: 6) {
+                ForEach(choices) { choice in
+                    row(choice, isSelected: choice.id == selectedID, choiceCount: choices.count)
+                }
             }
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            .padding(.bottom, 10)
 
             Divider().overlay(Color.white.opacity(0.08))
 
@@ -185,13 +195,14 @@ struct CardChatRoleListPanel: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 10.5))
+                        .font(.system(size: 11))
                     Text("管理角色…")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12.5))
+                    Spacer(minLength: 4)
                 }
-                .foregroundColor(.white.opacity(0.72))
-                .padding(.horizontal, 10)
-                .frame(height: 32)
+                .foregroundStyle(DS.Colors.textSecondary)
+                .padding(.horizontal, 12)
+                .frame(height: 36)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
@@ -199,19 +210,9 @@ struct CardChatRoleListPanel: View {
             .pointerCursor()
             .help("打开设置里的角色页：新建、改名、写提示词")
         }
-        .frame(width: 250)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(DS.Colors.surface2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.4), radius: 12, y: 4)
     }
 
-    /// 清单里的一行。
+    /// 清单里的一行 —— 用的就是语音面板那张卡片。
     ///
     /// 「默认角色」（= 这个 Agent 自己的系统提示词）**不可改、不可删、置顶**，这是用户
     /// 明确要求的；这一行显示的是**当下生效的那份提示词**有多少字，而不是内容 —— 那几千字
@@ -221,39 +222,32 @@ struct CardChatRoleListPanel: View {
                      choiceCount: Int) -> some View {
         // 文本 / 图文模式只有「默认角色」这一个，点它没有意义，所以那一行不是按钮而是说明。
         let isSelectable = !(choice.source == .agentPreset && choiceCount == 1)
-        return Button {
+        return PopupPanelCard(title: choice.displayName,
+                              subtitle: subtitle(for: choice),
+                              isSelected: isSelected) {
+            if isSelected {
+                PopupPanelCardButton(systemImage: "checkmark",
+                                     kind: .primary,
+                                     helpText: "这一段正在用它",
+                                     action: {})
+            } else if isSelectable {
+                PopupPanelCardButton(systemImage: "checkmark.circle",
+                                     kind: .secondary,
+                                     helpText: "用这个角色") {
+                    SoundEffectPlayer.shared.play(.sidebarButton)
+                    preferences.setVoiceRoleID(choice.id, forCardID: cardID)
+                    preferences.openRoleListCardID = nil
+                }
+            }
+        }
+        .opacity(isSelectable || isSelected ? 1 : 0.9)
+        .contentShape(Rectangle())
+        .onTapGesture {
             guard isSelectable else { return }
             SoundEffectPlayer.shared.play(.sidebarButton)
             preferences.setVoiceRoleID(choice.id, forCardID: cardID)
             preferences.openRoleListCardID = nil
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 11))
-                    .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.25))
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(choice.displayName)
-                        .font(.system(size: 12.5, weight: isSelected ? .semibold : .regular))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    Text(subtitle(for: choice))
-                        .font(.system(size: 10.5))
-                        .foregroundColor(.white.opacity(0.40))
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-            }
-            .padding(.horizontal, 10)
-            .frame(height: 40)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .disabled(!isSelectable)
-        .help(subtitle(for: choice))
     }
 
     private func subtitle(for choice: CardChatRoleChoice) -> String {
@@ -268,6 +262,7 @@ struct CardChatRoleListPanel: View {
             return "还没有自己的角色，先用内置这条 · \(choice.promptText.count) 字"
         }
     }
+
 }
 
 /// 「角色」那颗 —— **一处实现，两处用**（模式条的最右、语音页输入框那一行的最右）。
