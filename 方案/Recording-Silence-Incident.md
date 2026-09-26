@@ -273,6 +273,47 @@ not take effect.
 
 ---
 
+## 6c. The user-facing half — a device setting, and an alarm
+
+**Added 2026-09-26, at the user's request: "let the user set a default device and
+see it".** Both halves matter, and they are different things.
+
+**The picker** (设置 → 录音 → 麦克风) lists every input device the machine has,
+marks the system default, and stores the **UID** rather than the `AudioDeviceID` —
+the id is a session-local number that changes across a reboot or a replug, the UID
+is the device's identity.
+
+Two corrections came out of the user's own screenshot of the first version:
+
+- **Aggregate devices must not be listed at all.** The first filter was "has input
+  channels", and a healthy aggregate has one — so `CADefaultDeviceAggregate`
+  appeared as a choice, which is the single selection that reinstates the fault.
+  The predicate is transport type, not channel count: an aggregate is
+  categorically not a device.
+- **Virtual devices stay, labelled.** Unlike an aggregate they can be a legitimate
+  choice (a loopback is how one captures system audio), so the judgement belongs
+  to the user and the label is what makes it possible.
+
+**The readout** — 「这一场实际用的」 — shows which device the *last* recording
+actually bound to. It is deliberately separate from the picker: a device can be
+unplugged or held by another process, so what was chosen and what was used are
+different facts, and only the second one explains a silent recording.
+
+**The alarm.** Ten consecutive silent blocks (~10 s) now produce a line in the log
+and a row on the settings page. The counter for this already existed and nobody
+read it. This matters independently of the cause: the failure is silent in every
+direction — the tap fires, files are written, the UI behaves — so without an alarm
+the first signal is that nothing is being transcribed, discovered after 117 s.
+
+**Not done, deliberately:** rebinding mid-recording when a device is unplugged or
+plugged in. Capture binds once at the start and falls back to the default if the
+chosen device has gone (saying so in the log). Mid-session rebinding means
+reconfiguring a running `AVAudioEngine`, which should be measured before it is
+changed — and the reported problem (a screen recorder running alongside) is solved
+without it.
+
+---
+
 ## 7. What is fixed, and what is not
 
 **Fixed (this incident):**
