@@ -51,6 +51,15 @@ struct NotchArchiveArea: View {
     /// actual removal happens in its confirm action.
     @State private var sessionPendingPurge: ConversationSession?
 
+    /// 内容列的宽度，量出来的。**它唯一的用途是给回答卡片当身份证**
+    ///（见 `archivedConversation` 里的 `.id(contentColumnWidth)`）。
+    ///
+    /// 回答卡片把断好的行按宽度缓存在自己的 `@State` 里，而实时区那两行是
+    /// `.fixedSize(horizontal: true)` 的 —— 于是「卡片算出来的那几行有多宽」变成了
+    /// 这一列的最小宽度，而它又是从这一列量出来的，两者互相锁死：这一列一旦变宽
+    /// 再变窄（全屏来回切），卡片不肯跟着变窄，两列就会被一起撑出面板。
+    @State private var contentColumnWidth: CGFloat = 0
+
     var body: some View {
         HStack(spacing: 0) {
             archiveSidebar
@@ -68,6 +77,16 @@ struct NotchArchiveArea: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            // 量这一列的宽度 —— 只给回答卡片当 `.id` 用，见 `contentColumnWidth`。
+            .background(
+                GeometryReader { geometryProxy in
+                    Color.clear
+                        .onAppear { contentColumnWidth = geometryProxy.size.width }
+                        .onChange(of: geometryProxy.size.width) { _, newWidth in
+                            contentColumnWidth = newWidth
+                        }
+                }
+            )
         }
         .onAppear { repairSelectionIfNeeded() }
         .onChange(of: sessionsModel.archivedSessions) { _, _ in
@@ -328,6 +347,10 @@ struct NotchArchiveArea: View {
                                 isStreaming: false,
                                 style: answerCardStyle
                             )
+                            // 列宽变了就重建这张卡：断行缓存按宽度存在它的 `@State`
+                            // 里，而实时区那两行不许被压缩，两件事合起来会让这一列的
+                            // 最小宽度永远停在旧列宽上。见 `contentColumnWidth`。
+                            .id(contentColumnWidth)
                         }
                     }
                 }

@@ -838,6 +838,10 @@ struct NotchPanelRootSwitchingView: View {
     /// `NotchSheetRootView` 的同名属性。
     var hideSheetAction: () -> Void
     var revealSheetAction: () -> Void
+    /// 顶栏那颗「展开 / 收缩」—— 全屏与刘海下方小窗两档之间切，见
+    /// `NotchWindowController.toggleSheetFullscreen`。与「收起」一起透传到
+    /// `NotchSheetRootView`。
+    var toggleFullScreenAction: () -> Void
     var companionManager: CompanionManager
     /// 展开态那条状态带的几何。由 `NotchWindowController` 在装配这个视图时算好
     /// （它手里才有 `NSScreen`），见 `NotchExpandedWingBand`。
@@ -878,6 +882,7 @@ struct NotchPanelRootSwitchingView: View {
                 collapseAction: collapseAction,
                 hideSheetAction: hideSheetAction,
                 revealSheetAction: revealSheetAction,
+                toggleFullScreenAction: toggleFullScreenAction,
                 companionManager: companionManager
             )
             // TEMPORARY PROBE (2026-09-25)：展开态的内容树在这里第一次出现 —— 从这个
@@ -1073,6 +1078,8 @@ struct NotchExpandedSheetView: View {
     var collapseAction: () -> Void
     var hideSheetAction: () -> Void
     var revealSheetAction: () -> Void
+    /// 顶栏那颗「展开 / 收缩」—— 见 `NotchWindowController.toggleSheetFullscreen`。
+    var toggleFullScreenAction: () -> Void
     var companionManager: CompanionManager
 
     /// 参考页 01 中心缩放的内容入场（'line' 模式）：窗口本体沿 frame 驱动
@@ -1100,6 +1107,7 @@ struct NotchExpandedSheetView: View {
                 collapseAction: collapseAction,
                 hideSheetAction: hideSheetAction,
                 revealSheetAction: revealSheetAction,
+                toggleFullScreenAction: toggleFullScreenAction,
                 audioHistoryProvider: audioHistoryProvider
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)

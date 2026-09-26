@@ -46,6 +46,22 @@ struct NotchHomeView: View {
     /// on every screen.
     @State private var contentColumnHeight: CGFloat = 0
 
+    /// 内容列的宽度，与高度同一个测量点。**它唯一的用途是给回答卡片当身份证**
+    /// （见 `assistantBubble` 里的 `.id(contentColumnWidth)`）。
+    ///
+    /// 为什么需要它：回答卡片把断好的行按当前宽度缓存在自己的 `@State` 里，而实时区
+    /// 那两行是 `.fixedSize(horizontal: true)` 的（防流式期间被压缩换行，见
+    /// `AnswerCardView.liveLineView`）。于是「卡片算出来的那几行有多宽」变成了这一列
+    /// 的最小宽度 —— 而它又是从这一列量出来的，两者互相锁死：**列一变窄，卡片不肯跟着
+    /// 变窄，宽度就永远停在旧值上**。2026-09-26 实测：810 的面板里收起再展开侧栏
+    ///（内容列 747 → 564），两列一起被撑到 987 并居中，左列左边 89pt 被裁掉
+    ///（连「Screen」按钮都看不见），右列右边 89pt 被裁掉。
+    ///
+    /// 外面几层拿不到这个数（列宽是 `HStack` 分给这一列的），所以只能在这里量；
+    /// 量到了当 `.id` 用，宽度每变一次就把卡片重建一次 —— 新卡片的缓存是空的，
+    /// 它会先按真实可用宽度重新断行，环就断开了。
+    @State private var contentColumnWidth: CGFloat = 0
+
     /// The reply-card theme (设置 → 交互样式). Snapshotted into state
     /// so a settings save (`.wannaAppSettingsChanged`) re-renders the flow's
     /// cards without waiting for some other published change to trigger it.
@@ -129,9 +145,17 @@ struct NotchHomeView: View {
             // its own measurement back in.
             GeometryReader { geometryProxy in
                 Color.clear
-                    .onAppear { contentColumnHeight = geometryProxy.size.height }
+                    .onAppear {
+                        contentColumnHeight = geometryProxy.size.height
+                        contentColumnWidth = geometryProxy.size.width
+                    }
                     .onChange(of: geometryProxy.size.height) { _, newHeight in
                         contentColumnHeight = newHeight
+                    }
+                    // 列宽变化（收起／展开侧栏、全屏来回切）要重建回答卡片 ——
+                    // 理由见 `contentColumnWidth` 的说明。
+                    .onChange(of: geometryProxy.size.width) { _, newWidth in
+                        contentColumnWidth = newWidth
                     }
             }
         )
@@ -574,6 +598,11 @@ struct NotchHomeView: View {
                 isStreaming: isStreaming,
                 style: answerCardStyle
             )
+            // 列宽变了就重建这张卡：它的断行缓存按宽度存在 `@State` 里，而实时区
+            // 那两行不允许被压缩（`.fixedSize(horizontal: true)`），两件事合起来会
+            // 让「这一列的最小宽度」永远停在旧列宽上。重建一次缓存就空了，卡片会
+            // 按新宽度重新断行。见 `contentColumnWidth` 的说明。
+            .id(contentColumnWidth)
             Spacer(minLength: 56)
         }
     }

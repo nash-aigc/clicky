@@ -2060,6 +2060,12 @@ struct VoiceChatSessionView: View {
                     // 「没修复」），后者可以在会话进行中被切走。详见那个属性的说明。
                     animatesIncomingCharacters: !controller.isDuplexSessionRunning
                 )
+                // 列宽变了就重建这张卡：它把断好的行按宽度缓存在自己的 `@State` 里，
+                // 而实时区那两行不允许被压缩（`AnswerCardView.liveLineView` 的
+                // `.fixedSize(horizontal: true)`）—— 于是「卡片算出来的行有多宽」
+                // 变成了这一列的最小宽度，收起／展开侧栏（或全屏来回切）之后这一列
+                // 就再也回不到窄的一档。重建一次缓存就空了，卡片按真实宽度重新断行。
+                .id(contentColumnWidth)
                 Spacer(minLength: 56)
             }
 

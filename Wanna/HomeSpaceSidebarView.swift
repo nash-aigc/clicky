@@ -436,7 +436,7 @@ struct HomeSpaceSidebarView: View {
 
                 // 状态点代替会话的角色头像——Agent 的信息是「它在不在跑」。
                 Circle()
-                    .fill(agentStatusColor(agent.status))
+                    .fill(agentStatusTint(for: agent.status))
                     .frame(width: 38, height: 38)
                     .overlay(
                         Image(systemName: "hammer.fill")
@@ -754,16 +754,6 @@ struct HomeSpaceSidebarView: View {
         .padding(.bottom, 20)
     }
 
-    private func agentStatusColor(_ status: AgentSessionStatus) -> Color {
-        switch status {
-        case .idle: return Color.white.opacity(0.25)
-        case .running: return Color(red: 0.35, green: 0.85, blue: 0.55)
-        case .completed: return Color(red: 0.35, green: 0.6, blue: 1.0)
-        case .failed: return Color(red: 1.0, green: 0.45, blue: 0.4)
-        case .interrupted: return Color(red: 1.0, green: 0.75, blue: 0.35)
-        }
-    }
-
     /// Folder picker → `createAgent`. The app must activate first (an
     /// LSUIElement app's modal panels appear but never key otherwise — the
     /// same key-window trap the settings window has).
@@ -863,5 +853,227 @@ struct HomeSpaceSidebarView: View {
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
+    }
+}
+
+// MARK: - 折叠后的侧栏（一条只有图标的窄栏）
+
+/// 侧栏收起之后的那一条：**从上到下是当前页标识 → 带圆环的头像列表 → 设置**，
+/// 其余全部不画。用户 2026-09-26 定的顺序就是这三样：
+/// 「点击后把整个左侧边栏收起来，只留一个圆形头像/图标，并且高亮当前激活的
+/// 会话」「左侧边栏内容从上到下：当前页面标识（Screen / Agent / Call 三选一）→
+/// 图标列表，每一项带圆环颜色的头像 → 最下方是「设置」，其余内容隐藏」。
+///
+/// **它和展开态的 `HomeSpaceSidebarView` 是两个视图，不是同一个视图的两档宽度。**
+/// 245pt 里那套东西（三个分区按钮、搜索框、两行文字的行、录音按钮）在 62pt 里一个
+/// 都放不下，硬压只会得到一堆被挤扁的控件。但**头像与选中语义仍然是同一套**：
+/// 会话用 `MascotAvatarDisc`、角色用 `RoleAvatarView`、Agent 用它的状态色，
+/// 圆环高亮的就是当前那一个 —— 所以折叠前后用户看到的是同一个头像、同一条会话。
+struct HomeSpaceSidebarRailView: View {
+
+    @ObservedObject var sessionsModel: ConversationSessionsModel
+    @ObservedObject var agentSessionManager: AgentSessionManager
+    @ObservedObject var voiceChatController: VoiceChatController
+    @Binding var showsSettings: Bool
+
+    /// 这一条的总宽。38 的圆环 + 两侧各 12 的呼吸位。
+    static let width: CGFloat = 62
+    /// 圆环的直径，以及环里那颗头像的直径 —— 环比头像大出来的那 3pt 就是圆环本身。
+    private static let ringDiameter: CGFloat = 38
+    private static let avatarDiameter: CGFloat = 32
+
+    var body: some View {
+        VStack(spacing: 0) {
+            currentSectionBadge
+
+            ScrollView {
+                VStack(spacing: 6) {
+                    switch agentSessionManager.selectedSidebarSection {
+                    case .conversations:
+                        sessionItems
+                    case .agents:
+                        agentItems
+                    case .voiceChat:
+                        roleItems
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+            }
+
+            settingsButton
+        }
+        .frame(width: Self.width)
+        .background(DS.Colors.surface3)
+    }
+
+    // MARK: 当前页标识
+
+    /// 「我现在在哪一页」——Screen / Agent / Call 三选一，只显示当前那一个。
+    ///
+    /// 这一个是**标识，不是按钮**：收起之后切页要先把侧栏放出来（或者点开设置里的
+    /// 内容），一条 62pt 的窄栏里放三颗按钮每颗只剩 20pt，谁也点不准。所以它只回答
+    /// 「在哪」，不带动作，也就不会有「看着能点、点了没反应」那种控件。
+    private var currentSectionBadge: some View {
+        VStack(spacing: 3) {
+            Image(systemName: Self.symbol(for: agentSessionManager.selectedSidebarSection))
+                .font(.system(size: 13, weight: .medium))
+
+            Text(agentSessionManager.selectedSidebarSection.displayName)
+                .font(.system(size: 9, weight: .semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: 40)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.white.opacity(0.12))
+        )
+        .padding(.horizontal, 10)
+        .padding(.top, NotchSupport.sheetHeaderTopInset)
+        .padding(.bottom, 8)
+    }
+
+    /// 分区 → 那一页的脸。三个都挑和内容对得上的：Screen 是看屏幕的对话，
+    /// Agent 是锤子（与 Agent 行里那颗同一个符号），Call 是声波
+    ///（与角色列表空态那颗 `waveform.circle` 同一族）。
+    private static func symbol(for section: SidebarSection) -> String {
+        switch section {
+        case .conversations: return "display"
+        case .agents: return "hammer.fill"
+        case .voiceChat: return "waveform"
+        }
+    }
+
+    // MARK: 三个分区的头像列表
+
+    private var sessionItems: some View {
+        ForEach(sessionsModel.sidebarRows, id: \.session.id) { row in
+            let identity = MascotRoster.identity(forSessionID: row.session.id)
+            railItem(
+                isActive: row.session.id == sessionsModel.activeSessionID && !showsSettings,
+                tint: Color(identity.pastelBackground),
+                help: row.session.title
+            ) {
+                MascotAvatarDisc(identity: identity, diameter: Self.avatarDiameter)
+            } action: {
+                SoundEffectPlayer.shared.play(.sidebarButton)
+                sessionsModel.selectSession(row.session.id)
+                showsSettings = false
+            }
+        }
+    }
+
+    private var agentItems: some View {
+        ForEach(agentSessionManager.sessions) { agent in
+            railItem(
+                isActive: agent.id == agentSessionManager.selectedAgentID
+                    && agentSessionManager.selectedSidebarSection == .agents
+                    && !showsSettings,
+                tint: agentStatusTint(for: agent.status),
+                help: agent.name
+            ) {
+                // 和展开态那一行同一颗状态盘：Agent 的信息是「它在不在跑」。
+                Circle()
+                    .fill(agentStatusTint(for: agent.status))
+                    .frame(width: Self.avatarDiameter, height: Self.avatarDiameter)
+                    .overlay(
+                        Image(systemName: "hammer.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.black.opacity(0.55))
+                    )
+            } action: {
+                SoundEffectPlayer.shared.play(.sidebarButton)
+                agentSessionManager.selectAgent(agent.id)
+                agentSessionManager.selectedSidebarSection = .agents
+                showsSettings = false
+            }
+        }
+    }
+
+    private var roleItems: some View {
+        // 收起后没有搜索框，所以这一列是全部角色（展开态那一列按搜索词过滤）。
+        ForEach(voiceChatController.rolePresets) { role in
+            railItem(
+                isActive: role.id == voiceChatController.selectedRoleID && !showsSettings,
+                tint: DS.Colors.accent,
+                help: role.name
+            ) {
+                RoleAvatarView(role: VoiceChatRoleStore.role(withID: role.id), size: Self.avatarDiameter)
+            } action: {
+                SoundEffectPlayer.shared.play(.sidebarButton)
+                voiceChatController.selectRole(role.id)
+                showsSettings = false
+            }
+        }
+    }
+
+    /// 一颗头像 + 一圈环。
+    ///
+    /// 环的颜色是**这一项自己的颜色**（会话是它那份粉彩、Agent 是状态色、角色是
+    /// accent），亮到 1.0、粗一档的那一颗就是当前激活的会话 —— 用户要的「每一项带
+    /// 圆环颜色的头像，并且高亮当前激活的会话」用同一圈环的两种状态说完，不用再加
+    /// 一个小蓝点：38pt 的宽度里放不下第二套标记。
+    ///
+    /// 两档的差别**三个量一起变**（环的透明度 0.3 → 1.0、粗细 1.5 → 2.5、头像本身
+    /// 0.65 → 1.0）。只拉开透明度是不够的：这几个粉彩本来就接近白（#D7E5FF 这一族），
+    /// 0.45 的浅色环在深底上仍然是浅色环，第一版实测下来哪一个是当前会话根本看不出来。
+    private func railItem<Avatar: View>(
+        isActive: Bool,
+        tint: Color,
+        help: String,
+        @ViewBuilder avatar: () -> Avatar,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .strokeBorder(tint.opacity(isActive ? 1.0 : 0.3),
+                                  lineWidth: isActive ? 2.5 : 1.5)
+                avatar()
+                    .opacity(isActive ? 1 : 0.65)
+            }
+            .frame(width: Self.ringDiameter, height: Self.ringDiameter)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(help)
+    }
+
+    // MARK: 设置
+
+    /// 最底下只有「设置」一颗 —— 收起态里没有归档、没有录音、没有搜索框，
+    /// 用户要的就是「其余内容隐藏」。它和展开态那颗同形（`NotchBarActionButton`
+    /// 的纯图标形态），所以两态之间来回点不会换一只手感。
+    private var settingsButton: some View {
+        NotchBarActionButton(
+            systemImage: "gearshape",
+            isHighlighted: showsSettings,
+            help: "设置"
+        ) {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            showsSettings = true
+        }
+        .padding(.top, 10)
+        .padding(.bottom, 12)
+        .overlay(alignment: .top) {
+            Divider()
+                .overlay(Color.white.opacity(0.08))
+        }
+    }
+}
+
+/// Agent 状态色。侧栏那一行和折叠后的图标栏共用这一份 —— 同一个 Agent 在两处
+/// 必须是同一个颜色，各写一遍就会漂（而且不报错，只是看着像两个不同的状态）。
+private func agentStatusTint(for status: AgentSessionStatus) -> Color {
+    switch status {
+    case .idle: return Color.white.opacity(0.25)
+    case .running: return Color(red: 0.35, green: 0.85, blue: 0.55)
+    case .completed: return Color(red: 0.35, green: 0.6, blue: 1.0)
+    case .failed: return Color(red: 1.0, green: 0.45, blue: 0.4)
+    case .interrupted: return Color(red: 1.0, green: 0.75, blue: 0.35)
     }
 }

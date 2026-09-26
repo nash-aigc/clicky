@@ -37,6 +37,18 @@ struct AgentSessionView: View {
     /// figure has to be measured rather than assumed.
     @State private var contentColumnHeight: CGFloat = 0
 
+    /// 内容列的宽度，与高度同一个测量点。**它唯一的用途是给回答卡片当身份证**
+    ///（见 `assistantBubble` 里的 `.id(contentColumnWidth)`）。
+    ///
+    /// 回答卡片把断好的行按宽度缓存在自己的 `@State` 里，而实时区那两行是
+    /// `.fixedSize(horizontal: true)` 的（防流式期间被压缩换行）—— 于是「卡片算出来
+    /// 的那几行有多宽」变成了这一列的最小宽度，而它又是从这一列量出来的，两者互相
+    /// 锁死：列一变窄，卡片不肯跟着变窄。2026-09-26 实测：收起再展开侧栏
+    ///（内容列 747 → 564）之后，这一列被撑到 625 并整体左移 31pt，右边被裁。
+    /// 宽度每变一次就把卡片重建一次，环就断开了（新卡片的缓存是空的，先按真实
+    /// 可用宽度重新断行）。
+    @State private var contentColumnWidth: CGFloat = 0
+
     /// 卡片主题（设置 → 交互）。与 Ask / Chatting 两页同一做法：快照进
     /// @State，保存设置时靠 `.wannaAppSettingsChanged` 重读。
     @State private var answerCardStyle: AnswerCardStyle = AppSettingsStore.snapshot().answerCardStyle
@@ -58,9 +70,17 @@ struct AgentSessionView: View {
             .background(
                 GeometryReader { geometryProxy in
                     Color.clear
-                        .onAppear { contentColumnHeight = geometryProxy.size.height }
+                        .onAppear {
+                            contentColumnHeight = geometryProxy.size.height
+                            contentColumnWidth = geometryProxy.size.width
+                        }
                         .onChange(of: geometryProxy.size.height) { _, newHeight in
                             contentColumnHeight = newHeight
+                        }
+                        // 列宽变化（收起／展开侧栏、全屏来回切）要重建回答卡片 ——
+                        // 理由见 `contentColumnWidth`。
+                        .onChange(of: geometryProxy.size.width) { _, newWidth in
+                            contentColumnWidth = newWidth
                         }
                 }
             )
@@ -599,6 +619,10 @@ struct AgentSessionView: View {
                     isStreaming: isStreaming,
                     style: answerCardStyle
                 )
+                // 列宽变了就重建这张卡：它的断行缓存按宽度存在 `@State` 里，而实时区
+                // 那两行不允许被压缩（`.fixedSize(horizontal: true)`），两件事合起来
+                // 会让「这一列的最小宽度」永远停在旧列宽上。见 `contentColumnWidth`。
+                .id(contentColumnWidth)
                 Spacer(minLength: 56)
             }
 

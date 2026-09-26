@@ -67,6 +67,13 @@ final class NotchPanelModel: ObservableObject {
     /// desync from it, let alone stall behind it.
     @Published var expansionProgress: CGFloat = 0
     @Published var isExpanded: Bool = false
+    /// 面板铺满了整块屏（顶栏那颗「展开」按钮切过去，再点一次切回来）。
+    ///
+    /// 和 `expansionProgress` 一样是**从面板的实际 frame 派生的状态**，不是另一套
+    /// 动画：`NotchSupport` 给出两档 frame（`expandedSheetFrame` / `fullScreenSheetFrame`），
+    /// 控制器只负责把面板挪过去，视图只负责把这个标志画成按钮上那颗图标与文案。
+    /// 收起时归零（下一次展开必须从小窗那档起步），见 `collapse`。
+    @Published var isSheetFullscreen: Bool = false
     @Published var isFullscreenSuppressed: Bool = false
     /// An outside caller's request (the menu bar panel's 「更换…」) for the
     /// sheet to open straight into the settings pages. `NotchSheetRootView`
@@ -262,6 +269,9 @@ final class NotchWindowController {
                 revealSheetAction: { [weak self] in
                     self?.revealSheetAfterTemporaryHide()
                 },
+                toggleFullScreenAction: { [weak self] in
+                    self?.toggleSheetFullscreen()
+                },
                 companionManager: companionManager,
                 // 展开态那条状态带的几何。算在这里是因为只有这里手里有
                 // `NSScreen` —— 视图那边只拿数字，不去碰 AppKit 的屏幕。
@@ -412,6 +422,10 @@ final class NotchWindowController {
         ) { [weak self] _ in
             guard let self, self.panelModel.isExpanded,
                   let presence = self.screenPresences.first(where: { $0.screen == self.expandedScreen }) else { return }
+            // 全屏那一档没有「高度」可拖 —— 面板已经是整块屏。不挡住的话，这条
+            // 手柄会把面板按小窗尺寸重新框一遍，而 `isSheetFullscreen` 还停在真，
+            // 按钮上的文案和面板的实际大小从此说的不是一件事。
+            guard !self.panelModel.isSheetFullscreen else { return }
             presence.panel.setFrame(
                 NotchSupport.expandedSheetFrame(on: presence.screen),
                 display: false,
@@ -504,6 +518,31 @@ final class NotchWindowController {
         expand(on: targetPresence)
     }
 
+    /// 「展开」按钮：全屏 ↔ 刘海下方那块小窗，来回切。
+    ///
+    /// 两个尺寸都由 `NotchSupport` 给（`fullScreenSheetFrame` / `expandedSheetFrame`），
+    /// 这里只做两件事：把面板挪过去、把标志翻过来。**没有任何动画** —— 和展开那一下
+    /// 同一个理由（用户 2026-09-25：「就直接显示」），而且逐帧改窗口尺寸正是这个面板
+    /// 反复踩过的那个坑（每帧重建绘制表面 + 整张面板重排 + 文字重算换行）。
+    ///
+    /// `display: true`：这是一次用户点击的结果，必须当场看到；面板的内容早就
+    /// 建好了（不是冷启动那次 300~600ms 的构建），同步重绘的代价只有这一帧。
+    func toggleSheetFullscreen() {
+        guard panelModel.isExpanded,
+              let fullscreenScreen = expandedScreen,
+              let presence = screenPresences.first(where: { $0.screen == fullscreenScreen }) else { return }
+
+        let isGoingFullscreen = !panelModel.isSheetFullscreen
+        panelModel.isSheetFullscreen = isGoingFullscreen
+        presence.panel.setFrame(
+            isGoingFullscreen
+                ? NotchSupport.fullScreenSheetFrame(on: fullscreenScreen)
+                : NotchSupport.expandedSheetFrame(on: fullscreenScreen),
+            display: true,
+            animate: false
+        )
+    }
+
     private func handleGlobalClick(at clickLocation: NSPoint) {
         if panelModel.isExpanded {
             // 再点一次刘海就是收起（用户 2026-09-23：「用户点击刘海屏的时候它
@@ -540,8 +579,14 @@ final class NotchWindowController {
                 }
             }
 
+            // 「点在面板外」判的是**面板此刻的 frame**，不是 `expandedSheetFrame`。
+            // 小窗那一档两者相等（面板就是按那个矩形摆的），但全屏那一档面板是整块
+            // 屏：拿小窗矩形去判，屏幕右侧那一大片（包括「收缩」按钮自己、以及拉长
+            // 之后的每一条消息）都会被当成「面板外」，一点就把面板收回去 —— 而面板
+            // 里的控件同时也收到了这一下，两件事撞在一起，「收缩」看起来就是坏的。
             if let expandedScreen,
-               !NotchSupport.expandedSheetFrame(on: expandedScreen).contains(clickLocation) {
+               let expandingPresence = screenPresences.first(where: { $0.screen == expandedScreen }),
+               !expandingPresence.panel.frame.contains(clickLocation) {
                 collapse(expandBackToPill: true)
             }
             return
@@ -1204,6 +1249,18 @@ final class NotchWindowController {
         expandedScreen = nil
         companionManager.isNotchSheetExpanded = false
         removeEscapeMonitor()
+
+        // 收起一律回到小窗那一档，而且**必须在收起动画之前**：下一次展开要从小窗
+        // 尺寸起步（`beginExpansion` 设的就是 `expandedSheetFrame`），而收起动画
+        //（`driveCenterScaleFrames`）是从 `expandedSheetFrame` 那一帧起步的，不看当前
+        // frame —— 全屏态下不先落回小窗，收起的第一帧就会从整屏直接跳成 810×940。
+        if panelModel.isSheetFullscreen, let collapsingPresence {
+            collapsingPresence.panel.setFrame(
+                NotchSupport.expandedSheetFrame(on: collapsingPresence.screen),
+                display: false
+            )
+        }
+        panelModel.isSheetFullscreen = false
 
         // The curtain belongs to the expansion. A collapse can start while it
         // is still falling (a click on the close button right after opening),

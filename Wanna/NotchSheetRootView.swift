@@ -36,6 +36,9 @@ struct NotchSheetRootView: View {
     /// 这两个是"面板暂时让个位，马上回来"。
     var hideSheetAction: () -> Void
     var revealSheetAction: () -> Void
+    /// 顶栏那颗「展开 / 收缩」：全屏 ↔ 刘海下方小窗。动作住在
+    /// `NotchWindowController`（只有它手里有面板与屏幕），这里只是转手。
+    var toggleFullScreenAction: () -> Void
     var audioHistoryProvider: () -> [CGFloat]
 
     @StateObject private var sessionsModel = ConversationSessionsModel()
@@ -45,12 +48,32 @@ struct NotchSheetRootView: View {
     @State private var showsSettings = false
     @State private var selectedSettingsPage: SettingsPage = .general
 
+    /// 侧栏是否收成一条图标栏（顶栏左右那两颗按钮管它）。
+    ///
+    /// **没放进 `AppSettings`，这是有意的取舍。** 它确实是一条该跨启动保留的用户
+    /// 偏好，而 `AppSettingsStore.save` 那条路走不通：`.wannaAppSettingsChanged`
+    /// 的观察者里有一句「关掉『重启后保留对话』就把已存的对话删掉」
+    ///（`CompanionManager.appSettingsChangedObserver`），它调的是
+    /// `ConversationSessionsStore.clearAllSessions()` —— 那个函数**连内存里的会话
+    /// 一起清**（见 `ConversationHistoryStore.swift` 里它的实现）。也就是说，
+    /// 点一下「收起侧栏」会把侧栏里的会话全清空。存 `UserDefaults` 拿到同样的
+    /// 「重启后保持」，副作用为零 —— 展开态的面板高度
+    ///（`NotchSupport.sheetHeightFractionKey`）本来就是这么存的。
+    @State private var isSessionSidebarCollapsed =
+        UserDefaults.standard.bool(forKey: NotchSheetRootView.sessionSidebarCollapsedDefaultsKey)
+
+    private static let sessionSidebarCollapsedDefaultsKey = "wannaSessionSidebarCollapsed"
+
+    /// 侧栏展开时 245（原来写死在这里的那一个数），收起时只剩一条 62 的图标栏。
+    private static let expandedSidebarWidth: CGFloat = 245
+
     init(
         panelModel: NotchPanelModel,
         companionManager: CompanionManager,
         collapseAction: @escaping () -> Void,
         hideSheetAction: @escaping () -> Void,
         revealSheetAction: @escaping () -> Void,
+        toggleFullScreenAction: @escaping () -> Void,
         audioHistoryProvider: @escaping () -> [CGFloat]
     ) {
         self.panelModel = panelModel
@@ -64,6 +87,7 @@ struct NotchSheetRootView: View {
         self.collapseAction = collapseAction
         self.hideSheetAction = hideSheetAction
         self.revealSheetAction = revealSheetAction
+        self.toggleFullScreenAction = toggleFullScreenAction
         self.audioHistoryProvider = audioHistoryProvider
     }
 
@@ -84,67 +108,119 @@ struct NotchSheetRootView: View {
                     closeAction: collapseAction
                 )
             } else {
-                HStack(spacing: 0) {
-                    HomeSpaceSidebarView(
-                        sessionsModel: sessionsModel,
-                        agentSessionManager: agentSessionManager,
-                        voiceChatController: voiceChatController,
-                        showsSettings: $showsSettings,
-                        openRecordingSettingsAction: {
-                            // 先落页、再开门 —— 顺序不能反：`NotchSettingsArea` 是在
-                            // `showsSettings` 变真的那一刻被插进树的，它读的是当时的
-                            // `selectedSettingsPage`。
-                            selectedSettingsPage = .recording
-                            showsSettings = true
-                        }
-                    )
-                    .frame(width: 245)
-
-                    Rectangle()
-                        .fill(Color.white.opacity(0.08))
-                        .frame(width: 1)
-
-                    VStack(spacing: 0) {
-                        // 顶栏只剩对话页有：Agent 与语音聊天页的内容视图
-                        // 自带标题，用户要求「两个标题保留一个」，并且那条
-                        // 栏上的 ✕ 也不要（点窗口外 / Esc 都能收起）。
-                        if agentSessionManager.selectedSidebarSection == .conversations {
-                            topBar
-                        }
-                        // 侧栏顶部的「对话 / Agent」切换器决定右列显示哪一
-                        // 个内容视图——两个视图共享同一个 sheet，不嵌套。
-                        switch agentSessionManager.selectedSidebarSection {
-                        case .conversations:
-                            NotchHomeView(
-                                companionManager: companionManager,
-                                sessionsModel: sessionsModel
-                            )
-                        case .agents:
-                            AgentSessionView(
+                // 两列装在一个 ZStack 里，顶栏那排窗口按钮是它的第二个孩子 ——
+                // 那排按钮是**窗口级的东西**（收起侧栏 / 收回刘海 / 全屏），不属于
+                // 这两列中的任何一列，所以它不能参与那一层的布局：`HStack` 是
+                //「左列定宽、右列吃掉剩下的」，多一个 177pt 宽的兄弟就会挤进
+                // 最小宽度的账里。ZStack 的尺寸取两个孩子的较大者，而这一排永远
+                // 比两列窄，所以它对布局是透明的。
+                ZStack(alignment: .topLeading) {
+                    HStack(spacing: 0) {
+                        // 收起／展开只换左列这一个视图，右边那一列（内容、页头、那条
+                        // 贯穿的横线）完全不知道这件事 —— 宽度变了，`maxWidth: .infinity`
+                        // 自己会跟上。
+                        if isSessionSidebarCollapsed {
+                            HomeSpaceSidebarRailView(
+                                sessionsModel: sessionsModel,
                                 agentSessionManager: agentSessionManager,
-                                hideSheet: hideSheetAction,
-                                revealSheet: revealSheetAction
+                                voiceChatController: voiceChatController,
+                                showsSettings: $showsSettings
                             )
-                        case .voiceChat:
-                            VoiceChatSessionView(controller: voiceChatController)
+                        } else {
+                            HomeSpaceSidebarView(
+                                sessionsModel: sessionsModel,
+                                agentSessionManager: agentSessionManager,
+                                voiceChatController: voiceChatController,
+                                showsSettings: $showsSettings,
+                                openRecordingSettingsAction: {
+                                    // 先落页、再开门 —— 顺序不能反：`NotchSettingsArea` 是在
+                                    // `showsSettings` 变真的那一刻被插进树的，它读的是当时的
+                                    // `selectedSettingsPage`。
+                                    selectedSettingsPage = .recording
+                                    showsSettings = true
+                                }
+                            )
+                            .frame(width: Self.expandedSidebarWidth)
                         }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    // 右列那条贯穿的横线，与侧栏切换器下面那条分割线**同一个 y**
-                    // ——用户 2026-09-23：「每一个页面的右侧增加一条线…这条线应该
-                    // 从左到右贯穿，而且必须是一条直线…右侧的正文内容显示在这条线
-                    // 下面，线上面是相关的参数部分」。横向完全贯穿（不留边），所以
-                    // 它与侧栏自己那条线拼起来是一整条，而不是两截。
-                    //
-                    // 画在这里而不是画进三个内容视图：三页的页头高度不同，但这条线
-                    // 必须落在同一个 y 上，只有一列一个 overlay 才能保证这件事。
-                    // 页头各自按 `contentColumnHeaderBandHeight` 排到线下为止。
-                    .overlay(alignment: .top) {
+
                         Rectangle()
                             .fill(Color.white.opacity(0.08))
-                            .frame(height: 1)
-                            .offset(y: NotchSupport.contentColumnHeaderRuleY)
+                            .frame(width: 1)
+
+                        VStack(spacing: 0) {
+                            // 顶栏只剩对话页有：Agent 与语音聊天页的内容视图
+                            // 自带标题，用户要求「两个标题保留一个」，并且那条
+                            // 栏上的 ✕ 也不要（点窗口外 / Esc 都能收起）。
+                            if agentSessionManager.selectedSidebarSection == .conversations {
+                                topBar
+                            }
+                            // 侧栏顶部的「对话 / Agent」切换器决定右列显示哪一
+                            // 个内容视图——两个视图共享同一个 sheet，不嵌套。
+                            switch agentSessionManager.selectedSidebarSection {
+                            case .conversations:
+                                NotchHomeView(
+                                    companionManager: companionManager,
+                                    sessionsModel: sessionsModel
+                                )
+                            case .agents:
+                                AgentSessionView(
+                                    agentSessionManager: agentSessionManager,
+                                    hideSheet: hideSheetAction,
+                                    revealSheet: revealSheetAction
+                                )
+                            case .voiceChat:
+                                VoiceChatSessionView(controller: voiceChatController)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // 右列那条贯穿的横线，与侧栏切换器下面那条分割线**同一个 y**
+                        // ——用户 2026-09-23：「每一个页面的右侧增加一条线…这条线应该
+                        // 从左到右贯穿，而且必须是一条直线…右侧的正文内容显示在这条线
+                        // 下面，线上面是相关的参数部分」。横向完全贯穿（不留边），所以
+                        // 它与侧栏自己那条线拼起来是一整条，而不是两截。
+                        //
+                        // 画在这里而不是画进三个内容视图：三页的页头高度不同，但这条线
+                        // 必须落在同一个 y 上，只有一列一个 overlay 才能保证这件事。
+                        // 页头各自按 `contentColumnHeaderBandHeight` 排到线下为止。
+                        .overlay(alignment: .top) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.08))
+                                .frame(height: 1)
+                                .offset(y: NotchSupport.contentColumnHeaderRuleY)
+                        }
                     }
+
+                    // 窗口顶栏那几颗按钮。压在两列**之上**：右边三颗（收起侧栏 /
+                    // 收回刘海 / 全屏），左边一颗（收起侧栏）。用户 2026-09-26：
+                    // 「窗口右上角加三个按钮……顶部左侧也要一个『隐藏侧边栏』入口，
+                    // 用户在左边和右边都能点到」。
+                    //
+                    // **不放进任何一个内容页的页头。** 三个页头在右端各有一排自己的
+                    // 按钮（复制全文 / 打开 / 摄像头·屏幕·语速），而这一排三颗要长在
+                    // 三页都有的同一个位置上 —— 塞进页头就要改三个页头、还要让它们
+                    // 各自记得留出这么宽的一条，只要有一页忘了，`复制全文` 就会被
+                    // 这一排压住点不动，而且屏幕上完全看不出来是被谁压的。
+                    //
+                    // 纵向落在 `sheetHeaderTopInset`（40）那条留白里：面板顶边就是
+                    // 屏幕顶边，0 会钻到菜单栏底下，而 40 往下就是各页页头——这一排
+                    // 不进那条带子，所以它既不挤走页头，也不会和刘海那条状态带
+                    //（32 高）打架。
+                    sidebarCollapseButton
+                        .padding(.leading, Self.cornerControlInset)
+                        .padding(.top, Self.cornerControlTopInset)
+                        // 一颗按钮在左边、右边各出现一次。两份都靠这个 frame 贴到
+                        // ZStack 的对应边缘上（ZStack 是 `.topLeading` 对齐，所以
+                        // 靠右那一份必须自己撑满再右对齐）。
+                        .frame(maxWidth: .infinity, alignment: .topLeading)
+
+                    HStack(spacing: 6) {
+                        sidebarCollapseButton
+                        hideSheetButton
+                        fullScreenToggleButton
+                    }
+                    .padding(.trailing, Self.cornerControlInset)
+                    .padding(.top, Self.cornerControlTopInset)
+                    .frame(maxWidth: .infinity, alignment: .topTrailing)
                 }
             }
         }
@@ -185,6 +261,69 @@ struct NotchSheetRootView: View {
         selectedSettingsPage = requestedPage
         showsSettings = true
         panelModel.requestedSettingsPage = nil
+    }
+
+    // MARK: - 窗口顶栏那几颗按钮
+
+    /// 这一排到面板左右边缘 / 上边缘的距离。
+    ///
+    /// 18 而不是内容列那 12：面板的 `HomeSpaceSheetShape` 顶角是 36pt 圆角，
+    /// 而这一排 30pt 高的按钮落在最上面那条留白里 —— 贴到 12 的话，最外侧那颗的
+    /// 上角正好落在圆角弧外面，会被裁掉一角（不报错，只是缺一块）。
+    ///
+    /// 5 是它们在那条 40pt 留白里的纵向位置：下方紧挨着各页页头（用户的要求是
+    /// 「高度不要太矮也不要太高——它们下方紧挨着其它文字和按钮，不能把下面的内容
+    /// 挤走」），所以这一排既不进页头带、也不去挤它。
+    private static let cornerControlInset: CGFloat = 18
+    private static let cornerControlTopInset: CGFloat = 5
+
+    /// 「收起侧栏」——纯图标，左右各一颗，动作完全相同。
+    ///
+    /// 用户 2026-09-26：右边那颗「只有图标，没有名称、没有文字」，左边那颗
+    /// 「同样是纯图标」。一颗按钮一个定义、两处放，避免左右两颗哪天改得不一样。
+    private var sidebarCollapseButton: some View {
+        NotchBarActionButton(
+            systemImage: "sidebar.left",
+            isHighlighted: isSessionSidebarCollapsed,
+            help: isSessionSidebarCollapsed ? "展开侧栏" : "收起侧栏（只留图标）"
+        ) {
+            setSessionSidebarCollapsed(!isSessionSidebarCollapsed)
+        }
+    }
+
+    /// 「隐藏整个窗口」——把面板收回刘海。动作就是 `collapseAction`，与 Esc /
+    /// 点面板外 / 设置页的「关闭」同一条路，不另开一条收起路径。
+    private var hideSheetButton: some View {
+        NotchBarActionButton(
+            systemImage: "chevron.up",
+            help: "把窗口收回刘海"
+        ) {
+            collapseAction()
+        }
+    }
+
+    /// 「展开 / 收缩」——全屏与刘海下方小窗之间切。文案与图标都跟着状态走，
+    /// 所以按下去之前就能看出下一次会变成哪一档。
+    private var fullScreenToggleButton: some View {
+        let isFullscreen = panelModel.isSheetFullscreen
+        return NotchBarActionButton(
+            title: isFullscreen ? "收缩" : "展开",
+            systemImage: isFullscreen
+                ? "arrow.down.right.and.arrow.up.left"
+                : "arrow.up.left.and.arrow.down.right",
+            isHighlighted: isFullscreen,
+            help: isFullscreen ? "收缩回刘海下方的小窗" : "展开到全屏"
+        ) {
+            toggleFullScreenAction()
+        }
+    }
+
+    private func setSessionSidebarCollapsed(_ isCollapsed: Bool) {
+        SoundEffectPlayer.shared.play(.sidebarButton)
+        isSessionSidebarCollapsed = isCollapsed
+        // 立刻落盘，不等退出：这是个「下次打开还是这样」的偏好，而面板随时会收起
+        // （那时这个视图整棵被拆掉）。见属性上的注释 —— 这一条刻意没走 AppSettings。
+        UserDefaults.standard.set(isCollapsed, forKey: Self.sessionSidebarCollapsedDefaultsKey)
     }
 
     /// 内容区顶栏：左边是当前会话的标题，右边只剩实时活动指示。顶部留出茎

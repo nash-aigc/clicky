@@ -755,6 +755,22 @@ nonisolated enum NotchSupport {
         )
     }
 
+    /// 全屏态的面板 frame —— 就是整块屏幕。
+    ///
+    /// 用户 2026-09-26 要求面板顶栏那颗「展开」按钮「点一次展开成全屏，再点一次
+    /// 收缩回原来的小窗状态」。全屏这一档**不另算一套几何**：面板要铺满的那块
+    /// 屏幕就是 `screen.frame` 本身，而「小窗」那一档已经由 `expandedSheetFrame`
+    /// 给全了（同样从屏幕顶边垂下、同样水平居中，只是尺寸小一号）。两档的差别因此
+    /// 只有一个尺寸，来回切的时候不可能出现第二种坐标口径。
+    ///
+    /// 用 `frame` 而不是 `visibleFrame`：全屏就是全屏，菜单栏与 Dock 都该被盖住
+    ///（面板本来就活在 `.mainMenu + 1` 这一层，盖得住）。和 `expandedSheetFrame`
+    /// 一样，切过去之后 `expansionProgress` 由 `windowDidResize` 从 frame 反推，
+    /// 所以三种揭示、状态带、三列内容都不需要知道面板换了档。
+    static func fullScreenSheetFrame(on screen: NSScreen) -> CGRect {
+        screen.frame
+    }
+
     // MARK: - Fullscreen suppression
 
     /// Posted when the user drags the sheet's resize grip — the expanded

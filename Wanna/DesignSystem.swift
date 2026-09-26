@@ -890,8 +890,14 @@ extension View {
 /// would be exactly the kind nobody notices until it looks wrong.
 struct NotchBarActionButton: View {
 
-    let title: String
-    let systemImage: String
+    /// 按钮上的文字。**nil = 纯图标形态**（用户 2026-09-26 对面板顶栏那两颗
+    /// 「收起侧栏」的要求：「只有图标，没有名称、没有文字」）——同一颗按钮、
+    /// 同一个高度与同一个圆角，只是不画文字、横向内边距换成正方形。
+    ///
+    /// 做成这个类型的一个可选值，而不是另写一颗 icon-only 按钮：这一族按钮的
+    /// 全部意义就是「长得完全一样」，多一个类型就多一份会漂的样式。
+    var title: String?
+    var systemImage: String
 
     /// The one legitimate difference between the call sites: 「返回」 is green so
     /// the way back out of the settings pages is visible at a glance. Everything
@@ -910,15 +916,20 @@ struct NotchBarActionButton: View {
                 Image(systemName: systemImage)
                     .font(.system(size: 12, weight: .medium))
 
-                Text(title)
-                    .font(.system(size: 12.5, weight: .medium))
+                if let title {
+                    Text(title)
+                        .font(.system(size: 12.5, weight: .medium))
+                }
             }
             // Opacity on the tint itself, so a white button reproduces the
             // original white-on-white opacities exactly while a green one keeps
             // the same two steps as green.
             .foregroundColor(tint.opacity(isHighlighted ? 1.0 : 0.7))
             .frame(height: Self.height)
-            .padding(.horizontal, 12)
+            // 纯图标那颗是正方形（30×30）：没有文字时横向 12pt 内边距会让它变成
+            // 一条比图标宽得多的横杠，看上去像缺了个标签。
+            .frame(width: title == nil ? Self.height : nil)
+            .padding(.horizontal, title == nil ? 0 : 12)
             .background(
                 RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
                     .fill(tint.opacity(isHighlighted ? 0.14 : 0.07))
