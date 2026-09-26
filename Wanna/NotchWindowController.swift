@@ -410,8 +410,8 @@ final class NotchWindowController {
         // a click on some other app's window while the sheet is expanded
         // collapses it, and a click elsewhere never expands. Global monitors
         // observe without consuming, so the click still reaches its window.
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            self?.handleGlobalClick(at: NSEvent.mouseLocation)
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            self?.handleGlobalClick(at: NSEvent.mouseLocation, from: event)
         }
 
         // A global monitor explicitly does NOT see events destined for this
@@ -419,7 +419,7 @@ final class NotchWindowController {
         // on it only ever surfaces here, on the local monitor. The event is
         // returned untouched; the handler only reads the location.
         localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            self?.handleGlobalClick(at: NSEvent.mouseLocation)
+            self?.handleGlobalClick(at: NSEvent.mouseLocation, from: event)
             return event
         }
 
@@ -585,7 +585,21 @@ final class NotchWindowController {
         )
     }
 
-    private func handleGlobalClick(at clickLocation: NSPoint) {
+    /// 同一次物理点击只处理一次。
+    ///
+    /// 这条路径上的分支**不是幂等的** —— 「再点刘海就收起」之后紧跟一次「点刘海就展开」，
+    /// 用户看到的就是"缩回去又马上弹回来"。两个监听在系统里都装着（全局那个看别的 App 的
+    /// 点击、本地那个看落到我们自己窗口上的），一次点击在窗口归属切换的那一瞬可以同时到达
+    /// 两边；而同一个物理事件在两个回调里带的是**同一个 `timestamp`**，所以时间戳 + 类型
+    /// 就是它的身份。真实连击（双击）是两个事件、两个时间戳，不会被这条误伤。
+    private var lastHandledClickSignature: String?
+
+    private func handleGlobalClick(at clickLocation: NSPoint,
+                                  from event: NSEvent) {
+        let clickSignature = "\(event.timestamp)-\(event.type.rawValue)"
+        if clickSignature == lastHandledClickSignature { return }
+        lastHandledClickSignature = clickSignature
+
         // **临时 agent 那一排**（屏幕右上角、菜单栏下面一行）—— 判在最前面。
         //
         // 那一排画在它自己那块透明面板里（`AgentStripPanelController`），面板
