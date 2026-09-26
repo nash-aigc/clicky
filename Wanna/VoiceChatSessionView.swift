@@ -620,7 +620,10 @@ struct VoiceChatSessionView: View {
         switch controller.connectionPhase {
         case .connected:
             return AnyView(headerActionButton(
-                title: nil,
+                // **写「挂断」两个字**（用户 2026-09-26 深夜：「在语音和视频这两个模式下，
+                // 把通话按钮也写成通话，因为图文、图片文本模式下这个通话按钮效果挺好的，
+                // 把它也换成这个样式」）—— 与文本 / 图文那一颗同一种写法：图标 + 文字。
+                title: "挂断",
                 systemImage: "phone.down.fill",
                 tint: Color(red: 0.95, green: 0.42, blue: 0.40),
                 help: "断开这一场语音聊天（也可以点刘海右侧那颗红色电话）"
@@ -638,7 +641,7 @@ struct VoiceChatSessionView: View {
             ))
         case .idle:
             return AnyView(headerActionButton(
-                title: nil,
+                title: "通话",
                 systemImage: "phone.fill",
                 tint: DS.Colors.success,
                 help: "开始这一场语音聊天"

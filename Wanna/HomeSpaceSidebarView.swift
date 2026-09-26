@@ -260,33 +260,21 @@ struct HomeSpaceSidebarView: View {
             SoundEffectPlayer.shared.play(.notchRevealed)
             toggleSidebarCollapseAction()
         } label: {
+            // **也去掉了底色与描边**（用户 2026-09-26 深夜：「左侧左上角这个折叠展开的
+            // 按钮，你没有调它，对吧？最左上角这个」）—— 它是这张表的第一格，只有图标 +
+            // 一格竖线，和旁边那些文字格同一个样式。
             Image(systemName: "sidebar.left")
-                .font(.system(size: 12.5, weight: .medium))
-                .foregroundColor(.white.opacity(0.82))
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundColor(.white.opacity(0.88))
                 .frame(maxWidth: .infinity)
                 .frame(height: Self.topButtonHeight)
-                .background(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.white.opacity(0.07))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
         .help("收起侧栏（只留一条图标栏）")
-        // **左上角更圆**（用户：「包括左侧这个折叠按钮，它的左上角的圆角应该更大一点」）——
-        // 它正落在面板 36pt 的顶角圆弧里，理由与右上那颗完全相同。
-        .clipShape(
-            UnevenRoundedRectangle(topLeadingRadius: 16,
-                                   bottomLeadingRadius: 8,
-                                   bottomTrailingRadius: 8,
-                                   topTrailingRadius: 8,
-                                   style: .continuous)
-        )
+        // **不再需要裁顶角**（2026-09-26 深夜）：这一格现在没有底色和描边，圆弧是画在
+        // 面板自己那一层上的，这一格没有可裁的东西。
     }
 
     /// 上面那两行里的一颗：**等宽、等高**（`.frame(maxWidth: .infinity)` 让同一行的几颗
