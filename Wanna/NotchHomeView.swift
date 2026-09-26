@@ -64,19 +64,13 @@ struct NotchHomeView: View {
     }
 
     @State private var composerConversationMode: ComposerConversationMode = .continuous
+    /// 临时对话（阶段 4）：它自己的会话，**不碰主对话的任何状态**。
+    @StateObject private var temporaryConversation = TemporaryConversationModel()
     /// 「屏幕」这一格：勾着才在发送时带截图。**连续对话默认勾**（用户要求：
     /// 「连续对话默认屏幕勾选、声音勾选」），不写进 AppSettings —— 它是「这一次对话」
     /// 的属性，不是全局偏好。
     @State private var sendsScreenshotWithQuestion = true
-    /// 音色弹窗开着没有。
-    @State private var isVoicePickerPresented = false
-    /// 临时对话（阶段 4）：它自己的会话，**不碰主对话的任何状态**。
-    @StateObject private var temporaryConversation = TemporaryConversationModel()
-    /// 克隆音色（打开弹窗时拉一次；拉不到就只显示系统音色 + 一行说明）。
-    @State private var customVoicesForPicker: [CustomVoice] = []
-    @State private var voicePickerFailureText: String?
-    /// 试听代次：换一个音色试听就作废上一段（与「音色查看」页同一个做法）。
-    @State private var voicePreviewGeneration = 0
+
     @State private var composerDraft: String = ""
 
     /// The composer's 展开 button (user's request): the field grows to 30% of
@@ -165,14 +159,6 @@ struct NotchHomeView: View {
             // 两条情况走同一个动作：先翻转设置，再让 manager 停这一条 ——
             // `silenceActiveReplyAudio` 的门禁是「这一条回复还在跑（或还在播）」，
             // 情况 1 下两者都不成立，它是 no-op。
-            // 音色弹窗就在输入框正上方展开（用户：「点击后展开弹窗」）。
-            // 放在 VStack 里而不是做成浮层：它一展开就把上面的流往上推一点，
-            // 而浮层要自己算位置（`VoiceChatSessionView` 那套锚点测量）——
-            // 一个音色列表不值得那套机械。
-            if isVoicePickerPresented {
-                voicePickerPanel
-            }
-
             composerRow
 
             // The last error's verbatim API text. The deleted menu bar panel
@@ -871,7 +857,6 @@ struct NotchHomeView: View {
             }
             screenshotChip
             soundChip
-            voiceChip
         }
     }
 
@@ -994,201 +979,6 @@ struct NotchHomeView: View {
             companionManager.voiceReplyMuted.toggle()
             if companionManager.voiceReplyMuted {
                 companionManager.silenceActiveReplyAudio()
-            }
-        }
-    }
-
-    /// 「音色」——点开选择这一条回复用哪个音色（用户：「点击后展开弹窗，根据当前
-    /// 接入的语音合成服务展示支持的音色」；服务商就是百炼，音色表就是 `VoiceCatalog`）。
-    private var voiceChip: some View {
-        composerRowButton(title: currentVoiceDisplayName,
-                          systemImage: "waveform",
-                          isHighlighted: isVoicePickerPresented,
-                          helpText: "选择回复用哪个音色（默认用设置里配的那个）") {
-            isVoicePickerPresented.toggle()
-            if isVoicePickerPresented { loadCustomVoicesForPickerIfNeeded() }
-        }
-    }
-
-    /// 那一格显示什么字：选了就显示它的名字，没选就显示「音色」。
-    private var currentVoiceDisplayName: String {
-        guard let voiceID = companionManager.replyVoiceOverride else { return "音色" }
-        if let systemVoice = VoiceCatalog.threeStageVoices.first(where: { $0.id == voiceID }) {
-            return systemVoice.displayName
-        }
-        if let nickname = VoiceLibraryStore.nickname(forCustomVoiceID: voiceID) {
-            return nickname
-        }
-        return "音色"
-    }
-
-    private func loadCustomVoicesForPickerIfNeeded() {
-        guard customVoicesForPicker.isEmpty else { return }
-        Task { @MainActor in
-            do {
-                customVoicesForPicker = try await CustomVoiceLibraryClient.listCustomVoices()
-                voicePickerFailureText = nil
-            } catch {
-                voicePickerFailureText = "克隆音色没拉下来：\(error.localizedDescription)"
-            }
-        }
-    }
-
-    /// 音色弹窗。系统音色来自 `VoiceCatalog`（**当前合成模型支持的**那些），
-    /// 克隆音色来自云端列表 —— 与「设置 → 音色查看」读的是同一批数据。
-    private var voicePickerPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text("音色")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.white)
-                Spacer(minLength: 4)
-                Button(action: { isVoicePickerPresented = false }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.55))
-                        .frame(width: 18, height: 18)
-                        .background(Circle().fill(Color.white.opacity(0.08)))
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help("收起音色列表")
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-
-            Divider().overlay(Color.white.opacity(0.08))
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    voicePickerSectionLabel("系统音色")
-                    ForEach(VoiceCatalog.threeStageVoices) { voice in
-                        voicePickerRow(voiceID: voice.id,
-                                       model: currentSpeechModelID,
-                                       displayName: voice.displayName)
-                    }
-
-                    voicePickerSectionLabel("克隆音色")
-                    if let voicePickerFailureText {
-                        Text(voicePickerFailureText)
-                            .font(.system(size: 11))
-                            .foregroundColor(.orange.opacity(0.85))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                    } else if customVoicesForPicker.isEmpty {
-                        Text("还没有克隆音色（「设置 → 音色查看 → 声音克隆」可以做一个）")
-                            .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.40))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                    } else {
-                        ForEach(customVoicesForPicker) { voice in
-                            // `CustomVoice` 只有 id / targetModel / createdAt / status
-                            // —— 官方那边**不存备注**，所以显示名只能取本地昵称，没有再退回 id
-                            //（与「设置 → 音色查看」同一套三级回落）。
-                            voicePickerRow(
-                                voiceID: voice.id,
-                                model: voice.targetModel.isEmpty ? currentSpeechModelID : voice.targetModel,
-                                displayName: VoiceLibraryStore.nickname(forCustomVoiceID: voice.id) ?? voice.id
-                            )
-                        }
-                    }
-
-                    // 「用默认」——把覆盖清掉，回到设置里配的那个。
-                    voicePickerRow(voiceID: nil, displayName: "默认（设置里那一个）")
-                }
-            }
-            .frame(maxHeight: 220)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(DS.Colors.surface2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
-        )
-        .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
-    }
-
-    private func voicePickerSectionLabel(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 10.5, weight: .semibold))
-            .foregroundColor(.white.opacity(0.40))
-            .padding(.horizontal, 10)
-            .padding(.top, 8)
-            .padding(.bottom, 2)
-    }
-
-    /// 试听用的合成模型 = 「模型」页里 👄 那个（与「音色查看」页同一处取值，
-    /// 包括那条 `?? BailianConfiguration.Models.textToSpeech` 回落）。
-    private var currentSpeechModelID: String {
-        ModelConfigurationStore.snapshot().status(of: .speech).resolvedRole?.modelID
-            ?? BailianConfiguration.Models.textToSpeech
-    }
-
-    private func voicePickerRow(voiceID: String?, model: String = "", displayName: String) -> some View {
-        let isSelected = companionManager.replyVoiceOverride == voiceID
-        return HStack(spacing: 6) {
-            Image(systemName: isSelected ? "checkmark" : "circle")
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(isSelected ? DS.Colors.success : .white.opacity(0.25))
-                .frame(width: 12)
-
-            Text(displayName)
-                .font(.system(size: 12))
-                .foregroundColor(.white.opacity(0.85))
-                .lineLimit(1)
-
-            Spacer(minLength: 4)
-
-            if let voiceID {
-                Button(action: {
-                    SoundEffectPlayer.shared.play(.sidebarButton)
-                    previewVoice(voiceID, model: model)
-                }) {
-                    Image(systemName: "play.circle")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.55))
-                }
-                .buttonStyle(.plain)
-                .pointerCursor()
-                .help("试听")
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            SoundEffectPlayer.shared.play(.sidebarButton)
-            companionManager.replyVoiceOverride = voiceID
-        }
-    }
-
-    /// 试听：走「设置 → 音色查看」同一条链 —— `VoicePreviewService` 合成（结果进
-    /// `VoicePreviews/` 缓存）+ `CompanionManager.playVoicePreview` 播放。
-    ///
-    /// 代次计数与那一页同义：**换一个音色试听 = 停掉上一段**，而不是两段叠在一起。
-    /// （自己再写一条播放通路的话，两处会各自漂。）
-    private func previewVoice(_ voiceID: String, model: String) {
-        companionManager.stopVoicePreview()
-        voicePreviewGeneration += 1
-        let generation = voicePreviewGeneration
-        Task { @MainActor in
-            do {
-                let appSettings = AppSettingsStore.snapshot()
-                let audioData = try await VoicePreviewService.previewAudioData(
-                    engine: .threeStage,
-                    voice: voiceID,
-                    model: model.isEmpty ? currentSpeechModelID : model,
-                    speechRate: appSettings.speechPlaybackRate,
-                    speechVolumePercent: appSettings.speechPlaybackVolumePercent,
-                    styleInstruction: "")
-                guard generation == voicePreviewGeneration else { return }
-                try await companionManager.playVoicePreview(wavData: audioData)
-            } catch {
-                guard generation == voicePreviewGeneration else { return }
-                voicePickerFailureText = "试听失败：\(error.localizedDescription)"
             }
         }
     }
