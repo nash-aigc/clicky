@@ -1247,6 +1247,135 @@ final class LongFormRecorderController: ObservableObject {
         }
     }
 
+    // MARK: - 重新转写（网络断了、转写丢字之后重跑一遍）
+
+    /// 正在重新转写的那几条录音（设置页的历史行据此显示进度）。
+    @Published private(set) var retranscribingRecordingIDs: Set<String> = []
+
+    /// **把一条已经录好的录音，重新喂给识别器跑一遍。**
+    ///
+    /// 用户 2026-09-26 要它的理由很具体：「网络问题或者其他的问题，他可能是断开了，然后
+    /// 用户可以通过这样的历史点击重新进行一个重新撰写。」
+    ///
+    /// 走的**就是录音那一条链**，只换了音频来源：同一个 `VolcengineRealtimeASRClient`、
+    /// 同一份设置解析出来的配置、同一个 `LongFormTranscriptWriter`。落盘的那份 `.wav`
+    /// 本来就是上行字节流的原样副本（那条注释写着"可以原样重放给服务端、完整复现一次
+    /// 识别"），所以这条路不需要任何转码。
+    ///
+    /// **旧的转写不删，改名留档**（`.txt` → `.txt.superseded`）。重跑也可能中途失败，
+    /// 而"识别了一半就断"正是用户来点这个按钮的原因 —— 把上一份直接覆盖掉，等于让他
+    /// 连那半份也丢了。
+    func retranscribe(recordingID: String) async {
+        guard !retranscribingRecordingIDs.contains(recordingID) else { return }
+        guard !isRecording else {
+            lastErrorMessage = "正在录音，等这一场结束再重新转写。"
+            return
+        }
+        let settings = AppSettingsStore.snapshot()
+        folderURL = RecordingLibraryStore.resolvedFolderURL(fromSettingsPath: settings.recordingSaveFolderPath)
+        guard let session = RecordingLibraryStore.shared.allSessions().first(where: { $0.id == recordingID }) else {
+            lastErrorMessage = "找不到这条录音（\(recordingID)）。"
+            return
+        }
+        let audioURL = session.audioFileURL(inFolder: folderURL)
+        guard let audioData = try? Data(contentsOf: audioURL), audioData.count > 44 else {
+            lastErrorMessage = "这条录音的音频文件读不出来：\(audioURL.lastPathComponent)"
+            return
+        }
+
+        retranscribingRecordingIDs.insert(recordingID)
+        lastErrorMessage = nil
+        // 转录写到一个**临时名字**上，跑完整了才顶替正式那两个文件 ——
+        // 半路失败时屏幕上的历史和磁盘上的原文都还是完整的。
+        let scratchSessionID = "\(recordingID)-retranscribing"
+        defer { retranscribingRecordingIDs.remove(recordingID) }
+
+        do {
+            let writer = try LongFormTranscriptWriter(folder: folderURL,
+                                                      sessionID: scratchSessionID,
+                                                      appendingToExistingFile: false)
+            let client = VolcengineRealtimeASRClient(configuration: makeASRConfiguration(from: settings))
+            var segmentCount = 0
+            var characterCount = 0
+            client.onSegment = { segment in
+                guard writer.commit(segment: segment) else { return }
+                segmentCount += 1
+                characterCount += segment.text.count
+            }
+            client.onDiagnostic = { [weak self] line in
+                self?.publishDiagnostic("重新转写[\(recordingID)] \(line)")
+            }
+            client.connect()
+            // 握手要先走完，否则前几块音频会被服务端丢掉（与录音那条路同一个理由）。
+            try? await Task.sleep(for: .milliseconds(600))
+
+            // 44 字节是 `RecordingAudioWriter` 自己写的 WAV 头；跳过去就是当初上行的那串字节。
+            let pcmPayload = audioData.dropFirst(44)
+            let chunkSize = 3_200          // 100ms @ 16kHz 单声道 PCM16
+            var offset = pcmPayload.startIndex
+            while offset < pcmPayload.endIndex {
+                let end = pcmPayload.index(offset, offsetBy: chunkSize, limitedBy: pcmPayload.endIndex)
+                    ?? pcmPayload.endIndex
+                client.enqueue(audio: Data(pcmPayload[offset..<end]))
+                offset = end
+                // **不按实时速度喂**（12 秒的录音就应该 12 秒内跑完，3 小时的不该等 3 小时），
+                // 但也不一次全灌进去 —— 每块之间让出一点点，服务端那边是流式解码。
+                try? await Task.sleep(for: .milliseconds(Self.retranscribeChunkPacingMilliseconds))
+            }
+
+            // 末包一发服务端就关连接，定稿走 `onSegment`（与录音那条路同一个收口），
+            // 所以这里只等"它结束了"，文字一律从落盘的那份读。
+            await withCheckedContinuation { continuation in
+                client.finishAndAwaitFinalResult(timeoutSeconds: 8.0) {
+                    continuation.resume()
+                }
+            }
+            writer.finalize()
+
+            let newText = (try? String(contentsOf: writer.plainTextFileURL, encoding: .utf8)) ?? ""
+            guard !newText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                lastErrorMessage = "重新转写没有拿到任何文字 —— 这条录音可能是静音的（长度 \(Int(session.recordedSeconds)) 秒）。"
+                return
+            }
+
+            // 顶替：旧的先改名留档，再把新的搬过去。
+            let textURL = session.transcriptFileURL(inFolder: folderURL)
+            let jsonlURL = session.segmentFileURL(inFolder: folderURL)
+            // **两个 `.superseded` 都要先清掉**：`moveItem` 在目标已存在时是失败的，
+            // 而第二次重新转写同一条录音时那两个名字上还躺着上一次的留档 ——
+            // 结果就是 `.txt` 换新了、`.jsonl` 悄悄留在旧的那份上（实测踩到）。
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: textURL.path + ".superseded"))
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: jsonlURL.path + ".superseded"))
+            try? FileManager.default.moveItem(at: textURL, to: URL(fileURLWithPath: textURL.path + ".superseded"))
+            try? FileManager.default.moveItem(at: jsonlURL, to: URL(fileURLWithPath: jsonlURL.path + ".superseded"))
+            try FileManager.default.moveItem(at: writer.plainTextFileURL, to: textURL)
+            try? FileManager.default.moveItem(at: writer.segmentFileURL, to: jsonlURL)
+
+            var updated = session
+            updated.characterCount = newText.count
+            updated.segmentCount = segmentCount
+            updated.endedCleanly = true
+            updated.lastErrorMessage = nil
+            RecordingLibraryStore.shared.upsert(updated)
+            publishDiagnostic("重新转写完成：\(recordingID) · \(segmentCount) 段 · \(newText.count) 字")
+        } catch {
+            lastErrorMessage = "重新转写失败：\(error.localizedDescription)"
+            publishDiagnostic("重新转写失败：\(recordingID) · \(error)")
+        }
+    }
+
+    /// 每块音频之间的让位（毫秒）：**20 = 5 倍实时速度**（一块 100ms 的音频，20ms 发出去）。
+    ///
+    /// 这个数是被实测逼出来的，不是拍的：**0（尽快喂完）会坏**。2026-09-26 实测一条
+    /// 49 秒的录音，`上行 1523KB`（整个文件都发出去了）而服务端回的自报位置只有
+    /// `音频位置662ms`，定稿出来的是一句「这个。」—— 15 个字，而原文 109 个字。
+    /// 流式识别是按到达速率解码的，灌得比它解得快，中间那一大段就被跳过了。
+    ///
+    /// 5 倍是**下限**的估计：真按实时（100）喂，一条 3 小时的录音要等 3 小时，那这个按钮
+    /// 等于没用。要用更快的倍数，先在这台机器上拿一条长录音量一遍"服务端自报位置 ≈ 音频
+    /// 总长"，别凭感觉调。
+    private static let retranscribeChunkPacingMilliseconds = 20
+
     /// 结束这一场：让面板消失，下次录音从头开始。
     func finishCurrentSession() {
         isTranscriptExpanded = false

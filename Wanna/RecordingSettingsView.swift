@@ -583,7 +583,17 @@ private struct RecordingHistoryCard: View {
     let session: RecordingSession
     let folder: URL
 
+    /// **订阅转写状态**：`retranscribingRecordingIDs` 是 `@Published`，不订阅的话
+    /// 「转写中…」那颗按钮永远不变回「重新转写」（进度只有它自己知道）。
+    @ObservedObject private var recorder = LongFormRecorderController.shared
+
     @State private var isExpanded = false
+
+    /// 这一条正在重新转写吗 —— 设置页据此把按钮变成「转写中…」。
+    /// 它读的是 `LongFormRecorderController` 的 `@Published`，所以进度会自己刷新。
+    private var isRetranscribing: Bool {
+        LongFormRecorderController.shared.retranscribingRecordingIDs.contains(session.id)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
@@ -601,6 +611,16 @@ private struct RecordingHistoryCard: View {
                 if audioExists {
                     action("播放", systemImage: "play.circle") {
                         NSWorkspace.shared.open(session.audioFileURL(inFolder: folder))
+                    }
+                    // **重新转写**（用户 2026-09-26：「网络问题或者其他的问题，他可能是断开了，
+                    // 然后用户可以通过这样的历史点击重新进行一个重新撰写」）。
+                    //
+                    // 只有音频还在的时候才有意义 —— 识别器的输入就是那个 `.wav`。音频被保留
+                    // 天数清理掉之后，这一颗就不画了（画一颗点了没反应的按钮更糟）。
+                    action(isRetranscribing ? "转写中…" : "重新转写",
+                           systemImage: isRetranscribing ? "hourglass" : "arrow.clockwise") {
+                        guard !isRetranscribing else { return }
+                        Task { await LongFormRecorderController.shared.retranscribe(recordingID: session.id) }
                     }
                 } else {
                     // 音频按保留天数删掉了，但记录还在。**要说出来**，而不是让播放
