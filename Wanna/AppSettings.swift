@@ -1235,6 +1235,65 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// 录音沿用同一个约定 —— 录完的文件是要给人看、给人拖走的。
     var recordingSaveFolderPath: String = ""
 
+    // MARK: - 录音 → Notion（2026-09-27）
+
+    /// 总闸。关掉时：不检测关键词、不显示那两颗按钮、一切与从前完全一样。
+    var notionNoteEnabled: Bool = false
+
+    /// 要写进哪一页（用户在 Notion 里复制的那条链接或页面 id）。
+    var notionNotePageID: String = ""
+
+    /// 打开的链接 —— 保存成功后点「已保存笔记」跳的就是它。留空时用 `notionNotePageID` 拼。
+    var notionNoteOpenURL: String = ""
+
+    /// Notion 集成令牌（`ntn_…` 或旧的 `secret_…`）。
+    ///
+    /// **它住在 `AppSettings.json`（0600、仓库外）** —— 与这一族其他设置同一处，
+    /// 不写进仓库、不进导出文件之外的任何地方（导出文件里也是明文，那一页有说明）。
+    var notionNoteToken: String = ""
+
+    /// 整理内容那次调用用的服务商（与「录音 → 自定义风格」同一套字段形状）。
+    ///
+    /// 用户要求「转写部分使用另一套提示词，独立使用 DeepSeek Flash 设计的提示词整理，
+    /// 不使用录音润色提示词」—— 所以它有**自己**的地址 / Key / 模型，与录音润色那套分开。
+    var notionNoteBaseURL: String = ""
+    var notionNoteAPIKey: String = ""
+    var notionNoteModelID: String = "deepseek-flash"
+
+    /// 那次整理用的提示词（要它输出两块：大纲 + 排版后的 Markdown）。
+    var notionNotePrompt: String = AppSettings.defaultNotionNotePrompt
+
+    /// 触发关键词（一行一个）。检测只在**开头前 20 字**与**末尾 20 字**里做。
+    var notionNoteKeywords: String = AppSettings.defaultNotionNoteKeywords
+
+    static let defaultNotionNoteKeywords = """
+    保存笔记
+    保存 notion
+    保存一条笔记
+    保存一条内容
+    保存到 notion
+    添加一条笔记
+    创建一条笔记
+    """
+
+    /// 出厂提示词。要求模型**只整理、不扩写**，并给出三段固定结构的输出，
+    /// 这样客户端可以按分隔符切开、分别放成两个块。
+    static let defaultNotionNotePrompt = """
+    你是文本整理器。下面是一段录音的转写原文。请**只整理排版，不要扩写、不要补内容**，
+    并严格按下面的三段格式输出（分隔符原样保留）：
+
+    【总结】
+    一句话总结（不超过 30 字）。
+
+    【大纲】
+    用缩进与短横线把内容整理成树状大纲，像文件目录或脑图那样分层。
+
+    【排版】
+    用 Markdown 重新排版：可以用 # 标题、**加粗**、> 引用、- 列表、表格，
+    并把关键的词句用后置标记标出颜色，例如「重要内容{红}」「补充{蓝}」。
+    原文里没有的信息一个字都不要加。
+    """
+
     /// 断线后自动重连并接着录。关掉的话断了就停，已录的部分照常保住。
     var recordingAutoReconnects: Bool = true
 
@@ -1521,6 +1580,15 @@ nonisolated extension AppSettings {
         case recordingLanguage
         case recordingHotwords
         case recordingSaveFolderPath
+        case notionNoteEnabled
+        case notionNotePageID
+        case notionNoteOpenURL
+        case notionNoteToken
+        case notionNoteBaseURL
+        case notionNoteAPIKey
+        case notionNoteModelID
+        case notionNotePrompt
+        case notionNoteKeywords
         case recordingAutoReconnects
         case recordingRotationMinutes
         case recordingCopiesToClipboard
@@ -1679,6 +1747,15 @@ nonisolated extension AppSettings {
         recordingLanguage = try container.decodeIfPresent(String.self, forKey: .recordingLanguage) ?? defaults.recordingLanguage
         recordingHotwords = try container.decodeIfPresent(String.self, forKey: .recordingHotwords) ?? defaults.recordingHotwords
         recordingSaveFolderPath = try container.decodeIfPresent(String.self, forKey: .recordingSaveFolderPath) ?? defaults.recordingSaveFolderPath
+        notionNoteEnabled = try container.decodeIfPresent(Bool.self, forKey: .notionNoteEnabled) ?? defaults.notionNoteEnabled
+        notionNotePageID = try container.decodeIfPresent(String.self, forKey: .notionNotePageID) ?? defaults.notionNotePageID
+        notionNoteOpenURL = try container.decodeIfPresent(String.self, forKey: .notionNoteOpenURL) ?? defaults.notionNoteOpenURL
+        notionNoteToken = try container.decodeIfPresent(String.self, forKey: .notionNoteToken) ?? defaults.notionNoteToken
+        notionNoteBaseURL = try container.decodeIfPresent(String.self, forKey: .notionNoteBaseURL) ?? defaults.notionNoteBaseURL
+        notionNoteAPIKey = try container.decodeIfPresent(String.self, forKey: .notionNoteAPIKey) ?? defaults.notionNoteAPIKey
+        notionNoteModelID = try container.decodeIfPresent(String.self, forKey: .notionNoteModelID) ?? defaults.notionNoteModelID
+        notionNotePrompt = try container.decodeIfPresent(String.self, forKey: .notionNotePrompt) ?? defaults.notionNotePrompt
+        notionNoteKeywords = try container.decodeIfPresent(String.self, forKey: .notionNoteKeywords) ?? defaults.notionNoteKeywords
         recordingAutoReconnects = try container.decodeIfPresent(Bool.self, forKey: .recordingAutoReconnects) ?? defaults.recordingAutoReconnects
         recordingRotationMinutes = try container.decodeIfPresent(Int.self, forKey: .recordingRotationMinutes) ?? defaults.recordingRotationMinutes
         recordingCopiesToClipboard = try container.decodeIfPresent(Bool.self, forKey: .recordingCopiesToClipboard) ?? defaults.recordingCopiesToClipboard
