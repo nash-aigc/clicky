@@ -14,7 +14,7 @@ import Combine
 /// 判断全部来自 `VoiceCatalog`，不在这里另写一遍。
 ///
 /// 「使用」写进的是**当前活动角色**的那一条音色字段
-/// （`ttsVoice` / `omniVoice` / `duplexVoice`）—— 和 VoiceWeb 一样，音色是
+/// （`ttsVoice` / `omniVoice` / `duplexVoice`）—— 音色是
 /// 「角色 × 模式」的属性，不是全局一个。
 struct VoiceCatalogSettingsView: View {
 
@@ -158,8 +158,8 @@ struct VoiceCatalogSettingsView: View {
     /// 这个音色不能试听的原因；nil = 可以试听。
     ///
     /// 目前只有一个特例，而且它是官方能力边界而不是我们的 bug：`Tina` 不在
-    /// Qwen-TTS 的音色表里，全模态要用它试听就得让实时模型自己发声。VoiceWeb
-    /// 的做法是把 ▶ 置灰并写明原因，这里照做 —— 置灰比"点了没反应"诚实。
+    /// Qwen-TTS 的音色表里，全模态要用它试听就得让实时模型自己发声。这里
+    /// 的做法是把 ▶ 置灰并写明原因 —— 置灰比"点了没反应"诚实。
     private func previewUnavailableReason(for voice: VoiceOption) -> String? {
         if selectedEngine == .omni, voice.id == "Tina" {
             return "Tina 不在 Qwen-TTS 音色表里，无法试听，可直接选用"
@@ -472,7 +472,7 @@ struct VoiceCatalogSettingsView: View {
     /// 克隆音色那一栏的搜索：昵称 / 编号 / 目标模型。
     ///
     /// 和系统音色搜的不是同一组字段（克隆音色没有「语言」「描述」，系统音色没有
-    /// 昵称），所以是两份过滤而不是共用一个 —— VoiceWeb 也是这么分的
+    /// 昵称），所以是两份过滤而不是共用一个
     /// （切换栏时会把搜索词清掉）。
     private var filteredCustomVoices: [CustomVoice] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -842,8 +842,8 @@ struct VoiceCatalogSettingsView: View {
 
     /// 「使用」—— 写进活动角色的对应音色字段。
     ///
-    /// 只写音色、**不写模型**：VoiceWeb 在克隆音色上会连模型一起写，因为克隆音色
-    /// 绑定 `target_model`。系统音色没有这个约束，而模型在这里也不是这一页的职责
+    /// 只写音色、**不写模型**。克隆音色确实绑定 `target_model`，所以一次「使用」
+    /// 本可以连模型一起写；但系统音色没有这个约束，而模型在这里也不是这一页的职责
     /// （三段式的合成模型在「说」那一页、实时模型在 Phase 2/3 的设置里）。
     private func applyVoice(_ voiceID: String) {
         var role = VoiceChatRoleStore.activeRole()

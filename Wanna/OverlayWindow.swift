@@ -226,7 +226,7 @@ struct BlueCursorView: View {
         .shadow(color: Color.black.opacity(0.30), radius: 10, x: 0, y: 4)
     }
 
-    /// The user's live recognition text, in the original small blue bubble.
+    /// The user's live recognition text, in the small blue bubble.
     private var liveTranscriptBubble: some View {
         Text(conversationBubbleText)
             .font(.system(size: 11, weight: .medium))
@@ -369,7 +369,7 @@ struct BlueCursorView: View {
             // back — zero added latency; the animation is per-unit blur/opacity,
             // never a gate on showing text.
             //
-            // The user's live transcript keeps the original small blue bubble —
+            // The user's live transcript keeps the small blue bubble —
             // it is fleeting recognition feedback, not a reply, and the card
             // design belongs to what the model says.
             //

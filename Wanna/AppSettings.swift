@@ -371,8 +371,8 @@ nonisolated enum SpeechSpeakMode: String, Codable, CaseIterable, Sendable {
 /// How much authority a spawned agent subprocess carries, expressed as the
 /// claude CLI permission arguments it is launched with.
 ///
-/// The three levels mirror the reference design's approval policy (plan /
-/// auto-edit / full). The vocabulary — which flags mean what on the CLI — is
+/// The three levels are the approval policy (plan / auto-edit / full). The
+/// vocabulary — which flags mean what on the CLI — is
 /// held only here, so the process bridge never re-derives it.
 nonisolated enum AgentPermissionMode: String, Codable, CaseIterable, Sendable {
     /// 只读规划: the agent may read and think but changes nothing. The safest
@@ -639,14 +639,14 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// reply starting. Clamped to 0...60.
     /// 「弹出速度」: how fast the notch sheet's expansion plays, as a multiplier
     /// applied to every style's duration (and to the content entrance delays,
-    /// which are fractions of the same window). `1.0` is the reference page's
+    /// which are fractions of the same window). `1.0` is 参考页's
     /// own timing; `2.0` — the default, the user's choice 2026-09-24 — is twice
     /// as fast. Clamped to 1...4: below 1 the panel would feel sluggish again,
     /// and above 4 the reveal stops reading as a bloom and starts reading as a
     /// flash.
     ///
-    /// The constants in `NotchSupport` stay at the reference's original values;
-    /// this divides at read time, so the reference numbers remain the documented
+    /// The constants in `NotchSupport` stay at 参考页's own values;
+    /// this divides at read time, so 参考页's numbers remain the documented
     /// baseline and a future style added to `NotchSupport` inherits the speed
     /// automatically.
     var notchExpansionSpeedMultiplier: Double = 2.0
@@ -907,13 +907,13 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// sends it, holding the key again re-records over it.
     var sendsTranscriptImmediatelyOnRelease: Bool = true
 
-    // MARK: - VoiceWeb 语音模式
+    // MARK: - 语音聊天模式
 
-    /// The three VoiceWeb mode shortcuts' factory defaults: ⌃⌥1 / ⌃⌥2 / ⌃⌥3
+    /// The three voice-chat mode shortcuts' factory defaults: ⌃⌥1 / ⌃⌥2 / ⌃⌥3
     /// (key codes 18/19/20 are the top number row's 1/2/3). The modifier raw
     /// value is control (0x40000) + option (0x80000) — the same two modifiers
     /// the talk shortcut's preset uses, so the whole family sits under one
-    /// hand. Indexed by `VoiceWebMode`'s raw value.
+    /// hand. Indexed by mode (0 = 三段式, 1 = 全双工语音, 2 = 全双工全模态).
     static let voiceWebDefaultShortcutBindings: [RecordedKeyboardShortcut] = [
         RecordedKeyboardShortcut(modifierFlagsRawValue: 786432, keyCode: 18),
         RecordedKeyboardShortcut(modifierFlagsRawValue: 786432, keyCode: 19),
@@ -921,7 +921,7 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     ]
 
     /// The factory default for 「释放引擎」: ⌃⌥4, the next key along from the
-    /// three VoiceWeb mode shortcuts above (the only other ⌃⌥ bindings in the
+    /// three voice-chat mode shortcuts above (the only other ⌃⌥ bindings in the
     /// app), so the release shortcut works out of the box rather than needing to
     /// be recorded before it can be used.
     static let defaultReleaseAudioEngineShortcut = RecordedKeyboardShortcut(
@@ -948,15 +948,9 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     /// The shortcut for the 全双工全模态 (omni) mode. `nil` means ⌃⌥3.
     var voiceWebOmniShortcut: RecordedKeyboardShortcut?
 
-    /// Where the VoiceWeb project lives — the folder whose `.venv/bin/python
-    /// server.py` is launched when the service is not reachable, and whose
-    /// `cwd` that launch runs under. A stored default rather than a computed
-    /// constant so a user who moved the project can fix it in settings without
-    /// a rebuild.
-
-    /// 三段式: send screen content along with the conversation (VoiceWeb's
+    /// 三段式: send screen content along with the conversation (the
     /// role-level screen recognition). Off = voice only. Written into the
-    /// active role's `screen_vision_enabled` at connect time by the bridge.
+    /// active role's `screen_vision_enabled` at connect time.
     var voiceWebThreeStageSendsScreen: Bool = false
 
     /// 全双工全模态: whether voice participates. Voice is the point of the
@@ -968,11 +962,11 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
     var voiceWebOmniCameraEnabled: Bool = false
 
     /// 全双工全模态: ask for screen sharing after connecting. The macOS
-    /// picker always needs one human click in the VoiceWeb window; the row's
+    /// picker always needs one human click; the row's
     /// description says so.
     var voiceWebOmniScreenEnabled: Bool = false
 
-    /// The shortcut actually in effect for VoiceWeb mode `modeIndex`
+    /// The shortcut actually in effect for voice-chat mode `modeIndex`
     /// (0 = 三段式, 1 = 全双工语音, 2 = 全双工全模态): the user's recorded
     /// one when present, otherwise the factory default — the same
     /// recorded-wins-over-preset rule as `pushToTalkShortcutBinding`.

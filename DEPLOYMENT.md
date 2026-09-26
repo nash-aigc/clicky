@@ -63,7 +63,8 @@ Wanna ──→ 你在「模型设置」里指定的服务商（直连，无代�
 删除的文件：`ClaudeAPI.swift`、`ElevenLabsTTSClient.swift`、`WannaAnalytics.swift`。
 `worker/` 目录（改造前的 Cloudflare 代理，转发 Anthropic / ElevenLabs）已移出仓库。
 `OpenAIAudioTranscriptionProvider.swift`、`AssemblyAIStreamingTranscriptionProvider.swift`、
-`OpenAIAPI.swift` 是死代码，保留未删（不影响构建）。
+`OpenAIAPI.swift` 当时是死代码、保留未删；2026-09-26 已连同它们唯一的一处接线
+（`BuddyTranscriptionProvider` 的候选表）一起删除。
 
 ### 密钥怎么放（新机器必做）
 
@@ -188,9 +189,9 @@ DeepSeek 的 key 在设置窗口的 DeepSeek 卡里，想换直接改；百炼�
 - **解决**：`deinit` 只直接消息对象（关 websocket），绝不调 `cancel()`；
   owner 在每条拆卸路径上显式调 `cancel()`。
 - **教训**：凡是"串行队列 + async 闭包持有 self"的类，deinit 里不能调任何
-  会入队 self 的方法。改造前 `OpenAIAudioTranscriptionProvider.swift` 有同样
-  的写法（死代码所以没炸），`AppleSpeechTranscriptionProvider` 的 `cancel()`
-  没有逃逸 self，安全。
+  会入队 self 的方法。改造前那份上传式转写 provider 有同样的写法（死代码所以
+  没炸，该文件已在 2026-09-26 删除），`AppleSpeechTranscriptionProvider` 的
+  `cancel()` 没有逃逸 self，安全。
 
 ### ④ 语音回答永远重复"抱歉，没回答上来"
 

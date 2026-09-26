@@ -14,10 +14,16 @@
 仲裁纯代码（零模型）：点名 > 脚本（且须分类题同判混合执行）> 分类 > 低置信兜底纯文本。
 """
 import json
+import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/Users/mjm/Documents/SuperAgent/Agent/Wanna/instant-agent")
+sys.path.insert(0, os.environ.get(
+    "WANNA_INSTANT_AGENT",
+    str(Path.home() / "Documents/SuperAgent/Agent/Wanna/instant-agent")))
 import jev  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
 
 GATE = 0.55
 AGENT_GATE = 0.80   # 点名是"明确说了才算"，阈值刻意高于普通路由
@@ -136,7 +142,7 @@ def main():
     ms = sorted(r["ms"] for r in rows)
     print(f"\n== 汇总 == 最终决策 {hits}/{n} · 中位 {ms[len(ms)//2]}ms · "
           f"总成本 ${sum(r['cost'] for r in rows):.6f}（{n} 次调用·每次三问）")
-    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/wanna/解决方案/04-Agent体系/分流测速/一次三问结果.json"
+    dest = str(HERE / "一次三问结果.json")
     json.dump({"rows": rows, "score": {"hit": f"{hits}/{n}",
                                        "median_ms": ms[len(ms) // 2] if ms else 0,
                                        "total_cost_usd": sum(r["cost"] for r in rows)}},

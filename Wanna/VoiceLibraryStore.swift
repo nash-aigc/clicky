@@ -6,14 +6,14 @@
 //
 //  为什么这两样在本地、而不是云端 —— 两条都是被官方 API 的边界逼出来的：
 //
-//   · 收藏。VoiceWeb 把它存在浏览器 `localStorage` 里，**从不发到服务端**，而且
+//   · 收藏。**只存在本地，从不发到服务端**，而且
 //     它是「稳定分区」而不是排序：收藏的提到最前面，**组内保持原顺序**
-//     （`patch.js:4192` 是一个 `(isFav(b) - isFav(a)) || (a.i - b.i)` 的比较，
+//     （比较式是 `(isFav(b) - isFav(a)) || (a.i - b.i)`，
 //     所以同组内相对次序不动）。既然服务端没有这个概念，原生就自己存一份，
 //     没有任何东西需要同步。
 //
-//   · 昵称。官方声音复刻 API **不保存备注**（VoiceWeb 的注释原话：
-//     「昵称是纯本地概念（阿里 API 不保存备注）」）。所以云端只认 `voice_id`，
+//   · 昵称。官方声音复刻 API **不保存备注**：
+//     「昵称是纯本地概念（阿里 API 不保存备注）」。所以云端只认 `voice_id`，
 //     用户给它起的名字只能落在这里。
 //
 //  存储形状照抄仓库里另外三个 store（`AppSettingsStore` / `ModelConfigurationStore`
@@ -35,7 +35,7 @@ nonisolated struct VoiceLibrary: Codable, Equatable {
     /// 收藏的音色，**最近收藏的在前**。
     ///
     /// key 带命名空间，因为三个模式的音色是互不相交的三套，同名不同源的音色
-    /// 必须分开记 —— 这是 VoiceWeb 的做法（`patch.js` 的 `data-fav`）：
+    /// 必须分开记 —— 前缀按模式区分：
     ///   · 三段式系统音色 / 克隆音色 → 裸 `voice_id`（两共用一套命名空间）
     ///   · 全模态 → `omni:<音色名>`
     ///   · 全双工语音 → `duplex:<音色 id>`
@@ -51,7 +51,7 @@ nonisolated struct VoiceLibrary: Codable, Equatable {
     static let maximumFavouriteCount = 200
 
     /// 昵称长度上限 —— 官方复刻接口的 `name` 字段就是这个上限
-    /// （VoiceWeb 在服务端 `server.py` 里做 `.strip()[:20]`），这里也照着卡。
+    /// （服务端也是 `.strip()[:20]`），这里也照着卡。
     static let maximumNicknameLength = 20
 }
 
@@ -120,7 +120,7 @@ nonisolated enum VoiceLibraryStore {
     /// 收藏的 key。命名空间规则见 `VoiceLibrary.favouriteVoiceKeys`。
     ///
     /// 三段式和全模态/全双工的分界就是**音色从哪来**：内置表里的系统音色和
-    /// 用户自己克隆的音色共用裸 id 这一套（VoiceWeb 也是如此），另外两个模式
+    /// 用户自己克隆的音色共用裸 id 这一套，另外两个模式
     /// 各自加前缀。
     static func favouriteKey(for voiceID: String, engine: VoiceChatEngine) -> String {
         switch engine {
@@ -143,7 +143,7 @@ nonisolated enum VoiceLibraryStore {
         if wasFavourite {
             library.favouriteVoiceKeys.removeAll { $0 == key }
         } else {
-            // 最近收藏的排最前 —— VoiceWeb 用的是 `unshift`。
+            // 最近收藏的排最前 —— 新收藏插到队首。
             library.favouriteVoiceKeys.insert(key, at: 0)
             if library.favouriteVoiceKeys.count > VoiceLibrary.maximumFavouriteCount {
                 library.favouriteVoiceKeys = Array(
@@ -159,7 +159,7 @@ nonisolated enum VoiceLibraryStore {
     /// 按收藏把一串音色排成展示顺序：**收藏的在前，其余保持原顺序**。
     ///
     /// 这是**稳定分区**，不是排序 —— 组内相对次序必须原样保留，否则用户会发现
-    /// 「收藏一个音色，别的音色跟着换了位置」。VoiceWeb 的注释同样强调这一点。
+    /// 「收藏一个音色，别的音色跟着换了位置」。这一条是硬要求，不是偏好。
     static func orderedByFavourites(
         _ voices: [VoiceOption],
         engine: VoiceChatEngine
@@ -220,8 +220,7 @@ nonisolated enum VoiceLibraryStore {
 
     /// 展示用名字：用户起的 > 云端/预设给的 > 原 id。
     ///
-    /// 三级回落的顺序和 VoiceWeb 一致（`server.py` 的
-    /// `user_names.get(vid) or preset.get(vid, "")`）。
+    /// 三级回落的顺序是 `user_names.get(vid) or preset.get(vid, "")`。
     static func displayName(forCustomVoiceID voiceID: String, cloudProvidedName: String) -> String {
         if let nickname = nickname(forCustomVoiceID: voiceID) { return nickname }
         let trimmedCloudName = cloudProvidedName.trimmingCharacters(in: .whitespacesAndNewlines)

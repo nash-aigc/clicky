@@ -1518,9 +1518,15 @@ enum MacosUseController {
 
     /// The fourth exit's script and interpreter. One script, fixed path — the
     /// model picks tasks for it, never commands.
+    ///
+    /// 脚本住在 `tools/desktop-agent/`，**在这个仓库里** —— 它以前住另一棵树
+    /// （`~/Documents/SuperAgent/Agent/Wanna/desktop-agent/`），那让 Wanna 换台机器就
+    /// 少了第四个出口。搬进来之后 checkout 自包含，路径跟着 `WorkspaceDirectory` 走。
+    /// `WANNA_DESKTOP_AGENT` 留作覆盖：脚本放在别处时不用改代码。
     private static let pythonExecutablePath = "/usr/bin/python3"
     private static let desktopFileAgentScriptPath =
-        NSHomeDirectory() + "/Documents/SuperAgent/Agent/Wanna/desktop-agent/desktop_file_agent.py"
+        ProcessInfo.processInfo.environment["WANNA_DESKTOP_AGENT"]
+        ?? WorkspaceDirectory.rootPath + "/tools/desktop-agent/desktop_file_agent.py"
     private static let desktopFileAgentTimeoutSeconds: TimeInterval = 120
 
     /// Runs the fifth exit: the figure agent. Same contract as the desktop

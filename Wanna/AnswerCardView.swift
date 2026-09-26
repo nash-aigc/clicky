@@ -30,7 +30,7 @@
 //  core, against 12% idle.
 //
 //  系统开启「减弱动态效果」时全部直接清晰显示，不做任何动画
-//  (the reference's prefers-reduced-motion degradation).
+//  (参考规范's prefers-reduced-motion degradation).
 //
 
 import SwiftUI
@@ -88,7 +88,7 @@ struct AnswerCardTheme {
 // MARK: - Text units
 
 /// One rendering unit of the streaming reply. CJK text is one character per
-/// unit (the blur tail is per-character, as in the reference); a contiguous
+/// unit (the blur tail is per-character, as in 参考规范); a contiguous
 /// run of ASCII letters/digits (plus intra-word `-` and `'`) is ONE unit, so
 /// "qwen3-vl-plus" enters as a word instead of shattering and wrapping
 /// mid-word. Break markers carry the newline information the flow layout
@@ -114,7 +114,7 @@ nonisolated struct CardTextUnit: Identifiable {
 nonisolated enum CardTextUnitBuilder {
 
     /// Split reply text into rendering units. `"\n\n"` becomes a paragraph
-    /// gap (a 14pt vertical pause in the reference timeline), a bare `"\n"`
+    /// gap (a 14pt vertical pause in 参考规范's timeline), a bare `"\n"`
     /// a line break.
     static func units(from text: String) -> [CardTextUnit] {
         units(from: text, extending: [], resumingAfterCharacterCount: 0)
@@ -707,7 +707,7 @@ struct AnswerCardView: View {
     /// card renders its plain text for that one frame — see `cardContent`.
     @State private var textColumnWidth: CGFloat = 0
 
-    /// How many trailing units stay blurred while streaming (the reference's
+    /// How many trailing units stay blurred while streaming (参考规范's
     /// settle rule: the unit five positions back is settled to sharp).
     ///
     /// **这是一个字数上界，不是时长。** 尾巴真正由时间决定 —— 见
@@ -774,7 +774,7 @@ struct AnswerCardView: View {
     private static let settleAnimationDuration: TimeInterval = 0.3
 
     /// Reference spec §3.1–3.4: corner 10, border 1.5, padding 10px 12px,
-    /// font 13.5, letter-spacing .02em, on the reference's ~22pt line pitch.
+    /// font 13.5, letter-spacing .02em, on 参考规范's ~22pt line pitch.
     private static let cardCornerRadius: CGFloat = 10
     private static let cardBorderWidth: CGFloat = 1.5
     private static let fontSize: CGFloat = 13.5
@@ -798,7 +798,7 @@ struct AnswerCardView: View {
         return font.ascender - font.descender + font.leading + lineSpacing
     }()
 
-    /// The reference's 14pt paragraph pause, added on top of `lineSpacing` at a
+    /// 参考规范's 14pt paragraph pause, added on top of `lineSpacing` at a
     /// 「\n\n」 boundary — matching the flow layout's old `paragraphGapSpacing`.
     private static let paragraphGapSpacing: CGFloat = 14
 
@@ -1025,7 +1025,7 @@ struct AnswerCardView: View {
     /// measures `n·LH + (n−1)·s`, so the line after it must start at
     /// `n·(LH + s)` — exactly `s` below that `Text`'s own bottom edge. The gap
     /// between two blocks is therefore the line spacing itself, and a paragraph
-    /// boundary adds the reference's paragraph pause on top of it. Being a point
+    /// boundary adds 参考规范's paragraph pause on top of it. Being a point
     /// out here would show up as the pitch changing at every paragraph.
     ///
     /// The paragraphs themselves come from the cache already folded, so this is
@@ -1174,7 +1174,7 @@ struct AnswerCardView: View {
 
     /// The card's fill: the theme color, plus the paper theme's ruled lines
     /// — one very faint horizontal line every 22pt, drawn from the card's
-    /// top edge the way the reference's repeating-linear-gradient does.
+    /// top edge the way 参考规范's repeating-linear-gradient does.
     @ViewBuilder
     private func cardBackground(theme: AnswerCardTheme) -> some View {
         if theme.drawsRuledLines {

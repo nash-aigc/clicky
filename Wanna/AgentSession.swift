@@ -104,7 +104,7 @@ nonisolated struct AgentSession: Identifiable, Codable, Equatable {
     }
 }
 
-/// The five states, mirroring the reference design's turn lifecycle.
+/// The five states of the turn lifecycle.
 nonisolated enum AgentSessionStatus: String, Codable, Sendable {
     /// Exists, never run, or its last turn finished.
     case idle

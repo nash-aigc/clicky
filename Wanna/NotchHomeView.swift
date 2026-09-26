@@ -2,8 +2,8 @@
 //  NotchHomeView.swift
 //  Wanna
 //
-//  The notch sheet's conversation home, drawn to the reference screenshot:
-//  with nothing in the session yet, the hero is *centered* — the
+//  The notch sheet's conversation home.
+//  With nothing in the session yet, the hero is *centered* — the
 //  big greeting and the hint line. Once the session has turns, the hero gives
 //  way to the conversation flow.
 //
@@ -146,7 +146,7 @@ struct NotchHomeView: View {
 
     // MARK: - Empty-session hero
 
-    /// 原版主页的居中构图：大字号问候和按住说话的提示。提示行是现在唯一
+    /// 主页的居中构图：大字号问候和按住说话的提示。提示行是现在唯一
     /// 写着 ⌃⌥ 的地方——底部那颗「按住 ⌃⌥ 说话」胶囊 2026-09-23 按用户的
     /// 要求删掉了（右侧下方只留一个输入框）。
     /// 右侧不再放小人了（用户的要求：小人只在左侧会话列表里出现），
@@ -535,7 +535,7 @@ struct NotchHomeView: View {
 
     /// The user's words: a dark bubble on the right, brighter than Wanna's
     /// dark card so the two sides are told apart by shade as well as by side.
-    /// It replaced the reference page's solid-accent `#0A84FF` fill on
+    /// It replaced 参考页's solid-accent `#0A84FF` fill on
     /// 2026-09-23 at the user's request (「气泡调成暗色，但区分用户和 AI，
     /// 三个页面全部暗色，主题跟背景一致」). See `DS.Colors.userBubbleFill`.
     /// The copy control sits under it, flush with the bubble's trailing edge —

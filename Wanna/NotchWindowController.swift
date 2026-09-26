@@ -32,12 +32,12 @@
 //      top-centre edge, or a clip falling from that same edge. On the render
 //      server, with no per-frame window resize and no per-frame SwiftUI
 //      layout. 2026-09-23: this replaced a per-frame window resize along the
-//      scale path, which was a category error — the reference animates
+//      scale path, which was a category error — 参考页 animates
 //      `transform`/`clip-path` on a fixed-size element precisely because
 //      resizing re-wraps text and rebuilds the window's drawing surface every
 //      frame. The rejected version was that mistake made literal; the scale is
 //      now a `CALayer.transform` and the frame never moves.
-//    · 收起 = the reference's winClose: scale .92 + the whole window fading
+//    · 收起 = 参考页's winClose: scale .92 + the whole window fading
 //      out over 160 ms ease-in, still driven frame-by-frame by
 //      `driveCenterScaleFrames` (the window frame is its own animation source
 //      there, and progress derives from it, so the silhouette cannot desync
@@ -75,7 +75,7 @@ final class NotchPanelModel: ObservableObject {
     /// state, and the sheet must not re-enter settings on every unrelated
     /// panel-model publish.
     @Published var requestedSettingsPage: SettingsPage?
-    /// The VoiceWeb external session's phase override (「连接中…」/「已连接」).
+    /// The voice-chat session's phase override (「连接中…」/「已连接」).
     /// nil = no override — the same nil-means-unset shape as
     /// `requestedSettingsPage`, and the same override precedent as
     /// `isDictationFinalizing`: `refreshActivityPhase` consults it first.
@@ -987,7 +987,7 @@ final class NotchWindowController {
         scaleAnimation.fromValue = NSValue(caTransform3D: startTransform)
         scaleAnimation.toValue = NSValue(caTransform3D: identityTransform)
 
-        // The reference's keyframe carries an opacity ramp alongside the scale
+        // 参考页's keyframe carries an opacity ramp alongside the scale
         // (`@keyframes winScale{ 0%{ transform:scale(.08); opacity:0 } … }`),
         // and it is load-bearing rather than decorative: at 8% the sheet is a
         // ~65 pt nub, so without the ramp that nub pops into existence at the
@@ -1277,7 +1277,7 @@ final class NotchWindowController {
     }
 
     /// The winClose frame driver — the collapse's animation source. Each tick
-    /// evaluates the reference page's CSS cubic-bezier timing function, scales
+    /// evaluates 参考页's CSS cubic-bezier timing function, scales
     /// `targetFrame` about its top-centre anchor (transform-origin: 50% 0),
     /// and setFrame's the result. `fadesToTransparent` additionally drives the
     /// window's alphaValue down with the same curve — winClose's opacity leg.
@@ -1566,7 +1566,7 @@ final class NotchWindowController {
         }
     }
 
-    /// The VoiceWeb session controller's way in — `panelModel` is private, and
+    /// The voice-chat controller's way in — `panelModel` is private, and
     /// the override only means anything when the derived phase is recomputed
     /// with it in place.
     func setExternalSessionOverride(_ phase: NotchActivityPhase?) {

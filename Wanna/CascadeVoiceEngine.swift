@@ -274,7 +274,7 @@ final class CascadeVoiceEngine {
     ///
     /// 角色的提示词就是「系统提示词」，用户右键编辑的那段直接发出去；开了屏幕时
     /// 追加一句能力说明，否则模型不知道自己收到了图，会答「我看不到你的屏幕」——
-    /// 这正是 VoiceWeb 当前那个失败现象。
+    /// 这正是实测踩到的那个失败现象。
     private func systemPrompt(for role: VoiceChatRole) -> String {
         var prompt = role.systemPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         if prompt.isEmpty {

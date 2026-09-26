@@ -1,0 +1,42 @@
+import { type Program, type Scene } from "../types.ts";
+export declare class Evaluator {
+    private readonly values;
+    private readonly objects;
+    private nextObjectId;
+    private nextCreated;
+    evaluate(program: Program): Scene;
+    private fail;
+    private bind;
+    private discard;
+    private evaluateExpression;
+    private attribute;
+    private call;
+    private number;
+    private boolean;
+    private pointValue;
+    private regionValue;
+    private string;
+    private curve;
+    private enumValue;
+    private styled;
+    private point;
+    private text;
+    private inside;
+    private regionCombination;
+    private difference;
+    private along;
+    private line;
+    private circle;
+    private arc;
+    private path;
+    private project;
+    private intersect;
+    private transform;
+    private mark;
+    private isPoint;
+    private isLine;
+    private isCircle;
+    private isPath;
+    private isRegion;
+}
+//# sourceMappingURL=evaluator.d.ts.map

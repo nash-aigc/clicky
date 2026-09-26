@@ -22,7 +22,7 @@ struct NotchSheetRootView: View {
     /// column and the top-bar chip on its state, so the switching view must
     /// be the one observing it, not only the subviews.
     @ObservedObject private var agentSessionManager: AgentSessionManager
-    /// The VoiceWeb subsystem, held by `CompanionManager` (one instance for
+    /// The 语音聊天 subsystem, held by `CompanionManager` (one instance for
     /// the app) — observed because both the 语音聊天 sidebar list and the
     /// content column read its published presets / phase / transcript.
     @ObservedObject private var voiceChatController: VoiceChatController
@@ -294,7 +294,7 @@ struct NotchSheetRootView: View {
 
 // MARK: - Settings area
 
-/// The settings pages embedded in the sheet, drawn to the reference
+/// The settings pages embedded in the sheet, drawn to the target
 /// screenshot: a ~245pt sidebar carrying a large bold 「设置」 title and the page
 /// list grouped under uppercase section labels, with 「返回」 (green) at its
 /// bottom-left, 「退出 Wanna」 at its bottom-right and a divider above the pair;
@@ -400,10 +400,9 @@ struct NotchSettingsArea: View {
 
     private var settingsSidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // The large bold page title, like the reference screenshot's
-            // settings entry. 「‹ 返回」 used to sit above it; the user moved
-            // that pill down to this column's bottom-left (2026-09-23), so the
-            // title is now the first thing here.
+            // The large bold page title. 「‹ 返回」 used to sit above it; the
+            // user moved that pill down to this column's bottom-left
+            // (2026-09-23), so the title is now the first thing here.
             Text("设置")
                 .font(.system(size: 26, weight: .bold))
                 .foregroundColor(.white)

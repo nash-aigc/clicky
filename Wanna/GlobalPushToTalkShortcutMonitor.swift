@@ -15,7 +15,7 @@ import Foundation
 final class GlobalPushToTalkShortcutMonitor: ObservableObject {
     let shortcutTransitionPublisher = PassthroughSubject<BuddyPushToTalkShortcut.ShortcutTransition, Never>()
 
-    /// The VoiceWeb mode shortcuts (三段式 / 全双工语音 / 全双工全模态), matched
+    /// The voice-chat mode shortcuts (三段式 / 全双工语音 / 全双工全模态), matched
     /// by the same tap BEFORE the talk shortcut — an event that fires one of
     /// these never also feeds the talk matcher. The tap receives every keyboard
     /// event already; generalizing to a second consumer costs no new machinery.
@@ -25,7 +25,7 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
     var externalShortcutBindings: [RecordedKeyboardShortcut] = []
     let externalShortcutTransitionsPublisher = PassthroughSubject<(index: Int, pressed: Bool), Never>()
 
-    /// 「释放引擎」 — a single binding, matched by the same rules as the VoiceWeb
+    /// 「释放引擎」 — a single binding, matched by the same rules as the
     /// mode shortcuts above. Pressing it stops the shared audio engine and
     /// switches voice processing off, which is what lifts the ducking of every
     /// other application; it is the way back out of 「引擎保持时间 = 永久」.
@@ -202,7 +202,7 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
         return Unmanaged.passUnretained(event)
     }
 
-    /// Matches the external VoiceWeb bindings against one tap event. Returns
+    /// Matches the external mode-shortcut bindings against one tap event. Returns
     /// whether any binding transitioned — the caller then stops, so an external
     /// hit can never also be read as a talk-shortcut press. The matching
     /// semantics are deliberately a per-index copy of
@@ -239,7 +239,7 @@ final class GlobalPushToTalkShortcutMonitor: ObservableObject {
 
     /// Whether `binding` changes its pressed-ness on this event, and to what.
     ///
-    /// ONE implementation, asked by both the VoiceWeb mode shortcuts and the
+    /// ONE implementation, asked by both the voice-chat mode shortcuts and the
     /// release-engine shortcut. Two copies would drift the way
     /// `ActionTagParser.modifierFlag`'s would — see 开发经验/10-踩过的坑.md A4
     /// for what that costs.

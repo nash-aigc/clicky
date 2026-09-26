@@ -17,7 +17,7 @@
 //     返回 "No built-in voice list available"，只有 CosyVoice 系才有），所以这张
 //     表是**内置契约**，取自官方音色列表页。
 //   · 全双工语音 —— **按模型版本分组**：3.0 Plus/Flash 只有 5 个系统音色，
-//     3.1 Plus 在这 5 个之外另有 8 个。VoiceWeb 当年硬编码的那 19 个里有一大半
+//     3.1 Plus 在这 5 个之外另有 8 个。另有一份流传较广的 19 个 id 里有一大半
 //     （`longanhuan_v3.6` / `loongmary` / `daniel` / `echo` / `hannah` / `sherry` …）
 //     在今天的官方列表里根本不存在 —— **故意不照搬**，照搬会让整条会话被拒。
 //   · 全双工全模态 —— 固定的 10 个，官方 doc 逐字确认；其中 `Cherry`/`Kai` 只属于
@@ -61,8 +61,8 @@ nonisolated enum VoiceCatalog {
     ///
     // GENERATED — do not hand-edit. Source: the official 百炼 voice-list page
 // https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list
-// ids: the page as fetched 2026-09-24 (68). names: VoiceWeb's
-// `system_voices.json` at bd94dec, joined on id; 7 ids the page no longer lists
+// ids: the page as fetched 2026-09-24 (68). names: a saved snapshot of the same
+// list, joined on id; 7 ids the page no longer lists
 // were dropped, because an id the model rejects is InvalidParameter.
     static let threeStageVoices: [VoiceOption] = [
         VoiceOption(id: "longanhuan_v3.1", displayName: "龙安欢", gender: "女", note: "女 · 重庆话 宁波话 韩语 印尼语"),
@@ -144,7 +144,7 @@ nonisolated enum VoiceCatalog {
     /// 两个实时模式当前的默认模型。
     ///
     /// **它决定可用音色**，所以不是一个随便的默认值：全双工取 3.0 Flash 时只有
-    /// 5 个系统音色，取 3.1 Plus 才有 13 个。这里取 VoiceWeb 实测过的那个
+    /// 5 个系统音色，取 3.1 Plus 才有 13 个。这里取实测过的那一个
     /// （3.0 Flash），换 3.1 Plus 是一个**有价格含义**的选择（¥30/¥100 对
     /// ¥40/¥150 每百万 token），所以由用户来定，不由这里悄悄选。
     ///
@@ -732,7 +732,7 @@ nonisolated enum VoiceCatalog {
                 || duplex31OnlyVoices.contains { $0.id == voice }
         case .omni:
             // 官方只列了这 10 个；克隆音色在全模态下**未经验证**，所以除了表里的
-            // 一律拒 —— 这一条比 VoiceWeb 更严，因为配错是延迟到 response 才报。
+            // 一律拒 —— 这一条比官方文档更严，因为配错是延迟到 response 才报。
             return true
         case .duplexVoice:
             return omniVoices.contains { $0.id == voice }

@@ -4,14 +4,15 @@ import Foundation
 
 /// 一个语音聊天角色（用户口中的「助手」/「角色」）。
 ///
-/// 字段取自 VoiceWeb 的 `config.json`（实测 34 键），**去掉了全部 `tools_*`** ——
+/// 字段取自一份 34 键的角色配置，**去掉了全部 `tools_*`** ——
 /// 用户明确要求不移植「执行」，所以角色里没有工具开关，也没有任何文件访问权限。
 ///
-/// **红线：角色里禁止存 API Key。** VoiceWeb 的配置读取对 `roles` 是不脱敏的
-/// （只有顶层厂商字段脱敏），所以它把「角色不许带 Key」写成硬规矩；这里照抄这条，
+/// **红线：角色里禁止存 API Key。** 配置文件和界面对 `roles` 这一段是**不脱敏**的
+/// （只有顶层厂商字段脱敏），任何塞进角色的 Key 都会以明文落在磁盘上、并被回显，
+/// 所以「角色不许带 Key」是硬规矩，
 /// 免得将来有人图省事把某个角色的 Key 塞进来。
 ///
-/// `chatEngine` 存在角色上而不是全局，与 VoiceWeb 一致：每个角色可以自带模式、
+/// `chatEngine` 存在角色上而不是全局：每个角色可以自带模式、
 /// 模型与音色，切角色等于切一整套说话方式。
 nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
     /// `"default"` 是内置角色，永远排第一、不可删；其余是 `"r" + 36 进制时间戳`。
@@ -79,8 +80,8 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
     /// 由 `VoiceChatRoleStore.setDefaultRole` 保证，否则「默认」就没有意义了。
     var isDefault: Bool
 
-    /// 内置默认角色 —— 磁盘上什么都没有时由它兜底，与 VoiceWeb 的
-    /// `_ensure_default_role` 同一个作用。
+    /// 内置默认角色 —— 磁盘上什么都没有时由它兜底，
+    /// 保证角色列表永远不空。
     static let defaultRoleID = "default"
 
     static func makeDefaultRole() -> VoiceChatRole {
@@ -113,13 +114,13 @@ nonisolated struct VoiceChatRole: Codable, Equatable, Identifiable {
     ///
     /// 与 Wanna 语音助手那份系统提示词是两件事：那份是「看着屏幕回答」的短问答
     /// 人格，这里是**长时间对话**的角色设定，所以它要求口语、简短、不要 emoji，
-    /// 与 VoiceWeb 的 `system_prompt` 取向一致。
+    /// 面向「听」而不是「读」。
     static let defaultSystemPrompt = """
     你是用户的语音对话助手。用口语回答，简短直接，不要用 emoji，不要罗列条目。
     用户是在听你说话，不是在读文档，所以一句话能说完就不要说三句。
     """
 
-    /// 新角色的 id —— 与 VoiceWeb 同款（`"r"` + 36 进制毫秒时间戳），
+    /// 新角色的 id —— `"r"` + 36 进制毫秒时间戳，
     /// 保证时间上单调、肉眼可分，且不依赖 UUID 那种人念不出来的形状。
     static func makeRoleID() -> String {
         "r" + String(Int(Date().timeIntervalSince1970 * 1000), radix: 36)
@@ -186,7 +187,7 @@ extension VoiceChatRole {
         presetID = try container.decodeIfPresent(String.self, forKey: .presetID)
     }
 
-    /// 名字为空时补一个能看的名字，与 VoiceWeb 的清洗一致（空名 → 「未命名角色」）。
+    /// 名字为空时补一个能看的名字（空名 → 「未命名角色」）。
     /// 角色卡片上出现一行空白比出现「未命名角色」更让人困惑。
     var displayName: String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -218,7 +219,7 @@ extension VoiceChatRole {
         }
     }
 
-    /// 记忆方式。非法值与缺失一样，按「接着上次聊」走：这是 VoiceWeb 的默认值，
+    /// 记忆方式。非法值与缺失一样，按「接着上次聊」走：这既是默认值，
     /// 也是用户按「重启后保留对话」时的预期。
     var resolvesToContinuousMemory: Bool {
         chatMode != "fresh"
@@ -249,7 +250,7 @@ nonisolated enum VoiceChatEngine: String, CaseIterable, Identifiable, Codable {
     /// 这个引擎能不能送画面。
     ///
     /// 三段式能（它把一帧截图挂进请求），全模态能（`input_image_buffer.append`），
-    /// **全双工语音不能** —— VoiceWeb 实测 `video_in_enabled=False`，画面帧发过去
+    /// **全双工语音不能** —— 服务端实测 `video_in_enabled=False`，画面帧发过去
     /// 会被忽略，所以界面上那两个开关必须置灰，而不是让用户打开了却什么都不发生。
     var supportsVideoInput: Bool {
         switch self {

@@ -38,8 +38,8 @@ final class VoiceChatController: ObservableObject {
         case connected
     }
 
-    /// 角色卡片（侧栏列表用）。字段与 Chrome 版一致，只是数据来自本地角色表，
-    /// 而不是 VoiceWeb 的 config.json。
+    /// 角色卡片（侧栏列表用）。只挑列表要显示的两样：id 和名字，
+    /// 完整字段在 `VoiceChatRole` 里。
     struct VoiceChatRolePreset: Identifiable, Equatable {
         let id: String
         let name: String
@@ -154,7 +154,7 @@ final class VoiceChatController: ObservableObject {
 
     /// 共享的语音客户端与听写管理器 —— 由 `CompanionManager` 注入。
     /// 它们是**同一份实例**：按住说话、连续监听、语音聊天共用一条音频链路，
-    /// 这正是用户观察到的「毫秒级打断」的来源，也是参考项目那条铁律的落地。
+    /// 这正是用户观察到的「毫秒级打断」的来源，也是「一条音频链路」那条规则的落地。
     /// 试听要走它（播放引擎只有这一份）。视图的音色面板用。
     let speechSynthesizer: BailianTTSClient
     private let dictationManager: BuddyDictationManager
@@ -408,7 +408,7 @@ final class VoiceChatController: ObservableObject {
         isScreenSharingEnabled = role.autoScreenEnabled && selectedModeSupportsScreenSharing
     }
 
-    /// 全双工语音是**纯音频**的，送画面过去会被服务端忽略（VoiceWeb 实测
+    /// 全双工语音是**纯音频**的，送画面过去会被服务端忽略（实测
     /// `video_in_enabled=False`）。所以那两个开关要置灰，而不是让用户打开了
     /// 却什么都不发生。
     ///
@@ -1051,7 +1051,7 @@ final class VoiceChatController: ObservableObject {
 
     // MARK: - 快捷键
 
-    /// 三个 VoiceWeb 模式快捷键中的一次按下。
+    /// 三个模式快捷键中的一次按下。
     ///
     /// 与 Chrome 版同样的开关语义：**同一个模式的快捷键在会话中就是挂断**；
     /// 不同模式则切换过去。原生版本里「模式」是角色的属性，所以切换模式 =

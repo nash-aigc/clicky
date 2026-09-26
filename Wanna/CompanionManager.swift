@@ -339,7 +339,7 @@ final class CompanionManager: ObservableObject {
     /// 长录音键。只认按下沿 —— 按一下开始、再按一下结束，两次都是「按下」，
     /// 所以这里不做 if/else 分辨，直接交给控制器自己 toggle。
     private var recordingShortcutTransitionsCancellable: AnyCancellable?
-    /// 「释放引擎」的快捷键订阅 —— 与上面那三个 VoiceWeb 快捷键共用同一条事件流。
+    /// 「释放引擎」的快捷键订阅 —— 与上面那三个模式快捷键共用同一条事件流。
     private var releaseEngineShortcutCancellable: AnyCancellable?
     private var voiceStateCancellable: AnyCancellable?
     private var audioPowerCancellable: AnyCancellable?
@@ -930,7 +930,7 @@ final class CompanionManager: ObservableObject {
                 // overlay draws, so they have to be pushed through to it live.
                 self.applyCursorSettings(settings)
 
-                // A re-recorded VoiceWeb shortcut must be matched by the live
+                // A re-recorded mode shortcut must be matched by the live
                 // event tap immediately, not after a restart.
                 self.refreshExternalShortcutBindings()
 
@@ -943,9 +943,9 @@ final class CompanionManager: ObservableObject {
 
         applyCursorSettings(AppSettingsStore.snapshot())
 
-        // On quit, tell an active VoiceWeb session to disconnect (best effort —
-        // the app is going down anyway). The VoiceWeb server process itself is
-        // deliberately left running: it is a resident service.
+        // On quit, tell an active voice-chat session to disconnect (best effort —
+        // the app is going down anyway). The session runs in this process, so
+        // there is no separate server left holding the connection.
         willTerminateObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification,
             object: nil,
@@ -1361,7 +1361,7 @@ final class CompanionManager: ObservableObject {
             .sink { [weak self] transition in
                 self?.handleShortcutTransition(transition)
             }
-        // The three VoiceWeb mode shortcuts share the same event tap; their
+        // The three voice-chat mode shortcuts share the same event tap; their
         // presses never reach the talk-shortcut matcher (the monitor consumes
         // them first). Only the press edge matters — the toggle lives in
         // `handleShortcutPress`, so reacting to the release edge too would
@@ -1373,12 +1373,13 @@ final class CompanionManager: ObservableObject {
                 guard let self else { return }
                 guard transition.pressed else { return }
 
-                // The VoiceWeb shortcuts share the talk shortcut's ⌃⌥ modifiers,
+                // The mode shortcuts share the talk shortcut's ⌃⌥ modifiers,
                 // and modifiers reach the tap before the digit — the ⌃⌥
                 // flagsChanged already started a native recording by the time
                 // the "1" keyDown arrives. That recording is an artifact of the
                 // shared modifiers, not something the user asked for: cancel it
-                // and hand the interaction to VoiceWeb. (The talk shortcut keeps
+                // and hand the interaction to the voice-chat session. (The talk
+                // shortcut keeps
                 // its zero-latency start; only the overlapping press pays for a
                 // recording that gets cancelled a beat later.)
                 if globalPushToTalkShortcutMonitor.isShortcutCurrentlyPressed {
@@ -1431,7 +1432,7 @@ final class CompanionManager: ObservableObject {
             }
     }
 
-    /// Copies the current VoiceWeb shortcut bindings into the monitor's match
+    /// Copies the current mode shortcut bindings into the monitor's match
     /// snapshot. Called at start and on every settings save — a re-recorded
     /// shortcut has to take effect without a restart.
     private func refreshExternalShortcutBindings() {

@@ -45,7 +45,7 @@ final class AgentHUDController {
     private let stackModel = AgentHUDStackModel()
 
     /// Chip close (×) dismissals for this app run only — in-memory, so a
-    /// restart brings the chips back. The reference keeps the same rule.
+    /// restart brings the chips back. Deliberately not persisted.
     private var dismissedAgentIDs = Set<UUID>()
 
     // Observers hold their own tokens for nothing — NotificationCenter keeps

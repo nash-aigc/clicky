@@ -96,7 +96,7 @@ struct MascotAvatarDisc: View {
 
 // MARK: - 主页 hero：坐在语音胶囊上的吉祥物
 
-/// 主页的标志构图，按参考截图放大重画：一只大号角色带着淡淡
+/// 主页的标志构图：一只大号角色带着淡淡
 /// 的绿辉光坐在**亮面蓝白胶囊**上，胶囊里是深藏青的麦克风和提示文字
 /// （"Hi, how can I help ^_^?"）。角色保留非常轻的上下浮动。
 struct HomeHeroMascotPill: View {
@@ -114,7 +114,7 @@ struct HomeHeroMascotPill: View {
                         .offset(y: bobOffset)
                         // 脚踩进胶囊上沿一点，才是「坐」而不是「悬」
                         .offset(y: 22)
-                        // 原版角色自带的一圈绿色辉光
+                        // 角色自带的一圈绿色辉光
                         .shadow(color: Color(red: 0.45, green: 0.85, blue: 0.55).opacity(0.35), radius: 14)
                 }
 
@@ -126,7 +126,7 @@ struct HomeHeroMascotPill: View {
         .padding(.bottom, 4)
     }
 
-    /// 原版胶囊：白→浅蓝渐变底 + 亮蓝描边，内容是深藏青，整体发亮。
+    /// 语音胶囊：白→浅蓝渐变底 + 亮蓝描边，内容是深藏青，整体发亮。
     private var voicePill: some View {
         let deepNavy = Color(red: 0.10, green: 0.24, blue: 0.60)
         let brightBlue = Color(red: 0.30, green: 0.50, blue: 0.98)

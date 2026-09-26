@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """路由速度基准：JEV choice 原语 vs DeepSeek 闭集分类。20 候选 × 10 查询。"""
 import sys, os, json, time, http.client, urllib.parse
-sys.path.insert(0, "/Users/mjm/Documents/SuperAgent/Agent/Wanna/instant-agent")
+from pathlib import Path
+sys.path.insert(0, os.environ.get(
+    "WANNA_INSTANT_AGENT",
+    str(Path.home() / "Documents/SuperAgent/Agent/Wanna/instant-agent")))
 import jev
+
+HERE = Path(__file__).resolve().parent
 
 # ── 20 个候选（真实目录条目的中文标签）──
 CANDIDATES = {

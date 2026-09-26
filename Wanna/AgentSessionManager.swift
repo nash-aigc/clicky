@@ -21,7 +21,7 @@ import Foundation
 import SwiftUI
 
 /// Which half of the notch sheet's sidebar list is showing — the conversation
-/// sessions, the agent roster, or the VoiceWeb voice-chat role presets. UI
+/// sessions, the agent roster, or the voice-chat role presets. UI
 /// state, held here because both the sidebar (which renders it) and the sheet
 /// root (which switches the content column) read the same manager.
 nonisolated enum SidebarSection: String, CaseIterable, Sendable {
@@ -453,7 +453,7 @@ final class AgentSessionManager: ObservableObject {
 
     // MARK: - Completion announcement (TTS)
 
-    /// Reads a finished turn aloud — the 原版 "agent reports back in voice"
+    /// Reads a finished turn aloud — the "agent reports back in voice"
     /// behavior. Three gates, each load-bearing: the setting, the voice being
     /// idle (a `speakText` call begins with `stopPlayback()`, so announcing
     /// during an answer would cut the answer off mid-sentence), and the

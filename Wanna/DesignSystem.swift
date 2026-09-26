@@ -32,16 +32,16 @@ enum DS {
         /// The deepest background — used for the main app window fill.
         static let background = Color(hex: "#050506")
 
-        /// First elevation layer — window/panel ground (the reference
+        /// First elevation layer — window/panel ground (参考页
         /// window's rgba(24,24,28,.94), stored opaque).
         static let surface1 = Color(hex: "#18181C")
 
-        /// Second elevation layer — card fill (the reference `--card`).
+        /// Second elevation layer — card fill (参考页 `--card`).
         /// Darker than `surface1`: cards on this palette read as darker
         /// plates on a lighter ground, not lighter cards on a darker one.
         static let surface2 = Color(hex: "#0C0C0E")
 
-        /// Third elevation layer — hover ground (the reference page's own
+        /// Third elevation layer — hover ground (参考页's own
         /// button-hover background, #101014).
         static let surface3 = Color(hex: "#101014")
 
@@ -51,24 +51,24 @@ enum DS {
         // ── Borders ──────────────────────────────────────────────────
 
         /// Subtle border — card outlines, dividers, input field borders
-        /// (the reference `--line`).
+        /// (参考页 `--line`).
         static let borderSubtle = Color(hex: "#1D1D21")
 
         /// Strong border — focused inputs, hovered card outlines
-        /// (the reference `--faint`).
+        /// (参考页 `--faint`).
         static let borderStrong = Color(hex: "#2A2A2E")
 
         // ── Text ─────────────────────────────────────────────────────
 
-        /// Primary text — main body text, titles, headings (the reference `--txt`).
+        /// Primary text — main body text, titles, headings (参考页 `--txt`).
         static let textPrimary = Color(hex: "#F2F2F4")
 
         /// Secondary text — descriptions, hints, muted labels
-        /// (the reference `.opt` secondary text).
+        /// (参考页 `.opt` secondary text).
         static let textSecondary = Color(hex: "#B9B9C2")
 
         /// Tertiary text — very muted, used for section labels, timestamps, disabled text
-        /// (the reference `--dim`).
+        /// (参考页 `--dim`).
         static let textTertiary = Color(hex: "#8A8A93")
 
         /// Text used on top of the accent fill (#2563eb blue), like the primary button label.
@@ -102,11 +102,11 @@ enum DS {
         static let blue950 = Color(hex: "#172554")
 
         // ── Accent ───────────────────────────────────────────────────
-        // The reference page's accent is iOS system blue #0A84FF, and the
+        // 参考页's accent is iOS system blue #0A84FF, and the
         // 2026-09-23 UI 化改造 adopts it as THE accent everywhere.
 
         /// Accent fill — solid buttons, toggles, the user bubble fill.
-        /// #0A84FF on the dark cards reads like the reference's own blue.
+        /// #0A84FF on the dark cards reads like 参考页's own blue.
         static let accent = Color(hex: "#0A84FF")
 
         /// Accent hover — a step darker for hover state.
@@ -116,7 +116,7 @@ enum DS {
         /// (links, active nav items, highlighted labels).
         static let accentText = Color(hex: "#3D9DFF")
 
-        /// The reference page's icon-tile gradient — `.unit.ai .dot` and the
+        /// 参考页's icon-tile gradient — `.unit.ai .dot` and the
         /// header avatar's `linear-gradient(135deg,#0A84FF,#7A5CFF)`.
         static let accentGradient = LinearGradient(
             colors: [Color(hex: "#0A84FF"), Color(hex: "#7A5CFF")],
@@ -125,7 +125,7 @@ enum DS {
         )
 
         /// Very subtle accent tint — selected item backgrounds
-        /// (the reference `.opt.sel`'s rgba(10,132,255,.10)).
+        /// (参考页 `.opt.sel`'s rgba(10,132,255,.10)).
         static let accentSubtle = Color(hex: "#0A84FF").opacity(0.10)
 
         // ── Chat bubbles ─────────────────────────────────────────────
@@ -262,13 +262,13 @@ enum DS {
     // MARK: - Corner Radii
 
     enum CornerRadius {
-        /// Small elements like tags, badges, icon tiles (the reference's 7).
+        /// Small elements like tags, badges, icon tiles (参考页's 7).
         static let small: CGFloat = 7
-        /// Buttons, input fields, small cards (the reference button radius).
+        /// Buttons, input fields, small cards (参考页 button radius).
         static let medium: CGFloat = 10
-        /// Cards, dialogs, chat bubbles (the reference grid-card radius).
+        /// Cards, dialogs, chat bubbles (参考页 grid-card radius).
         static let large: CGFloat = 12
-        /// Large panels, permission cards, option rows (the reference .opt).
+        /// Large panels, permission cards, option rows (参考页 .opt).
         static let extraLarge: CGFloat = 14
         /// Pill-shaped buttons (the continue button).
         static let pill: CGFloat = .infinity
@@ -278,7 +278,7 @@ enum DS {
 
     enum Animation {
         /// Quick state changes — hover in/out, press feedback
-        /// (the reference page's own 0.18 s button transitions).
+        /// (参考页's own 0.18 s button transitions).
         static let fast: Double = 0.18
         /// Standard transitions — content reveal, button state changes.
         static let normal: Double = 0.25
@@ -422,7 +422,7 @@ struct DSSecondaryButtonStyle: ButtonStyle {
             }
     }
 
-    /// The reference page's button shape — rounded rect, radius 10, not a capsule.
+    /// 参考页's button shape — rounded rect, radius 10, not a capsule.
     private var buttonShape: some Shape { RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous) }
 
     private func buttonBackgroundColor(isPressed: Bool) -> Color {
@@ -439,7 +439,7 @@ struct DSSecondaryButtonStyle: ButtonStyle {
         if isPressed {
             return DS.Colors.borderStrong
         } else if isHovered {
-            // The reference's hover reads the border in the accent.
+            // 参考页's hover reads the border in the accent.
             return DS.Colors.accent.opacity(0.6)
         } else {
             return DS.Colors.borderSubtle
@@ -565,7 +565,7 @@ struct DSOutlinedButtonStyle: ButtonStyle {
         if isPressed {
             return DS.Colors.borderStrong
         } else if isHovered {
-            // The reference's hover reads the border in the accent.
+            // 参考页's hover reads the border in the accent.
             return DS.Colors.accent.opacity(0.6)
         } else {
             return DS.Colors.borderSubtle
@@ -650,7 +650,7 @@ struct DSIconButtonStyle: ButtonStyle {
             .foregroundColor(iconColor(isPressed: configuration.isPressed))
             .frame(width: size, height: size)
             .background(
-                // The reference `.close` is a rounded SQUARE (24×24, radius 7),
+                // 参考页 `.close` is a rounded SQUARE (24×24, radius 7),
                 // not a circle — same treatment here.
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(circleBackgroundColor(isPressed: configuration.isPressed))

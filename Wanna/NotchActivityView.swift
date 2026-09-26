@@ -13,7 +13,7 @@
 //    transcribing three typing dashes — the gap after key release while the
 //                 ASR provider settles the final transcript
 //
-//  The resting presentation is the user-measured original: the notch itself
+//  The resting presentation is the measured layout: the notch itself
 //  NEVER grows. Two black "wings" extend horizontally out of the notch's
 //  left and right edges — same height as the notch, outer bottom corner
 //  rounded, fused with the menu-bar band. The leading wing carries the bold
@@ -45,19 +45,18 @@ enum NotchActivityPhase: Equatable {
     case thinking
     case speaking
     case transcribing
-    /// VoiceWeb 外部语音会话**连接中**——从发起连接到页面回报 ready 之前。
+    /// 语音聊天会话**连接中**——从发起连接到会话回报 ready 之前。
     /// 左翼显示 Connecting，右翼是连接动画；挂断图标只在连上之后出现
     /// （用户 2026-09-23：「连接中的时候不知道……右侧不要有挂断按钮，而应该
     /// 是一个连接中的动画效果。只有连接成功之后，右侧才是挂断按钮」）。
     case externalConnecting
-    /// VoiceWeb 外部语音会话进行中——连接成功到挂断的整个会话持续显示
+    /// 语音聊天会话进行中——连接成功到挂断的整个会话持续显示
     /// 「聊天中」（用户的要求：连接过程中两翼就持续显示，而不是短暂一闪）。
     case externalChatting
 }
 
 /// The bold state word the leading wing carries, and each phase's animation
-/// colour — the user's screenshots of the original are the reference:
-/// listening teal, thinking purple, speaking orange, typing grey.
+/// colour: listening teal, thinking purple, speaking orange, typing grey.
 extension NotchActivityPhase {
 
     var notchStateWord: String {
@@ -97,12 +96,11 @@ extension NotchActivityPhase {
     /// The colour of the glow behind the phase animation — **not** the same
     /// colour as the animation itself, which is why this is its own table.
     ///
-    /// Measured 2026-09-22 off the original's own screenshots (the ones the user
-    /// supplied as the target). In the original, a thinking reply draws bright
-    /// magenta dots (#F35FD7) over a glow that peaks at **#540067** — a deep,
-    /// fully saturated violet with no green at all. Sampling the listening peak
-    /// the same way gives **#12464C**, and speaking **#45230F**. The animation
-    /// is a light; the glow is a *dye*.
+    /// Measured 2026-09-22 off the target screenshots: a thinking reply
+    /// draws bright magenta dots (#F35FD7) over a glow that peaks at **#540067**
+    /// — a deep, fully saturated violet with no green at all. Sampling the
+    /// listening peak the same way gives **#12464C**, and speaking **#45230F**.
+    /// The animation is a light; the glow is a *dye*.
     ///
     /// The first version of this glow composited the phase tint at 50% opacity,
     /// which is what made it read as grey haze rather than coloured light: half
@@ -128,10 +126,10 @@ extension NotchActivityPhase {
     /// shape is a Gaussian-ish blob, not a straight ramp: a broad bright core
     /// that then falls away quickly.
     ///
-    /// Fitted 2026-09-22 to the original's measured Listening glow — the
-    /// alpha at each measured distance from the peak — and verified by
-    /// rendering the candidate at the reference screenshots' own scale and
-    /// scanning the two side by side rather than eyeballing them. The proof
+    /// Fitted 2026-09-22 to the Listening glow's measurement — the alpha at
+    /// each measured distance from the peak — and verified by rendering the
+    /// candidate at the target screenshots' own scale and scanning the two
+    /// side by side rather than eyeballing them. The proof
     /// it is right is that the numbers agree in four places at once: at the
     /// wing's outer edge ~0.60, at the band's top edge ~0.36, zero about 44%
     /// of the way in, and the peak itself ~14pt in from the outer edge.
@@ -260,7 +258,7 @@ struct HomeSpaceSheetShape: Shape {
 /// The resting pill's entire content: a black pill exactly the notch's size
 /// that NEVER grows, plus two black wings that extend horizontally out of
 /// the notch's left and right edges while the companion is active — the
-/// user-measured original layout. The leading wing carries the bold state
+/// user-measured layout. The leading wing carries the bold state
 /// word; the trailing wing carries the phase animation in its phase colour
 /// over a same-colour glow. Both wings are exactly the notch's height, so
 /// the whole assembly reads as the notch stretching sideways, not growing.
@@ -269,8 +267,8 @@ struct NotchPillRootView: View {
     @ObservedObject var panelModel: NotchPanelModel
     var audioHistoryProvider: () -> [CGFloat]
 
-    /// Wing widths measured off the original running it live (2026-09-22:
-    /// the full band spans ~355pt — left wing ~78, right wing ~87). The word
+    /// Wing widths measured 2026-09-22: the full band spans ~355pt — left
+    /// wing ~78, right wing ~87. The word
     /// is right-aligned against the notch, so the left wing only needs to
     /// hold the longest word ("Listening") plus a small margin.
     ///
@@ -452,7 +450,7 @@ struct NotchWingView: View {
     private var wingContent: some View {
             if isLeading {
                 if phase != .idle {
-                    // The original right-aligns the state word against the
+                    // The state word is right-aligned against the
                     // notch (measured 2026-09-22: "Listening" ends ~5pt before
                     // the notch's edge), so the whole band's content clusters
                     // at the notch instead of stranding the word at the far
@@ -470,10 +468,9 @@ struct NotchWingView: View {
                 // The glow is a soft blob sitting inside the wing, not a ramp
                 // that runs its whole width and stops dead at the silhouette.
                 //
-                // Measured 2026-09-22 off the original's own Listening
-                // screenshot — the one the user supplied as the target. The
-                // wing is 88pt wide and 32pt tall, so the reference's own
-                // pixels are 1.635 to the point; scanning across its
+                // Measured 2026-09-22 off the target Listening screenshot the
+                // user supplied. The wing is 88pt wide and 32pt tall, so that
+                // screenshot's pixels are 1.635 to the point; scanning across its
                 // mid-height row, and down a column through the peak:
                 //
                 //   across   x=708 #010507   x=744 #113D45
@@ -510,7 +507,7 @@ struct NotchWingView: View {
                 // (32,66,73) at 16pt in from the outer edge, then back down to
                 // #193439 (25,52,57) at the silhouette — peak position, the
                 // black inner half and the ~55% edge value all land where the
-                // reference put them. The parabola is what "natural" means
+                // measurement put them. The parabola is what "natural" means
                 // here: the band's outer edge is now a plain vertical cut
                 // between two dark values instead of a bright ramp meeting the
                 // wallpaper.
@@ -524,13 +521,12 @@ struct NotchWingView: View {
                     .frame(maxWidth: .infinity)
                     // Still taller than the band (64 vs its 32) — but now for
                     // the measured reason rather than as a way to hide the
-                    // falloff. The reference is genuinely still ~36% lit where
-                    // it meets the band's top and bottom edges, so the glow's
-                    // vertical radius has to reach past them and be trimmed by
-                    // the wing, exactly as the original's is. Sizing this to
-                    // the band instead would force the light to zero at the
-                    // edges and leave a dark rim along the top and bottom of a
-                    // glow that should be touching them.
+                    // falloff. The glow is genuinely still ~36% lit where it
+                    // meets the band's top and bottom edges, so its vertical
+                    // radius has to reach past them and be trimmed by the wing.
+                    // Sizing this to the band instead would force the light to
+                    // zero at those edges and leave a dark rim along the top
+                    // and bottom of a glow that should be touching them.
                     .frame(height: 64)
 
                     // The animation rides inside the glow, toward its bright
@@ -724,7 +720,7 @@ struct NotchActivityView: View {
 
 /// Four thin bars driven by the real microphone power history — the same
 /// published array the overlay waveform consumes (`BuddyDictationManager.recordedAudioPowerHistory`).
-/// Four bars at the measured original's proportions: thin, short, gently
+/// Four bars at the measured proportions: thin, short, gently
 /// alive rather than a full equalizer.
 struct NotchListeningWaveformView: View {
 

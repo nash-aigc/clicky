@@ -116,7 +116,6 @@ nonisolated enum CustomVoiceLibraryClient {
     ///   1. 取上传凭证（`GET /api/v1/uploads?action=getPolicy&model=voice-enrollment`）。
     ///      注意这个端点在**全局域名** `dashscope.aliyuncs.com` 上，不在业务空间域名下。
     ///   2. 把文件 multipart 传到凭证给的 OSS 主机，拿到 `oss://…` 地址。
-    ///      **这一步就是 VoiceWeb 要 shell 出去跑 `bl file upload` 的那一步** ——
     ///      官方文档把协议写全了，所以这里直接实现，App 不需要任何外部命令行依赖。
     ///   3. `create_voice`（**必须带 `X-DashScope-OssResourceResolve: enable` 头**，
     ///      否则服务端解析不了 `oss://` 地址）。

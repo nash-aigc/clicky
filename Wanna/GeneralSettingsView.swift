@@ -1781,8 +1781,8 @@ struct SettingsSwitch: View {
         Toggle("", isOn: $isOn)
             .toggleStyle(.switch)
             .labelsHidden()
-            // 原版的开关是蓝色的——DS.Colors.success 的绿是上一版自己的
-            // 选择，参考截图里没有出现过。
+            // 开关是蓝色的——DS.Colors.success 的绿是上一版自己的选择，
+            // 不该出现在这里。
             .tint(Color(red: 0.30, green: 0.56, blue: 1.0))
             .controlSize(.small)
     }

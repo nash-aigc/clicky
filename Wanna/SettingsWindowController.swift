@@ -287,7 +287,7 @@ private struct SettingsSidebarItem: View {
 
 /// The 恢复默认 / 保存 / 关闭 group.
 ///
-/// Two hosts, one implementation. `.bottomBar` is the original shape: a
+/// Two hosts, one implementation. `.bottomBar` came first: a
 /// full-width bar under the page's `ScrollView`, so 保存 is reachable without
 /// scrolling on the longest page (对话与记忆). `.headerInline` is the notch
 /// sheet's: the same three buttons with no chrome, dropped into the content

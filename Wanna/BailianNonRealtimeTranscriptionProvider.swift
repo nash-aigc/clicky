@@ -82,7 +82,7 @@ private final class BailianNonRealtimeTranscriptionSession: BuddyStreamingTransc
 
     /// 结尾补的静音长度。
     ///
-    /// VoiceWeb 的参考实现也是这么做的（pipecat 的 `SegmentedSTTService` 会补
+    /// pipecat 的 `SegmentedSTTService` 也是这么做的（它会给每段补
     /// 0.5 秒尾静音）。句子常常结束在最后一个字上，没有任何静音空隙，补一小段能
     /// 让模型稳稳收尾，避免吃掉最后一个字。
     private static let trailingSilenceSeconds: Double = 0.5

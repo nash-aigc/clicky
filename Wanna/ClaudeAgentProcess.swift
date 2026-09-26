@@ -6,7 +6,7 @@
 //  first `Foundation.Process` client. One live instance per running agent.
 //
 //  The CLI is used in its headless bidirectional mode, which is the direct
-//  equivalent of the reference design's `codex` subprocess + JSON-RPC pipe
+//  equivalent of a `codex` subprocess + JSON-RPC pipe
 //  (claude's stream-json here — same protocol shape, a newline-delimited
 //  bidirectional JSON stream):
 //
@@ -17,10 +17,10 @@
 //  - the agent's output arrives on stdout as JSON lines (streaming deltas,
 //    complete assistant messages, tool uses, and one `result` per turn);
 //  - the process stays alive between turns, so a follow-up is just another
-//    stdin line (the reference's steer);
+//    stdin line (a steer);
 //  - the thread is identified by `--session-id`, so when a process dies the
 //    next turn relaunches with `--resume <id>` and the conversation continues
-//    (the reference's thread/resume).
+//    (thread/resume).
 //
 //  Concurrency shape: the class is `nonisolated` (the target's default
 //  MainActor isolation would make every pipe callback a compile error), all
@@ -122,8 +122,8 @@ nonisolated final class ClaudeAgentProcess {
     ///
     /// The directory name is the CLI's project slug for the agent's cwd: every
     /// character outside ASCII letters and digits becomes `-` — measured
-    /// 2026-09-23, `/Users/mjm/Desktop/untitled folder` →
-    /// `-Users-mjm-Desktop-untitled-folder`. Mirroring the rule (rather than
+    /// 2026-09-23, `<home>/Desktop/untitled folder` →
+    /// `-Users-…-Desktop-untitled-folder`. Mirroring the rule (rather than
     /// listing the directory and matching) keeps the check one `FileManager`
     /// call.
     static func sessionExistsOnDisk(sessionID: UUID, projectFolderPath: String) -> Bool {
@@ -439,8 +439,9 @@ nonisolated final class ClaudeAgentProcess {
         }
     }
 
-    /// One human-readable line for a tool invocation, the way the reference
-    /// design's progress messages name what the agent is doing.
+    /// One human-readable line for a tool invocation — the tool's name plus the
+    /// single argument that says what it is acting on, so the progress list
+    /// reads as what the agent is doing.
     static func toolActivitySummaryLine(toolName: String, toolInput: [String: Any]?) -> String {
         let summarySourceKeys = ["command", "file_path", "pattern", "url", "query", "prompt", "description"]
         var detail: String?

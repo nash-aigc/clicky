@@ -41,8 +41,6 @@ protocol BuddyTranscriptionProvider {
 enum BuddyTranscriptionProviderFactory {
     private enum PreferredProvider: String {
         case bailian = "bailian"
-        case assemblyAI = "assemblyai"
-        case openAI = "openai"
         case appleSpeech = "apple"
     }
 
@@ -100,30 +98,14 @@ enum BuddyTranscriptionProviderFactory {
         let preferredProvider = preferredProviderRawValue.flatMap(PreferredProvider.init(rawValue:))
             ?? defaultProvider
 
-        // Apple Speech is the local, always-available fallback. It is deliberately
-        // kept out of this list so it is only ever reached after every cloud
-        // provider has been ruled out.
-        let cloudProviderCandidates: [(provider: PreferredProvider, instance: any BuddyTranscriptionProvider)] = [
-            (.bailian, bailianProviderForConfiguredModel(override: override)),
-            (.assemblyAI, AssemblyAIStreamingTranscriptionProvider()),
-            (.openAI, OpenAIAudioTranscriptionProvider())
-        ]
+        // Apple Speech is the local, always-available fallback, and it is the only
+        // candidate besides 百炼 now. The ordering machinery that used to live here
+        // existed to choose among three cloud providers; with one left, the only
+        // question is whether it is configured.
+        let bailian = bailianProviderForConfiguredModel(override: override)
+        if bailian.isConfigured { return bailian }
 
-        // Try the preferred provider first, then the others in their listed order.
-        var orderedCandidates = cloudProviderCandidates
-        if let preferredCandidateIndex = orderedCandidates.firstIndex(where: { $0.provider == preferredProvider }) {
-            let preferredCandidate = orderedCandidates.remove(at: preferredCandidateIndex)
-            orderedCandidates.insert(preferredCandidate, at: 0)
-        }
-
-        for candidate in orderedCandidates where candidate.instance.isConfigured {
-            if candidate.provider != preferredProvider {
-                print("⚠️ Transcription: \(preferredProvider.rawValue) preferred but not configured, falling back to \(candidate.instance.displayName)")
-            }
-            return candidate.instance
-        }
-
-        print("⚠️ Transcription: no cloud provider is configured, falling back to Apple Speech")
+        print("⚠️ Transcription: \(preferredProvider.rawValue) preferred but \(bailian.displayName) is not configured, falling back to Apple Speech")
         return AppleSpeechTranscriptionProvider()
     }
 }

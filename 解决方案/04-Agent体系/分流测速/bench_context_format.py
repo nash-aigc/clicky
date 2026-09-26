@@ -11,10 +11,16 @@
 问同一个指代问题，看 JEV 选得对不对、自信不自信。指代解析是选池题
 （池 = 历史里被提到过的 10 个对象），所以用 choice 直接量。
 """
+import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/Users/mjm/Documents/SuperAgent/Agent/Wanna/instant-agent")
+sys.path.insert(0, os.environ.get(
+    "WANNA_INSTANT_AGENT",
+    str(Path.home() / "Documents/SuperAgent/Agent/Wanna/instant-agent")))
 import jev  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
 
 # 10 句历史（由早到晚），每句提到一个不同对象
 HISTORY = [

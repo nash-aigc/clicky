@@ -10,10 +10,16 @@
 本脚本验证：这四个问题能否装进**一次** JEV 调用、答案是否够准。
 """
 import json
+import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/Users/mjm/Documents/SuperAgent/Agent/Wanna/instant-agent")
+sys.path.insert(0, os.environ.get(
+    "WANNA_INSTANT_AGENT",
+    str(Path.home() / "Documents/SuperAgent/Agent/Wanna/instant-agent")))
 import jev  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
 
 Q_GOAL = {
     "图形": "用户要在屏幕上**看到**一个图形结果：光标飞过去指、画圈/画框/画箭头、"
@@ -113,7 +119,7 @@ def main():
     ms = sorted(r["ms"] for r in rows)
     print(f"\n== {h}/{n} · 中位 {ms[len(ms)//2]}ms · "
           f"总成本 ${sum(r['cost'] for r in rows):.6f}（{n} 次·每次四问）==")
-    dest = "/Users/mjm/Documents/SuperAgent/APP/Design/wanna/解决方案/04-Agent体系/分流测速/一次四问结果.json"
+    dest = str(HERE / "一次四问结果.json")
     json.dump({"rows": rows, "score": {"hit": f"{h}/{n}",
                                        "median_ms": ms[len(ms)//2] if ms else 0,
                                        "total_cost_usd": sum(r["cost"] for r in rows)}},

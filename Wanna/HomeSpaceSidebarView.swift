@@ -24,7 +24,7 @@ struct HomeSpaceSidebarView: View {
 
     @ObservedObject var sessionsModel: ConversationSessionsModel
     @ObservedObject var agentSessionManager: AgentSessionManager
-    /// The VoiceWeb subsystem — the 语音聊天 section's role-preset list reads
+    /// The 语音聊天 subsystem — that section's role-preset list reads
     /// its published presets and connection phase, and its rows select.
     @ObservedObject var voiceChatController: VoiceChatController
     @Binding var showsSettings: Bool
@@ -94,7 +94,7 @@ struct HomeSpaceSidebarView: View {
     // MARK: - Section switcher
 
     /// 「对话 / Agent / 语音聊天」三选一——长方形圆角的按钮（用户定的样式），
-    /// 三颗按钮平分整行。语音聊天是 VoiceWeb 的角色预设列表，与上面两个
+    /// 三颗按钮平分整行。语音聊天是角色预设列表，与上面两个
     /// 列表一样是独立的半区。
     ///
     /// 2026-09-23 用户要求「把这三个按钮的高度调大一点，文字也大一点，让按钮
@@ -148,7 +148,7 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - Pieces
 
-    /// 搜索框占满剩余宽度，旁边是原版那颗独立的圆形「＋」。三个分区共用：
+    /// 搜索框占满剩余宽度，旁边是一颗独立的圆形「＋」。三个分区共用：
     /// 文案、过滤对象与「＋」的动作按当前分区取。
     private var searchRow: some View {
         HStack(spacing: 8) {
@@ -228,7 +228,7 @@ struct HomeSpaceSidebarView: View {
     }
 
     /// What the 「＋」 does here. 对话 and Agent both make something new; the
-    /// 语音聊天 roles come from VoiceWeb's own configuration and cannot be
+    /// 语音聊天 roles come from the saved role configuration and cannot be
     /// created by Wanna, so there the button re-reads the list instead — and
     /// its tooltip says so, rather than pretending to be a create button.
     private func primaryCreateAction() {
@@ -255,7 +255,7 @@ struct HomeSpaceSidebarView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(sessionsModel.sidebarRows.enumerated()), id: \.element.session.id) { rowIndex, row in
                     sessionRow(row)
-                    // 原版每行之间有一条发丝分隔线，与文字对齐、不压头像。
+                    // 每行之间有一条发丝分隔线，与文字对齐、不压头像。
                     if rowIndex < sessionsModel.sidebarRows.count - 1 {
                         Divider()
                             .overlay(Color.white.opacity(0.08))
@@ -276,7 +276,7 @@ struct HomeSpaceSidebarView: View {
             showsSettings = false
         }) {
             HStack(alignment: .center, spacing: 10) {
-                // 原版用贴着侧栏左缘的小蓝点标记当前会话，选中行不再加底色。
+                // 用贴着侧栏左缘的小蓝点标记当前会话，选中行不再加底色。
                 Circle()
                     .fill(Color(red: 0.25, green: 0.52, blue: 1.0))
                     .frame(width: 5, height: 5)
@@ -510,7 +510,7 @@ struct HomeSpaceSidebarView: View {
 
     // MARK: - Voice chat role presets
 
-    /// The 语音聊天 section's list: VoiceWeb's own role presets. Clicking a row
+    /// The 语音聊天 section's list: the saved role presets. Clicking a row
     /// only SELECTS it — the connection is started by the 连接 button in the
     /// content column, which is the single place a session can begin. That
     /// split is what stops the connection state from appearing to move between
@@ -556,8 +556,8 @@ struct HomeSpaceSidebarView: View {
     private func voiceChatRoleRow(_ role: VoiceChatController.VoiceChatRolePreset) -> some View {
         let isSelected = role.id == voiceChatController.selectedRoleID
         let connectionPhase = voiceChatController.connectionPhase
-        // 状态只属于真正在连/连上的那一个角色：`activeRoleID` 是 VoiceWeb
-        // 真的在用的角色，`selectedRoleID` 只是用户点选的那一行。两者分开，
+        // 状态只属于真正在连/连上的那一个角色：`activeRoleID` 是真的在用的
+        // 那个角色，`selectedRoleID` 只是用户点选的那一行。两者分开，
         // 连接状态就不可能跟着点击在卡片之间搬家。
         let isConnectedToThisRole = voiceChatController.activeRoleID == role.id
             && (connectionPhase == .connected || connectionPhase == .connecting)
@@ -847,7 +847,7 @@ struct HomeSpaceSidebarView: View {
     // MARK: - Formatting
 
     /// 会话的第二行预览：取最近一条对话的开头（用户的话优先，读起来才
-    /// 像原版的「我会读完四家中国发射…」）。internal 供归档页复用。
+    /// 像「我会读完四家中国发射…」这样的半句话）。internal 供归档页复用。
     static func previewText(_ session: ConversationSession) -> String {
         let lastEntry = session.entries.last
         let candidate = lastEntry?.userTranscript ?? lastEntry?.assistantResponse ?? ""

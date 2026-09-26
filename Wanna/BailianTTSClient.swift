@@ -657,11 +657,11 @@ final class BailianTTSClient {
 
     /// Speaks a reply while the model is still generating it.
     ///
-    /// Ported from the voice-web reference project's three-part speech chain
-    /// (实现方案/11): the reply's tag-stripped text is fed in as it streams, an
-    /// aggregator turns the stream into segments that are synthesized the
-    /// moment they exist — with up to two syntheses in flight, so while one
-    /// segment is playing the next is already on its way. The measured physics
+    /// A three-part speech chain: the reply's tag-stripped text is fed in as it
+    /// streams, an aggregator turns the stream into segments that are
+    /// synthesized the moment they exist — with up to two syntheses in flight,
+    /// so while one segment is playing the next is already on its way. The
+    /// measured physics
     /// behind the design: synthesis (~19 ms/char + ~450 ms fixed) runs far
     /// faster than playback (~5.8 chars/s), so once the first segment is
     /// audible every later segment is ready before the previous one finishes,
@@ -669,7 +669,7 @@ final class BailianTTSClient {
     /// words instead of after the whole reply.
     ///
     /// The first sentence's shortness (~15 characters) is a two-sided contract
-    /// (2026-09-22): the reference project's own numbers (merge to ≥15, cut at
+    /// (2026-09-22): the numbers first tried (merge to ≥15, cut at
     /// 60) made the first sound late, and a character-count force cut then made
     /// it sound torn — a sentence chopped mid-phrase. The fix splits the job:
     /// the SYSTEM PROMPT makes the model write its first sentence short (about
@@ -692,7 +692,7 @@ final class BailianTTSClient {
         /// Later segments: merged sentences shorter than this are held until
         /// they add up. This shapes evenness only, never latency — later
         /// segments are synthesized while earlier ones play. 30 (raised from
-        /// the reference project's 15 after the too-many-joins complaint) is
+        /// 15 after the too-many-joins complaint) is
         /// several sentences' worth, so joins land mostly at 。 rather than at
         /// every comma, and each segment plays long enough for the model to
         /// stream the next one well ahead of its turn.

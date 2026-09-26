@@ -5,10 +5,16 @@
 那是**大模型**侧的规则（它有对话历史、要承接指代）。JEV 是选择器，不是对话解析器——
 本脚本量的是：这份"10 句标注"塞给 JEV，它的**分类**是变准还是变糊。
 """
+import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/Users/mjm/Documents/SuperAgent/Agent/Wanna/instant-agent")
+sys.path.insert(0, os.environ.get(
+    "WANNA_INSTANT_AGENT",
+    str(Path.home() / "Documents/SuperAgent/Agent/Wanna/instant-agent")))
 import jev  # noqa: E402
+
+HERE = Path(__file__).resolve().parent
 
 Q_GOAL = {
     "图形": "用户要在屏幕上**看到**一个图形结果：光标飞过去指、画圈/画框/画箭头、生成 SVG 图形或图解。",

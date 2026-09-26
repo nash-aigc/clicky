@@ -14,14 +14,14 @@
 //                （`language_type` 只属于 Qwen-TTS），配错只会得到一个
 //                `InvalidParameter: url error` 这种指不到重点的报错。
 //   · 全双工语音 → **必须让实时模型自己说**。官方那套龙安音色是实时模型的内部
-//                音色，任何独立 TTS 都不认（VoiceWeb 实测 `qwen3-tts-flash` /
+//                音色，任何独立 TTS 都不认（实测 `qwen3-tts-flash` /
 //                `qwen-audio-3.1-tts-flash` / `cosyvoice-v3` 全部 400
 //                `Invalid voice`）。所以这一条是：开一个真·实时会话，用
 //                `turn_detection: null` + `conversation.item.create` 发一句纯文字，
 //                收 `response.audio.delta`。首次 3~5 秒，之后走缓存。
 //
-//  缓存落在 `~/Library/Application Support/Wanna/VoicePreviews/`。VoiceWeb 用
-//  SHA1 做 key；这里用**可读的** key（音色/模型/参数拼起来再清洗），因为出问题时
+//  缓存落在 `~/Library/Application Support/Wanna/VoicePreviews/`。key 用**可读的**
+//  形式（音色/模型/参数拼起来再清洗）而不是哈希，因为出问题时
 //  能直接看出哪个文件对应哪次试听，比一串哈希值有用。
 //
 

@@ -102,7 +102,7 @@ struct MessageComposerField: View {
     /// A three-line box with a single line typed in it — the resting height.
     static let threeLineHeight: CGFloat =
         verticalTextInset * 2 + lineHeight * CGFloat(minimumVisibleLineCount)
-    /// 「长方形加圆角」 — the reference's chat-card radius, not a capsule.
+    /// 「长方形加圆角」 — 参考页's chat-card radius, not a capsule.
     static let cornerRadius: CGFloat = DS.CornerRadius.large
     /// The trailing inset that keeps text out from under the two corner
     /// buttons (they are 20pt wide and sit 4pt from the edge).

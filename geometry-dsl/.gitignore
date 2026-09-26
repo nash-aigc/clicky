@@ -1,0 +1,8 @@
+node_modules/
+# `dist/` 本来是编译产物、上游不入库。这里改成入库：本仓库把 geometry-dsl
+# 当作**随 app 一起发布的引擎**，而 dist 实测零运行时依赖、脱离 node_modules
+# 也能跑（隔离测试通过）—— 提交它，换台机器只要有 node 就能出图，不用 npm install。
+# 重新编译：npm install && npm run build
+*.log
+.DS_Store
+work.geom

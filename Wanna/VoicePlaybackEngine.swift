@@ -355,16 +355,16 @@ final class VoicePlaybackEngine {
         // those in turn are what made the reply interrupt itself and the silence
         // countdown never finish.
         //
-        // One engine is also the reference's own rule, and it is the one it
-        // records as ARCHITECTURAL rather than tunable: 「音频采集+播放必须都在
-        // WebRTC 里 —— 挪出去会导致浏览器 AEC 失灵 → 自己打断自己」, 教训
-        // 「浏览器回声消除依赖传输形态，架构级约束」 (实现方案/08-踩坑总表.md:11).
+        // One engine is also the rule this design is built on, and it is
+        // ARCHITECTURAL rather than tunable: 「音频采集+播放必须在同一条链路里
+        // —— 挪出去会导致回声消除失灵 → 自己打断自己」——回声消除依赖传输
+        // 形态，是架构约束而不是可调参数。
         // The cost is the one the second engine existed to avoid: while a
         // listening window is open this app is in macOS's communication-app
         // class, so other audio is ducked — at `.min`, and only while the
         // microphone is actually open. 「回声消除」 is the user's way out.
         preparedCaptureHost = .playbackEngine
-        print("🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback — the reference's rule, 坑 1)")
+        print("🎙️ VoicePlaybackEngine: the listening tap will go on the playback engine (one engine for capture and playback)")
     }
 
     /// Installs the continuous-listening mic tap on whichever engine
@@ -1390,10 +1390,9 @@ final class VoicePlaybackEngine {
     /// re-gained signal, and a clipped one is exactly what this app's own ASR
     /// turned into 「嗯。」/「哎」/「那」 off its own answer.
     ///
-    /// The reference project never meets this, because its VAD analyzer and its
-    /// recognizer both read the browser AEC's own output — the same class of
-    /// failure it records as 坑 1 (实现方案/08-踩坑总表.md:11), "capture and
-    /// playback must both travel through the AEC for it to work".
+    /// A pipeline whose VAD analyzer and recognizer both read the canceller's
+    /// own output never meets this — "capture and playback must both travel
+    /// through the AEC for it to work".
     nonisolated private static func disableAutomaticGainControlOnProcessedUplink(on inputNode: AVAudioInputNode) {
         inputNode.isVoiceProcessingAGCEnabled = false
     }

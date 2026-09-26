@@ -15,8 +15,7 @@
 //  fork's own design: `HomeSpaceSheetShape` names the fields it needs —
 //  menuBarBandHeight / stemWidth / cornerRadius / restingNotchSize /
 //  expansionProgress / detachmentProgress / squish — but no values came with
-//  those names, so the values here are chosen to look right against the
-//  reference screenshots.
+//  those names, so the values here are chosen to look right.
 //
 
 import AppKit
@@ -311,9 +310,8 @@ nonisolated enum NotchSupport {
     }
 
     /// The expanded sheet's size — the expanded sheet is *large*, a real
-    /// main-window-sized surface (measured off the reference screenshot:
-    /// roughly 810×940pt), not a popover. Clamped per screen so small
-    /// displays still fit it below the menu bar.
+    /// main-window-sized surface (roughly 810×940pt), not a popover. Clamped
+    /// per screen so small displays still fit it below the menu bar.
     static func expandedSheetSize(on screen: NSScreen) -> CGSize {
         CGSize(
             width: min(810, screen.frame.width - 40),
@@ -342,7 +340,7 @@ nonisolated enum NotchSupport {
     /// The sheet's height on this screen: the height under the user's finger
     /// while the resize grip is being dragged, otherwise the user's persisted
     /// fraction of the screen height, otherwise the default (~940pt on a
-    /// 14″ MacBook's screen, like the reference screenshot).
+    /// 14″ MacBook's screen).
     static func expandedSheetHeight(on screen: NSScreen) -> CGFloat {
         let maximum = maximumSheetHeight(on: screen)
         if let liveDragSheetHeight {

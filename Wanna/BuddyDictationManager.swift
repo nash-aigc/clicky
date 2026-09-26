@@ -247,7 +247,7 @@ struct BuddyContinuousListeningCallbacks {
     ///
     /// Fires at most ONCE per utterance, and from the level VAD's
     /// QUIET→SPEAKING transition alone. A transcript may not start a turn here
-    /// — that is the reference's own structure, not a local bar; the interim
+    /// — that is a structural rule, not a local bar; the interim
     /// handler in `openContinuousListeningTranscriptionSession` carries the
     /// evidence.
     let onSpeechDetected: () -> Void
@@ -274,10 +274,9 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     private static let recordedAudioPowerHistoryBaselineLevel: CGFloat = 0.02
     private static let recordedAudioPowerHistorySampleIntervalSeconds: TimeInterval = 0.07
 
-    // Continuous listening (回答时持续监听) tuning. The layering mirrors what
-    // the VoiceWeb reference measured (浏览器 AEC 承重 + VAD 阈值/时长防误触发),
-    // and since 2026-09-23 it matches it again — the load-bearing layer is a
-    // real AEC once more.
+    // Continuous listening (回答时持续监听) tuning. The layering is the measured
+    // one (AEC 承重 + VAD 阈值/时长防误触发), and since 2026-09-23 the
+    // load-bearing layer is a real AEC again.
     // ① the system AEC (Apple voice processing, on the shared playback engine
     //    — see VoicePlaybackEngine's header) removes the app's own answer from
     //    the microphone BEFORE the recognizer sees it. This is the layer that
@@ -348,24 +347,23 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // level-corroborated 1-character bar, so the transcript path killed it too.
     // One character of the app's own audio is not a barge-in.
     //
-    // The rule is therefore pipecat's own, for exactly this case — the echo
-    // reaching the recognizer: `min_words_user_turn_start_strategy.py:108` reads
-    // `min_words = self._min_words if self._bot_speaking else 1`, "If the bot is
-    // speaking we want to interrupt using min words". MORE evidence while the
-    // bot speaks, never less. VoiceWeb can run the bar-free pair
-    // (`VADUserTurnStartStrategy` + `TranscriptionUserTurnStartStrategy`,
-    // server.py:3753) only because its AEC lives in the browser and stays
-    // converged for the whole session; this app restarts its canceller per
-    // reply, which is what makes the local rule the stricter one.
+    // The rule is therefore the stricter one for exactly this case — the echo
+    // reaching the recognizer: "If the bot is speaking we want to interrupt
+    // using min words" (pipecat's `MinWordsUserTurnStartStrategy`), i.e. MORE
+    // evidence while the bot speaks, never less. The bar-free pair
+    // (`VADUserTurnStartStrategy` + `TranscriptionUserTurnStartStrategy`) is
+    // only safe where the canceller stays converged for the whole session;
+    // this app restarts its canceller per reply, which is what makes the local
+    // rule the stricter one.
     //
     // Concretely, the level VAD is the ONLY thing that may start a turn, while
-    // the answer plays or not. That is what the reference does, and the reason
-    // is structural rather than a threshold: VoiceWeb's transcript cannot exist
-    // until its VAD has already ruled that the user spoke, so a transcript can
-    // never be an independent trigger there. Here the recognizer free-runs, and
-    // one guessed character is all it takes — so the source is restricted
-    // instead. Real barge-in is unaffected: the user's own speech measures
-    // 0.3–1.0 against a 0.25 threshold.
+    // the answer plays or not. The reason is structural rather than a
+    // threshold: where the STT is segmented by the VAD, a transcript cannot
+    // exist until the VAD has already ruled that the user spoke, so a
+    // transcript is never an independent trigger there. Here the recognizer
+    // free-runs, and one guessed character is all it takes — so the source is
+    // restricted instead. Real barge-in is unaffected: the user's own speech
+    // measures 0.3–1.0 against a 0.25 threshold.
     // The silence that ends an utterance is now a USER SETTING
     // (「静音多久自动发送」, AppSettings.continuousListeningSilenceSendSeconds,
     // default 2.0 s, clamped 1–5) — human thinking pauses are unbounded (the
@@ -419,15 +417,15 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     // This file used to carry a 4-content-character bar here, justified by
     // pipecat's `MinWordsUserTurnStartStrategy`
     // (`word_count >= (min_words if bot_speaking else 1)`). That justification
-    // was wrong. VoiceWeb never instantiates that strategy: its 三段式 builds
-    // its user-turn-start list from `VADUserTurnStartStrategy` and
-    // `TranscriptionUserTurnStartStrategy` only (server.py:3753-3754), and
-    // neither carries any word, character or bot-speaking condition.
+    // was wrong. A 三段式 pipeline never instantiates that strategy: its
+    // user-turn-start list is built from `VADUserTurnStartStrategy` and
+    // `TranscriptionUserTurnStartStrategy` only, and neither carries any word,
+    // character or bot-speaking condition.
     //
     // Removing the bar was right; re-opening the ASR as a turn-start source was
-    // not. In VoiceWeb the transcription strategy is unreachable for an
-    // interruption no matter what it says, because the STT is segmented by the
-    // VAD — a transcript cannot exist before the VAD has ruled. Run that same
+    // not. Where the STT is segmented by the VAD, the transcription strategy is
+    // unreachable for an interruption no matter what it says — a transcript
+    // cannot exist before the VAD has ruled. Run that same
     // strategy against this app's free-running streaming recognizer and it
     // becomes the hole: measured 2026-09-24, the canceller's residual made the
     // recognizer guess 「噻」 and 「是」 at mic peaks of 0.214 / 0.241 — BELOW the
@@ -575,8 +573,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     ///
     /// Recording normally runs through the shared playback engine, the same one
     /// the answer is spoken from and the listening window taps (see
-    /// `startRecognitionSession`). That is the reference's own rule — capture and
-    /// playback on ONE audio path — and it is what keeps a second engine from
+    /// `startRecognitionSession`). Capture and playback belong on ONE audio path
+    /// — and that is what keeps a second engine from
     /// tearing the shared one down: measured 2026-09-24, stopping an engine that
     /// shares the input device with a voice-processing engine kills the voice
     /// one. This engine is kept only for the case where the shared engine is
@@ -1013,23 +1011,19 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                     // copy a dead session's fallback submits as the final, and
                     // the text the send bar counts. It may not start a turn.
                     //
-                    // That is not a policy choice, it is the reference's own
-                    // structure. VoiceWeb's cascade pipeline segments its STT by
-                    // the VAD — `class BailianASRService(SegmentedSTTService)`
-                    // (server.py:699) — which emits one final transcript per VAD
-                    // segment and never an interim (pipecat
-                    // services/stt_service.py:906-918). A transcript therefore
-                    // cannot exist until the VAD has already decided the user
-                    // spoke. `TranscriptionUserTurnStartStrategy` IS in VoiceWeb's
-                    // `_start` list (server.py:3754) and still cannot interrupt:
-                    // `UserTurnController`'s only dedup is `if self._user_turn:
-                    // return` (turns/user_turn_controller.py:353), and a segment's
-                    // transcript arrives in the same pass as the turn end, while
-                    // `_user_turn` is still true. In VoiceWeb the ONLY thing that
-                    // can interrupt mid-reply is the VAD's QUIET→SPEAKING
-                    // transition — one event per transition, after `start_secs` of
-                    // sustained confidence (pipecat audio/vad/vad_analyzer.py:211,
-                    // :238-243).
+                    // That is not a policy choice, it is structural. A cascade
+                    // pipeline segments its STT by the VAD — a
+                    // `SegmentedSTTService` — which emits one final transcript
+                    // per VAD segment and never an interim. A transcript
+                    // therefore cannot exist until the VAD has already decided
+                    // the user spoke. The transcription turn-start strategy is
+                    // in the strategy list and STILL cannot interrupt: the user
+                    // turn controller's only dedup is `if self._user_turn:
+                    // return`, and a segment's transcript arrives in the same
+                    // pass as the turn end, while `_user_turn` is still true.
+                    // The ONLY thing that can interrupt mid-reply is the VAD's
+                    // QUIET→SPEAKING transition — one event per transition,
+                    // after `start_secs` of sustained confidence.
                     //
                     // Ported onto a free-running streaming ASR, that same
                     // strategy becomes the one hole in the wall, because a
@@ -1040,7 +1034,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
                     // of 0.214 and 0.241, both BELOW the 0.25 level gate, so no
                     // VAD would have fired and every one of them used to stop the
                     // answer mid-sentence. No threshold can take this job: the
-                    // reference's canceller is Chrome's, and Silero rates a
+                    // canceller here is the platform's (AVAudioEngine voice
+                    // processing), and Silero rates a
                     // smeared echo of speech as speech at the same confidence as
                     // clean speech (frac >= 0.7 of 0.90–0.94 against 0.89 clean,
                     // measured 2026-09-24 on the shipped ONNX model). Only the
@@ -1178,8 +1173,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// 1. `trigger == "mic level"` — the local energy VAD's accumulator
     ///    reached its threshold. Fast.
     /// 2. `trigger == "ASR transcript"` — the speech service produced text.
-    ///    This is pipecat's `TranscriptionUserTurnStartStrategy` doing the same
-    ///    job in the reference: a VAD will always miss a quiet or unusual
+    ///    The same job pipecat's `TranscriptionUserTurnStartStrategy` does: a
+    ///    VAD will always miss a quiet or unusual
     ///    voice, but if the recognizer heard words then the user was
     ///    unambiguously speaking. Slower to fire, and the safety net when
     ///    path 1 does not.
@@ -1200,12 +1195,11 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     ///
     /// Nothing here is conditioned on the bot speaking, and nothing is
     /// conditioned on the microphone level either — that is the whole of the
-    /// port. The reference's two strategies fire on their frame and stop:
+    /// port. The two turn-start strategies fire on their frame and stop:
     /// `VADUserTurnStartStrategy` on any `VADUserStartedSpeakingFrame`,
-    /// `TranscriptionUserTurnStartStrategy` on any `InterimTranscriptionFrame`
-    /// (server.py:3753-3754), and `llm_response_universal.py:1328` broadcasts
-    /// the interruption off `enable_interruptions` alone, with no bot-speaking
-    /// gate on that branch.
+    /// `TranscriptionUserTurnStartStrategy` on any `InterimTranscriptionFrame`,
+    /// and the interruption is broadcast off `enable_interruptions` alone, with
+    /// no bot-speaking gate on that branch.
     ///
     /// So the truth table is one row repeated — whatever the evidence, and
     /// whether or not the bot is mid-sentence, the utterance opens and the
@@ -1222,8 +1216,8 @@ final class BuddyDictationManager: NSObject, ObservableObject {
     /// `disableAutomaticGainControlOnProcessedUplink`, which is the detail that
     /// was missing while every earlier attempt tried to survive a signal that
     /// had our own answer pumped to full scale in it — so the bot's own voice
-    /// is gone before either path reads it, which is the position VoiceWeb is
-    /// in with the browser's AEC.
+    /// is gone before either path reads it, which is the position a pipeline
+    /// with a converged canceller is in.
     private func markContinuousListeningUtteranceActive(trigger: String) {
         guard isContinuousListening, !isContinuousListeningAwaitingFinal else { return }
 
@@ -1789,7 +1783,7 @@ final class BuddyDictationManager: NSObject, ObservableObject {
         //
         // Two reasons, and the second is the one the user can hear.
         //
-        // 1. It is the reference's rule and this file's own history: capture and
+        // 1. This file's own history: capture and
         //    playback on ONE audio path. Measured 2026-09-24, stopping an engine
         //    that shares the input device with a voice-processing engine kills
         //    the voice one — which is why this app once went mute per reply and

@@ -14,23 +14,31 @@
 //  Same lesson as `AppSupportDirectory`: a rename that misses one site is a
 //  rename that leaves one store reading the old directory.
 //
-//  The root is a literal rather than something derived from `Bundle.main`: the app
-//  runs from DerivedData, from `/Applications`, or from a `swiftc` probe directory,
-//  and none of those bears any relation to where the sources are. That also means
-//  **moving the checkout is an edit here** — one line, which is the point of the file.
+//  The root is derived from `#filePath` — this file's own absolute path at compile
+//  time — rather than written as a literal. A literal is what broke here: the checkout
+//  was renamed on 2026-09-26 and every path built from it kept pointing at a folder that
+//  no longer existed, silently, because a missing output directory is not an error the
+//  app can notice. `#filePath` follows the sources, so moving or renaming the checkout is
+//  a rebuild and nothing else.
+//
+//  It has to be compile-time, not runtime: the app runs from `/Applications`, from
+//  DerivedData, or from a `swiftc` probe directory, and none of those bears any relation
+//  to where the sources are, so nothing at runtime can walk its way back to the checkout.
 //
 
 import Foundation
 
 nonisolated enum WorkspaceDirectory {
 
-    /// The checkout. Everything the app writes for a human to go and look at
-    /// lands under here.
-    static let rootPath = "/Users/mjm/Documents/SuperAgent/Wanna"
-
+    /// The checkout. `<checkout>/Wanna/WorkspaceDirectory.swift` is this file, so two
+    /// levels up from it is the root — and it stays right when the checkout moves.
     static var rootURL: URL {
-        URL(fileURLWithPath: rootPath, isDirectory: true)
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // Wanna/
+            .deletingLastPathComponent()   // the checkout root
     }
+
+    static var rootPath: String { rootURL.path }
 
     /// A folder directly inside the checkout.
     static func url(_ name: String) -> URL {
