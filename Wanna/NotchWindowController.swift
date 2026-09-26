@@ -806,6 +806,8 @@ final class NotchWindowController {
             guard self.expansionGeneration == expansionGenerationAtStart,
                   !self.panelModel.isExpanded else { return }
             self.panelModel.isExpanded = true
+            // 面板一展开，刘海卡片就让位（否则它们盖住面板的侧栏 ✗）。
+            AgentActivityBoard.shared.showsNotchCards = false
             // 揭：**由骨架建好来触发**，不再由毫秒数来猜。
             //
             // 正路是 `NotchExpandedSheetView` 的 `onAppear` → `sheetDidAppear`
@@ -1357,6 +1359,7 @@ final class NotchWindowController {
         // and the morph-back would silently pick a wrong screen.
         let collapsingPresence = screenPresences.first { $0.screen == expandedScreen }
         panelModel.isExpanded = false
+        AgentActivityBoard.shared.showsNotchCards = true
         // 收回骨架态：下一次展开从"只有骨架"起步（`beginExpansion` 也会设一遍，
         // 这里设是为了让收起期间那棵树也是轻的）。
         panelModel.isSheetContentReady = false

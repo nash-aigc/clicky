@@ -37,6 +37,7 @@ struct AgentStripView: View {
     /// 彼此不同步，看起来像坏了。
     @State private var isBreathing = false
 
+
     /// 只在册子上最多的那几个：刘海左侧放不下更多（见 `maximumVisibleAgentButtons`）。
     private var visibleAgents: [EphemeralAgent] {
         Array(board.agents.prefix(NotchSupport.maximumVisibleAgentButtons))
@@ -92,6 +93,13 @@ struct AgentStripView: View {
     ///
     /// 三张一起弹会把刘海下面那块占满，而用户的注意力只有一处；最新的两张够表达
     /// 「刚才发生了什么」。
+    /// **面板展开时，卡片让位。**
+    ///
+    /// 2026-09-26 自查截图发现：卡片改成"任务在它就在"之后，展开面板时它们**盖住了侧栏** ✗
+    ///（会话列表整个被遮住，用户找不到自己那条对话 ✗）。这和这个仓库既有的规矩是同一条：
+    /// 回答气泡在面板展开时也让位（"the sheet's conversation flow is showing the same text"✓），
+    /// 而面板里的侧栏本来就把这些任务列出来了 ✓。
+    /// **芯片（刘海左侧那几个小方块）不动** —— 它们是常驻的状态指示 ✓。
     private var expandedAgents: [EphemeralAgent] {
         // **任务在，卡片就在。**
         //
@@ -99,7 +107,7 @@ struct AgentStripView: View {
         // 所以**任务在跑的时候根本没有卡片**（用户 2026-09-26：「内容现在看不到，
         // 修复一下」就是这个）。而卡片是他要看任务内容的地方（时间 + 正文 + 可展开），
         // 所以它跟着任务活着：任务在 = 卡片在，任务退场 = 卡片一起走。
-        Array(visibleAgents.prefix(2))
+        board.showsNotchCards ? Array(visibleAgents.prefix(2)) : []
     }
 
     // MARK: - 按钮

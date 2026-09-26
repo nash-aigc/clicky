@@ -85,11 +85,9 @@ struct HomeSpaceSidebarView: View {
             // 三个分区共用同一行「搜索 + ＋」（用户要求三个页面顺序一致）。
             searchRow
 
-            // **任务区。** 用户 2026-09-26：「之前说的左侧，我的意思是在窗口里面也要能看到…
-            // 窗口里面应该也能看到。我之前说的是在窗口的侧边栏显示文件夹，就是相关的任务…
-            // 而且这个任务在左侧边栏的卡片样式应该跟其他的是不一样的，用户能够直接区分 ——
-            // 高度、图标、状态、呼吸灯这些东西」。
-            taskSection
+            // **没有归属的任务**（会话被删/换了）单独一区，免得它们消失得无影无踪 ——
+            // 有归属的都在各自的主会话行下面（见 `taskGroups(forSessionID:)`）。
+            orphanTaskSection
 
             // 分阶段加载：第一拍只建上面那几行骨架，列表留到第二拍
             //（见 `showsSectionList`）。`Spacer` 仍在，所以底部那一行不会跳。
@@ -274,6 +272,88 @@ struct HomeSpaceSidebarView: View {
         }
     }
 
+    // MARK: - 任务（挂在主会话下面）
+
+    /// 一个主会话下面的分组（用户画的图：主会话 → 分组 → 子任务，两级都能折叠）。
+    ///
+    /// 分组的键是 `groupID`（一轮派出去的活共用一个 ✓），所以"同一个目标派了三个 agent"
+    /// 会折成一个文件夹 ✓；组行本身可以折叠，展开后才列子任务 ✓。
+    @ViewBuilder
+    private func taskGroups(forSessionID sessionID: String) -> some View {
+        let groups = boardGroups(forSessionID: sessionID)
+        ForEach(groups, id: \.id) { group in
+            taskGroupRow(group, indented: 10)
+        }
+    }
+
+    /// 没有归属的任务（会话已经不在侧栏里了）。
+    @ViewBuilder
+    private var orphanTaskSection: some View {
+        let known = Set(sessionsModel.sidebarRows.map { $0.session.id.uuidString })
+        let orphans = AgentActivityBoard.shared.sidebarGroups.filter { group in
+            guard let sessionID = group.members.first?.sessionID else { return true }
+            return !known.contains(sessionID)
+        }
+        if !orphans.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("其他任务")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.7)
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 2)
+                ForEach(orphans) { group in
+                    taskGroupRow(group, indented: 12)
+                }
+            }
+        }
+    }
+
+    private func boardGroups(forSessionID sessionID: String) -> [AgentActivityBoard.SidebarGroup] {
+        AgentActivityBoard.shared.sidebarGroups.filter { group in
+            group.members.contains { $0.sessionID == sessionID }
+        }
+    }
+
+    /// 一个分组：可折叠的一行 + 展开后的子任务。
+    private func taskGroupRow(_ group: AgentActivityBoard.SidebarGroup, indented: CGFloat) -> some View {
+        let isOpen = expandedTaskGroups.contains(group.id)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button {
+                if isOpen { expandedTaskGroups.remove(group.id) } else { expandedTaskGroups.insert(group.id) }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: isOpen ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(DS.Colors.textTertiary)
+                    Image(systemName: "folder")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(DS.Colors.accent.opacity(0.8))
+                    Text(group.members.first?.title ?? "一组任务")
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundColor(DS.Colors.textSecondary)
+                        .lineLimit(1)
+                    Text("· \(group.members.count)")
+                        .font(.system(size: 10.5))
+                        .foregroundColor(DS.Colors.textTertiary)
+                    Spacer(minLength: 4)
+                    taskStatusDot(group.worstStatus, size: 7)
+                }
+                .padding(.leading, indented + 12)
+                .padding(.trailing, 12)
+                .frame(height: 30)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+
+            if isOpen {
+                ForEach(group.members) { member in
+                    taskRow(member, indented: true)
+                }
+            }
+        }
+    }
+
     // MARK: - 任务（刘海左侧那一排的同源视图）
 
     /// 侧栏里的任务区。**和会话行长得不一样是要求，不是风格** —— 用户要靠"高度、图标、
@@ -320,24 +400,16 @@ struct HomeSpaceSidebarView: View {
         return Button {
             if isOpen { expandedTaskGroups.remove(group.id) } else { expandedTaskGroups.insert(group.id) }
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: isOpen ? "folder.fill" : "folder")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(DS.Colors.accent.opacity(0.85))
-                    .frame(width: 18)
-                // **这一组是干什么的**：用组里第一个任务的名字 + 数量 —— 光写「2 个任务」
-                // 的话用户看不出这一组在做什么（2026-09-26 自己截图核对时发现的）。
-                Text("\(group.members.first?.title ?? "一组任务") 等 \(group.members.count) 个")
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundColor(DS.Colors.textSecondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Spacer(minLength: 4)
-                taskStatusDot(group.worstStatus, size: 7)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .bold))
+            HStack(spacing: 6) {
+                // **照参考图：这一行只写「N agents」+ 折叠箭头**（组的身份由下面那几行说）。
+                Text("\(group.members.count) agents")
+                    .font(.system(size: 11.5))
                     .foregroundColor(DS.Colors.textTertiary)
-                    .rotationEffect(.degrees(isOpen ? 90 : 0))
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(DS.Colors.textTertiary)
+                    .rotationEffect(.degrees(isOpen ? 0 : -90))
             }
             .padding(.horizontal, 12)
             .frame(height: 34)
@@ -350,50 +422,59 @@ struct HomeSpaceSidebarView: View {
     /// 一个任务一行。**高度 44（会话行是随内容的）、左边一颗渐变图标块、右边一颗会呼吸的
     /// 状态点** —— 这三样加起来就是"一眼分得清"。
     private func taskRow(_ agent: EphemeralAgent, indented: Bool) -> some View {
-        // **点得动**（用户 2026-09-26：「无法点击」—— 这一行原来只是个 HStack，
-        // 连 `contentShape` 都没有）。点击落到既有那条链上：`manualPanelID` → 详情面板。
-        //
-        // 用 `manualPanelID` 而不是"选中/右侧显示"：面板那条链**已经被测试锁住**
-        //（`togglingAnAgentOpensThePanel`，而且去过修掉的那行会变红），而"右侧列显示
-        // 任务详情"要新增一整套内容列分支 —— 先让用户点得动、看得见，再谈放哪一列。
+        // **照用户给的那张参考图**（2026-09-26）：
+        //   状态图标（跑着会转）+ ✳ 子 agent 记号 + 标题 · 详情 + 右侧相对时间
         Button {
             AgentActivityBoard.shared.togglePanel(agent.id)
         } label: {
-            HStack(spacing: 8) {
-                if indented { Spacer().frame(width: 12) }
-                // 图标块：和桌面 HUD 的 chip 同一个语汇（渐变 + id 前两位）。
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(DS.Colors.accentGradient)
-                    .frame(width: 22, height: 22)
-                    .overlay(
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.95))
-                    )
-                VStack(alignment: .leading, spacing: 1) {
-                    // **标题也是时间**（和刘海卡片、和详情面板一致）。
-                    Text("\(agent.startTimeText)  \(agent.title)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(DS.Colors.textPrimary)
-                        .lineLimit(1)
-                    HStack(spacing: 4) {
-                        Text(agent.id)
-                            .font(.system(size: 9.5, weight: .medium).monospaced())
-                            .foregroundColor(DS.Colors.textTertiary)
-                        Text(agent.status.displayName)
-                            .font(.system(size: 9.5, weight: .medium))
-                            .foregroundColor(taskStatusColor(agent.status))
-                    }
-                }
+            HStack(spacing: 7) {
+                if indented { Spacer().frame(width: 10) }
+                taskStatusGlyph(agent.status)
+                Image(systemName: "asterisk")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(DS.Colors.warning)
+                Text("\(agent.title) · \(agent.bannerLine)")
+                    .font(.system(size: 12))
+                    .foregroundColor(DS.Colors.textSecondary)
+                    .lineLimit(1)
                 Spacer(minLength: 4)
-                taskStatusDot(agent.status, size: 10)
+                Image(systemName: "clock")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(DS.Colors.textTertiary)
+                Text(agent.relativeTimeText)
+                    .font(.system(size: 10.5, weight: .medium).monospacedDigit())
+                    .foregroundColor(DS.Colors.textTertiary)
             }
             .padding(.horizontal, 12)
-            .frame(height: 44)
+            .frame(height: 34)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .pointerCursor()
+    }
+
+    /// 状态图标。**跑着的那一个会转**（参考图里是 ↻）—— 用一个 Bool 驱动
+    /// `repeatForever` 的线性旋转，和状态点的呼吸同一套做法（整区共用一个相位）。
+    @ViewBuilder
+    private func taskStatusGlyph(_ status: EphemeralAgent.Status) -> some View {
+        switch status {
+        case .doneVerified:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 12)).foregroundColor(DS.Colors.success)
+        case .doneUnverified:
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 12)).foregroundColor(DS.Colors.warning)
+        case .failed:
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 12)).foregroundColor(DS.Colors.destructive)
+        case .running:
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(DS.Colors.accent)
+                .rotationEffect(.degrees(isTaskDotBreathing ? 360 : 0))
+                .animation(.linear(duration: 1.1).repeatForever(autoreverses: false),
+                           value: isTaskDotBreathing)
+        }
     }
 
     /// 状态点。**跑着和失败会呼吸**（用户：「失败或者没有完成，应该有一个呼吸的效果，
@@ -425,6 +506,10 @@ struct HomeSpaceSidebarView: View {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(sessionsModel.sidebarRows.enumerated()), id: \.element.session.id) { rowIndex, row in
                     sessionRow(row)
+                    // **任务挂在它那个主会话下面**（用户 2026-09-26 画的图：主会话 →
+                    // 分组（可折叠）→ 子任务）。之前是一个独立的「任务」区顶在侧栏最上面 ✗，
+                    // 那样看不出这些活是哪次对话派出去的。
+                    taskGroups(forSessionID: row.session.id.uuidString)
                     // 每行之间有一条发丝分隔线，与文字对齐、不压头像。
                     if rowIndex < sessionsModel.sidebarRows.count - 1 {
                         Divider()

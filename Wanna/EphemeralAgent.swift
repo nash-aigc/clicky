@@ -88,6 +88,17 @@ nonisolated struct EphemeralAgent: Identifiable, Sendable, Equatable {
         return formatter.string(from: startedAt)
     }
 
+    /// **做完多久了**（用户 2026-09-26 参考图里右侧那一列：`2h` / `1m`）。
+    /// 没做完的就报"开始多久了" —— 两件事都回答"这件事离现在多远" ✓。
+    var relativeTimeText: String {
+        let reference = finishedAt ?? startedAt
+        let seconds = max(0, Date().timeIntervalSince(reference))
+        if seconds < 60 { return "刚刚" }
+        if seconds < 3600 { return "\\(Int(seconds / 60))m" }
+        if seconds < 86_400 { return "\\(Int(seconds / 3600))h" }
+        return "\\(Int(seconds / 86_400))d"
+    }
+
     /// 卡片展开着没有（点一下切换）。**放在看板上而不是视图里** —— 因为命中判定
     /// 在 `NotchWindowController` 里、画在 `AgentStripView` 里，两边必须读同一份。
     var isCardExpanded = false
@@ -293,6 +304,10 @@ final class AgentActivityBoard: ObservableObject {
 
     /// 面板开着的那一个。nil = 没开。
     @Published var manualPanelID: String?
+
+    /// **刘海卡片现在该不该画。** 面板展开时置 false —— 否则卡片会盖住面板的侧栏
+    ///（2026-09-26 自查截图发现）。控制器在展开/收起时写它，视图读它。
+    @Published var showsNotchCards = true
 
     // MARK: - 内部
 
