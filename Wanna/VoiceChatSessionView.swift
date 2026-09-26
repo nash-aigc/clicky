@@ -2247,6 +2247,13 @@ struct VoiceChatSessionView: View {
         .help(help)
     }
 
+    /// **气泡与它下面那行（复制 · 时间）之间的间距** —— 三个内容页同一个数。
+    ///
+    /// 它必须等于 `NotchHomeView` 里那条 `LazyVStack` 的 spacing（12）：图文页的气泡和
+    /// footer 是同一层的兄弟，那儿是 12。**这个数一改，两页要一起改**，否则又会出现
+    /// "某种模式的对话看起来被压扁了"。
+    private static let bubbleToFooterSpacing: CGFloat = 12
+
     /// 一行里的一颗（形状与另外两页那排一致：11.5pt 字、7pt 圆角、亮底 + 描边）。
     private func composerChip(title: String,
                               systemImage: String,
@@ -2366,7 +2373,14 @@ struct VoiceChatSessionView: View {
     /// asked for their own words and the assistant's replies to be copyable
     /// here).
     private func outgoingBubble(_ text: String) -> some View {
-        VStack(alignment: .trailing, spacing: 3) {
+        // **气泡与复制按钮之间固定 12**（用户 2026-09-26：「消息气泡距离下面复制按钮的间距，
+        // 应该保持一致。现在语音和视频模式的间距明显缩小了，导致看起来对话状态被明显压缩…
+        // 把它设置为相同的就可以了。这样用户无论点击哪一个模式，在对话页面上看起来都一样」）。
+        //
+        // 12 是**图文 / 文本页那条流水线的 spacing**：那一页的气泡和它的 footer 是同一层
+        // `LazyVStack` 的兄弟，所以它们之间就是这个数。这里原来是 3 —— 同一个东西在两页里
+        // 差了三倍，肉眼就是"被压扁了"。
+        VStack(alignment: .trailing, spacing: Self.bubbleToFooterSpacing) {
             HStack(alignment: .bottom) {
                 Spacer(minLength: 56)
 
@@ -2409,7 +2423,8 @@ struct VoiceChatSessionView: View {
     /// 正在流式的那一条（`streamingAnswerEntryID`）拿 `isStreaming: true`，
     /// 其余历史条目直接整段显示。
     private func assistantBubble(_ text: String, isStreaming: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        // 同上：与图文页那条流水的 12 对齐。
+        VStack(alignment: .leading, spacing: Self.bubbleToFooterSpacing) {
             HStack(alignment: .top) {
                 AnswerCardView(
                     text: text,

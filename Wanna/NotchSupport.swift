@@ -343,6 +343,29 @@ nonisolated enum NotchSupport {
         (expandedSidebarWidth - cornerControlInset * 2 - sidebarTopRowSpacing * 3) / 4
     }
 
+    /// 录音带两翼在**屏幕坐标**（AppKit，y 向上）里的矩形：`(leading, trailing)`。
+    ///
+    /// 它们原来只存在于 `NotchRecordingOverlay` 内部（用它自己那块面板的 frame 算），
+    /// 而**面板展开时那两块被刘海面板盖住** —— 刘海面板收鼠标事件，事件就成了本 app 的
+    /// 本地事件，录音带那条**全局**监听看不到，两翼于是点不动（用户 2026-09-26：
+    /// 「窗口打开的情况下，它也应该可以被点击。现在是不可以被点击的。刘海左侧，在窗口
+    /// 打开的时候，也应该能被点击」）。
+    ///
+    /// 所以这两个矩形搬到这里：**两处读同一份**（录音带自己在收起态判、刘海控制器在展开态判），
+    /// 各写一份必然漂。宽度取**两翼自己的宽度**（86 / 88），不含刘海 —— 含进去的话，
+    /// 点刘海左边那十几个点就会被当成"点左翼"，展开态下"点刘海收起"就失灵了。
+    static func recordingWingFrames(on screen: NSScreen) -> (leading: CGRect, trailing: CGRect)? {
+        guard let notch = notchRect(on: screen) else { return nil }
+        let top = screen.frame.maxY
+        let notchMinX = screen.frame.minX + notch.minX
+        let notchMaxX = notchMinX + notch.width
+        let leading = CGRect(x: notchMinX - leadingWingWidth, y: top - notch.height,
+                             width: leadingWingWidth, height: notch.height)
+        let trailing = CGRect(x: notchMaxX, y: top - notch.height,
+                              width: trailingWingWidth, height: notch.height)
+        return (leading, trailing)
+    }
+
     /// 面板**顶角那一排按钮**离左右边缘的距离。
     ///
     /// 用户 2026-09-26 要求顶角的按钮与旁边的按钮**按边对齐**（「右侧这个展开的按钮跟语速
@@ -369,9 +392,21 @@ nonisolated enum NotchSupport {
 
     /// 左列（侧栏）的宽度。
     ///
-    /// 用户 2026-09-26 两轮调下来的宽度：先「再增加 40%」（245 → 343），随后看过实际效果
-    /// 又要求「整体宽度缩小 30%」（343 × 0.7 ≈ **240**）—— 按钮改成纯文字之后也用不着那么宽了。
-    static let expandedSidebarWidth: CGFloat = 240
+    /// 侧栏宽度。用户 2026-09-26 连调三轮：245 →（+40%）343 →（−30%）240 → **194**。
+    ///
+    /// 最后一次不是审美，是**对齐**：「让左侧边栏的宽度刚好等于录音按钮展开时刘海最右边的
+    /// 边线…现在录音按钮的最左边已经到了左侧边栏的内部，它们应该在一条线上，所以你应该
+    /// 缩短左侧边栏的宽度，防止误点击」—— 录音带压在侧栏上时，点卡片会打到那条带子上。
+    ///
+    /// 194 是算出来的，不是试出来的（面板居中、刘海也居中，所以与屏幕宽度无关）：
+    ///
+    ///     面板左边缘 + 侧栏宽 = 刘海中心 − 录音带宽/2
+    ///     屏幕中心 − (侧栏宽 + 1 + 右列宽)/2 + 侧栏宽 = 屏幕中心 − 录音带宽/2
+    ///     ⇒ 侧栏宽 = 1 + 右列宽 − 录音带宽 = 566 − (86 + 刘海宽 + 88) = 566 − 372
+    ///
+    /// 所以它依赖**刘海宽度**（这里 198）。换机器 / 换刘海宽时这个对齐会变，
+    /// 那种情况下量一下 `notchRect` 再调这一个数。
+    static let expandedSidebarWidth: CGFloat = 194
 
     /// 右列的宽度 —— **它是这次加宽的不变量**：侧栏变宽不该让右列变窄。
     ///

@@ -704,6 +704,29 @@ final class NotchWindowController {
         // 但写死了能保证以后有人把 pill 的命中区放大时，挂断不会被吃掉。
         // 命中的是收起态的窗口——它 `ignoresMouseEvents = true`，所以这一下
         // 既没有落到本 app 的窗口上，也不会被谁拦下，全局监听照常收到。
+        // **录音带的两翼**：收起态由录音带自己的全局监听接走；**展开态下点击落在刘海面板上**
+        // （面板收鼠标事件），那条全局监听看不到，所以这里补一条 —— 同一份矩形
+        //（`NotchSupport.recordingWingFrames`），并且**只在展开时判**，免得两条路各接一次。
+        //
+        // 用户 2026-09-26：「现在录音的时候，如果窗口隐藏，录音刘海右侧的按钮是可以被点击的…
+        // 但窗口打开的情况下，它也应该可以被点击。现在是不可以被点击的。刘海左侧，在窗口打开的
+        // 时候，也应该能被点击。」
+        if panelModel.isExpanded,
+           LongFormRecorderController.shared.phase != .idle
+            || LongFormRecorderController.shared.isSessionActive,
+           let presence = screenPresences.first(where: { $0.screen.frame.contains(clickLocation) }),
+           let wings = NotchSupport.recordingWingFrames(on: presence.screen) {
+            if wings.leading.contains(clickLocation) {
+                SoundEffectPlayer.shared.play(.recordingEditorOpened)
+                LongFormRecorderController.shared.toggleTranscriptEditor()
+                return
+            }
+            if wings.trailing.contains(clickLocation) {
+                LongFormRecorderController.shared.handleWingButtonTap()
+                return
+            }
+        }
+
         if panelModel.externalSessionOverride == .externalChatting,
            screenPresences.contains(where: { presence in
                guard let wingFrame = NotchSupport.restingTrailingWingFrame(on: presence.screen) else { return false }
