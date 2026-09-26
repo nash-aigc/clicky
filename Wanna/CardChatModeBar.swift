@@ -29,8 +29,12 @@ struct CardChatModeBar: View {
     /// 模式右边那一格（语音 / 视频页放「音色」；其余页留空）。
     var leadingAccessory: AnyView? = nil
 
-    /// 靠右那一组（语音页的摄像头 / 屏幕 / 语速，对话页的复制全文…）。
+    /// 靠右那一组（语音页的摄像头 / 屏幕 / 模式下拉 / 通话，对话页的音色）。
     var trailingAccessory: AnyView? = nil
+
+    /// 「角色」那颗要不要画。**语音页不画** —— 它把角色挪到输入框那一行去了
+    ///（用户 2026-09-26：「把角色按钮放在右侧，放在类似语速按钮的位置上，最右侧」）。
+    var showsRoleChip: Bool = true
 
     /// **点模式之后**：调用方可能要顺手做点什么（语音页要把聊天类型跟着切过去）。
     /// 模式本身已经写进设置了，这个回调只报"变了"。
@@ -44,8 +48,6 @@ struct CardChatModeBar: View {
 
     private var baseRow: some View {
         HStack(spacing: 6) {
-            roleChip
-
             ForEach(CardChatMode.allCases) { mode in
                 modeChip(mode)
             }
@@ -59,6 +61,13 @@ struct CardChatModeBar: View {
             if let trailingAccessory {
                 trailingAccessory
             }
+
+            // **「角色」在最右**（用户 2026-09-26：「把角色按钮放在右侧…最右侧」）——
+            // 它曾经在最左，那是"先选角色再选模式"的读法；他现在要的是**靠右那一组**，
+            // 与摄像头 / 模式 / 通话并排。
+            if showsRoleChip {
+                CardChatRoleChip(cardID: cardID, cardKind: cardKind, preferences: preferences)
+            }
         }
         .padding(.horizontal, NotchSupport.contentColumnHorizontalMargin)
         .frame(height: NotchSupport.cardChatModeBandHeight, alignment: .center)
@@ -69,45 +78,6 @@ struct CardChatModeBar: View {
     }
 
     // MARK: - 角色
-
-    /// 「角色」那颗按钮 —— **在四个模式的左边**（用户：「在语音聊天、视频聊天、图文聊天
-    /// 左侧添加「角色」按钮」）。
-    ///
-    /// 它显示当前选中的角色名，所以「现在是谁在跟我说话」不用点开就知道。
-    private var roleChip: some View {
-        let role = preferences.resolvedRole(forCardID: cardID, kind: cardKind, mode: currentMode)
-        let isRoleListOpen = preferences.openRoleListCardID == cardID
-        return Button {
-            SoundEffectPlayer.shared.play(.sidebarButton)
-            preferences.openRoleListCardID = isRoleListOpen ? nil : cardID
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "person.crop.circle")
-                    .font(.system(size: 11))
-                Text(role.displayName)
-                    .font(.system(size: 11.5, weight: .medium))
-                    .lineLimit(1)
-                Image(systemName: isRoleListOpen ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 8, weight: .semibold))
-            }
-            .foregroundColor(.white.opacity(0.8))
-            .padding(.horizontal, 8)
-            // 与四颗模式、以及页头那排按钮同一个高度（见 `modeChip` 上那段）。
-            .frame(height: NotchSupport.contentHeaderControlHeight)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(Color.white.opacity(isRoleListOpen ? 0.12 : 0.06))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .pointerCursor()
-        .help("换一个角色（它就是一段提示词）")
-    }
 
     private var currentMode: CardChatMode {
         preferences.mode(forCardID: cardID, kind: cardKind)
@@ -297,5 +267,52 @@ struct CardChatRoleListPanel: View {
         case .builtInVoiceRole:
             return "还没有自己的角色，先用内置这条 · \(choice.promptText.count) 字"
         }
+    }
+}
+
+/// 「角色」那颗 —— **一处实现，两处用**（模式条的最右、语音页输入框那一行的最右）。
+///
+/// 抽出来是因为它现在出现在两个地方（用户 2026-09-26 把语音页那颗挪到了输入框上方），
+/// 而两处各写一份就一定会漂：一边高亮了一边没有、一边能展开一边不能。
+struct CardChatRoleChip: View {
+
+    let cardID: String
+    let cardKind: CardKind
+    @ObservedObject var preferences: CardChatPreferenceModel
+
+    var body: some View {
+        let isRoleListOpen = preferences.openRoleListCardID == cardID
+        return Button {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            preferences.openRoleListCardID = isRoleListOpen ? nil : cardID
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "person.crop.circle")
+                    .font(.system(size: 11))
+                // **只写"角色"两个字**（用户 2026-09-26：「角色按钮只显示"角色"两个字，
+                // 左侧加个图标就可以了」）—— 当前是哪个角色写在点开的那份清单里，
+                // 那一行才是它该出现的地方；按钮上写角色名会让宽度随角色名长短跳。
+                Text("角色")
+                    .font(.system(size: 11.5, weight: .medium))
+                    .lineLimit(1)
+                Image(systemName: isRoleListOpen ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .foregroundColor(.white.opacity(0.8))
+            .padding(.horizontal, 8)
+            .frame(height: NotchSupport.contentHeaderControlHeight)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white.opacity(isRoleListOpen ? 0.12 : 0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help("换一个角色（它就是一段提示词）")
     }
 }

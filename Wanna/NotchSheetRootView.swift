@@ -282,15 +282,24 @@ struct NotchSheetRootView: View {
                         // 那条只有 36pt 高，清单画得出、却**收不到点击**（实测点「管理角色…」
                         // 穿透到了下面那行预设按钮上）。这一层是整块右列，frame 够大，
                         // 而 `.overlay` 不参与布局 —— 清单浮在内容上，正文不会被推下去。
-                        .overlay(alignment: .topLeading) {
+                        // **角色清单跟着那颗按钮走**：语音 / 视频页把「角色」放在**输入框那一行**，
+                        // 所以清单从**下往上**弹；文本 / 图文页那颗还在页头，就仍然从上往下弹。
+                        // 用户 2026-09-26 把语音页那颗挪到了下面（「放在类似语速按钮的位置上」），
+                        // 清单不跟着走的话就会出现在离按钮很远的地方。
+                        .overlay(alignment: activeCardChatMode?.isVoiceLike == true
+                                 ? .bottomLeading : .topLeading) {
                             if let openCardID = cardChatPreferences.openRoleListCardID,
                                openCardID == activeCardID {
                                 CardChatRoleListPanel(cardID: openCardID,
                                                       cardKind: activeCardKind,
                                                       preferences: cardChatPreferences)
                                     .padding(.leading, NotchSupport.contentColumnHorizontalMargin)
-                                    .offset(y: NotchSupport.sheetHeaderTopInset
-                                            + NotchSupport.cardChatModeBandHeight)
+                                    .padding(.bottom, activeCardChatMode?.isVoiceLike == true
+                                            ? Self.rolePanelBottomInset : 0)
+                                    .padding(.top, activeCardChatMode?.isVoiceLike == true
+                                            ? 0
+                                            : NotchSupport.sheetHeaderTopInset
+                                              + NotchSupport.cardChatModeBandHeight)
                             }
                         }
                     }
@@ -420,6 +429,10 @@ struct NotchSheetRootView: View {
     /// 挤走」），所以这一排既不进页头带、也不去挤它。
     /// 值在 `NotchSupport` 里 —— **侧栏顶上那两行也读同一个数**（两处各存一份必然漂）。
     private static var cornerControlInset: CGFloat { NotchSupport.cornerControlInset }
+
+    /// 语音页的角色清单离面板底边多远 —— 正好在**输入框那一行之上**。
+    /// 那一行 + 输入框大约 130pt 高，再加一点缝。
+    private static let rolePanelBottomInset: CGFloat = 160
     private static let cornerControlTopInset: CGFloat = 5
 
     /// 「收起侧栏」——纯图标，左右各一颗，动作完全相同。

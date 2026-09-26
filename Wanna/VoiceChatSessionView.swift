@@ -399,10 +399,13 @@ struct VoiceChatSessionView: View {
             // （「把『连接』按钮放在『语音或视频』的右侧…该按钮没有文字，只有一个图标」）。
             // 这一页本来就是语音 / 视频两个模式的地盘，所以它在这里恒显示。
             if let cardID {
+                // **通话在最右、模式下拉在它左边**（用户 2026-09-26：「把通话按钮放在全双工
+                // 语音按钮的右侧。也就是说，最右侧对齐的分别是通话按钮、全双工模式按钮」）。
+                // 「角色」这一页不画 —— 它搬到输入框那一行去了（见 `voiceComposerControlsRow`）。
                 CardChatModeBar(cardID: cardID,
                                 cardKind: cardKind,
-                                leadingAccessory: AnyView(connectButton),
                                 trailingAccessory: AnyView(headerTrailingControls),
+                                showsRoleChip: false,
                                 onModeSelected: { _ in syncChannelToCardChatMode() },
                                 preferences: cardChatPreferences)
             } else {
@@ -482,11 +485,12 @@ struct VoiceChatSessionView: View {
             }
 
             // **模式下拉**（用户 2026-09-26 第 3 条）：把「全双工 / 三段式」那两行从
-            // **常驻**改成**点开才显示**，这颗按钮负责展开/收起；位置在语速左面、靠右对齐。
+            // **常驻**改成**点开才显示**，这颗按钮负责展开/收起。
             modeDisclosureButton
 
-            speedMenuButton
-                .background(headerAnchorReporter(.speed))
+            // **通话在它右边、整排最右**（用户：「把通话按钮放在全双工语音按钮的右侧」）。
+            // 语速已经搬到输入框那一行，所以它不在这里。
+            connectButton
         }
     }
 
@@ -1813,14 +1817,12 @@ struct VoiceChatSessionView: View {
             SoundEffectPlayer.shared.play(.deviceToggle)
             action()
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 11, weight: .medium))
-                Text(title)
-                    .font(.system(size: Self.headerControlFontSize, weight: .medium))
-                    .lineLimit(1)
-            }
-            .foregroundColor(iconAndLabelColor)
+            // **只有文字，没有图标**（用户 2026-09-26：「视频模式……把屏幕跟摄像头这两个图标
+            // 去掉，只显示文字就行」）—— 省下的宽度正好留给旁边那颗通话按钮。
+            Text(title)
+                .font(.system(size: Self.headerControlFontSize, weight: .medium))
+                .lineLimit(1)
+                .foregroundColor(iconAndLabelColor)
             .padding(.horizontal, Self.headerControlHorizontalPadding)
             .frame(height: Self.headerControlHeight)
             // 宽度按自己的文字来，不参与任何压缩：模式菜单已经固定尺寸了，这一句是
@@ -2185,6 +2187,22 @@ struct VoiceChatSessionView: View {
                              : "语音模型只出文字（点击：恢复发声）") {
                 controller.speaksReplies.toggle()
             }
+
+            // **语速在「声音」右边**（用户 2026-09-26：「把语速按钮放在输入框的上面…放在
+            // 声音按钮的右侧，也做成一个菜单的形式」）。它打开的还是原来那块语速面板
+            //（`.speed` 锚点，位置由视图自己的 frame 发布上去 —— 换了个位置也跟得上）。
+            composerChip(title: "语速",
+                         systemImage: "gauge.with.needle",
+                         isOn: isSpeedMenuOpen,
+                         help: "十档语速，直接改全局「说（播报）」的语速") {
+                isSpeedMenuOpen.toggle()
+                activePresetRow = nil
+                activeVoiceRow = nil
+            }
+            .background(headerAnchorReporter(.speed))
+
+            // **角色在最右**（用户：「把角色按钮放在右侧，放在类似语速按钮的位置上，最右侧」）。
+            CardChatRoleChip(cardID: cardID ?? "", cardKind: cardKind, preferences: cardChatPreferences)
         }
     }
 
