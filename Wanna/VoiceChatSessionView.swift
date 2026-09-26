@@ -464,27 +464,7 @@ struct VoiceChatSessionView: View {
     private var headerTrailingControls: some View {
         HStack(spacing: 8) {
             if showsDeviceToggles {
-                deviceToggleButton(
-                    title: "摄像头",
-                    systemImage: "video",
-                    isOn: controller.isCameraEnabled,
-                    isSupported: controller.selectedModeSupportsCamera,
-                    unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了摄像头",
-                    help: "摄像头（下次连接生效）"
-                ) {
-                    controller.setCameraEnabled(!controller.isCameraEnabled)
-                }
-
-                deviceToggleButton(
-                    title: "屏幕",
-                    systemImage: "rectangle.on.rectangle",
-                    isOn: controller.isScreenSharingEnabled,
-                    isSupported: controller.selectedModeSupportsScreenSharing,
-                    unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了屏幕",
-                    help: "屏幕（下次连接生效）"
-                ) {
-                    controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
-                }
+                deviceTogglesControl
             }
 
             // **模式下拉**（用户 2026-09-26 第 3 条）：把「全双工 / 三段式」那两行从
@@ -537,6 +517,76 @@ struct VoiceChatSessionView: View {
         .buttonStyle(.plain)
         .pointerCursor()
         .help(showsPresetRows ? "收起全双工 / 三段式" : "展开全双工 / 三段式（换模式与预设）")
+    }
+
+    /// **摄像头与屏幕合成一颗**（用户 2026-09-26：「把屏幕和摄像头这两个按钮拼到一起，
+    /// 都可以被点击，显示成一个按钮，因为它们本质上是一个意思，可以分别点击，也可以同时
+    /// 点击，也就是可以单独打开其中一个或另一个」）。
+    ///
+    /// 所以它不是一颗开关，而是**一颗控件里两个各自独立的可点区域** —— 左右各占一半，
+    /// 中间一道竖线。两个都亮就是两半都亮，看上去仍是一颗按钮（用户要的"样式做成一个样式"）。
+    private var deviceTogglesControl: some View {
+        HStack(spacing: 0) {
+            deviceHalf(
+                title: "摄像头",
+                isOn: controller.isCameraEnabled,
+                isSupported: controller.selectedModeSupportsCamera,
+                unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了摄像头"
+            ) {
+                controller.setCameraEnabled(!controller.isCameraEnabled)
+            }
+
+            Rectangle()
+                .fill(Color.white.opacity(0.14))
+                .frame(width: 1, height: 16)
+
+            deviceHalf(
+                title: "屏幕",
+                isOn: controller.isScreenSharingEnabled,
+                isSupported: controller.selectedModeSupportsScreenSharing,
+                unsupportedHelp: controller.videoInputDisabledReason ?? "当前设置用不了屏幕"
+            ) {
+                controller.setScreenSharingEnabled(!controller.isScreenSharingEnabled)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: DS.CornerRadius.medium, style: .continuous))
+    }
+
+    /// 那半颗：亮着 = 这一路开着（绿底），点一下单独开关它。
+    private func deviceHalf(title: String,
+                            isOn: Bool,
+                            isSupported: Bool,
+                            unsupportedHelp: String,
+                            action: @escaping () -> Void) -> some View {
+        let tint = Color(red: 0.35, green: 0.85, blue: 0.55)
+        return Button {
+            SoundEffectPlayer.shared.play(.deviceToggle)
+            action()
+        } label: {
+            Text(title)
+                .font(.system(size: Self.headerControlFontSize, weight: .medium))
+                .lineLimit(1)
+                .foregroundColor(isSupported ? (isOn ? tint : .white.opacity(0.85))
+                                             : Color.white.opacity(0.3))
+                .padding(.horizontal, Self.headerControlHorizontalPadding)
+                .frame(height: Self.headerControlHeight)
+                .background(isOn && isSupported ? tint.opacity(0.16) : Color.clear)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!isSupported)
+        .pointerCursor()
+        .help(isSupported
+              ? (isOn ? "\(title)开着（点击关闭，下次连接生效）" : "\(title)关着（点击打开，下次连接生效）")
+              : unsupportedHelp)
     }
 
     /// 摄像头 / 屏幕两颗要不要画。

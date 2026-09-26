@@ -2855,7 +2855,20 @@ final class CompanionManager: ObservableObject {
                 // applies: only turns recorded since the companion could act are
                 // replayed. See `ConversationHistoryEntry.recordedWithActionTags` for
                 // the measurement behind it.
-                var stepHistory = conversationHistory.filter { $0.recordedWithActionTags == true }
+                // **按会话 id 重读一次**（2026-09-26）。
+                //
+                // 用 `conversationHistory`（那份镜像）在这里是错的：镜像有两个"可能过时"的窗口
+                // —— `wannaSessionsDidChange` 的观察者**在回复进行中会站到一边**（`currentResponseTask
+                // != nil` 时 return），而"新建对话"正好经常发生在这种时候。上一次实测到的就是：
+                // 新会话在盘上只有 0 条，而这一行读到的镜像里**还留着上一段会话的 1 轮** ✗
+                //（用户报的「新建之后好像还是保留着上下文」，日志 `🧠 本轮上下文：历史 1 轮`）。
+                //
+                // 所以请求这一侧不再信镜像：**按这一轮的会话 id 从 store 现读**。镜像仍然留着
+                //（它服务别的读者），但上下文这件事只认盘上那一份。
+                let freshTurnEntries = ConversationSessionsStore.allSessionsIncludingArchived()
+                    .first(where: { $0.id == turnSessionID })?.entries ?? []
+                conversationHistory = freshTurnEntries
+                var stepHistory = freshTurnEntries.filter { $0.recordedWithActionTags == true }
 
                 // The screenshots the job started against — what the user was looking
                 // at when they asked — are what the history entry carries. Later
