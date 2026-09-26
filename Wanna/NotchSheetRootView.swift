@@ -132,6 +132,9 @@ struct NotchSheetRootView: View {
                                 agentSessionManager: agentSessionManager,
                                 voiceChatController: voiceChatController,
                                 showsSettings: $showsSettings,
+                                // 分阶段加载：第一拍只建侧栏的骨架（切换器、搜索、
+                                // 底部按钮），列表留空 —— 列表是随会话数增长的那部分。
+                                showsSectionList: panelModel.isSheetContentReady,
                                 openRecordingSettingsAction: {
                                     // 先落页、再开门 —— 顺序不能反：`NotchSettingsArea` 是在
                                     // `showsSettings` 变真的那一刻被插进树的，它读的是当时的
@@ -156,20 +159,44 @@ struct NotchSheetRootView: View {
                             }
                             // 侧栏顶部的「对话 / Agent」切换器决定右列显示哪一
                             // 个内容视图——两个视图共享同一个 sheet，不嵌套。
-                            switch agentSessionManager.selectedSidebarSection {
-                            case .conversations:
-                                NotchHomeView(
-                                    companionManager: companionManager,
-                                    sessionsModel: sessionsModel
-                                )
-                            case .agents:
-                                AgentSessionView(
-                                    agentSessionManager: agentSessionManager,
-                                    hideSheet: hideSheetAction,
-                                    revealSheet: revealSheetAction
-                                )
-                            case .voiceChat:
-                                VoiceChatSessionView(controller: voiceChatController)
+                            //
+                            // **分阶段加载**：第一拍这一列是空的，面板先整块出现
+                            //（地面上那块面板色由 `NotchExpandedSheetView` 画，与这里
+                            // 无关），重内容在下一拍进来。见
+                            // `NotchPanelModel.isSheetContentReady` —— 那里记着实测：
+                            // 一次展开的主线程时间几乎全在 SwiftUI 对整棵树反复布局，
+                            // 而树的主体就是这三页里的一页。
+                            if panelModel.isSheetContentReady {
+                                Group {
+                                    switch agentSessionManager.selectedSidebarSection {
+                                    case .conversations:
+                                        NotchHomeView(
+                                            companionManager: companionManager,
+                                            sessionsModel: sessionsModel
+                                        )
+                                    case .agents:
+                                        AgentSessionView(
+                                            agentSessionManager: agentSessionManager,
+                                            hideSheet: hideSheetAction,
+                                            revealSheet: revealSheetAction
+                                        )
+                                    case .voiceChat:
+                                        VoiceChatSessionView(controller: voiceChatController)
+                                    }
+                                }
+                                // TEMPORARY PROBE (2026-09-26)：分阶段加载的第二拍
+                                // 何时到位。与 `[expand] 内容就位`（面板骨架那次）相减，
+                                // 就是「面板已经看得见、内容还在建」的那段时长。
+                                .onAppear {
+                                    let elapsed = Date().timeIntervalSince1970 - NotchSupport.expansionStartedAt
+                                    if NotchSupport.expansionStartedAt > 0 {
+                                        print(String(format: "⏱️ [expand] 重内容就位 +%.0fms", elapsed * 1000))
+                                    }
+                                }
+                            } else {
+                                // 空占位：它必须**什么都不建**，否则第一拍就不便宜了。
+                                Color.clear
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)

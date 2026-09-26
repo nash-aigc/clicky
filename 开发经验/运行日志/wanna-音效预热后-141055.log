@@ -1,0 +1,224 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 0 exchanges from session 「新会话」
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403063.908
+⏱️ [expand] 内容就位 +44ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +72ms
+⏱️ [hitch] main thread busy for 75ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403068.987
+⏱️ [expand] 内容就位 +16ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +28ms
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403074.071
+⏱️ [expand] 内容就位 +20ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +32ms
+⏱️ [hitch] main thread busy for 80ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403079.155
+⏱️ [expand] 内容就位 +20ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +32ms
+⏱️ [hitch] main thread busy for 84ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403090.941
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +26ms
+⏱️ [hitch] main thread busy for 74ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403096.467
+⏱️ [expand] 内容就位 +19ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +30ms
+⏱️ [hitch] main thread busy for 87ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403100.753
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +25ms
+⏱️ [hitch] main thread busy for 91ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403105.033
+⏱️ [expand] 内容就位 +17ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +29ms
+⏱️ [hitch] main thread busy for 87ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403109.311
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +25ms
+⏱️ [hitch] main thread busy for 76ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403113.600
+⏱️ [expand] 内容就位 +19ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +31ms
+⏱️ [hitch] main thread busy for 86ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403117.892
+⏱️ [expand] 内容就位 +18ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +31ms
+⏱️ [hitch] main thread busy for 87ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.8ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.0ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.6ms
+⏱️ [hitch] main thread busy for 143ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403123.400
+⏱️ [expand] 内容就位 +18ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +50ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.8ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.5ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.3ms
+⏱️ [hitch] main thread busy for 90ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403127.692
+⏱️ [expand] 内容就位 +17ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +50ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.3ms
+⏱️ [hitch] main thread busy for 89ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403131.963
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +45ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+⏱️ [hitch] main thread busy for 81ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403136.262
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +46ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.4ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.0ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 4.8ms
+⏱️ [hitch] main thread busy for 82ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403140.533
+⏱️ [expand] 内容就位 +14ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +43ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.5ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.1ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.2ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.0ms
+⏱️ [hitch] main thread busy for 84ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403144.826
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +45ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.2ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.5ms
+🔬 [card] 冷启动完整排版：1 字 → 1 unit / 1 行，耗时 0.1ms
+🔬 [card] 冷启动完整排版：193 字 → 129 unit / 5 行，耗时 2.3ms
+🔬 [card] 冷启动完整排版：285 字 → 280 unit / 11 行，耗时 5.2ms
+⏱️ [hitch] main thread busy for 83ms
+⏱️ [hitch] main thread busy for 108ms
+🔊 [aecprobe] t=1790403147.770 event=vpToggleAfter device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔊 VoicePlaybackEngine: engine started (time-pitch node → mixer, echo cancellation requested, **实测 voiceProcessing=true AGC=false**, mixer 48000 Hz / input 48000 Hz 9 ch)
+🔊 [aecprobe] t=1790403147.863 event=bringUp isRunning=true device="MacBook Pro麦克风" node=48000Hz/9ch vpEnabled=true agc=false
+🔥 语音聊天：音频引擎已预热
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403150.340
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +40ms
+⏱️ [hitch] main thread busy for 54ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403154.621
+⏱️ [expand] 内容就位 +16ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +41ms
+⏱️ [hitch] main thread busy for 49ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403158.912
+⏱️ [expand] 内容就位 +14ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +41ms
+⏱️ [hitch] main thread busy for 51ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403163.183
+⏱️ [expand] 内容就位 +13ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +38ms
+⏱️ [hitch] main thread busy for 48ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403167.471
+⏱️ [expand] 内容就位 +15ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +41ms
+⏱️ [hitch] main thread busy for 50ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 50ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403222.546
+⏱️ [expand] 内容就位 +18ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +44ms
+⏱️ [hitch] main thread busy for 53ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403223.504
+⏱️ [expand] 内容就位 +29ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +53ms
+🔥 语音聊天：音频引擎已预热
+⏱️ [hitch] main thread busy for 108ms
+⏱️ [hitch] main thread busy for 56ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403225.262
+⏱️ [expand] 内容就位 +14ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +23ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790403228.904
+⏱️ [expand] 内容就位 +16ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +25ms
+⏱️ [hitch] main thread busy for 68ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 40ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 51ms
+⏱️ [hitch] main thread busy for 49ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 45ms

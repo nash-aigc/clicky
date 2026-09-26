@@ -1,0 +1,59 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 0 exchanges from session 「新会话」
+⏱️ [hitch] main thread busy for 43ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402906.008
+⏱️ [expand] 内容就位 +360ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +425ms
+⏱️ [hitch] main thread busy for 592ms
+⏱️ [hitch] main thread busy for 45ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402911.077
+⏱️ [expand] 内容就位 +45ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +69ms
+⏱️ [hitch] main thread busy for 191ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402916.151
+⏱️ [expand] 内容就位 +55ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +77ms
+⏱️ [hitch] main thread busy for 193ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402921.236
+⏱️ [expand] 内容就位 +45ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +65ms
+⏱️ [hitch] main thread busy for 174ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402941.476
+⏱️ [expand] 内容就位 +38ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +61ms
+⏱️ [hitch] main thread busy for 66ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402946.572
+⏱️ [expand] 内容就位 +36ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +55ms
+⏱️ [hitch] main thread busy for 201ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402951.643
+⏱️ [expand] 内容就位 +45ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +66ms
+⏱️ [hitch] main thread busy for 188ms
+⏱️ [expand] 直接显示（不做展开动画）；展开方式=notchBloom（当前不生效）
+⏱️ [expand] 展开开始 t=1790402956.728
+⏱️ [expand] 内容就位 +48ms（此前屏幕上只有那块白板）
+⏱️ [expand] 重内容就位 +67ms
+⏱️ [hitch] main thread busy for 194ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 42ms
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 41ms
+⏱️ [hitch] main thread busy for 47ms
+⏱️ [hitch] main thread busy for 48ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms
+⏱️ [hitch] main thread busy for 44ms

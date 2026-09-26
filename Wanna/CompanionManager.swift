@@ -859,6 +859,10 @@ final class CompanionManager: ObservableObject {
         // warms a newly chosen provider's host on the first request after a switch.
         _ = visionChatAPI
 
+        // 音效也在启动时建好，理由见 `SoundEffectPlayer.warmUp()`：那 130ms 原先落在
+        // 第一次「揭」上（= 用户点开面板的那一刻）。
+        SoundEffectPlayer.shared.warmUp()
+
         // The HUD's panels must exist before the first agent mutation posts —
         // a chip built only at the SECOND mutation would mean a running agent
         // invisible on the desktop until it finished.

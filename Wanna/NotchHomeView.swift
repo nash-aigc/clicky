@@ -60,7 +60,35 @@ struct NotchHomeView: View {
     /// 外面几层拿不到这个数（列宽是 `HStack` 分给这一列的），所以只能在这里量；
     /// 量到了当 `.id` 用，宽度每变一次就把卡片重建一次 —— 新卡片的缓存是空的，
     /// 它会先按真实可用宽度重新断行，环就断开了。
-    @State private var contentColumnWidth: CGFloat = 0
+    /// 内容列的**上次实测宽度** —— 展开时用它给 `contentColumnWidth` 当初值。
+    ///
+    /// 面板每次展开都会重建这一列的视图，`@State` 于是从 0 起步：卡片先按
+    /// 「宽度未知」建一遍，紧接着 GeometryReader 量到真实宽度、`.id` 一变，
+    /// **所有卡片整棵重建第二遍**。2026-09-26 实测
+    ///（`开发经验/运行日志/wanna-展开采样-*.txt`）：8 张卡片一次展开排了 16 遍。
+    /// 面板宽度在一次会话里不会变，记住上一次的值，第一遍就是对的、第二遍不会发生。
+    /// 真正的宽度变化（收起侧栏、全屏切换）照样让 `.id` 变、照样重建 —— 那条语义
+    /// 是上一段说明里那个「列变窄卡片不肯跟着窄」的修复，不能丢。
+    @MainActor private static var rememberedContentColumnWidth: CGFloat = 0
+
+    @State private var contentColumnWidth: CGFloat = NotchHomeView.rememberedContentColumnWidth
+
+    /// 对话流一次渲染多少个回合 —— 窗口化的上限。
+    ///
+    /// 用户 2026-09-26：「我未来是要高频使用的，那么可能未来窗口就是几十个、几百个，
+    /// 那这样的情况下，如果是每个都会越来越慢的话，那就体验就非常的差」。
+    /// 而一次展开的主线程时间与**树的大小**成正比（见 `conversationFlow` 里
+    /// `LazyVStack` 那段实测）。`LazyVStack` 只解决"视口外的卡片不建"，但
+    /// **滚到底**那一下会把它上面的一整段都物化出来（实测：8 条里建了 7 条），
+    /// 所以真正把成本关进常数的是这个窗口 —— 只渲染最后 `renderedTurnCount` 个回合，
+    /// 更早的由流顶那个「载入更早的对话」一批一批补上来。
+    ///
+    /// 10 这个数来自视口：面板高 ~940pt、一回合约 120~150pt，视口里能看到五六条，
+    /// 留一倍余量，滚一下不会立刻撞到边界。**它不影响短会话** —— 条数不到 10 时
+    /// 这条窗口完全不存在（当前的会话都是 8~15 条）。
+    @State private var renderedTurnCount = NotchHomeView.initialRenderedTurnCount
+    private static let initialRenderedTurnCount = 10
+    private static let renderedTurnExtendChunk = 20
 
     /// The reply-card theme (设置 → 交互样式). Snapshotted into state
     /// so a settings save (`.wannaAppSettingsChanged`) re-renders the flow's
@@ -148,6 +176,7 @@ struct NotchHomeView: View {
                     .onAppear {
                         contentColumnHeight = geometryProxy.size.height
                         contentColumnWidth = geometryProxy.size.width
+                        Self.rememberedContentColumnWidth = geometryProxy.size.width
                     }
                     .onChange(of: geometryProxy.size.height) { _, newHeight in
                         contentColumnHeight = newHeight
@@ -156,6 +185,7 @@ struct NotchHomeView: View {
                     // 理由见 `contentColumnWidth` 的说明。
                     .onChange(of: geometryProxy.size.width) { _, newWidth in
                         contentColumnWidth = newWidth
+                        Self.rememberedContentColumnWidth = newWidth
                     }
             }
         )
@@ -277,17 +307,41 @@ struct NotchHomeView: View {
 
     private var conversationFlow: some View {
         let entries = sessionsModel.activeSession?.entries ?? []
+        // **窗口化的起点**：只渲染最后 `renderedTurnCount` 条，更早的等用户点
+        // 流顶那个「载入更早的对话」。索引仍用**原始**的下标，所以 `id`、
+        // 滚动目标、`renderedTurnCount` 的推进三者对得上。
+        let firstRenderedEntryIndex = max(0, entries.count - renderedTurnCount)
 
         return ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
+                // **`LazyVStack` 而不是 `VStack`：会话越长，这一列越贵。**
+                //
+                // 2026-09-26 实测（`sample` 抓的栈）：一次展开的主线程时间几乎全在
+                // SwiftUI 对整棵面板树反复布局，而这一列就是树的主体 —— 每一张回答
+                // 卡片都要参与那一遍布局。`VStack` 会**把所有回合都建出来**，
+                // 于是「用户以后有几十上百个回合」时，点开刘海要等的时间随回合数
+                // 线性增长。`LazyVStack` 只建视口内的那几张（面板高 ~940pt，
+                // 大概三四张），成本与会话长度脱钩。
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    // 流顶那一颗「载入更早的对话」。**它是显式的，不是靠哨兵视图的
+                    // `onAppear`** —— 哨兵会被懒加载的预取顺手物化，那一下就补一批、
+                    // 再物化再补，一路补到全部渲染出来，等于没窗口化；而这里点一下
+                    // 补一批，补多少、什么时候补都由用户决定。
+                    if firstRenderedEntryIndex > 0 {
+                        loadEarlierTurnsButton(
+                            olderEntryCount: firstRenderedEntryIndex,
+                            proxy: proxy
+                        )
+                    }
+
                     // 回答还没写下来的那一条**整条不进列表** —— 早先这里是渲染
                     // 一个 `EmptyView()`，但它照样占掉 `VStack(spacing: 12)` 的一个
                     // 间隔：内容为空、位置却留着，读起来就是一个悬在那里的空框。
                     // 滤掉之后索引仍然用**原始**的 entryIndex，`id` 和滚动目标不变。
                     ForEach(
                         Array(entries.enumerated()).filter {
-                            !($0.offset == entries.count - 1 && $0.element.assistantResponse.isEmpty)
+                            $0.offset >= firstRenderedEntryIndex
+                                && !($0.offset == entries.count - 1 && $0.element.assistantResponse.isEmpty)
                         },
                         id: \.offset
                     ) { entryIndex, entry in
@@ -350,6 +404,9 @@ struct NotchHomeView: View {
                 scrollToBottom(proxy)
             }
             .onChange(of: sessionsModel.activeSessionID) { _ in
+                // 换会话＝换一整列内容，窗口也跟着回到初始值 —— 上一条会话里
+                // 用户往上补出来的那几十条不该算在下一个会话头上。
+                renderedTurnCount = Self.initialRenderedTurnCount
                 // Switching conversations has to land at the newest message,
                 // and the new session's rows are laid out in the same update —
                 // waiting one turn of the main loop is what makes the scroll
@@ -389,6 +446,50 @@ struct NotchHomeView: View {
     /// The resident view the flow scrolls to. Named rather than inlined so the
     /// scroll target cannot drift away from the view that carries it.
     private static let conversationBottomAnchorID = "conversation-bottom-anchor"
+
+    /// 流顶那颗「载入更早的对话」。见 `renderedTurnCount` —— 它把这一列的渲染量
+    /// 关进一个常数，代价是更早的回合要用户点一下才出现；这个按钮就是那一下。
+    @ViewBuilder
+    private func loadEarlierTurnsButton(olderEntryCount: Int, proxy: ScrollViewProxy) -> some View {
+        let loadingCount = min(olderEntryCount, Self.renderedTurnExtendChunk)
+        HStack {
+            Spacer(minLength: 0)
+            Button(action: {
+                loadEarlierTurns(
+                    proxy: proxy,
+                    keepingFirstRenderedEntryIndex: olderEntryCount
+                )
+            }) {
+                Text("载入更早的 \(loadingCount) 条对话")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Capsule().fill(Color.white.opacity(0.07)))
+                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
+            .pointerCursor()
+            .help("这一列只渲染最近的对话；点一下往上补一批")
+            Spacer(minLength: 0)
+        }
+    }
+
+    /// 往上补一批回合。
+    ///
+    /// **补完必须把"原来最上面那一条"钉回视口顶部。** 不钉的话，新补的内容插在
+    /// 它上面，而 `ScrollView` 的位置是按"距内容顶部多远"记的 —— 内容在头顶长高
+    /// 多少，视口就往下跳多少，用户会觉得"我点了一下，正在读的东西被推走了"。
+    /// 钉住之后，观感是"上面的历史展开了，我原来在读的那条还在原处"。
+    ///
+    /// 滚动排在 `Task { @MainActor }` 里：`renderedTurnCount` 刚改，新布局还没算出来，
+    /// 当帧滚过去会落在旧的几何上（房子里其它滚动收口也是这么排的）。
+    private func loadEarlierTurns(proxy: ScrollViewProxy, keepingFirstRenderedEntryIndex entryIndex: Int) {
+        renderedTurnCount += Self.renderedTurnExtendChunk
+        Task { @MainActor in
+            proxy.scrollTo("entry-\(entryIndex)", anchor: .top)
+        }
+    }
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {

@@ -72,6 +72,19 @@ final class SoundEffectPlayer {
 
     /// Pre-build every player once. Called lazily from `play` so the first
     /// chime pays the (small) setup cost and every later one is instant.
+    /// 预热：把每个音效的 `AVAudioPlayer` 先建好。
+    ///
+    /// 它原先只在第一次 `play()` 时才发生，而**第一次 `play()` 正是面板展开的「揭」**
+    ///（`NotchWindowController.finishExpansionCommit` → `play(.notchRevealed)`）。
+    /// 2026-09-26 用 `sample` 实测（`开发经验/运行日志/wanna-卡片成本采样-*.txt`）：
+    /// 那一次预热 = **130ms 主线程**，落在面板刚出现之后的一瞬间 —— 用户看到的就是
+    /// 「点开之后卡一下」，而冷启动的第一次展开尤其明显。挪到启动时做，这 130ms
+    /// 从"可见的卡顿"变成"启动里的一段"（启动本来就有更长的初始化），
+    /// 而展开那条路只剩 `player.currentTime = 0; player.play()`。
+    func warmUp() {
+        warmUpIfNeeded()
+    }
+
     private func warmUpIfNeeded() {
         guard !warmedUp else { return }
         warmedUp = true

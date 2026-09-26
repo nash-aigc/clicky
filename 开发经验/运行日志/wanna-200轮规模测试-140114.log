@@ -1,0 +1,21 @@
+🎙️ Transcription: using Bailian Realtime ASR
+🎯 Wanna: Starting...
+🎯 Wanna: Version 1.0
+🔑 Permissions — accessibility: true, screen: true, mic: true, screenContent: false
+🔑 Wanna start — accessibility: true, screen: true, mic: true, screenContent: true, onboarded: true
+🧰 Wanna: 外部工具齐备 — node@/opt/homebrew/bin/node claude@/opt/homebrew/bin/claude
+💬 Wanna: restored 0 exchanges from session 「新会话」
+⏱️ [hitch] main thread busy for 46ms
+⏱️ [hitch] main thread busy for 46ms
+2026-09-26 14:01:19.842 Wanna[61255:1256583] [LongForm] 麦克风权限：已授权
+2026-09-26 14:01:19.933 Wanna[61255:1256583] [LongForm] 开始录音 2026-09-26-140119-63A4 · 档位 volc.seedasr.sauc.duration · 判重窗口 0ms
+2026-09-26 14:01:19.991 Wanna[61255:1256583] [LongForm] AUHAL 已启动 · 设备=MacBook Pro麦克风 [id=88] · 48000.0Hz 1ch
+2026-09-26 14:01:19.992 Wanna[61255:1256583] [LongForm] 转换器按实际交付格式建立：48000.0Hz 1ch 帧容量=8192
+2026-09-26 14:01:19.992 Wanna[61255:1256583] [LongForm] 第 1 块：165 帧 峰值=0/32768 (0.000) 累计零块=1/1
+⏱️ [hitch] main thread busy for 202ms
+2026-09-26 14:01:20.467 Wanna[61255:1256583] [LongForm] 第 50 块：171 帧 峰值=73/32768 (0.002) 累计零块=3/50
+2026-09-26 14:01:21.000 Wanna[61255:1256583] [LongForm] 第 100 块：171 帧 峰值=67/32768 (0.002) 累计零块=3/100
+2026-09-26 14:01:21.533 Wanna[61255:1256583] [LongForm] 第 150 块：170 帧 峰值=60/32768 (0.002) 累计零块=3/150
+2026-09-26 14:01:22.068 Wanna[61255:1256583] [LongForm] 第 200 块：171 帧 峰值=45/32768 (0.001) 累计零块=3/200
+2026-09-26 14:01:22.599 Wanna[61255:1256583] [LongForm] 第 250 块：171 帧 峰值=42/32768 (0.001) 累计零块=3/250
+2026-09-26 14:01:23.133 Wanna[61255:1256583] [LongForm] 第 300 块：170 帧 峰值=47/32768 (0.001) 累计零块=3/300

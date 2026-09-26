@@ -88,6 +88,25 @@ final class NotchPanelModel: ObservableObject {
     /// `isDictationFinalizing`: `refreshActivityPhase` consults it first.
     /// Set through `NotchWindowController.setExternalSessionOverride`.
     @Published var externalSessionOverride: NotchActivityPhase?
+
+    /// **分阶段加载的闸门：面板已经在屏幕上之后，重内容才允许进场。**
+    ///
+    /// 2026-09-26 实测（`开发经验/运行日志/wanna-展开采样-*.txt`，`sample` 抓的栈）：
+    /// 一次展开的主线程时间几乎全花在 SwiftUI 对整个面板树**反复布局**上
+    ///（`NSHostingView.layout` → AttributeGraph update，单遍 250~500ms），而
+    /// 一遍是插内容、一遍是列宽量到之后把卡片整棵重建、还有一遍是滚到底。**树有多大，
+    /// 每一遍就有多慢** —— 实测三页：Screen 410~433ms、Agent 89~106ms、Call 44~58ms，
+    /// 差值就是「会话卡片有多少」。
+    ///
+    /// 于是把「面板出来」和「内容进来」拆成两拍：`false` 时那两列只画骨架
+    ///（侧栏的切换器/搜索/底部按钮照画，只是列表留空），SwiftUI 第一遍布局因此
+    /// 极便宜，面板立刻可见；面板在屏幕上之后控制器把它翻成 `true`，重内容才建。
+    /// 用户看到的顺序由「先白板、后内容」变成「先面板、后内容」，而用户要的
+    /// 正是「先给一个最短的反馈」。
+    ///
+    /// 它同时解决「以后几十上百个会话会越来越慢」：慢的那部分不再挡在
+    /// 面板出现之前。
+    @Published var isSheetContentReady: Bool = false
 }
 
 @MainActor
@@ -151,6 +170,12 @@ final class NotchWindowController {
     /// 置位、在延后块里**无条件**先清掉（在 generation 判断之前），所以任何
     /// 情况下都不会卡死。
     private var isExpansionCommitPending = false
+
+    /// 这次展开的「揭」是否已经跑过。见 `revealExpandedSheetIfPending(on:)` ——
+    /// 两条触发路径（展开态骨架的 `onAppear` 与兜底定时器）都从那里过，而
+    /// `finishExpansionCommit` 会播一次开合音效，重复跑就是两声（这个 bug
+    /// 以前真的出现过）。
+    private var revealedExpansionGeneration: Int = -1
 
     /// The screen whose sheet is currently expanded. At most one — expanding
     /// on a second screen collapses the first.
@@ -278,7 +303,13 @@ final class NotchWindowController {
                 notchBandHeight: NotchSupport.expandedWingBandHeight(on: screen),
                 notchCenterXInWindow: NotchSupport.notchBandCenterXInExpandedWindow(on: screen) ?? 0,
                 wingBandWidth: NotchSupport.restingWingBandWidth(on: screen),
-                restingPillWidth: NotchSupport.restingPillWidth(on: screen)
+                restingPillWidth: NotchSupport.restingPillWidth(on: screen),
+                // 展开态的骨架画好了 → 揭遮罩、放重内容。捕获 `screen` 而不是
+                // `presence`：此刻 presence 还没建出来（它要等下面的 NSHostingView），
+                // 而这句闭包只会在之后被调用，那时按屏查表就行。
+                sheetDidAppear: { [weak self] in
+                    self?.revealExpandedSheetIfPending(on: screen)
+                }
             )
             let hostingView = NSHostingView(rootView: rootView)
             hostingView.frame = NSRect(origin: .zero, size: panel.contentView!.bounds.size)
@@ -686,6 +717,9 @@ final class NotchWindowController {
         let expansionGenerationAtStart = expansionGeneration
         expandedScreen = presence.screen
         isExpansionCommitPending = true
+        // 分阶段加载的第一拍：先只建面板骨架（见 `NotchPanelModel.isSheetContentReady`）。
+        // 面板每次展开都从"只有骨架"起步，重内容由下面那两个收口放开。
+        panelModel.isSheetContentReady = false
 
         // TEMPORARY PROBE (2026-09-25)：这次展开的起点。见
         // `NotchSupport.expansionStartedAt` 的说明 —— 它量的是"屏幕上只有那块白板"的时长。
@@ -728,27 +762,60 @@ final class NotchWindowController {
             guard self.expansionGeneration == expansionGenerationAtStart,
                   !self.panelModel.isExpanded else { return }
             self.panelModel.isExpanded = true
-            // 揭：排在构建与绘制之后（见上面第 ④ 条）。
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            // 揭：**由骨架建好来触发**，不再由毫秒数来猜。
+            //
+            // 正路是 `NotchExpandedSheetView` 的 `onAppear` → `sheetDidAppear`
+            // → `revealExpandedSheetIfPending(on:)`：视图生命周期里最早能说
+            // "这棵树建出来了"的那一刻，实测 14~18ms。这里的定时器退成兜底 ——
+            // 万一那次 `onAppear` 因为任何原因没来，面板不能永远停在遮罩后面。
+            // 0.15s 仍然远小于"用户会觉得卡"的量级，而正常路径根本走不到它。
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
                 guard let self,
-                      self.expansionGeneration == expansionGenerationAtStart,
-                      self.panelModel.isExpanded else { return }
-                self.removeReveal(on: presence)
-                self.finishExpansionCommit(on: presence)
+                      self.expansionGeneration == expansionGenerationAtStart else { return }
+                self.revealExpandedSheetIfPending(on: presence.screen)
             }
         }
 
-        // Watchdog: with no reveal, removal is the only thing that makes the
-        // panel visible; with a reveal, a dropped animation would leave the
-        // mask at its starting state. Either way, past the deadline the panel
-        // must be fully open. It only repairs visibility — it does NOT run
-        // `finishExpansionCommit` again, which would play the reveal chime a
-        // second time (that was a real bug: two chimes, a second apart).
+        // Watchdog: 一秒之后面板必须是全开的。它和上面那条兜底定时器走**同一个**
+        // 收口，因为 `revealExpandedSheetIfPending(on:)` 自己带"每次展开只生效一次"
+        // 的闸门（`revealedExpansionGeneration`）—— 以前这里必须小心翼翼地
+        // **不**再调一次 `finishExpansionCommit`（那会播第二声开合音效，是个真出现过的
+        // bug），现在那条纪律由闸门承担，这条路只管"没揭成就揭"。
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             guard let self,
-                  self.expansionGeneration == expansionGenerationAtStart,
-                  self.panelModel.isExpanded else { return }
-            self.removeReveal(on: presence)
+                  self.expansionGeneration == expansionGenerationAtStart else { return }
+            self.revealExpandedSheetIfPending(on: presence.screen)
+        }
+    }
+
+    /// **揭**：摘掉遮罩、让重内容进场、跑掉那次展开的收尾（含开合音效）——
+    /// 一次展开只生效一次。
+    ///
+    /// 两条触发路径都到这里：`NotchExpandedSheetView` 的 `onAppear`（骨架真的建好了，
+    /// 首选，实测 14~18ms —— 见 `NotchPanelRootSwitchingView.sheetDidAppear`）
+    /// 和 `beginExpansion` 里那两个兜底定时器（0.15s / 1.0s）。它们谁先到都行，
+    /// `revealedExpansionGeneration` 让第二个变成 no-op。
+    ///
+    /// **排在 `onAppear` 里跑是有意的**：那一刻骨架刚建好、还没提交绘制，所以「摘遮罩」
+    /// 和「画出骨架」落在同一个 CA 事务里 —— 既不会露出还没换内容的那一帧（面板色的
+    /// 白板），也不会出现背景穿透（遮罩下面那层临时面板皮是 `removeReveal` 一起收的）。
+    private func revealExpandedSheetIfPending(on screen: NSScreen) {
+        guard panelModel.isExpanded,
+              revealedExpansionGeneration != expansionGeneration,
+              let presence = screenPresences.first(where: { $0.screen == screen }) else { return }
+        let revealedGeneration = expansionGeneration
+        revealedExpansionGeneration = revealedGeneration
+        removeReveal(on: presence)
+        // 分阶段加载的第二拍：面板已经在屏幕上（遮罩刚摘掉），现在才让重内容进场。
+        // 排在摘遮罩之后是有意的 —— 放在它前面，这一拍就会和骨架挤进同一遍布局。
+        panelModel.isSheetContentReady = true
+        // **窗口那一半推后一拍。** `finishExpansionCommit` 里有 `NSApp.activate` 和
+        // `makeKeyAndOrderFront` —— 正路是从 `onAppear` 进来的，在那里直接调就是在
+        // SwiftUI 的视图更新中间重入 AppKit。摘遮罩那半必须当场做（见上），
+        // 这一半晚一拍视觉上毫无差别。
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.revealedExpansionGeneration == revealedGeneration else { return }
+            self.finishExpansionCommit(on: presence)
         }
     }
 
@@ -1246,6 +1313,9 @@ final class NotchWindowController {
         // and the morph-back would silently pick a wrong screen.
         let collapsingPresence = screenPresences.first { $0.screen == expandedScreen }
         panelModel.isExpanded = false
+        // 收回骨架态：下一次展开从"只有骨架"起步（`beginExpansion` 也会设一遍，
+        // 这里设是为了让收起期间那棵树也是轻的）。
+        panelModel.isSheetContentReady = false
         expandedScreen = nil
         companionManager.isNotchSheetExpanded = false
         removeEscapeMonitor()

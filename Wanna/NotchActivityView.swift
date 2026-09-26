@@ -850,6 +850,14 @@ struct NotchPanelRootSwitchingView: View {
     var wingBandWidth: CGFloat = 0
     var restingPillWidth: CGFloat = 0
 
+    /// **展开态骨架已经建好** —— 控制器据此摘掉遮罩、放出重内容（见
+    /// `NotchWindowController.revealExpandedSheetIfPending(on:)`）。
+    ///
+    /// 让控制器知道"画好了"的唯一时机就是这个 `onAppear`：它是视图生命周期里
+    /// 最早能说"这棵树建出来了"的点，而定时器只能猜。默认空实现是为了
+    /// 不关心这件事的调用方（预览、测试）不用传。
+    var sheetDidAppear: () -> Void = {}
+
     /// 那一排 agent 按钮的右边缘在**窗口坐标**里的 x。
     ///
     /// 从**刘海的左边缘**往回退：刘海的中心在窗口里的位置是
@@ -885,14 +893,19 @@ struct NotchPanelRootSwitchingView: View {
                 toggleFullScreenAction: toggleFullScreenAction,
                 companionManager: companionManager
             )
-            // TEMPORARY PROBE (2026-09-25)：展开态的内容树在这里第一次出现 —— 从这个
-            // `onAppear` 到 `beginExpansion` 记下的起点之间的差，就是"屏幕上只有那块
-            // 面板色的白板、看不到任何内容"的时长。见 `NotchSupport.expansionStartedAt`。
+            // 展开态的骨架（侧栏那几行 + 空的内容列）在这里第一次出现。
+            //
+            // **这就是「揭」的触发点**（分阶段加载之后新增）：遮罩曾经由一个定时器
+            // 摘，因为当时骨架和重内容在同一遍里建，只能靠「等 50ms」猜它画完了没；
+            // 现在骨架便宜（实测 14~18ms）、重内容已经被 `isSheetContentReady` 分到
+            // 下一拍，于是"面板什么时候该露面"有了精确的答案 —— 骨架建好的这一刻。
+            // 定时器退化成兜底（`beginExpansion` 里那个）。
             .onAppear {
                 let elapsed = Date().timeIntervalSince1970 - NotchSupport.expansionStartedAt
                 if NotchSupport.expansionStartedAt > 0 {
                     print(String(format: "⏱️ [expand] 内容就位 +%.0fms（此前屏幕上只有那块白板）", elapsed * 1000))
                 }
+                sheetDidAppear()
             }
             // 状态带压在整块面板**之上**（用户 2026-09-24：「在整个对话界面顶部，
             // 刘海屏左右两侧应该持续显示 chatting 和挂断按钮，并覆盖在窗口上方」）。

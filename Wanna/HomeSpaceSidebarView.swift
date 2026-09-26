@@ -29,6 +29,14 @@ struct HomeSpaceSidebarView: View {
     @ObservedObject var voiceChatController: VoiceChatController
     @Binding var showsSettings: Bool
 
+    /// **分阶段加载：列表是否已经可以进场。**
+    ///
+    /// `false` 时这一列只画骨架（切换器、搜索行、底部按钮），三个列表一律不建。
+    /// 列表是随会话数 / Agent 数增长的那部分，而一次展开的主线程时间几乎全在
+    /// SwiftUI 对整个面板树反复布局上——把它挡在面板出现之后，面板就是秒开的。
+    /// 见 `NotchPanelModel.isSheetContentReady`。
+    var showsSectionList: Bool = true
+
     /// 「录音」快捷入口：点一下直接跳到设置里的录音页。
     ///
     /// 用户 2026-09-25：「主页面设置按钮的右侧显示一个录音按钮，点击后自动跳转到
@@ -71,13 +79,17 @@ struct HomeSpaceSidebarView: View {
             // 三个分区共用同一行「搜索 + ＋」（用户要求三个页面顺序一致）。
             searchRow
 
-            switch agentSessionManager.selectedSidebarSection {
-            case .conversations:
-                sessionList
-            case .agents:
-                agentList
-            case .voiceChat:
-                voiceChatRoleList
+            // 分阶段加载：第一拍只建上面那几行骨架，列表留到第二拍
+            //（见 `showsSectionList`）。`Spacer` 仍在，所以底部那一行不会跳。
+            if showsSectionList {
+                switch agentSessionManager.selectedSidebarSection {
+                case .conversations:
+                    sessionList
+                case .agents:
+                    agentList
+                case .voiceChat:
+                    voiceChatRoleList
+                }
             }
 
             Spacer(minLength: 0)
@@ -252,7 +264,10 @@ struct HomeSpaceSidebarView: View {
 
     private var sessionList: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            // `LazyVStack`：会话数会一直长，而 `VStack` 会把每一行都建出来 ——
+            // 那正是「以后几十上百个会话时，点开刘海越来越慢」的来源。
+            // 只建视口内的行，成本与会话数脱钩。
+            LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(sessionsModel.sidebarRows.enumerated()), id: \.element.session.id) { rowIndex, row in
                     sessionRow(row)
                     // 每行之间有一条发丝分隔线，与文字对齐、不压头像。
@@ -391,7 +406,8 @@ struct HomeSpaceSidebarView: View {
     /// 不再重复放一颗。
     private var agentList: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            // 同上：`LazyVStack`，理由见 `sessionList`。
+            LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(filteredAgents.enumerated()), id: \.element.id) { rowIndex, agent in
                     agentRow(agent)
                     if rowIndex < filteredAgents.count - 1 {
@@ -517,7 +533,8 @@ struct HomeSpaceSidebarView: View {
     /// cards as the user clicks around (see the row's status line below).
     private var voiceChatRoleList: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            // 同上：`LazyVStack`，理由见 `sessionList`。
+            LazyVStack(alignment: .leading, spacing: 0) {
                 if voiceChatController.rolePresets.isEmpty {
                     voiceChatEmptyHint
                 } else if filteredRolePresets.isEmpty {
