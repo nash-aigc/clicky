@@ -26,6 +26,9 @@ struct NotchSheetRootView: View {
     /// the app) — observed because both the 语音聊天 sidebar list and the
     /// content column read its published presets / phase / transcript.
     @ObservedObject private var voiceChatController: VoiceChatController
+    /// **文本 / 图文那一排最右那颗通话按钮的状态源**（正在通话 / 没在通话）——
+    /// 观察它是为了按钮自己变绿变红，不需要别处再报一遍。
+    @ObservedObject private var textCallController: TextCallController
     /// 每张卡片的聊天模式与角色。设置本身住在磁盘上（`AppSettings.json`），这个模型只是
     /// 把它读成视图要的形状 —— 观察它是为了让「切一下模式」立刻重绘右列。
     @ObservedObject private var cardChatPreferences = CardChatPreferenceModel.shared
@@ -87,6 +90,7 @@ struct NotchSheetRootView: View {
         // subprocesses.
         self.agentSessionManager = companionManager.agentSessionManager
         self.voiceChatController = companionManager.voiceChatController
+        self.textCallController = companionManager.textCallController
         self.collapseAction = collapseAction
         self.hideSheetAction = hideSheetAction
         self.revealSheetAction = revealSheetAction
@@ -764,8 +768,61 @@ struct NotchSheetRootView: View {
     private var topBar: some View {
         CardChatModeBar(cardID: activeCardID ?? "",
                         cardKind: activeCardKind,
-                        trailingAccessory: AnyView(voiceChip),
+                        trailingAccessory: AnyView(
+                            HStack(spacing: 6) {
+                                voiceChip
+                                textCallChip
+                            }
+                        ),
                         preferences: cardChatPreferences)
+    }
+
+    /// **文本 / 图文那一排最右那颗通话按钮**（用户 2026-09-26：「文本模式、图片模式，它的右侧
+    /// 应该有一个通话按钮啊？你没有加上去。」）。
+    ///
+    /// 它和语音 / 视频那颗是**两种东西**，所以他之前说的「放最左侧」不适用于这一颗 ——
+    /// 那一颗是"进语音聊天子系统"，这一颗是**语音转文字**：说一句，识别成文字，自动发出去，
+    /// 走的是这张卡片原本的文本管线（主循环卡片带工具、能执行；Claude Code 卡片跑它自己的
+    /// agent）。这正是他要这个按钮的理由 —— 「文本模式跟图片模式使用的上下文或者整个环境是
+    /// 主 Agent，它具备执行能力」。两者共用刘海那套通话状态与挂断。
+    private var textCallChip: some View {
+        let isCalling = textCallController.isCalling(cardID: activeCardID ?? "")
+        return Button {
+            SoundEffectPlayer.shared.play(.sidebarButton)
+            guard let cardID = activeCardID else { return }
+            if isCalling {
+                companionManager.hangUpAnyActiveCall()
+                return
+            }
+            let cardKind = activeCardKind
+            Task { @MainActor in
+                await textCallController.start(cardID: cardID, cardKind: cardKind)
+            }
+        } label: {
+            Image(systemName: isCalling ? "phone.down.fill" : "phone.fill")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40)
+                                           : DS.Colors.success)
+                .padding(.horizontal, 12)
+                .frame(height: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40).opacity(0.18)
+                                        : Color.white.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(isCalling ? Color(red: 0.95, green: 0.42, blue: 0.40).opacity(0.5)
+                                                : DS.Colors.success.opacity(0.35),
+                                      lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help(isCalling
+              ? "挂断这通「文本通话」"
+              : "文本通话：说话就自动转成文字发出去，不用手打。回答还是走这张卡片自己的管线")
     }
     // MARK: - 新建卡片（「添加」那张表单的三件事）
 
