@@ -259,12 +259,12 @@ struct HomeSpaceSidebarView: View {
         }
     }
 
-    /// 当前的卡片：主循环看「是不是当前活动会话」，Claude Code 看「是不是选中的代理」。
+    /// 当前的卡片：主循环看「是不是当前活动会话」，两个 agent 卡片看「是不是选中的代理」。
     private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
         switch card.kind {
         case .mainLoop:
             return sessionsModel.activeSessionID?.uuidString == card.entityID
-        case .claudeCode:
+        case .claudeCode, .review:
             return agentSessionManager.selectedAgentID?.uuidString == card.entityID
         }
     }

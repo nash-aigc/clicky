@@ -125,8 +125,20 @@ final class AgentCardModel: ObservableObject {
                                                      sessionStartedAt: session.createdAt)))
         }
 
-        // ② Claude Code 卡片：代理名册（兜底接手过的任务会出现在这里）。
-        for agent in AgentSessionStore.allAgents() {
+        // ② 复盘卡片 —— **它的实体就是一个 `AgentSession`**，只是文件夹固定是
+        // `Wanna复盘/`（用户 2026-09-26 要的第三个 agent：「加一个 agent，叫做复盘
+        // agent，然后用户可以去跟这个 agent 对话，来看一下复盘整个的过程」）。
+        //
+        // 建它这一步是幂等的（先按名字找，找不到才建），所以在刷新里做是安全的：
+        // 它是一条**固定的**记录，不是一次 spawn —— `AgentSessionStore` 的注释说
+        // 「spawn 时机归 manager、store 只记录存在」，而这条记录的存在与否本来就不
+        // 取决于用户点了什么。
+        if let reviewCard = reviewAgentCard() {
+            built.append(reviewCard)
+        }
+
+        // ③ Claude Code 卡片：代理名册（兜底接手过的任务会出现在这里）。
+        for agent in AgentSessionStore.allAgents() where agent.name != Self.reviewAgentName {
             let cardID = agent.id.uuidString
             built.append(Card(id: "\(CardKind.claudeCode.rawValue):\(cardID)",
                               kind: .claudeCode,
@@ -138,7 +150,32 @@ final class AgentCardModel: ObservableObject {
                                                      sessionStartedAt: nil)))
         }
 
+        // 卡片之间的顺序：主循环 → 复盘 → Claude Code。用户列三个 agent 时就是这个顺序
+        //（「第一个 agent 就是咱们的主循环 agent，第二个 agent 就是 Cloud Code，第三个就是
+        // 复盘 agent」），而他把复盘放在最后说、却是最靠近主循环的那条线（它读的就是
+        // 主循环的执行历史），所以排在中间。
         cards = filtered(built, query: searchQuery)
+    }
+
+    /// 复盘 agent 的名字与文件夹 —— **一处定义**，卡片区和以后那个权限界面都读它。
+    static let reviewAgentName = "复盘"
+    static var reviewAgentFolderPath: String { WorkspaceDirectory.reviewsURL.path }
+
+    /// 找复盘 agent，没有就建一个（幂等：刷新时会反复调用）。
+    private func reviewAgentCard() -> Card? {
+        let existing = AgentSessionStore.allAgents().first { $0.name == Self.reviewAgentName }
+        let agent = existing ?? AgentSessionStore.createAgent(
+            name: Self.reviewAgentName,
+            projectFolderPath: Self.reviewAgentFolderPath)
+        let cardID = agent.id.uuidString
+        return Card(id: "\(CardKind.review.rawValue):\(cardID)",
+                    kind: .review,
+                    entityID: cardID,
+                    title: Self.reviewAgentName,
+                    isDefault: false,
+                    tasksByColumn: columns(forCardKind: .review,
+                                           cardID: cardID,
+                                           sessionStartedAt: nil))
     }
 
     private func filtered(_ cards: [Card], query: String) -> [Card] {
@@ -267,7 +304,7 @@ final class AgentCardModel: ObservableObject {
                 sessionsModel.selectSession(sessionID)
             }
             agentSessionManager.selectedSidebarSection = .conversations
-        case .claudeCode:
+        case .claudeCode, .review:
             if let agentID = UUID(uuidString: card.entityID) {
                 agentSessionManager.selectAgent(agentID)
             }

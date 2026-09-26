@@ -52,11 +52,15 @@ nonisolated enum CardKind: String, Codable, Sendable, Equatable, CaseIterable {
     case mainLoop
     /// 兜底用的 Claude Code 代理。
     case claudeCode
+    /// **复盘 agent**（用户 2026-09-26 要的第三个 agent）—— 它的项目文件夹固定是
+    /// `Wanna复盘/`，所以用户能问它「这次为什么没做成」，而它读到的正是那份复盘材料。
+    case review
 
     var displayName: String {
         switch self {
         case .mainLoop: return "主循环"
         case .claudeCode: return "Claude Code"
+        case .review: return "复盘"
         }
     }
 
@@ -65,6 +69,7 @@ nonisolated enum CardKind: String, Codable, Sendable, Equatable, CaseIterable {
         switch self {
         case .mainLoop: return ""
         case .claudeCode: return "兜底 · Claude Code"
+        case .review: return ""
         }
     }
 }
