@@ -91,10 +91,15 @@ struct NotchRecordingBandView: View {
         // `bandWidth * 2`（见 `panelFrame`），所以**从右边缘往左推 `1.5 × bandWidth`** 正好落在
         // 带子左边缘（`bandLeft = 0.5 × bandWidth`）再往左 10pt —— 与"录音时带子变宽"这件事
         // 天然无关，因为它算的就是那一刻的 bandWidth。
-        .overlay(alignment: .trailing) {
+        // ⚠️ **必须是 `.topTrailing`，不能只写 `.trailing`。** 只写 trailing 时 overlay 在
+        // **竖直方向居中** —— 而这块面板有 592pt 高（刘海 + 560），于是按钮被画在面板中段
+        //（实测 frame.y=281），屏幕上看着就像"根本没画出来"（我第一次就是截了顶部 80pt，
+        // 什么都没看到，误判成没渲染）。
+        .overlay(alignment: .topTrailing) {
             if recorder.showsNotionNoteButtons {
                 notionNoteButtons
                     .padding(.trailing, bandWidth * 1.5 + 10)
+                    .padding(.top, (NotchRecordingBandView.ribbonHeight) / 2 - 15)
             }
         }
         .onChange(of: recorder.audioLevel) { _, newLevel in
@@ -102,38 +107,27 @@ struct NotchRecordingBandView: View {
         }
     }
 
-    /// 那两颗按钮：「保存」/「取消」。
+    /// **一颗**按钮（用户 2026-09-27 的更正：「刘海左侧那两颗按钮没画出来【应该是 1 个】，
+    /// 录音时 = 取消按钮，成功后 = 成功保存按钮」）。
     ///
-    /// 三条行为按用户第 3 条：两个按钮时默认保存（什么都不点 = 保存）；只有一个按钮时
-    /// 它是「取消笔记」，点了就按普通录音处理。**什么情况下只有一个**：Notion 那边没配好
-    ///（缺令牌 / 缺页面）时，保存必然失败 —— 那时候给一颗"保存"是骗人，所以只留「取消笔记」。
+    /// - 检测到关键词之后：显示「取消」—— 点它这一场就按普通录音处理，不写 Notion；
+    ///   **不点就是默认保存**（用户第 3 条）。
+    /// - 保存成功之后：原地变成「已保存笔记 ✓」，点它打开那一页（用户第 7 条）。
+    ///
+    /// 所以它同时是"唯一的出口"和"结果回执"，位置不动、宽度不变。
     @ViewBuilder
     private var notionNoteButtons: some View {
-        let canSave = recorder.canSaveNotionNote
-        HStack(spacing: 8) {
-            if canSave {
-                notionNoteButton(title: recorder.notionNoteSaved ? "已保存笔记" : "保存",
-                                 systemImage: recorder.notionNoteSaved ? "checkmark" : "square.and.arrow.down",
-                                 tint: DS.Colors.success) {
-                    // 保存成功之后这一颗变成"打开那一页"（用户第 7 条）。
-                    if recorder.notionNoteSaved {
-                        recorder.openNotionNotePage()
-                    } else {
-                        recorder.confirmNotionNote()
-                    }
-                }
-            } else {
-                notionNoteButton(title: "取消笔记", systemImage: "xmark",
-                                 tint: Color(red: 0.95, green: 0.42, blue: 0.40)) {
-                    recorder.cancelNotionNote()
-                }
+        if recorder.notionNoteSaved {
+            notionNoteButton(title: "已保存笔记", systemImage: "checkmark",
+                             tint: DS.Colors.success) {
+                recorder.openNotionNotePage()
             }
-            if !recorder.notionNoteSaved {
-                notionNoteButton(title: "取消", systemImage: "xmark",
-                                 tint: Color(red: 0.95, green: 0.42, blue: 0.40)) {
-                    recorder.cancelNotionNote()
-                }
+        } else {
+            notionNoteButton(title: "取消", systemImage: "xmark",
+                             tint: Color(red: 0.95, green: 0.42, blue: 0.40)) {
+                recorder.cancelNotionNote()
             }
+            .help("取消这条笔记，这一场按普通录音处理（不点就会存进 Notion）")
         }
     }
 
@@ -149,11 +143,11 @@ struct NotchRecordingBandView: View {
             .frame(height: 30)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.black.opacity(0.72))
+                    .fill(Color.black.opacity(0.78))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(tint.opacity(0.55), lineWidth: 1)
+                    .strokeBorder(tint.opacity(0.6), lineWidth: 1)
             )
             .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
