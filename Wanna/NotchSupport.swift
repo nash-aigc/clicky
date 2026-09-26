@@ -329,6 +329,17 @@ nonisolated enum NotchSupport {
     /// 「完全相同」就成了结构上的事实，而不是两处各调一次数字。
     static let contentHeaderControlHeight: CGFloat = 34
 
+    /// 面板**顶角那一排按钮**离左右边缘的距离。
+    ///
+    /// 用户 2026-09-26 要求顶角的按钮与旁边的按钮**按边对齐**（「右侧这个展开的按钮跟语速
+    /// 按钮，它应该右侧边对齐」）—— 语速离面板右缘 12（内容列的统一边距），所以这一排也取
+    /// 12，两条边落在同一条线上。原来这里是 18，那是为了躲开面板 36pt 的顶角圆弧；现在改用
+    /// **更圆的外角**（`.clipShape(UnevenRoundedRectangle(…16…))`）来躲，不必再靠边距让位。
+    ///
+    /// 值住在这里而不是 `NotchSheetRootView` 里：**左列（侧栏顶上那两行）也要读它**，
+    /// 两处各存一份就一定会漂。
+    static let cornerControlInset: CGFloat = 12
+
     /// 模式行自己的高度。与侧栏那颗切换器同高、也等于页头按钮的高度 ——
     /// 三个数从此刻起是同一个。
     static let cardChatModeBandHeight: CGFloat = contentHeaderControlHeight

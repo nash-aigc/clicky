@@ -160,7 +160,11 @@ struct NotchSheetRootView: View {
                                 sessionsModel: sessionsModel,
                                 agentSessionManager: agentSessionManager,
                                 voiceChatController: voiceChatController,
-                                showsSettings: $showsSettings
+                                showsSettings: $showsSettings,
+                                toggleSidebarCollapseAction: {
+                                    isSessionSidebarCollapsed.toggle()
+                                    SoundEffectPlayer.shared.play(.sidebarButton)
+                                }
                             )
                         } else {
                             HomeSpaceSidebarView(
@@ -331,7 +335,18 @@ struct NotchSheetRootView: View {
                     HStack(spacing: 6) {
                         sidebarCollapseButton
                         hideSheetButton
+                        // **最外那颗的右上角更圆**（用户：「因为咱们这个主窗口是有圆角的，所以
+                        // 你这个对应的展开的按钮，它的右上角这个圆角应该更大一点…就是不要让他
+                        // 这个按钮显示到外面」）—— 它落在面板 36pt 的顶角圆弧里，外角跟着圆一点
+                        // 才像同一个轮廓的一部分，而不是一个方角戳在弧线上。
                         fullScreenToggleButton
+                            .clipShape(
+                                UnevenRoundedRectangle(topLeadingRadius: DS.CornerRadius.medium,
+                                                       bottomLeadingRadius: DS.CornerRadius.medium,
+                                                       bottomTrailingRadius: DS.CornerRadius.medium,
+                                                       topTrailingRadius: 16,
+                                                       style: .continuous)
+                            )
                     }
                     .padding(.trailing, Self.cornerControlInset)
                     .padding(.top, Self.cornerControlTopInset)
@@ -403,7 +418,8 @@ struct NotchSheetRootView: View {
     /// 5 是它们在那条 40pt 留白里的纵向位置：下方紧挨着各页页头（用户的要求是
     /// 「高度不要太矮也不要太高——它们下方紧挨着其它文字和按钮，不能把下面的内容
     /// 挤走」），所以这一排既不进页头带、也不去挤它。
-    private static let cornerControlInset: CGFloat = 18
+    /// 值在 `NotchSupport` 里 —— **侧栏顶上那两行也读同一个数**（两处各存一份必然漂）。
+    private static var cornerControlInset: CGFloat { NotchSupport.cornerControlInset }
     private static let cornerControlTopInset: CGFloat = 5
 
     /// 「收起侧栏」——纯图标，左右各一颗，动作完全相同。

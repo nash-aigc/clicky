@@ -163,10 +163,10 @@ struct HomeSpaceSidebarView: View {
                 // **折叠在最左，设置第 2**（用户 2026-09-26：「左侧顶部第一行最左侧应为折叠
                 // 按钮（当前写错了），第二个是设置」—— 上一轮他说"设置放在折叠的左侧"，
                 // 这一轮更正回来了）。
-                sidebarTopButton(title: "折叠", isOn: false) {
-                    SoundEffectPlayer.shared.play(.notchRevealed)
-                    toggleSidebarCollapseAction()
-                }
+                // **折叠这颗用图形**（用户 2026-09-26 更正：「左侧边栏顶部折叠按钮应该用一个
+                // 图形的形式。这是我刚才说错了」）—— 一排文字里它是个图标，因为它表示的是
+                // 一个方向动作，而不是一个去处。
+                sidebarCollapseIconButton()
                 sidebarTopButton(title: "设置", isOn: showsSettings) {
                     SoundEffectPlayer.shared.play(.sidebarButton)
                     showsSettings = true
@@ -204,8 +204,44 @@ struct HomeSpaceSidebarView: View {
                 }
             }
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, NotchSupport.cornerControlInset)
         .padding(.top, 4)
+    }
+
+    /// 第 1 行最左那颗「折叠」——**图标形态**，其余照 `sidebarTopButton` 的尺寸走，
+    /// 所以它与同排那几颗等高、也参与等宽。
+    private func sidebarCollapseIconButton() -> some View {
+        Button {
+            SoundEffectPlayer.shared.play(.notchRevealed)
+            toggleSidebarCollapseAction()
+        } label: {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundColor(.white.opacity(0.82))
+                .frame(maxWidth: .infinity)
+                .frame(height: Self.topButtonHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.white.opacity(0.07))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerCursor()
+        .help("收起侧栏（只留一条图标栏）")
+        // **左上角更圆**（用户：「包括左侧这个折叠按钮，它的左上角的圆角应该更大一点」）——
+        // 它正落在面板 36pt 的顶角圆弧里，理由与右上那颗完全相同。
+        .clipShape(
+            UnevenRoundedRectangle(topLeadingRadius: 16,
+                                   bottomLeadingRadius: 8,
+                                   bottomTrailingRadius: 8,
+                                   topTrailingRadius: 8,
+                                   style: .continuous)
+        )
     }
 
     /// 上面那两行里的一颗：**等宽、等高**（`.frame(maxWidth: .infinity)` 让同一行的几颗
@@ -807,10 +843,18 @@ struct HomeSpaceSidebarView: View {
 /// 圆环高亮的就是当前那一个 —— 所以折叠前后用户看到的是同一个头像、同一条会话。
 struct HomeSpaceSidebarRailView: View {
 
+    /// 卡片列表 —— 与展开态那一列**同一个模型**（收起时这一份只是没人给它派活）。
+    @StateObject private var cardModel = AgentCardModel()
+
     @ObservedObject var sessionsModel: ConversationSessionsModel
     @ObservedObject var agentSessionManager: AgentSessionManager
     @ObservedObject var voiceChatController: VoiceChatController
     @Binding var showsSettings: Bool
+
+    /// 顶上那颗「展开」——动作住在窗口控制器里，侧栏只把点击报上去。
+    /// 它**必须在这里**：收起之后如果这一格还是"当前页标识"，用户就再也展不开了
+    ///（用户 2026-09-26 原话：「你现在就是折叠之后就没有了，那相当于是用户无法展开了」）。
+    var toggleSidebarCollapseAction: () -> Void = {}
 
     /// 这一条的总宽。38 的圆环 + 两侧各 12 的呼吸位。
     static let width: CGFloat = 62
@@ -820,18 +864,24 @@ struct HomeSpaceSidebarRailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            currentSectionBadge
+            // **顶上只有一颗「展开」**（用户 2026-09-26：「折叠之后…它的顶部应该显示这个按钮。
+            // 你现在就是折叠之后就没有了，那相当于是用户无法展开了」＋「分割线上面应该就只有一个
+            // 折叠按钮」）。
+            //
+            // 原来这一格是「Screen / Agent / Call」的**当前页标识** —— 那是老的三个分区时代的
+            // 东西（用户已经删掉那个切换器），而且它是个**标识不是按钮**，所以收起来之后就
+            // 真的没有办法再展开了。
+            expandButton
+
+            // **卡片从那根线下面 10pt 开始** —— 与展开态那一列同一条规矩（那条线横跨
+            // 整个面板，收起来时它照样在 y=80 处穿过这一条窄栏）。
+            Color.clear
+                .frame(height: max(0, NotchSupport.contentColumnHeaderRuleY + 10
+                                   - (NotchSupport.sheetHeaderTopInset - 34 + 30 + 8)))
 
             ScrollView {
                 VStack(spacing: 6) {
-                    switch agentSessionManager.selectedSidebarSection {
-                    case .conversations:
-                        sessionItems
-                    case .agents:
-                        agentItems
-                    case .voiceChat:
-                        roleItems
-                    }
+                    cardItems
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 4)
@@ -843,108 +893,94 @@ struct HomeSpaceSidebarRailView: View {
         .background(DS.Colors.surface3)
     }
 
-    // MARK: 当前页标识
+    // MARK: 展开
 
-    /// 「我现在在哪一页」——Screen / Agent / Call 三选一，只显示当前那一个。
-    ///
-    /// 这一个是**标识，不是按钮**：收起之后切页要先把侧栏放出来（或者点开设置里的
-    /// 内容），一条 62pt 的窄栏里放三颗按钮每颗只剩 20pt，谁也点不准。所以它只回答
-    /// 「在哪」，不带动作，也就不会有「看着能点、点了没反应」那种控件。
-    private var currentSectionBadge: some View {
-        VStack(spacing: 3) {
-            Image(systemName: Self.symbol(for: agentSessionManager.selectedSidebarSection))
-                .font(.system(size: 13, weight: .medium))
-
-            Text(agentSessionManager.selectedSidebarSection.displayName)
-                .font(.system(size: 9, weight: .semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-        }
-        .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .frame(height: 40)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.white.opacity(0.12))
+    /// 收起之后把侧栏放回来的那一颗。**图标**，与窗口右上角那颗「收起侧栏」同一个符号。
+    private var expandButton: some View {
+        NotchBarActionButton(
+            title: nil,
+            systemImage: "sidebar.left",
+            isHighlighted: false,
+            help: "展开侧栏",
+            action: {
+                SoundEffectPlayer.shared.play(.notchRevealed)
+                toggleSidebarCollapseAction()
+            }
         )
-        .padding(.horizontal, 10)
-        .padding(.top, NotchSupport.sheetHeaderTopInset)
+        .padding(.top, NotchSupport.sheetHeaderTopInset - 34)
         .padding(.bottom, 8)
     }
 
-    /// 分区 → 那一页的脸。三个都挑和内容对得上的：Screen 是看屏幕的对话，
-    /// Agent 是锤子（与 Agent 行里那颗同一个符号），Call 是声波
-    ///（与角色列表空态那颗 `waveform.circle` 同一族）。
-    private static func symbol(for section: SidebarSection) -> String {
-        switch section {
-        case .conversations: return "display"
-        case .agents: return "hammer.fill"
-        case .voiceChat: return "waveform"
-        }
-    }
+    // MARK: 卡片（收起之后的列表）
 
-    // MARK: 三个分区的头像列表
-
-    private var sessionItems: some View {
-        ForEach(sessionsModel.sidebarRows, id: \.session.id) { row in
-            let identity = MascotRoster.identity(forSessionID: row.session.id)
+    /// **收起之后的列表就是卡片**，与展开态那一列同一个数据源（`AgentCardModel`）。
+    ///
+    /// 用户 2026-09-26：「我希望你不是按照模式来走，你是按照整个咱们当前的代码的逻辑，然后去
+    /// 看主页面上他到底应该是怎么样一个逻辑？再去对应的显示折叠之后整个应该是具体什么样东西？
+    /// 他应该是根据主面板的变化自动变化，而不应该重新写入或者硬性写入」。
+    ///
+    /// 所以这里**不再按 `selectedSidebarSection` 分三种列表**（那是"对话 / Agent / 语音聊天"
+    /// 三个分区的残留，也正是他看到的「第一次折叠显示 Screen、退出账号再折叠显示 Agent」那种
+    /// 前后不一致的来源 —— 那个值会因为别处的动作被改掉）。现在它只回答一个问题：**主面板上有
+    /// 哪几张卡片、当前是哪一张**，而那两件事都由 `AgentCardModel` 一处决定。
+    private var cardItems: some View {
+        ForEach(cardModel.cards) { card in
             railItem(
-                isActive: row.session.id == sessionsModel.activeSessionID && !showsSettings,
-                tint: Color(identity.pastelBackground),
-                help: row.session.title
+                isActive: isCurrent(card) && !showsSettings,
+                tint: Self.railTint(for: card.kind),
+                help: card.title
             ) {
-                MascotAvatarDisc(identity: identity, diameter: Self.avatarDiameter)
+                // **两张卡片要有各自的脸**（用户：「下面这个图标应该分别对应的是咱们这个主
+                // agent 和这个 cloud code 两个图标。你现在就是只有一个，我也不知道对应的是
+                // 哪一个」）。
+                ZStack {
+                    Circle().fill(Self.railTint(for: card.kind).opacity(0.22))
+                    Image(systemName: Self.railSymbol(for: card.kind))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Self.railTint(for: card.kind))
+                }
+                .frame(width: Self.avatarDiameter, height: Self.avatarDiameter)
             } action: {
                 SoundEffectPlayer.shared.play(.sidebarButton)
-                sessionsModel.selectSession(row.session.id)
+                cardModel.open(card, sessionsModel: sessionsModel, agentSessionManager: agentSessionManager)
                 showsSettings = false
             }
         }
     }
 
-    private var agentItems: some View {
-        ForEach(agentSessionManager.sessions) { agent in
-            railItem(
-                isActive: agent.id == agentSessionManager.selectedAgentID
-                    && agentSessionManager.selectedSidebarSection == .agents
-                    && !showsSettings,
-                tint: agentStatusTint(for: agent.status),
-                help: agent.name
-            ) {
-                // 和展开态那一行同一颗状态盘：Agent 的信息是「它在不在跑」。
-                Circle()
-                    .fill(agentStatusTint(for: agent.status))
-                    .frame(width: Self.avatarDiameter, height: Self.avatarDiameter)
-                    .overlay(
-                        Image(systemName: "hammer.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.black.opacity(0.55))
-                    )
-            } action: {
-                SoundEffectPlayer.shared.play(.sidebarButton)
-                agentSessionManager.selectAgent(agent.id)
-                agentSessionManager.selectedSidebarSection = .agents
-                showsSettings = false
-            }
+    /// 哪一种卡片用哪个符号：主 agent 是对话气泡，Claude Code 是终端，复盘是趋势线。
+    private static func railSymbol(for kind: CardKind) -> String {
+        switch kind {
+        case .mainLoop: return "bubble.left.and.bubble.right.fill"
+        case .claudeCode: return "terminal.fill"
+        case .review: return "chart.line.uptrend.xyaxis"
         }
     }
 
-    private var roleItems: some View {
-        // 收起后没有搜索框，所以这一列是全部角色（展开态那一列按搜索词过滤）。
-        ForEach(voiceChatController.rolePresets) { role in
-            railItem(
-                isActive: role.id == voiceChatController.selectedRoleID && !showsSettings,
-                tint: DS.Colors.accent,
-                help: role.name
-            ) {
-                RoleAvatarView(role: VoiceChatRoleStore.role(withID: role.id), size: Self.avatarDiameter)
-            } action: {
-                SoundEffectPlayer.shared.play(.sidebarButton)
-                voiceChatController.selectRole(role.id)
-                showsSettings = false
-            }
+    private static func railTint(for kind: CardKind) -> Color {
+        switch kind {
+        case .mainLoop: return DS.Colors.accent
+        case .claudeCode: return Color(red: 0.55, green: 0.78, blue: 0.55)
+        case .review: return DS.Colors.warning
         }
     }
+
+    /// 这张卡片是不是**主面板正在显示的那一张** —— 与展开态那一列同一条判据，
+    /// 所以**同时只会有一颗亮着**（他看到的"点击折叠之后处于默认全选状态"就是这里原来
+    /// 按分区各判各的造成的）。
+    private func isCurrent(_ card: AgentCardModel.Card) -> Bool {
+        switch card.kind {
+        case .mainLoop:
+            return sessionsModel.activeSessionID?.uuidString == card.entityID
+        case .claudeCode, .review:
+            return agentSessionManager.selectedAgentID?.uuidString == card.entityID
+        }
+    }
+
+    // 这里原来是「Screen / Agent / Call」的**当前页标识** + 按分区切换的三个列表
+    //（会话 / Agent / 角色）—— 那是老的三个分区时代的界面，2026-09-26 晚上按用户要求
+    // 换成 `cardItems`（跟着卡片走）之后，这些就都是死代码了：
+    // 留着它们，下一个人会以为折叠栏还有"分区"这个概念。
 
     /// 一颗头像 + 一圈环。
     ///
