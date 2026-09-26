@@ -1180,6 +1180,19 @@ nonisolated struct AppSettings: Codable, Sendable, Equatable {
             .filter { !$0.isEmpty }
     }
 
+    /// 鼠标旁边要不要显示 agent 的状态（对号 + 一句话）。
+    ///
+    /// 用户 2026-09-26：「这个东西应该设置成一个开关…让用户可以选择这个 agent 的状态
+    /// 是不是应该显示在鼠标的右下角，**然后默认是选择**」。
+    ///
+    /// 为什么需要一个开关：后台任务。用户的原话是「用户有一个需求，让 agent 后台来执行，
+    /// 然后他一直把这个任务状态显示在鼠标的左侧，其实也会影响用户的体验」—— 鼠标旁边
+    /// 是注意力所在，长任务会把那块地方一直占着。
+    ///
+    /// **刘海左侧那一排不受它影响。** 那是「去别处看」的东西，用户不看就不占地方；
+    /// 鼠标旁边是「推到你眼前」，两者该分开。所以关掉这个开关 = 只关推给你的那一份。
+    var showsAgentStatusAtCursor: Bool = true
+
     /// **文件访问白名单**（方案 `06-权限模型.md` §二）。
     ///
     /// 每一条是一个路径加两个开关，**读和写互不蕴含**；嵌套取最长匹配。
@@ -1346,6 +1359,7 @@ nonisolated extension AppSettings {
         case recordingAudioRetentionDays
         case recordingTextRetentionDays
         case fastPathEntries
+        case showsAgentStatusAtCursor
         case fileAccessEntries
         case recordingPolishEnabled
         case recordingPolishCapturesScreenshot
@@ -1484,6 +1498,7 @@ nonisolated extension AppSettings {
         recordingAudioRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingAudioRetentionDays) ?? defaults.recordingAudioRetentionDays
         recordingTextRetentionDays = try container.decodeIfPresent(Int.self, forKey: .recordingTextRetentionDays) ?? defaults.recordingTextRetentionDays
         fastPathEntries = try container.decodeIfPresent([FastPathEntry].self, forKey: .fastPathEntries) ?? defaults.fastPathEntries
+        showsAgentStatusAtCursor = try container.decodeIfPresent(Bool.self, forKey: .showsAgentStatusAtCursor) ?? defaults.showsAgentStatusAtCursor
         fileAccessEntries = try container.decodeIfPresent([FileAccessEntry].self, forKey: .fileAccessEntries) ?? defaults.fileAccessEntries
         recordingPolishEnabled = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishEnabled) ?? defaults.recordingPolishEnabled
         recordingPolishCapturesScreenshot = try container.decodeIfPresent(Bool.self, forKey: .recordingPolishCapturesScreenshot) ?? defaults.recordingPolishCapturesScreenshot

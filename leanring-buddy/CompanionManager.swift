@@ -486,6 +486,10 @@ final class CompanionManager: ObservableObject {
 
     /// 显示「✓ 一句话」，`holdSeconds` 秒后自动收掉。
     func showTaskCompletionNotice(_ summary: String, holdSeconds: Double = 2.5) {
+        // **闸门收在这里，不收在每一个调用处。** 以后再加第三个地方要弹通知时，
+        // 忘了判一下就成了一条绕过开关的路 —— 而那种 bug 用户只会看到
+        //「我明明关掉了它怎么还出来」。
+        guard AppSettingsStore.snapshot().showsAgentStatusAtCursor else { return }
         let trimmed = summary.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         taskCompletionNoticeGeneration += 1
