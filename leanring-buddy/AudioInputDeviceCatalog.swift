@@ -17,9 +17,25 @@ nonisolated struct AudioInputDevice: Identifiable, Sendable, Equatable {
     let name: String
     let channelCount: Int
     let isSystemDefault: Bool
+    /// **它是一个组合，不是一个设备。**
+    ///
+    /// CoreAudio 的「默认设备聚合体」（`CADefaultDeviceAggregate-<pid>-0`）是 macOS
+    /// 按「此刻有哪些设备」现组的，**它的声道数会随成员变** —— 内置麦克风 1 声道
+    /// 加录屏软件的虚拟驱动 2 声道，合出来就是 3 声道，而 3 声道那个形态交出的是
+    /// **纯静音**（实测 2026-09-26：117 秒 0 字）。
+    ///
+    /// 所以它**绝不能被列进选择器**：选它等于把当天修掉的东西又装回去。
+    /// 判据只能是「它是不是聚合体」，不能是「有没有声道」—— 健康的聚合体也有 1 声道，
+    /// 而那正是它会混进列表的原因（用户实测截图里它就排在第 4 项）。
+    let isAggregate: Bool
+    /// 虚拟设备（如录屏软件的环回声道）。**留着但标出来** —— 它可能正是用户想要的
+    ///（比如录系统声音），所以不替用户做这个判断。
+    let isVirtual: Bool
 
     var displayName: String {
-        channelCount > 0 ? "\(name)（\(channelCount) 声道）" : name
+        var text = channelCount > 0 ? "\(name)（\(channelCount) 声道）" : name
+        if isVirtual { text += "（虚拟）" }
+        return text
     }
 }
 
@@ -66,11 +82,17 @@ nonisolated enum AudioInputDeviceCatalog {
             // 列出来只会让用户选到它然后录到静音。
             let channels = inputChannelCount(of: id)
             guard channels > 0 else { return nil }
+            let transport = transportType(of: id)
+            // **聚合体一律不列。** 它不是设备，是组合，而它的声道数会变 ——
+            // 变到某个形态就是静音。用户选了它，等于把这次的故障重新装回去。
+            guard transport != kAudioDeviceTransportTypeAggregate else { return nil }
             return AudioInputDevice(id: id,
                                     uid: stringProperty(of: id, selector: kAudioDevicePropertyDeviceUID) ?? "",
                                     name: stringProperty(of: id, selector: kAudioObjectPropertyName) ?? "未命名设备",
                                     channelCount: channels,
-                                    isSystemDefault: id == defaultID)
+                                    isSystemDefault: id == defaultID,
+                                    isAggregate: false,
+                                    isVirtual: transport == kAudioDeviceTransportTypeVirtual)
         }
         .sorted {
             if $0.isSystemDefault != $1.isSystemDefault { return $0.isSystemDefault }
@@ -100,6 +122,18 @@ nonisolated enum AudioInputDeviceCatalog {
         guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, raw) == noErr else { return 0 }
         let list = UnsafeMutableAudioBufferListPointer(raw.assumingMemoryBound(to: AudioBufferList.self))
         return list.reduce(0) { $0 + Int($1.mNumberChannels) }
+    }
+
+    /// 这个设备的传输类型 —— 用来认出聚合体和虚拟设备。
+    private static func transportType(of deviceID: AudioDeviceID) -> UInt32 {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyTransportType,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        var value = UInt32(0)
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &value)
+        return status == noErr ? value : 0
     }
 
     private static func stringProperty(of deviceID: AudioDeviceID,

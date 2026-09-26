@@ -439,8 +439,8 @@ extension GeneralSettingsView {
             SettingsRow(
                 label: "输入设备",
                 description: "「跟系统默认」= 用 macOS 当前默认的那个。"
-                    + "**选具体设备更稳**：默认设备可以被别的软件改（录屏软件的虚拟声道就会出现在列表里），"
-                    + "而改到那种设备上录出来的会是**静音**。"
+                    + "选具体设备更稳：默认设备可以被别的软件改（录屏软件的虚拟声道就在下面这个列表里），"
+                    + "而改到那种设备上录出来的会是静音。"
             ) {
                 Menu(currentInputDeviceMenuTitle) {
                     Button("跟系统默认") {
@@ -460,7 +460,7 @@ extension GeneralSettingsView {
             //（设备可能被拔掉、可能被别的进程占着），而用户要看的正是这个。
             SettingsRow(
                 label: "这一场实际用的",
-                description: "只有录音跑起来之后才有值。**它和上面选的不是一回事** —— "
+                description: "只有录音跑起来之后才有值。它和上面选的不是一回事 —— "
                     + "设备被拔掉时 Clicky 会落回系统默认并在诊断日志里说明，"
                     + "这里显示的就是那一刻真正用的那个。"
             ) {
