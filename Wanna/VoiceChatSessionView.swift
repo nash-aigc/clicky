@@ -2430,7 +2430,9 @@ struct VoiceChatSessionView: View {
         // 12 是**图文 / 文本页那条流水线的 spacing**：那一页的气泡和它的 footer 是同一层
         // `LazyVStack` 的兄弟，所以它们之间就是这个数。这里原来是 3 —— 同一个东西在两页里
         // 差了三倍，肉眼就是"被压扁了"。
-        VStack(alignment: .trailing, spacing: Self.bubbleToFooterSpacing) {
+        // 同上：0，让复制按钮贴着气泡自己的 9pt 内边距 —— 与图文页的用户气泡同一个做法，
+        // 两页看上去才是同一个间距。
+        VStack(alignment: .trailing, spacing: 0) {
             HStack(alignment: .bottom) {
                 Spacer(minLength: 56)
 

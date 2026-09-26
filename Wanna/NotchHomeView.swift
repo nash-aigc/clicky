@@ -742,8 +742,13 @@ struct NotchHomeView: View {
     /// The copy control sits under it, flush with the bubble's trailing edge —
     /// the same placement the Agent and 语音聊天 columns use.
     private func outgoingBubble(_ text: String) -> some View {
-        // 与助手那颗同一个数（见 `bubbleToFooterSpacing`）。
-        VStack(alignment: .trailing, spacing: Self.bubbleToFooterSpacing) {
+        // **0，不是那个共用的 4** —— 因为要看齐的是**看得见的间距**，不是这个参数。
+        //
+        // 用户气泡的 `Text` 自己带 9pt 下内边距（`padding(.vertical, 9)`），而助手的卡片
+        // 内边距更小；同一个 spacing 落到屏幕上就差出一截：实测用户那颗约 15pt、助手那颗
+        // 约 6pt（用户 2026-09-26 圈出来的正是用户那颗：「跟复制按钮的间距还是很大」）。
+        // 这里用 0，让复制按钮贴着气泡自己的内边距，两种气泡看上去才是同一个间距。
+        VStack(alignment: .trailing, spacing: 0) {
             HStack(alignment: .bottom) {
                 Spacer(minLength: 56)
 
