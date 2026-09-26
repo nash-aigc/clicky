@@ -2302,7 +2302,7 @@ struct VoiceChatSessionView: View {
     /// 它必须等于 `NotchHomeView` 里那条 `LazyVStack` 的 spacing（12）：图文页的气泡和
     /// footer 是同一层的兄弟，那儿是 12。**这个数一改，两页要一起改**，否则又会出现
     /// "某种模式的对话看起来被压扁了"。
-    private static let bubbleToFooterSpacing: CGFloat = 12
+    private static let bubbleToFooterSpacing: CGFloat = 4
 
     /// 一行里的一颗（形状与另外两页那排一致：11.5pt 字、7pt 圆角、亮底 + 描边）。
     private func composerChip(title: String,

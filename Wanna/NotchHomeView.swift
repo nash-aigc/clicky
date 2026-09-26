@@ -622,9 +622,16 @@ struct NotchHomeView: View {
             )
         }
 
-        assistantBubble(entry.displayResponse ?? entry.assistantResponse, isStreaming: false)
-
-        turnFooter(entry)
+        // **卡片与它下面那一行自成一组**（用户 2026-09-26：「它们应该是紧挨着相连的，
+        // 而不是有间距的…没有必要有间距，让它没有间距就好了」）。
+        //
+        // 原来这两行是外层 `LazyVStack(spacing: 12)` 的兄弟 —— 那个 12 既分"卡片与 footer"，
+        // 也分"这一轮与下一轮" ✗。缩它会把整段对话挤在一起，所以只能**在轮内再包一层**：
+        // 组内 4（贴住），组间仍是 12（轮与轮之间该有的呼吸）。
+        VStack(alignment: .leading, spacing: Self.bubbleToFooterSpacing) {
+            assistantBubble(entry.displayResponse ?? entry.assistantResponse, isStreaming: false)
+            turnFooter(entry)
+        }
     }
 
     /// The job's steps so far, live while it runs. Always expanded — a
@@ -735,7 +742,8 @@ struct NotchHomeView: View {
     /// The copy control sits under it, flush with the bubble's trailing edge —
     /// the same placement the Agent and 语音聊天 columns use.
     private func outgoingBubble(_ text: String) -> some View {
-        VStack(alignment: .trailing, spacing: 3) {
+        // 与助手那颗同一个数（见 `bubbleToFooterSpacing`）。
+        VStack(alignment: .trailing, spacing: Self.bubbleToFooterSpacing) {
             HStack(alignment: .bottom) {
                 Spacer(minLength: 56)
 
@@ -1081,6 +1089,12 @@ struct NotchHomeView: View {
             contentColumnHeight * Self.expandedComposerHeightFraction
         )
     }
+
+    /// **气泡与它下面那颗「复制」之间的间距** —— 四个模式、两种气泡，同一个数。
+    ///
+    /// 4 而不是 12：用户 2026-09-26 要求它们「紧挨着相连」「没有必要有间距」——
+    /// 复制按钮本来就是那条气泡的附属，隔开一整行看着像是别人的东西。
+    private static let bubbleToFooterSpacing: CGFloat = 4
 
     private static let expandedComposerHeightFraction: CGFloat = 0.30
 
